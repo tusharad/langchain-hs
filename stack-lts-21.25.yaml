@@ -1,7 +1,0 @@
-resolver: lts-21.25
-packages:
-- .
-extra-deps:
-  - pdf-toolbox-document-0.1.4@sha256:6016daf47765f4a06b23a90e59741f34f7c2c8561091a9db3caa922339037108,2405
-  - git: https://github.com/tusharad/ollama-haskell
-    commit: 65d844a0e3b613f73b5dd58ad398481af04a20b1
