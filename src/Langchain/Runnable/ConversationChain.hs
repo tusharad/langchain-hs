@@ -32,11 +32,13 @@ module Langchain.Runnable.ConversationChain
     ConversationChain (..)
   ) where
 
+import Control.Monad.Trans.Except
 import Data.Text (Text)
 import Langchain.LLM.Core
 import Langchain.Memory.Core
 import Langchain.PromptTemplate
 import Langchain.Runnable.Core
+import Control.Monad.IO.Class (MonadIO(liftIO))
 
 {- | Manages a stateful conversation between a user and a language model.
 
@@ -153,24 +155,14 @@ instance (BaseMemory m, LLM l) => Runnable (ConversationChain m l) where
   --  response3 <- invoke chatbot "Can you explain it in simpler terms?"
   --  @
   --
-  invoke ConversationChain {..} input = do
+  invoke chain input = runExceptT $ do
     -- Add user message to memory
-    updatedMemResult <- addUserMessage memory input
-    case updatedMemResult of
-      Left err -> return $ Left err
-      Right updatedMem -> do
-        -- Get all messages
-        messagesResult <- messages updatedMem
-        case messagesResult of
-          Left err -> return $ Left err
-          Right allMessages -> do
-            -- Format messages for the LLM
-            let formattedMessages = allMessages
-            -- Get response from LLM
-            llmResponse <- chat llm formattedMessages Nothing
-            case llmResponse of
-              Left err -> return $ Left err
-              Right response -> do
-                -- Store AI response in memory
-                _ <- addAiMessage updatedMem (content response)
-                return $ Right (content response)
+    updatedMem <- ExceptT $ addUserMessage (memory chain) input
+    -- Get all messages
+    allMessages <- ExceptT $ messages updatedMem
+    -- Get response from LLM
+    response <- ExceptT $ chat (llm chain) allMessages Nothing
+    -- Store AI response in memory
+    _ <- liftIO $ addAiMessage updatedMem (content response)
+    -- Return the AI response content
+    return $ content response
