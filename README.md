@@ -77,6 +77,10 @@ main = do
         Right response -> putStrLn $ "Translation: " ++ (T.unpack response)
 ```
 
+## Projects using langchain-hs
+
+- [ai-chatbot-hs](https://github.com/tusharad/ai-chatbot-hs)
+
 ## Contributing
 
 Contributions are welcome! If you'd like to contribute, please fork the repository and submit a pull request. 
