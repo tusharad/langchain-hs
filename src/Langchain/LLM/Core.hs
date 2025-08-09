@@ -68,8 +68,8 @@ printHandler = StreamHandler
   }
 @
 -}
-data StreamHandler = StreamHandler
-  { onToken :: Text -> IO ()
+data StreamHandler tokenType = StreamHandler
+  { onToken :: tokenType -> IO ()
   -- ^ Action to perform for each token received
   , onComplete :: IO ()
   -- ^ Action to perform when streaming is complete
@@ -223,8 +223,9 @@ defaultMessageData =
 -- | Typeclass that all ChatModels should interface with
 class LLM llm where
   -- | Define the Parameter type for your LLM model.
+  type LLMStreamTokenType llm 
   type LLMParams llm
-
+  
   -- | Invoke the language model with a single prompt.
   --        Suitable for simple queries; returns either an error or generated text.
   generate ::
@@ -253,7 +254,7 @@ class LLM llm where
   stream :: 
        llm 
     -> ChatMessage 
-    -> StreamHandler 
+    -> StreamHandler (LLMStreamTokenType llm) 
     -> Maybe (LLMParams llm) 
     -> IO (Either String ())
 
@@ -289,7 +290,7 @@ class LLM llm where
     MonadIO m =>
     llm ->
     ChatMessage ->
-    StreamHandler ->
+    StreamHandler (LLMStreamTokenType llm)->
     Maybe (LLMParams llm) ->
     m (Either String ())
   streamM llm chatHistory sHandler mbParams = liftIO $ stream llm chatHistory sHandler mbParams

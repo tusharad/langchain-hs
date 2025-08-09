@@ -52,6 +52,7 @@ toOpenAI Deepseek {..} =
 
 instance LLM.LLM Deepseek where
   type LLMParams Deepseek = OpenAI.OpenAIParams
+  type LLMStreamTokenType Deepseek = Text
 
   generate deepseek = LLM.generate (toOpenAI deepseek)
   chat deepseek = LLM.chat (toOpenAI deepseek)

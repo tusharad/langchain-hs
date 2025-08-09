@@ -87,6 +87,7 @@ and streaming responses using OpenAI's API.
 -}
 instance LLM.LLM OpenAI where
   type LLMParams OpenAI = OpenAIParams
+  type LLMStreamTokenType OpenAI = Text
 
   generate OpenAI {..} prompt mbOpenAIParams = do
     eRes <-

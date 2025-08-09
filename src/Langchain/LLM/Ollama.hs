@@ -129,6 +129,7 @@ case generate ollamaLLM "Hello" Nothing of
 -}
 instance LLM Ollama where
   type LLMParams Ollama = OllamaParams
+  type LLMStreamTokenType Ollama = Text
 
   -- \| Generate text from a prompt
   --  Returns Left on API errors, Right on success.

@@ -94,6 +94,7 @@ defaultHuggingfaceParams =
 
 instance LLM Huggingface where
   type LLMParams Huggingface = HuggingfaceParams
+  type (LLMStreamTokenType) Huggingface = Text
 
   generate Huggingface {..} prompt mbHuggingfaceParams = do
     eRes <-

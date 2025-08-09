@@ -15,6 +15,7 @@ import Langchain.Runnable.ConversationChain
 import Langchain.Runnable.Core
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertEqual, testCase, (@?=))
+import Data.Text (Text)
 
 data TestMemory = TestMemory (IORef [Message])
 
@@ -55,6 +56,8 @@ data MockLLM = MockLLM
 
 instance LLM MockLLM where
   type LLMParams MockLLM = String
+  type LLMStreamTokenType MockLLM = Text
+
   chat llm0 (msgs :: NonEmpty Message) _ = do
     writeIORef (receivedMessages llm0) (NE.toList msgs)
     return (llmResponse llm0)

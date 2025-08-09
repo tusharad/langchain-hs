@@ -64,6 +64,7 @@ toOpenAI OpenAICompatible {..} =
 
 instance LLM.LLM OpenAICompatible where
   type LLMParams OpenAICompatible = OpenAI.OpenAIParams
+  type LLMStreamTokenType OpenAICompatible = Text
   generate model = LLM.generate (toOpenAI model)
   chat model = LLM.chat (toOpenAI model)
   stream model = LLM.stream (toOpenAI model)

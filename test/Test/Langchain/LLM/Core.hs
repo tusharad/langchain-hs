@@ -21,6 +21,7 @@ data TestLLM = TestLLM
 
 instance LLM TestLLM where
   type LLMParams TestLLM = Text
+  type LLMStreamTokenType TestLLM = Text
  
   generate m _ mbParams =
     pure $

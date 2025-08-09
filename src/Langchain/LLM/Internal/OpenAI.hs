@@ -149,6 +149,7 @@ Contains a list of possible choices for the completion.
 data ChatCompletionChunk = ChatCompletionChunk
   { chunkChoices :: [ChunkChoice]
   -- ^ List of choices in this chunk of the response
+  -- TODO: add Usage
   }
   deriving (Show)
 
