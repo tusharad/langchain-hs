@@ -84,7 +84,6 @@ tests =
           , Message Assistant "Hello!" defaultMessageData
           ]
           mem
-
     , testCase "Error adding user message" $ do
         nRef <- newIORef []
         let failingMem = FailingMemory
@@ -92,7 +91,6 @@ tests =
             chain = ConversationChain failingMem mockLLM (PromptTemplate "")
         result <- invoke chain "Hi"
         result @?= Left "Memory error"
-
     , testCase "LLM returns error" $ do
         memRef <- newIORef []
         let testMem = TestMemory memRef
@@ -104,7 +102,6 @@ tests =
         -- Verify only user message in memory
         mem <- readIORef memRef
         assertEqual "Only user message in memory" [Message User "Hi" defaultMessageData] mem
-
     , testCase "Memory update after response" $ do
         memRef <- newIORef []
         nRef <- newIORef []

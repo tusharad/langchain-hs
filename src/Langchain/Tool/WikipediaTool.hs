@@ -41,8 +41,8 @@ import qualified Data.Text as T
 import GHC.Generics
 import Langchain.Runnable.Core (Runnable (..))
 import Langchain.Tool.Core
-import Network.HTTP.Simple
 import Langchain.Tool.Utils (cleanHtmlContent)
+import Network.HTTP.Simple
 
 {- |
 Wikipedia search tool configuration

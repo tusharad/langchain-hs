@@ -43,10 +43,12 @@ library
       Langchain.DocumentLoader.FileLoader
       Langchain.DocumentLoader.PdfLoader
       Langchain.Embeddings.Core
+      Langchain.Embeddings.Gemini
       Langchain.Embeddings.Ollama
       Langchain.Embeddings.OpenAI
       Langchain.LLM.Core
       Langchain.LLM.Deepseek
+      Langchain.LLM.Gemini
       Langchain.LLM.Huggingface
       Langchain.LLM.Internal.Huggingface
       Langchain.LLM.Internal.OpenAI

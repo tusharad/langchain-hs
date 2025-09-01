@@ -32,13 +32,13 @@ module Langchain.Runnable.ConversationChain
     ConversationChain (..)
   ) where
 
+import Control.Monad.IO.Class (MonadIO (liftIO))
 import Control.Monad.Trans.Except
 import Data.Text (Text)
 import Langchain.LLM.Core
 import Langchain.Memory.Core
 import Langchain.PromptTemplate
 import Langchain.Runnable.Core
-import Control.Monad.IO.Class (MonadIO(liftIO))
 
 {- | Manages a stateful conversation between a user and a language model.
 

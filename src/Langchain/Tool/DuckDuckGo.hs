@@ -208,7 +208,7 @@ instance Tool DuckDuckGo where
           case eitherDecode body of
             Left err -> pure $ Left $ T.pack $ show err
             Right ddgResponse_ -> pure $ Right ddgResponse_
-      )
+        )
         `catch` \e -> pure $ Left $ T.pack $ show (e :: SomeException)
     case eResult of
       Left err -> pure err

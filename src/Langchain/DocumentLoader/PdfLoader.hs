@@ -8,7 +8,7 @@ License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
 
-This module provides a loader for loading PDF files. 
+This module provides a loader for loading PDF files.
 -}
 module Langchain.DocumentLoader.PdfLoader
   ( PdfLoader (..)

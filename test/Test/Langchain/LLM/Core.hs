@@ -8,11 +8,11 @@ import Test.Tasty
 import Test.Tasty.HUnit
 
 import Data.Aeson (Result (..), decode, fromJSON, toJSON)
+import Data.Either
 import Data.List.NonEmpty (NonEmpty (..))
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Langchain.LLM.Core
-import Data.Maybe (fromMaybe)
-import Data.Either
 
 data TestLLM = TestLLM
   { responseText :: Text
@@ -21,7 +21,7 @@ data TestLLM = TestLLM
 
 instance LLM TestLLM where
   type LLMParams TestLLM = Text
- 
+
   generate m _ mbParams =
     pure $
       if shouldSucceed m
@@ -46,8 +46,7 @@ tests :: TestTree
 tests =
   testGroup
     "LLMCoreTest"
-    [ 
-    testGroup
+    [ testGroup
         "Role"
         [ testCase "has correct equality" $ do
             assertEqual "System equals System" System System
@@ -90,19 +89,19 @@ tests =
             let md = defaultMessageData
             assertEqual "name should be Nothing" Nothing (name md)
             assertEqual "toolCalls should be Nothing" Nothing (toolCalls md)
-        {-
-        , testCase "serializes to correct JSON structure" $ do
-            let md = MessageData (Just "Alice") (Just ["tool1", "tool2"])
-                expected = "{\"name\":\"Alice\",\"tool_calls\":[\"tool1\",\"tool2\"]}"
+        , {-
+          , testCase "serializes to correct JSON structure" $ do
+              let md = MessageData (Just "Alice") (Just ["tool1", "tool2"])
+                  expected = "{\"name\":\"Alice\",\"tool_calls\":[\"tool1\",\"tool2\"]}"
 
-            assertEqual "JSON encoding of MessageData" expected (encode md)
+              assertEqual "JSON encoding of MessageData" expected (encode md)
 
-        , testCase "deserializes from JSON correctly" $ do
-            let json = "{\"name\":\"Bob\",\"tool_calls\":[\"tool3\"]}"
-                expected = MessageData (Just "Bob") (Just ["tool3"])
-            assertEqual "JSON decoding of MessageData" (Just expected) (decode json)
-        -}
-        , testCase "handles partial JSON correctly" $ do
+          , testCase "deserializes from JSON correctly" $ do
+              let json = "{\"name\":\"Bob\",\"tool_calls\":[\"tool3\"]}"
+                  expected = MessageData (Just "Bob") (Just ["tool3"])
+              assertEqual "JSON decoding of MessageData" (Just expected) (decode json)
+          -}
+          testCase "handles partial JSON correctly" $ do
             let json = "{\"name\":\"Charlie\"}"
                 expected = MessageData (Just "Charlie") Nothing Nothing Nothing
             assertEqual "Partial JSON decoding of MessageData" (Just expected) (decode json)
@@ -111,13 +110,11 @@ tests =
         "LLM Typeclass"
         [ testGroup
             "generate"
-            [ 
-              testCase "generate uses provided LLMParams" $ do
-            let testLLM = TestLLM { responseText = "Default", shouldSucceed = True }
-            result <- generate testLLM "Prompt" (Just "CustomParam")
-            assertEqual "Should return CustomParam" (Right "CustomParam") result
-
-             , testCase "returns Right with response for successful generation" $ do
+            [ testCase "generate uses provided LLMParams" $ do
+                let testLLM = TestLLM {responseText = "Default", shouldSucceed = True}
+                result <- generate testLLM "Prompt" (Just "CustomParam")
+                assertEqual "Should return CustomParam" (Right "CustomParam") result
+            , testCase "returns Right with response for successful generation" $ do
                 let successLLM = TestLLM "Success response" True
                 result <- generate successLLM "Test prompt" Nothing
                 assertEqual "Successful generation" (Right "Success response") result
@@ -134,7 +131,6 @@ tests =
                     chatMsgs = singleMsg :| []
                 result <- chat successLLM chatMsgs Nothing
                 assertBool "Successful chat" (isRight result)
-
             , testCase "returns Left with error for failed chat" $ do
                 let failureLLM = TestLLM "Failure response" False
                     singleMsg = Message User "Test prompt" defaultMessageData

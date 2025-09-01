@@ -85,8 +85,7 @@ defaultQueryGenerationPrompt =
             ]
       }
 
-{- | Configuration for multi-query retrieval
--}
+-- | Configuration for multi-query retrieval
 data MultiQueryRetrieverConfig = MultiQueryRetrieverConfig
   { numQueries :: Int
   -- ^ Number of queries to generate

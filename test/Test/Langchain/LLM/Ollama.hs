@@ -13,13 +13,13 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 
+import Data.Aeson
+import qualified Data.ByteString.Lazy.Char8 as BSL
+import qualified Data.Ollama.Common.Types as O
 import Langchain.Callback (Callback, Event (..))
 import Langchain.LLM.Core
 import Langchain.LLM.Ollama
 import qualified Langchain.Runnable.Core as Run
-import qualified Data.Ollama.Common.Types as O
-import Data.Aeson
-import qualified Data.ByteString.Lazy.Char8 as BSL
 
 captureEvents :: IO (Callback, IO [Event])
 captureEvents = do
@@ -63,20 +63,19 @@ tests =
             assertBool "LLM should tried to be started" (events `shouldContainAll` [LLMStart])
             length (filter isErrorEvent events) @?= 1
           Right _ -> assertFailure "Expected error, but got success"
-
     , testCase "chat returns text response for messages" $ do
         (callback, getEvents) <- captureEvents
         let ollama = Ollama testModelName [callback]
         let messages = Message User "What's the capital of France?" defaultMessageData :| []
-        result <- chat ollama messages (Just $ defaultOllamaParams { responseTimeOut = Just 1200 })
+        result <- chat ollama messages (Just $ defaultOllamaParams {responseTimeOut = Just 1200})
         case result of
           Left err -> assertFailure $ "Expected success, got error: " ++ err
           Right response -> do
-            assertBool "Response should mention Paris" 
-                ("paris" `T.isInfixOf` T.toLower (content response))
+            assertBool
+              "Response should mention Paris"
+              ("paris" `T.isInfixOf` T.toLower (content response))
             events <- getEvents
             assertBool "LLM should be completed" (events `shouldContainAll` [LLMStart, LLMEnd])
-
     , testCase "chat handles multi-turn conversations" $ do
         (callback, _) <- captureEvents
         let ollama = Ollama testModelName [callback]
@@ -89,10 +88,10 @@ tests =
         result <- chat ollama messages Nothing
         case result of
           Left err -> assertFailure $ "Expected success, got error: " ++ err
-          Right response -> 
-            assertBool "Response should mention Rome" 
-                ("rome" `T.isInfixOf` T.toLower (content response))
-
+          Right response ->
+            assertBool
+              "Response should mention Rome"
+              ("rome" `T.isInfixOf` T.toLower (content response))
     , testCase "stream calls handlers for streaming responses" $ do
         let ollama = Ollama testModelName []
         let messages = Message User "Count from 1 to 5 briefly." defaultMessageData :| []
@@ -102,8 +101,9 @@ tests =
         let handler =
               StreamHandler
                 { onToken = \token -> modifyIORef tokensRef (token :)
-                , onComplete = pure () -- | onComplete does not support Ollama
+                , onComplete = pure ()
                 }
+        -- \| onComplete does not support Ollama
 
         result <- stream ollama messages handler Nothing
         case result of
@@ -111,38 +111,38 @@ tests =
           Right () -> do
             tokens <- readIORef tokensRef
             assertBool "Should receive tokens" (not (null tokens))
-
     , testCase "invoke calls chat with the input messages" $ do
         let ollama = Ollama testModelName []
         let input = Message User "What is 2+2?" defaultMessageData :| []
         result <- Run.invoke ollama (input, Nothing)
         case result of
           Left err -> assertFailure $ "Expected success, got error: " ++ err
-          Right response -> assertBool "Should mention 4" 
-            ("4" `T.isInfixOf` T.toLower (content response))
+          Right response ->
+            assertBool
+              "Should mention 4"
+              ("4" `T.isInfixOf` T.toLower (content response))
+    , {- qwen3:06b does not support insert
+      , testCase "generate appends suffix when provided" $ do
+          (callback, getEvents) <- captureEvents
+          let ollama = Ollama testModelName [callback]
+          let prompt = "What is functional programming?"
+          let params = defaultOllamaParams { suffix = Just " [End]" }
+          result <- generate ollama prompt (Just params)
+          case result of
+            Left err -> assertFailure $ "Expected success, got error: " ++ err
+            Right response -> do
+              assertBool "Response should end with suffix" (T.isSuffixOf " [End]" response)
+              events <- getEvents
+              assertBool "should contain all events"
+                  (events `shouldContainAll` [LLMStart, LLMEnd])
+        -}
 
-    {- qwen3:06b does not support insert
-    , testCase "generate appends suffix when provided" $ do
-        (callback, getEvents) <- captureEvents
-        let ollama = Ollama testModelName [callback]
-        let prompt = "What is functional programming?"
-        let params = defaultOllamaParams { suffix = Just " [End]" }
-        result <- generate ollama prompt (Just params)
-        case result of
-          Left err -> assertFailure $ "Expected success, got error: " ++ err
-          Right response -> do
-            assertBool "Response should end with suffix" (T.isSuffixOf " [End]" response)
-            events <- getEvents
-            assertBool "should contain all events" 
-                (events `shouldContainAll` [LLMStart, LLMEnd])
-      -}
-
-    , testCase "generate uses system message for context" $ do
+      testCase "generate uses system message for context" $ do
         (callback, getEvents) <- captureEvents
         let ollama = Ollama testModelName [callback]
         let prompt = "What is 2 + 2?"
         let systemMsg = "You are a Haskell expert."
-        let params = defaultOllamaParams { system = Just systemMsg }
+        let params = defaultOllamaParams {system = Just systemMsg}
         result <- generate ollama prompt (Just params)
         case result of
           Left err -> assertFailure $ "Expected success, got error: " ++ err
@@ -154,7 +154,7 @@ tests =
         (callback, getEvents) <- captureEvents
         let ollama = Ollama testModelName [callback]
         let prompt = "What is JSON?"
-        let params = defaultOllamaParams { format = Just O.JsonFormat }
+        let params = defaultOllamaParams {format = Just O.JsonFormat}
         result <- generate ollama prompt (Just params)
         case result of
           Left err -> assertFailure $ "Expected success, got error: " ++ err
@@ -164,28 +164,28 @@ tests =
               Right _ -> return ()
             events <- getEvents
             assertBool "should contain all events" (events `shouldContainAll` [LLMStart, LLMEnd])
-        {-
-    , testCase "generate uses temperature option" $ do
-        (callback, getEvents) <- captureEvents
-        let ollama = Ollama testModelName [callback]
-        let prompt = "Write a short story."
-        let temp = 0.7
-        let opts = object ["temperature" .= Number temp]
-        let params = defaultOllamaParams { options = Just opts }
-        result <- generate ollama prompt (Just params)
-        case result of
-          Left err -> assertFailure $ "Expected success, got error: " ++ err
-          Right response -> do
-            assertBool "Response should not be empty" (T.length response > 0)
-            events <- getEvents
-            assertBool "should contain all events" (events `shouldContainAll` [LLMStart, LLMEnd])
-            -}
+    , {-
+      , testCase "generate uses temperature option" $ do
+          (callback, getEvents) <- captureEvents
+          let ollama = Ollama testModelName [callback]
+          let prompt = "Write a short story."
+          let temp = 0.7
+          let opts = object ["temperature" .= Number temp]
+          let params = defaultOllamaParams { options = Just opts }
+          result <- generate ollama prompt (Just params)
+          case result of
+            Left err -> assertFailure $ "Expected success, got error: " ++ err
+            Right response -> do
+              assertBool "Response should not be empty" (T.length response > 0)
+              events <- getEvents
+              assertBool "should contain all events" (events `shouldContainAll` [LLMStart, LLMEnd])
+              -}
 
-    , testCase "chat returns JSON response when format is set" $ do
+      testCase "chat returns JSON response when format is set" $ do
         (callback, getEvents) <- captureEvents
         let ollama = Ollama testModelName [callback]
         let messages = Message User "What is JSON?" defaultMessageData :| []
-        let params = defaultOllamaParams { format = Just O.JsonFormat }
+        let params = defaultOllamaParams {format = Just O.JsonFormat}
         result <- chat ollama messages (Just params)
         case result of
           Left err -> assertFailure $ "Expected success, got error: " ++ err

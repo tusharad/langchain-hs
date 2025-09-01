@@ -107,7 +107,10 @@ class Agent a where
 -- | Function that *starts* the agent process.
 runAgent ::
   (Agent a, BaseMemory m) =>
-  a -> AgentState m -> Text -> IO (Either String AgentFinish)
+  a ->
+  AgentState m ->
+  Text ->
+  IO (Either String AgentFinish)
 runAgent agent initialState@AgentState {..} initialInput = do
   memWithInput <- addUserMessage agentMemory initialInput
   case memWithInput of

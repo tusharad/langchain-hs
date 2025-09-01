@@ -6,17 +6,17 @@
 module Test.Langchain.Tool.Core (tests) where
 
 import Data.Aeson (decode)
+import Data.Either (isLeft)
 import qualified Data.Map as M
 import Data.Text (Text)
 import qualified Data.Text as T
 import Test.Tasty
 import Test.Tasty.HUnit
-import Data.Either (isLeft)
 
+import Langchain.Tool.Calculator
 import Langchain.Tool.Core
 import Langchain.Tool.WebScraper
 import Langchain.Tool.WikipediaTool
-import Langchain.Tool.Calculator
 
 data MockTool = MockTool Text
   deriving (Show, Eq)
@@ -43,90 +43,83 @@ tests =
     ]
 
 testCalculatorTool :: TestTree
-testCalculatorTool = testGroup "Langchain.Tool.Calculator"
-  [ parseExpressionTests
-  , evaluateExpressionTests
-  , calculatorToolTests
-  ]
+testCalculatorTool =
+  testGroup
+    "Langchain.Tool.Calculator"
+    [ parseExpressionTests
+    , evaluateExpressionTests
+    , calculatorToolTests
+    ]
 
 -- | Test cases for parseExpression
 parseExpressionTests :: TestTree
-parseExpressionTests = testGroup "parseExpression"
-  [ testCase "Parses integer" $
-      parseExpression "123" @?= Right (Number_ 123.0)
-
-  , testCase "Parses decimal" $
-      parseExpression "45.67" @?= Right (Number_ 45.67)
-
-  , testCase "Handles addition" $
-      parseExpression "2+3" @?= Right (Add (Number_ 2) (Number_ 3))
-
-  , testCase "Handles subtraction" $
-      parseExpression "5 - 1" @?= Right (Sub (Number_ 5) (Number_ 1))
-
-  , testCase "Handles multiplication" $
-      parseExpression "4*2" @?= Right (Mul (Number_ 4) (Number_ 2))
-
-  , testCase "Handles division" $
-      parseExpression "8 / 2" @?= Right (Div (Number_ 8) (Number_ 2))
-
-  , testCase "Handles exponentiation" $
-      parseExpression "2^3" @?= Right (Pow (Number_ 2) (Number_ 3))
-
-  , testCase "Respects operator precedence" $
-      parseExpression "2 + 3 * 4" @?= Right (Add (Number_ 2) (Mul (Number_ 3) (Number_ 4)))
-
-  , testCase "Respects parentheses" $
-      parseExpression "(2 + 3) * 4" @?= Right (Mul (Add (Number_ 2) (Number_ 3)) (Number_ 4))
-
-  , testCase "Fails on invalid input" $
-      isLeft (parseExpression "hello") @? "Expected parse failure for 'hello'"
-  ]
+parseExpressionTests =
+  testGroup
+    "parseExpression"
+    [ testCase "Parses integer" $
+        parseExpression "123" @?= Right (Number_ 123.0)
+    , testCase "Parses decimal" $
+        parseExpression "45.67" @?= Right (Number_ 45.67)
+    , testCase "Handles addition" $
+        parseExpression "2+3" @?= Right (Add (Number_ 2) (Number_ 3))
+    , testCase "Handles subtraction" $
+        parseExpression "5 - 1" @?= Right (Sub (Number_ 5) (Number_ 1))
+    , testCase "Handles multiplication" $
+        parseExpression "4*2" @?= Right (Mul (Number_ 4) (Number_ 2))
+    , testCase "Handles division" $
+        parseExpression "8 / 2" @?= Right (Div (Number_ 8) (Number_ 2))
+    , testCase "Handles exponentiation" $
+        parseExpression "2^3" @?= Right (Pow (Number_ 2) (Number_ 3))
+    , testCase "Respects operator precedence" $
+        parseExpression "2 + 3 * 4" @?= Right (Add (Number_ 2) (Mul (Number_ 3) (Number_ 4)))
+    , testCase "Respects parentheses" $
+        parseExpression "(2 + 3) * 4" @?= Right (Mul (Add (Number_ 2) (Number_ 3)) (Number_ 4))
+    , testCase "Fails on invalid input" $
+        isLeft (parseExpression "hello") @? "Expected parse failure for 'hello'"
+    ]
 
 -- | Test cases for evaluateExpression
 evaluateExpressionTests :: TestTree
-evaluateExpressionTests = testGroup "evaluateExpression"
-  [ testCase "Evaluates Num" $
-      evaluateExpression (Number_ 5) @?= 5.0
-
-  , testCase "Evaluates Add" $
-      evaluateExpression (Add (Number_ 2) (Number_ 3)) @?= 5.0
-
-  , testCase "Evaluates Mul" $
-      evaluateExpression (Mul (Number_ 3) (Number_ 4)) @?= 12.0
-
-  , testCase "Evaluates Pow" $
-      evaluateExpression (Pow (Number_ 2) (Number_ 3)) @?= 8.0
-  ]
+evaluateExpressionTests =
+  testGroup
+    "evaluateExpression"
+    [ testCase "Evaluates Num" $
+        evaluateExpression (Number_ 5) @?= 5.0
+    , testCase "Evaluates Add" $
+        evaluateExpression (Add (Number_ 2) (Number_ 3)) @?= 5.0
+    , testCase "Evaluates Mul" $
+        evaluateExpression (Mul (Number_ 3) (Number_ 4)) @?= 12.0
+    , testCase "Evaluates Pow" $
+        evaluateExpression (Pow (Number_ 2) (Number_ 3)) @?= 8.0
+    ]
 
 -- | Test cases for CalculatorTool
 calculatorToolTests :: TestTree
-calculatorToolTests = testGroup "CalculatorTool"
-  [ testCase "Computes 2 + 3 * 4" $ do
-      result <- runTool CalculatorTool "2 + 3 * 4"
-      result @?= Right 14.0
-
-  , testCase "Computes (2 + 3) * 4" $ do
-      result <- runTool CalculatorTool "(2 + 3) * 4"
-      result @?= Right 20.0
-
-  , testCase "Computes 2 ^ 3" $ do
-      result <- runTool CalculatorTool "2 ^ 3"
-      result @?= Right 8.0
-
-  , testCase "Fails on invalid expression" $ do
-      let badExpr = "2 +"
-      errOrRes <- runTool CalculatorTool badExpr
-      case errOrRes of
-        Left _ -> return ()
-        Right _ -> assertFailure "Expected error when parsing invalid expression"
-  ]
+calculatorToolTests =
+  testGroup
+    "CalculatorTool"
+    [ testCase "Computes 2 + 3 * 4" $ do
+        result <- runTool CalculatorTool "2 + 3 * 4"
+        result @?= Right 14.0
+    , testCase "Computes (2 + 3) * 4" $ do
+        result <- runTool CalculatorTool "(2 + 3) * 4"
+        result @?= Right 20.0
+    , testCase "Computes 2 ^ 3" $ do
+        result <- runTool CalculatorTool "2 ^ 3"
+        result @?= Right 8.0
+    , testCase "Fails on invalid expression" $ do
+        let badExpr = "2 +"
+        errOrRes <- runTool CalculatorTool badExpr
+        case errOrRes of
+          Left _ -> return ()
+          Right _ -> assertFailure "Expected error when parsing invalid expression"
+    ]
 
 testWebScraperTool :: Assertion
 testWebScraperTool = do
   eRes <- runTool WebScraper "https://hackage.haskell.org/package/scalpel-0.6.2.2"
   assertBool "Scraper should contain stuff like title" $ do
-    case eRes of 
+    case eRes of
       Left _ -> False
       Right r -> do
         T.isInfixOf "Scalpel is a web scraping library inspired by libraries like" r

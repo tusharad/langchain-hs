@@ -23,6 +23,7 @@ module Langchain.Embeddings.OpenAI
   , textEmbedding3Small
   , textEmbedding3Large
   , textEmbeddingAda
+  , EncodingFormat (..)
   ) where
 
 {-
@@ -70,7 +71,6 @@ data OpenAIEmbeddingsRequest = OpenAIEmbeddingsRequest
   , dimensionsReq :: Maybe Int
   -- ^ Only supported in text-embedding-3 or later
   , encodingFormatReq :: Maybe EncodingFormat
-  , embeddingsUserReq :: Maybe Text
   }
   deriving (Show, Eq, Generic)
 
@@ -89,7 +89,6 @@ instance ToJSON OpenAIEmbeddingsRequest where
       , "model" .= modelReq
       , "dimensions" .= dimensionsReq
       , "encoding_format" .= encodingFormatReq
-      , "user" .= embeddingsUserReq
       ]
 
 -- Response
@@ -101,7 +100,7 @@ data EmbeddingsUsage = EmbeddingsUsage
 
 data EmbeddingsObject = EmbeddingsObject
   { embeddings :: [Float]
-  , index :: Int
+  , index :: Maybe Int
   , objectType :: Text
   }
   deriving (Eq, Show, Generic)
@@ -110,7 +109,7 @@ data OpenAIEmbeddingsResponse = OpenAIEmbeddingsResponse
   { objectTypeResp :: Text
   , dataList :: [EmbeddingsObject]
   , responseModel :: Text
-  , usage :: EmbeddingsUsage
+  , usage :: Maybe EmbeddingsUsage
   }
   deriving (Eq, Show, Generic)
 
@@ -125,7 +124,7 @@ instance FromJSON EmbeddingsObject where
   parseJSON (Object v) =
     EmbeddingsObject
       <$> v .: "embedding"
-      <*> v .: "index"
+      <*> v .:? "index"
       <*> v .: "object"
   parseJSON _ = error "Parse error, expecting object"
 
@@ -135,7 +134,7 @@ instance FromJSON OpenAIEmbeddingsResponse where
       <$> v .: "object"
       <*> v .: "data"
       <*> v .: "model"
-      <*> v .: "usage"
+      <*> v .:? "usage"
   parseJSON _ = error "Parse error, expecting object"
 
 -- | Embeddings type for OpenAI, can be used for embed documents with OpenAI.
@@ -148,12 +147,10 @@ data OpenAIEmbeddings = OpenAIEmbeddings
   -- ^ Model name for embeddings
   , dimensions :: Maybe Int
   -- ^ The number of dimensions the resulting output embeddings should have.
-  -- ^ Only supported in text-embedding-3 or later
+  --   ^ Only supported in text-embedding-3 or later
   , encodingFormat :: Maybe EncodingFormat
   -- ^ The format to return the embeddings in.
-  -- ^ For now, only float is supported
-  , embeddingsUser :: Maybe Text
-  -- ^ A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse.
+  --   ^ For now, only float is supported
   , timeout :: Maybe Int
   -- ^ Override default responsetime out. unit = seconds.
   }
@@ -162,7 +159,8 @@ data OpenAIEmbeddings = OpenAIEmbeddings
 instance Show OpenAIEmbeddings where
   show OpenAIEmbeddings {..} = "OpenAIEmbeddings " <> "model " <> unpack model
 
-openAIEmbeddingsRequest :: OpenAIEmbeddings -> [Text] -> IO (Either String OpenAIEmbeddingsResponse)
+openAIEmbeddingsRequest ::
+  OpenAIEmbeddings -> [Text] -> IO (Either String OpenAIEmbeddingsResponse)
 openAIEmbeddingsRequest OpenAIEmbeddings {..} txts = do
   request_ <-
     parseRequest $
@@ -174,20 +172,19 @@ openAIEmbeddingsRequest OpenAIEmbeddings {..} txts = do
             responseTimeoutMicro (fromMaybe 60 timeout * 1000000)
         }
   let req =
-        setRequestMethod "POST"
-          $ setRequestSecure True
-          $ setRequestHeader "Content-Type" ["application/json"]
-          $ setRequestHeader "Authorization" ["Bearer " <> encodeUtf8 apiKey]
-          $ setRequestBodyJSON
-            ( OpenAIEmbeddingsRequest
-                { inputReq = TextList txts
-                , modelReq = model
-                , dimensionsReq = dimensions
-                , encodingFormatReq = encodingFormat
-                , embeddingsUserReq = embeddingsUser
-                }
-            )
-          $ request_
+        setRequestMethod "POST" $
+          setRequestSecure True $
+            setRequestHeader "Content-Type" ["application/json"] $
+              setRequestHeader "Authorization" ["Bearer " <> encodeUtf8 apiKey] $
+                setRequestBodyJSON
+                  ( OpenAIEmbeddingsRequest
+                      { inputReq = TextList txts
+                      , modelReq = model
+                      , dimensionsReq = dimensions
+                      , encodingFormatReq = encodingFormat
+                      }
+                  )
+                  request_
 
   response <- httpLbs req manager
   let status = statusCode $ getResponseStatus response
@@ -195,7 +192,13 @@ openAIEmbeddingsRequest OpenAIEmbeddings {..} txts = do
     then case eitherDecode (getResponseBody response) of
       Left err -> return $ Left $ "JSON parse error: " <> err
       Right completionResponse -> return $ Right completionResponse
-    else return $ Left $ "API error: " <> show status <> " " <> show (getResponseBody response)
+    else
+      return $
+        Left $
+          "API error: "
+            <> show status
+            <> " "
+            <> show (getResponseBody response)
 
 instance Embeddings OpenAIEmbeddings where
   embedDocuments openAIEmbeddings docs = do
@@ -237,6 +240,5 @@ defaultOpenAIEmbeddings =
     , model = textEmbedding3Small
     , dimensions = Nothing
     , encodingFormat = Nothing
-    , embeddingsUser = Nothing
     , timeout = Nothing
     }
