@@ -48,13 +48,13 @@ module Langchain.LLM.Core
   ) where
 
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import qualified Data.Map as HM
-import qualified Data.Aeson.KeyMap as KM
 import Data.Aeson
+import qualified Data.Aeson.KeyMap as KM
 import Data.List.NonEmpty
+import qualified Data.Map as HM
 import Data.Text (Text)
-import GHC.Generics
 import Data.Text.Encoding (encodeUtf8)
+import GHC.Generics
 
 {- | Callbacks for handling streaming responses from a language model.
 This allows real-time processing of tokens as they are generated and an action
@@ -122,23 +122,26 @@ data Message = Message
 
 -- Function call details
 data ToolFunction = ToolFunction
-  { toolFunctionName      :: Text
+  { toolFunctionName :: Text
   , toolFunctionArguments :: HM.Map Text Value
-  } deriving (Show, Eq)
+  }
+  deriving (Show, Eq)
 
 -- Main tool call structure
 data ToolCall = ToolCall
-  { toolCallId       :: Text
-  , toolCallType     :: Text
+  { toolCallId :: Text
+  , toolCallType :: Text
   , toolCallFunction :: ToolFunction
-  } deriving (Show, Eq)
+  }
+  deriving (Show, Eq)
 
 -- ToJSON instance for ToolFunction
 instance ToJSON ToolFunction where
-  toJSON (ToolFunction name args) = object
-    [ "name"      .= name
-    , "arguments" .= args
-    ]
+  toJSON (ToolFunction name args) =
+    object
+      [ "name" .= name
+      , "arguments" .= args
+      ]
 
 -- FromJSON instance for ToolFunction
 instance FromJSON ToolFunction where
@@ -155,18 +158,19 @@ instance FromJSON ToolFunction where
 
 -- ToJSON instance for ToolCall
 instance ToJSON ToolCall where
-  toJSON (ToolCall callId callType func) = object
-    [ "id"       .= callId
-    , "type"     .= callType
-    , "function" .= func
-    ]
+  toJSON (ToolCall callId callType func) =
+    object
+      [ "id" .= callId
+      , "type" .= callType
+      , "function" .= func
+      ]
 
 -- FromJSON instance for ToolCall
 instance FromJSON ToolCall where
   parseJSON = withObject "ToolCall" $ \obj -> do
-    callId   <- obj .: "id"
+    callId <- obj .: "id"
     callType <- obj .: "type"
-    func     <- obj .: "function"
+    func <- obj .: "function"
     return $ ToolCall callId callType func
 
 {- | Additional data for a message, such as a name or tool calls.
@@ -181,7 +185,7 @@ data MessageData = MessageData
   , messageImages :: Maybe [Text]
   -- ^ Base64 encoded image data list
   , thinking :: Maybe Text
-  -- ^ Thinking 
+  -- ^ Thinking
   }
   deriving (Eq, Show)
 
@@ -296,5 +300,5 @@ class LLM llm where
   streamM llm chatHistory sHandler mbParams = liftIO $ stream llm chatHistory sHandler mbParams
 
 class MessageConvertible a where
-  to   :: Message -> a
+  to :: Message -> a
   from :: a -> Message

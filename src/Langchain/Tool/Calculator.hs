@@ -1,18 +1,18 @@
-{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Langchain.Tool.Calculator
-  ( CalculatorTool(..)
+  ( CalculatorTool (..)
   , Expr (..)
   , parseExpression
   , evaluateExpression
   ) where
 
+import Control.Monad (void)
 import Data.Text (Text)
 import qualified Data.Text as T
+import Langchain.Tool.Core (Tool (..))
 import Text.ParserCombinators.Parsec
-import Langchain.Tool.Core (Tool(..))
-import Control.Monad (void)
 
 -- | Expression data type for our calculator
 data Expr
@@ -31,12 +31,13 @@ data CalculatorTool = CalculatorTool
 instance Tool CalculatorTool where
   type Input CalculatorTool = Text
   type Output CalculatorTool = Either String Double
-  
+
   toolName _ = "calculator"
-  
-  toolDescription _ = "A calculator tool that can perform basic arithmetic operations. " <>
-                     "Input should be a mathematical expression like '2 + 3 * 4'."
-  
+
+  toolDescription _ =
+    "A calculator tool that can perform basic arithmetic operations. "
+      <> "Input should be a mathematical expression like '2 + 3 * 4'."
+
   runTool _ input = do
     case parseExpression input of
       Left err -> return $ Left $ "Failed to parse expression: " ++ show err
@@ -52,50 +53,52 @@ parseExpression = parse expr "" . T.unpack
       left <- mulDivExpr
       rest left
       where
-        rest left = 
-          (do
-            void $ char '+' <* spaces
-            right <- mulDivExpr
-            rest (Add left right))
-          <|> 
-          (do
-            void $ char '-' <* spaces
-            right <- mulDivExpr
-            rest (Sub left right))
-          <|> return left
+        rest left =
+          ( do
+              void $ char '+' <* spaces
+              right <- mulDivExpr
+              rest (Add left right)
+          )
+            <|> ( do
+                    void $ char '-' <* spaces
+                    right <- mulDivExpr
+                    rest (Sub left right)
+                )
+            <|> return left
 
     mulDivExpr = do
       left <- powExpr
       rest left
       where
-        rest left = 
-          (do
-            void $ char '*' <* spaces
-            right <- powExpr
-            rest (Mul left right))
-          <|> 
-          (do
-            void $ char '/' <* spaces
-            right <- powExpr
-            rest (Div left right))
-          <|> return left
+        rest left =
+          ( do
+              void $ char '*' <* spaces
+              right <- powExpr
+              rest (Mul left right)
+          )
+            <|> ( do
+                    void $ char '/' <* spaces
+                    right <- powExpr
+                    rest (Div left right)
+                )
+            <|> return left
 
     powExpr = do
       left <- factor
       rest left
       where
-        rest left = 
-          (do
-            void $ char '^' <* spaces
-            right <- factor
-            rest (Pow left right))
-          <|> return left
+        rest left =
+          ( do
+              void $ char '^' <* spaces
+              right <- factor
+              rest (Pow left right)
+          )
+            <|> return left
 
-    factor = 
+    factor =
       (Number_ . read <$> numberStr)
-      <|> 
-      (spaces *> char '(' *> spaces *> expr <* spaces <* char ')' <* spaces)
-      
+        <|> (spaces *> char '(' *> spaces *> expr <* spaces <* char ')' <* spaces)
+
     numberStr = do
       i <- many1 digit
       d <- option "" $ (:) <$> char '.' <*> many1 digit

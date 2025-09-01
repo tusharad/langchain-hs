@@ -7,8 +7,8 @@ import Data.Ollama.Chat
   ( Format (..)
   )
 import Data.Ollama.Common.SchemaBuilder
-import Langchain.LLM.Ollama
 import qualified Data.Text.IO as T
+import Langchain.LLM.Ollama
 
 runApp :: IO ()
 runApp = do

@@ -44,26 +44,31 @@ instance BaseMemory TokenBufferMemory where
   messages TokenBufferMemory {..} = pure $ Right tokenBufferMessages
   addMessage t@TokenBufferMemory {..} newMsg = do
     let newMsgTokenCount = countTokens [newMsg]
-        currentMsgsTokenCount = countTokens $ NE.toList tokenBufferMessages 
-    if newMsgTokenCount > maxTokens then 
-      pure (Left "New message is exceeding limit")
-    else if newMsgTokenCount + currentMsgsTokenCount <= maxTokens then 
-      pure (Right $ t { tokenBufferMessages = tokenBufferMessages <> NE.fromList [newMsg] })
-    else trimNonSystemMsgs (NE.toList tokenBufferMessages) newMsgTokenCount
+        currentMsgsTokenCount = countTokens $ NE.toList tokenBufferMessages
+    if newMsgTokenCount > maxTokens
+      then
+        pure (Left "New message is exceeding limit")
+      else
+        if newMsgTokenCount + currentMsgsTokenCount <= maxTokens
+          then
+            pure (Right $ t {tokenBufferMessages = tokenBufferMessages <> NE.fromList [newMsg]})
+          else trimNonSystemMsgs (NE.toList tokenBufferMessages) newMsgTokenCount
     where
       trimNonSystemMsgs msgs newMsgTokenCount = do
         let trimmedMsgs = removeOldestNonSystem msgs
-        if trimmedMsgs == msgs then -- If no more non sys msg left
-          pure (Left "Cannot add new message since system message and new message excedds limit")
-        else
-          if countTokens trimmedMsgs + newMsgTokenCount <= maxTokens then 
-            pure (Right $ t { tokenBufferMessages = NE.fromList $ trimmedMsgs <> [newMsg] })
-          else trimNonSystemMsgs trimmedMsgs newMsgTokenCount
-      
+        if trimmedMsgs == msgs -- If no more non sys msg left
+          then
+            pure (Left "Cannot add new message since system message and new message excedds limit")
+          else
+            if countTokens trimmedMsgs + newMsgTokenCount <= maxTokens
+              then
+                pure (Right $ t {tokenBufferMessages = NE.fromList $ trimmedMsgs <> [newMsg]})
+              else trimNonSystemMsgs trimmedMsgs newMsgTokenCount
+
       removeOldestNonSystem = go
         where
-         go [] = []
-         go (m:ms)
+          go [] = []
+          go (m : ms)
             | isSystem m = m : go ms
             | otherwise = ms
 

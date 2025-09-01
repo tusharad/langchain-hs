@@ -19,8 +19,9 @@ runApp = do
   let mem =
         WindowBufferMemory
           { maxWindowSize = 10
-          , windowBufferMessages = HM.singleton 
-            (Message System "You are a AI assistant" defaultMessageData)
+          , windowBufferMessages =
+              HM.singleton
+                (Message System "You are a AI assistant" defaultMessageData)
           }
   let as =
         AgentState
@@ -28,8 +29,12 @@ runApp = do
           , agentToolResults = []
           , agentSteps = []
           }
-  eRes <- runAgent ag as "https://tushar-adhatrao.in give me link of any repository from the github link from provided site"
+  eRes <-
+    runAgent
+      ag
+      as
+      "https://tushar-adhatrao.in give me link of any repository from the github link from provided site"
   case eRes of
     Left err -> putStrLn err
-    Right aFinish -> do 
-       print $ returnValues aFinish
+    Right aFinish -> do
+      print $ returnValues aFinish

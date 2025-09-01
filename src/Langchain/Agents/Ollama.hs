@@ -127,9 +127,10 @@ instance Agent OllamaAgent where
       msgs <- ExceptT $ messages agentMemory
       let ollama = Ollama agentModelName []
           toolDefs = map anyToolToInputTool ollamaAvailableTools
-          params = LLMOllama.defaultOllamaParams {
-                LLMOllama.tools = Just toolDefs
-            }
+          params =
+            LLMOllama.defaultOllamaParams
+              { LLMOllama.tools = Just toolDefs
+              }
       msg <- ExceptT $ chat ollama msgs (Just params)
       case toolCalls (messageData msg) of
         Nothing ->
@@ -155,7 +156,7 @@ instance Agent OllamaAgent where
               let action = toolCallToAgentAction toolCall
                in return $ Continue action
 
-  agentPrompt OllamaAgent{..} =
+  agentPrompt OllamaAgent {..} =
     return $ PromptTemplate $ defaultPrompt ollamaAvailableTools
 
   agentTools OllamaAgent {..} = return ollamaAvailableTools

@@ -70,7 +70,7 @@ convertToNumber (Number n) = toBoundedInteger n
 convertToNumber _ = Nothing
 
 executeFunction :: ToolCall -> IO ()
-executeFunction (ToolCall _ _ ToolFunction{..}) = do
+executeFunction (ToolCall _ _ ToolFunction {..}) = do
   if toolFunctionName == "addTwoNumbers"
     then do
       case HM.lookup "a" toolFunctionArguments >>= convertToNumber of

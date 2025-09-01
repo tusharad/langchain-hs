@@ -6,12 +6,12 @@ module App.OpenRouter.ToolCall (runApp) where
 import Data.Aeson
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Map as HM
+import Data.Maybe (fromMaybe)
 import Data.Scientific
 import qualified Data.Text as T
 import qualified Langchain.LLM.Internal.OpenAI as OpenAIInternal
 import Langchain.LLM.OpenAICompatible
 import System.Environment
-import Data.Maybe (fromMaybe)
 
 addTwoNumbers :: Int -> Int -> Int
 addTwoNumbers = (+)
@@ -34,10 +34,14 @@ runApp = do
           )
       paramProp =
         HM.fromList
-          [ ("a", 
-                OpenAIInternal.FunctionParameters "number" Nothing Nothing Nothing)
-          , ("b", 
-                OpenAIInternal.FunctionParameters "number" Nothing Nothing Nothing)
+          [
+            ( "a"
+            , OpenAIInternal.FunctionParameters "number" Nothing Nothing Nothing
+            )
+          ,
+            ( "b"
+            , OpenAIInternal.FunctionParameters "number" Nothing Nothing Nothing
+            )
           ]
       functionParams =
         OpenAIInternal.FunctionParameters

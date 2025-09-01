@@ -6,6 +6,7 @@ import Control.Monad (forever, when)
 import Control.Monad.Trans.Except
 import Data.List.NonEmpty (NonEmpty (..), (<|))
 import qualified Data.Map.Strict as HM
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
@@ -16,7 +17,6 @@ import Langchain.PromptTemplate
 import Langchain.Retriever.Core
 import Langchain.VectorStore.InMemory
 import System.Environment
-import Data.Maybe (fromMaybe)
 
 -- Template for system prompt
 systemTemplate :: Text

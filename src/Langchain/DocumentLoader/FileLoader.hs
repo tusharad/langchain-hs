@@ -49,7 +49,7 @@ instance BaseLoader FileLoader where
   -- \| Load document with file source metadata
   --
   --  Example:
-  
+
   --  >>> load (FileLoader "test.txt")
   --  Right [Document {pageContent = "Test content", metadata = fromList [("source", "test.txt")]}]
   --
@@ -66,7 +66,7 @@ instance BaseLoader FileLoader where
   -- \| Load and split content using default character splitter
   --
   --  Example:
-  
+
   --  >>> loadAndSplit (FileLoader "split.txt")
   --  Right ["Paragraph 1", "Paragraph 2", ...]
   --

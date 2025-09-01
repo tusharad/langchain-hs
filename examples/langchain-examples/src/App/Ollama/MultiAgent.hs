@@ -100,16 +100,16 @@ runApp = do
           let agentInitialPrompt =
                 T.unlines
                   [ "/no_think You are an assistant that provides more details about a subject."
-                  , "Based on the following description of an image, " 
-                    <> "find out more about the main subject using your tools."
+                  , "Based on the following description of an image, "
+                      <> "find out more about the main subject using your tools."
                   , "Description: \"" <> description <> "\""
                   , "To call a tool, Only respond with TOOL: (<single word query>)"
                   , "The single word query should be the subject you want info of"
                   , "For e.g to get info about pitbull dog, respond with TOOL: (pitbull_dog)"
                   , "Once you have enough information, write final answer with FINAL ANSWER:"
                   , "Only respond with either TOOL: or FINAL ANSWER: and nothing else"
-                  , "Your goal is to provide details about the subject " 
-                    <> " of the image not just image description"
+                  , "Your goal is to provide details about the subject "
+                      <> " of the image not just image description"
                   ]
 
           let initialState =

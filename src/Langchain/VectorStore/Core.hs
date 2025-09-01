@@ -31,10 +31,10 @@ results <- similaritySearch updatedStore "functional programming" 5
 module Langchain.VectorStore.Core (VectorStore (..))
 where
 
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Int (Int64)
 import Data.Text (Text)
 import Langchain.DocumentLoader.Core
-import Control.Monad.IO.Class (MonadIO, liftIO)
 
 -- TODO: Add delete document mechanism, for this we need to generate and use id (Int)
 
@@ -74,7 +74,7 @@ class VectorStore vs where
   --   >>> delete myStore [123]
   --   Right (storeWithoutDoc123)
   delete :: vs -> [Int64] -> IO (Either String vs)
-  
+
   deleteM :: MonadIO m => vs -> [Int64] -> m (Either String vs)
   deleteM store ids = liftIO $ delete store ids
 

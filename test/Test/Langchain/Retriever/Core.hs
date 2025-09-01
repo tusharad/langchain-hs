@@ -17,7 +17,7 @@ import Data.Text (Text)
 
 data DummyLLM = DummyLLM
 
---TODO: Add some real world examples here
+-- TODO: Add some real world examples here
 instance LLM DummyLLM where
   type LLMParams DummyLLM = String
   type LLMStreamTokenType DummyLLM = Text

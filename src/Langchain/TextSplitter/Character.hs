@@ -38,7 +38,7 @@ module Langchain.TextSplitter.Character
 import Data.Text (Text)
 import qualified Data.Text as T
 
-{- | Configuration for character-based text splitting 
+{- | Configuration for character-based text splitting
 Contains:
 
 - 'chunkSize' : Maximum characters per chunk
@@ -52,7 +52,7 @@ data CharacterSplitterOps = CharacterSplitterOps
   }
   deriving (Show, Eq)
 
-{- | Default splitter configuration 
+{- | Default splitter configuration
 
 - 100 character chunks
 - Splits on double newlines ("\n\n")

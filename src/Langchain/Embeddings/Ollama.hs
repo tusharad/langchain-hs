@@ -38,10 +38,10 @@ module Langchain.Embeddings.Ollama
 
 import Data.Maybe
 import Data.Ollama.Embeddings
+import qualified Data.Ollama.Embeddings as O
 import Data.Text (Text)
 import Langchain.DocumentLoader.Core
 import Langchain.Embeddings.Core
-import qualified Data.Ollama.Embeddings as O
 
 {- | Ollama-specific embedding configuration
 Contains parameters for controlling:
@@ -68,27 +68,26 @@ data OllamaEmbeddings = OllamaEmbeddings
   deriving (Show, Eq)
 
 instance Embeddings OllamaEmbeddings where
-  -- | Document embedding implementation:
+  -- \| Document embedding implementation:
   --  Processes each document individually through Ollama's API.
   --
   --  Example:
   --  >>> let doc = Document "Test content" mempty
   --  >>> embedDocuments ollamaEmb [doc]
   --  Right [[0.1, 0.2, ...], ...]
-  --
   embedDocuments (OllamaEmbeddings {..}) docs = do
     -- For each input text, make an individual API call
-    eRes <- embeddingOps
-                model
-                (map pageContent docs)
-                defaultTruncate
-                defaultKeepAlive
-                modelOptions
-                Nothing
+    eRes <-
+      embeddingOps
+        model
+        (map pageContent docs)
+        defaultTruncate
+        defaultKeepAlive
+        modelOptions
+        Nothing
     case eRes of
-        Left ollamaErr -> return $ Left $ show ollamaErr
-        Right r -> return $ Right $ respondedEmbeddings r
-        
+      Left ollamaErr -> return $ Left $ show ollamaErr
+      Right r -> return $ Right $ respondedEmbeddings r
 
   -- \| Query embedding implementation:
   --  Generates vector representation for search queries.
