@@ -57,6 +57,7 @@ toOpenAI Gemini {..} =
 
 instance LLM.LLM Gemini where
   type LLMParams Gemini = OpenAI.OpenAIParams
+  type LLMStreamTokenType Gemini = Text
 
   generate llm = LLM.generate (toOpenAI llm)
   chat llm = LLM.chat (toOpenAI llm)
