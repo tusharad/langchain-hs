@@ -26,6 +26,7 @@ source-repository head
 library
   exposed-modules:
       App.Gemini.Embeddings
+      App.Gemini.Streaming
       App.Ollama.Agent
       App.Ollama.MultiAgent
       App.Ollama.StructuredOutput

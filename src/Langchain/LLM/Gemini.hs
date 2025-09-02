@@ -14,10 +14,11 @@ This module provides the 'Gemini' data type and implements the 'LLM' typeclass f
 It supports generating text, handling chat interactions, and streaming responses using Gemini's OpenAI compatibilty API.
 for more info, https://ai.google.dev/gemini-api/docs/openai
 
-This deepseek type uses OpenAI module with baseUrl as "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
+This gemini type uses OpenAI module with baseUrl as "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
 -}
 module Langchain.LLM.Gemini
   ( Gemini (..)
+  , defaultGemini
   , module Langchain.LLM.Core
   ) where
 
@@ -36,7 +37,7 @@ data Gemini = Gemini
   , callbacks :: [Callback]
   -- ^ A list of callbacks for handling events during LLM operations.
   , baseUrl :: Maybe String
-  -- ^ Base url; default "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+  -- ^ Base url; default "https://generativelanguage.googleapis.com/v1beta/openai"
   }
 
 instance Show Gemini where
@@ -51,7 +52,7 @@ toOpenAI Gemini {..} =
     , OpenAI.baseUrl =
         Just $
           fromMaybe
-            "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+            "https://generativelanguage.googleapis.com/v1beta/openai"
             baseUrl
     }
 
@@ -62,3 +63,12 @@ instance LLM.LLM Gemini where
   generate llm = LLM.generate (toOpenAI llm)
   chat llm = LLM.chat (toOpenAI llm)
   stream llm = LLM.stream (toOpenAI llm)
+
+defaultGemini :: Gemini
+defaultGemini =
+  Gemini
+    { apiKey = ""
+    , geminiModelName = "gemini-2.5-flash"
+    , callbacks = []
+    , baseUrl = Just "https://generativelanguage.googleapis.com/v1beta/openai"
+    }
