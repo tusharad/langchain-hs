@@ -31,6 +31,7 @@ import qualified Data.Text as T
 import Langchain.Callback
 import Langchain.LLM.Core
 import qualified Langchain.LLM.Core as LLM
+import qualified Langchain.LLM.Internal.OpenAI as OpenAI
 import qualified Langchain.LLM.OpenAI as OpenAI
 
 -- | Generic OpenAICompatible implementation for any service with an OpenAI-compatible API
@@ -64,7 +65,7 @@ toOpenAI OpenAICompatible {..} =
 
 instance LLM.LLM OpenAICompatible where
   type LLMParams OpenAICompatible = OpenAI.OpenAIParams
-  type LLMStreamTokenType OpenAICompatible = Text
+  type LLMStreamTokenType OpenAICompatible = OpenAI.ChatCompletionChunk
   generate model = LLM.generate (toOpenAI model)
   chat model = LLM.chat (toOpenAI model)
   stream model = LLM.stream (toOpenAI model)

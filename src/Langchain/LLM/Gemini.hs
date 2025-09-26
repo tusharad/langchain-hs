@@ -27,6 +27,7 @@ import Data.Text (Text)
 import Langchain.Callback
 import Langchain.LLM.Core
 import qualified Langchain.LLM.Core as LLM
+import qualified Langchain.LLM.Internal.OpenAI as OpenAI
 import qualified Langchain.LLM.OpenAI as OpenAI
 
 data Gemini = Gemini
@@ -58,7 +59,7 @@ toOpenAI Gemini {..} =
 
 instance LLM.LLM Gemini where
   type LLMParams Gemini = OpenAI.OpenAIParams
-  type LLMStreamTokenType Gemini = Text
+  type LLMStreamTokenType Gemini = OpenAI.ChatCompletionChunk
 
   generate llm = LLM.generate (toOpenAI llm)
   chat llm = LLM.chat (toOpenAI llm)

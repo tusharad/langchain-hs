@@ -25,6 +25,7 @@ import Data.Text (Text)
 import Langchain.Callback
 import Langchain.LLM.Core
 import qualified Langchain.LLM.Core as LLM
+import qualified Langchain.LLM.Internal.OpenAI as OpenAI
 import qualified Langchain.LLM.OpenAI as OpenAI
 
 data Deepseek = Deepseek
@@ -52,7 +53,7 @@ toOpenAI Deepseek {..} =
 
 instance LLM.LLM Deepseek where
   type LLMParams Deepseek = OpenAI.OpenAIParams
-  type LLMStreamTokenType Deepseek = Text
+  type LLMStreamTokenType Deepseek = OpenAI.ChatCompletionChunk
 
   generate deepseek = LLM.generate (toOpenAI deepseek)
   chat deepseek = LLM.chat (toOpenAI deepseek)

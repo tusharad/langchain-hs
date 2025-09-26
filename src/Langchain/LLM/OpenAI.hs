@@ -53,7 +53,7 @@ module Langchain.LLM.OpenAI
 
 import qualified Data.List.NonEmpty as NE
 import Data.Map (Map)
-import Data.Maybe (fromMaybe, listToMaybe)
+import Data.Maybe (listToMaybe)
 import Data.Text (Text)
 import Langchain.Callback (Callback)
 import Langchain.LLM.Core
@@ -88,7 +88,7 @@ and streaming responses using OpenAI's API.
 -}
 instance LLM.LLM OpenAI where
   type LLMParams OpenAI = OpenAIParams
-  type LLMStreamTokenType OpenAI = Text
+  type LLMStreamTokenType OpenAI = OpenAI.ChatCompletionChunk
 
   generate OpenAI {..} prompt mbOpenAIParams = do
     eRes <-
@@ -230,15 +230,8 @@ instance LLM.LLM OpenAI where
       req
       OpenAI.OpenAIStreamHandler
         { OpenAI.onComplete = onComplete
-        , OpenAI.onToken = onToken . chunkToText
+        , OpenAI.onToken = onToken
         }
-    where
-      chunkToText :: OpenAI.ChatCompletionChunk -> Text
-      chunkToText OpenAI.ChatCompletionChunk {..} = do
-        case listToMaybe chunkChoices of
-          Nothing -> ""
-          Just OpenAI.ChunkChoice {..} ->
-            fromMaybe "" ((\OpenAI.Delta {..} -> contentForDelta) delta)
 
 toOpenAIMessages :: LLM.ChatMessage -> [OpenAI.Message]
 toOpenAIMessages msgs = map go (NE.toList msgs)

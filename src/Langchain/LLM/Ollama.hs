@@ -129,7 +129,7 @@ case generate ollamaLLM "Hello" Nothing of
 -}
 instance LLM Ollama where
   type LLMParams Ollama = OllamaParams
-  type LLMStreamTokenType Ollama = Text
+  type LLMStreamTokenType Ollama = OllamaChat.ChatResponse
 
   -- \| Generate text from a prompt
   --  Returns Left on API errors, Right on success.
@@ -242,7 +242,7 @@ instance LLM Ollama where
             , OllamaChat.messages = NonEmpty.map to messages
             , OllamaChat.stream =
                 Just
-                  ( onToken . maybe "" O.content . O.message
+                  ( onToken
                   , pure ()
                   )
             , OllamaChat.tools = tools =<< mbOllamaParams
