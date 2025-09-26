@@ -5,15 +5,15 @@
 
 packages:
 - completed:
-    commit: c46f7e62e02f4750447346f6ae21e23b16b125ae
+    commit: 33807a3a5a507e99d92b26e245c0aed582fde581
     git: https://github.com/tusharad/ollama-haskell
     name: ollama-haskell
     pantry-tree:
-      sha256: 20f4c2e884da58f37859a4ed291b4ba9d425cc297f20af4f0f3b1c29ffa94317
-      size: 5162
-    version: 0.2.0.0
+      sha256: 1fb4b9ab3332b5f6921279e98b4aaaaad471b8fbd95b7133779ddb006fdf152a
+      size: 5869
+    version: 0.2.1.0
   original:
-    commit: c46f7e62e02f4750447346f6ae21e23b16b125ae
+    commit: 33807a3a5a507e99d92b26e245c0aed582fde581
     git: https://github.com/tusharad/ollama-haskell
 - completed:
     hackage: pdf-toolbox-document-0.1.4@sha256:6016daf47765f4a06b23a90e59741f34f7c2c8561091a9db3caa922339037108,2405
@@ -52,7 +52,7 @@ packages:
     hackage: cryptonite-0.30@sha256:12c85dea7be63e5ad90bcb487eb3846bf3c413347f94336fa1dede7b28f9936a,18301
 snapshots:
 - completed:
-    sha256: e045a4920067a5fb957833afea34d5b8ed5d4eb6ffde7ac444520bbe6d80fc97
-    size: 669633
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2025/7/22.yaml
-  original: nightly-2025-07-22
+    sha256: 13d66979bd6981ba243da44e9c9b875580000338338c45e0325375da9b542862
+    size: 696393
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2025/9/26.yaml
+  original: nightly-2025-09-26

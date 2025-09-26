@@ -92,9 +92,10 @@ data OllamaParams = OllamaParams
   , system :: Maybe Text
   -- ^ Optional system text that can be included in the generation context.
   , template :: Maybe Text
-  -- ^ An optional streaming function where the first function handles
-  --   each chunk of response, and the second flushes the stream.
-  --   ^ This will not work for chat and stream, use promptTemplate instead
+  {- ^ An optional streaming function where the first function handles
+  each chunk of response, and the second flushes the stream.
+  ^ This will not work for chat and stream, use promptTemplate instead
+  -}
   , raw :: Maybe Bool
   -- ^ An optional flag to return the raw response.
   , keepAlive :: Maybe Int
@@ -104,11 +105,13 @@ data OllamaParams = OllamaParams
   , responseTimeOut :: Maybe Int
   -- ^ Override default response timeout in seconds. Default = 900 seconds
   , options :: Maybe O.ModelOptions
-  -- ^ additional model parameters listed in the documentation for
-  --   the Modelfile such as temperature
+  {- ^ additional model parameters listed in the documentation for
+  the Modelfile such as temperature
+  -}
   , tools :: !(Maybe [O.InputTool])
-  -- ^ Optional tools that may be used in the chat.
-  --   Will only work for chat and stream and not Generate.
+  {- ^ Optional tools that may be used in the chat.
+  Will only work for chat and stream and not Generate.
+  -}
   , think :: !(Maybe Bool)
   -- ^ Optional flag to enable thinking mode.
   }
@@ -184,7 +187,7 @@ instance LLM Ollama where
     mapM_ (\cb -> cb LLMStart) cbs
     let ops =
           OllamaChat.defaultChatOps
-            { OllamaChat.chatModelName = model
+            { OllamaChat.modelName = model
             , OllamaChat.messages = NonEmpty.map to messages
             , OllamaChat.stream = Nothing
             , OllamaChat.tools = maybe Nothing tools mbOllamaParams
@@ -231,9 +234,9 @@ instance LLM Ollama where
     eRes <-
       OllamaChat.chat
         OllamaChat.defaultChatOps
-          { OllamaChat.chatModelName = model_
+          { OllamaChat.modelName = model_
           , OllamaChat.messages = NonEmpty.map to messages
-          , OllamaChat.stream = Just $ onToken . maybe "" O.content . O.message
+          , OllamaChat.stream = Just (onToken . maybe "" O.content . O.message, pure ())
           , OllamaChat.tools = maybe Nothing tools mbOllamaParams
           , OllamaChat.format = maybe Nothing format mbOllamaParams
           , OllamaChat.keepAlive = maybe Nothing keepAlive mbOllamaParams

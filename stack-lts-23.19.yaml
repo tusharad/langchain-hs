@@ -3,4 +3,4 @@ packages:
 - .
 extra-deps:
   - git: https://github.com/tusharad/ollama-haskell
-    commit: c46f7e62e02f4750447346f6ae21e23b16b125ae
+    commit: 33807a3a5a507e99d92b26e245c0aed582fde581

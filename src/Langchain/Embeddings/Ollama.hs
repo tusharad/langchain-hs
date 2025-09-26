@@ -85,6 +85,7 @@ instance Embeddings OllamaEmbeddings where
         defaultKeepAlive
         modelOptions
         Nothing
+        Nothing
     case eRes of
       Left ollamaErr -> return $ Left $ show ollamaErr
       Right r -> return $ Right $ respondedEmbeddings r
@@ -104,6 +105,7 @@ instance Embeddings OllamaEmbeddings where
         defaultTruncate
         defaultKeepAlive
         modelOptions
+        Nothing
         Nothing
     case fmap respondedEmbeddings res of
       Left err -> pure $ Left (show err)

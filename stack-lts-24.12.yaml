@@ -1,7 +1,6 @@
-resolver: lts-22.43
+resolver: lts-24.12
 packages:
 - .
 extra-deps:
-
   - git: https://github.com/tusharad/ollama-haskell
     commit: 33807a3a5a507e99d92b26e245c0aed582fde581

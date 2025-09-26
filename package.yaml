@@ -29,7 +29,7 @@ dependencies:
 - containers >= 0.6 && < 0.9
 - directory >= 1.3.6 && < 1.4
 - pdf-toolbox-document == 0.1.4
-- ollama-haskell >= 0.2
+- ollama-haskell >= 0.2.1
 - http-types >= 0.11 && < 0.13
 - http-conduit >= 2 && < 3
 - conduit >= 1.2 && < 1.4
