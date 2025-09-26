@@ -1,6 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Test.Langchain.Agent.Core (tests) where
@@ -51,7 +50,7 @@ instance Agent StepSequenceAgent where
 
 -- Test Memory Implementation
 
-data TestMemory = TestMemory [Message]
+newtype TestMemory = TestMemory [Message]
 
 instance BaseMemory TestMemory where
   addMessage (TestMemory msgs) newMsg = return $ Right $ TestMemory (msgs ++ [newMsg])
@@ -83,7 +82,7 @@ tests =
         result <- executeTool tools "faulty-tool" "input"
         assertBool
           "Should return execution error"
-          ("Intentional tool error" `isInfixOf` (pack $ fromLeft "" result))
+          ("Intentional tool error" `isInfixOf` pack (fromLeft "" result))
     , testCase "runAgentLoop max iterations exceeded" $ do
         agentRef <- newIORef []
         let agent = StepSequenceAgent agentRef []

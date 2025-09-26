@@ -55,48 +55,52 @@ instance VectorStore InMemoryStore where
 @
 -}
 class VectorStore vs where
-  -- | Add documents to the vector store
-  --
-  --   Example:
-  --
-  --   >>> addDocuments myStore [Document "Test content" mempty]
-  --   Right (updatedStoreWithNewDocs)
+  {- | Add documents to the vector store
+
+  Example:
+
+  >>> addDocuments myStore [Document "Test content" mempty]
+  Right (updatedStoreWithNewDocs)
+  -}
   addDocuments :: vs -> [Document] -> IO (Either String vs)
 
   addDocumentsM :: MonadIO m => vs -> [Document] -> m (Either String vs)
   addDocumentsM store docs = liftIO $ addDocuments store docs
 
-  -- |
-  --   Requires document ID tracking to be implemented in store instances.
-  --
-  --   Example usage (when implemented):
-  --
-  --   >>> delete myStore [123]
-  --   Right (storeWithoutDoc123)
+  {- |
+  Requires document ID tracking to be implemented in store instances.
+
+  Example usage (when implemented):
+
+  >>> delete myStore [123]
+  Right (storeWithoutDoc123)
+  -}
   delete :: vs -> [Int64] -> IO (Either String vs)
 
   deleteM :: MonadIO m => vs -> [Int64] -> m (Either String vs)
   deleteM store ids = liftIO $ delete store ids
 
-  -- | Find documents similar to query text
-  --   Uses embedded vector representations for semantic search.
-  --
-  --   Example:
-  --
-  --   >>> similaritySearch store "Haskell monads" 3
-  --   Right [Document "Monads in FP...", ...]
+  {- | Find documents similar to query text
+  Uses embedded vector representations for semantic search.
+
+  Example:
+
+  >>> similaritySearch store "Haskell monads" 3
+  Right [Document "Monads in FP...", ...]
+  -}
   similaritySearch :: vs -> Text -> Int -> IO (Either String [Document])
 
   similaritySearchM :: MonadIO m => vs -> Text -> Int -> m (Either String [Document])
   similaritySearchM store query k = liftIO $ similaritySearch store query k
 
-  -- | Find documents similar to vector representation
-  --   For direct vector comparisons without text conversion.
-  --
-  --   Example:
-  --
-  --   >>> similaritySearchByVector store [0.1, 0.3, ...] 5
-  --   Right [mostSimilarDoc1, ...]
+  {- | Find documents similar to vector representation
+  For direct vector comparisons without text conversion.
+
+  Example:
+
+  >>> similaritySearchByVector store [0.1, 0.3, ...] 5
+  Right [mostSimilarDoc1, ...]
+  -}
   similaritySearchByVector :: vs -> [Float] -> Int -> IO (Either String [Document])
 
   similaritySearchByVectorM :: MonadIO m => vs -> [Float] -> Int -> m (Either String [Document])

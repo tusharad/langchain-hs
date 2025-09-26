@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -97,33 +98,38 @@ instance LLM.LLM OpenAI where
             { OpenAI.model = openAIModelName
             , OpenAI.baseUrl = baseUrl
             , OpenAI.messages =
-                [OpenAI.defaultMessage {OpenAI.content = Just (OpenAI.StringContent prompt)}]
-            , OpenAI.timeout = maybe Nothing timeout mbOpenAIParams
-            , OpenAI.frequencyPenalty = maybe Nothing frequencyPenalty mbOpenAIParams
-            , OpenAI.logitBias = maybe Nothing logitBias mbOpenAIParams
-            , OpenAI.logprobs = maybe Nothing logprobs mbOpenAIParams
-            , OpenAI.maxCompletionTokens = maybe Nothing maxCompletionTokens mbOpenAIParams
-            , OpenAI.maxTokens = maybe Nothing maxTokens mbOpenAIParams
-            , OpenAI.metadata = maybe Nothing metadata mbOpenAIParams
-            , OpenAI.modalities = maybe Nothing modalities mbOpenAIParams
-            , OpenAI.n = maybe Nothing n mbOpenAIParams
-            , OpenAI.parallelToolCalls = maybe Nothing parallelToolCalls mbOpenAIParams
-            , OpenAI.prediction = maybe Nothing prediction mbOpenAIParams
-            , OpenAI.presencePenalty = maybe Nothing presencePenalty mbOpenAIParams
-            , OpenAI.reasoningEffort = maybe Nothing reasoningEffort mbOpenAIParams
-            , OpenAI.responseFormat = maybe Nothing responseFormat mbOpenAIParams
-            , OpenAI.seed = maybe Nothing seed mbOpenAIParams
-            , OpenAI.serviceTier = maybe Nothing serviceTier mbOpenAIParams
-            , OpenAI.stop = maybe Nothing stop mbOpenAIParams
-            , OpenAI.store = maybe Nothing store mbOpenAIParams
-            , OpenAI.temperature = maybe Nothing temperature mbOpenAIParams
-            , OpenAI.toolChoice = maybe Nothing toolChoice mbOpenAIParams
-            , OpenAI.tools = maybe Nothing tools mbOpenAIParams
-            , OpenAI.topLogprobs = maybe Nothing topLogprobs mbOpenAIParams
-            , OpenAI.topP = maybe Nothing topP mbOpenAIParams
-            , OpenAI.user = maybe Nothing user mbOpenAIParams
-            , OpenAI.webSearchOptions = maybe Nothing webSearchOptions mbOpenAIParams
-            , OpenAI.audio = maybe Nothing audio mbOpenAIParams
+                [ OpenAI.defaultMessage
+                    { OpenAI.content =
+                        Just
+                          (OpenAI.StringContent prompt)
+                    }
+                ]
+            , OpenAI.timeout = timeout =<< mbOpenAIParams
+            , OpenAI.frequencyPenalty = frequencyPenalty =<< mbOpenAIParams
+            , OpenAI.logitBias = logitBias =<< mbOpenAIParams
+            , OpenAI.logprobs = logprobs =<< mbOpenAIParams
+            , OpenAI.maxCompletionTokens = maxCompletionTokens =<< mbOpenAIParams
+            , OpenAI.maxTokens = maxTokens =<< mbOpenAIParams
+            , OpenAI.metadata = metadata =<< mbOpenAIParams
+            , OpenAI.modalities = modalities =<< mbOpenAIParams
+            , OpenAI.n = n =<< mbOpenAIParams
+            , OpenAI.parallelToolCalls = parallelToolCalls =<< mbOpenAIParams
+            , OpenAI.prediction = prediction =<< mbOpenAIParams
+            , OpenAI.presencePenalty = presencePenalty =<< mbOpenAIParams
+            , OpenAI.reasoningEffort = reasoningEffort =<< mbOpenAIParams
+            , OpenAI.responseFormat = responseFormat =<< mbOpenAIParams
+            , OpenAI.seed = seed =<< mbOpenAIParams
+            , OpenAI.serviceTier = serviceTier =<< mbOpenAIParams
+            , OpenAI.stop = stop =<< mbOpenAIParams
+            , OpenAI.store = store =<< mbOpenAIParams
+            , OpenAI.temperature = temperature =<< mbOpenAIParams
+            , OpenAI.toolChoice = toolChoice =<< mbOpenAIParams
+            , OpenAI.tools = tools =<< mbOpenAIParams
+            , OpenAI.topLogprobs = topLogprobs =<< mbOpenAIParams
+            , OpenAI.topP = topP =<< mbOpenAIParams
+            , OpenAI.user = user =<< mbOpenAIParams
+            , OpenAI.webSearchOptions = webSearchOptions =<< mbOpenAIParams
+            , OpenAI.audio = audio =<< mbOpenAIParams
             }
         )
     case eRes of
@@ -137,7 +143,7 @@ instance LLM.LLM OpenAI where
                   Right $
                     maybe
                       ""
-                      ( \c -> case c of
+                      ( \case
                           OpenAI.StringContent t -> t
                           OpenAI.ContentParts _ -> ""
                       )
@@ -150,32 +156,32 @@ instance LLM.LLM OpenAI where
             { OpenAI.model = openAIModelName
             , OpenAI.baseUrl = baseUrl
             , OpenAI.messages = toOpenAIMessages msgs
-            , OpenAI.timeout = maybe Nothing timeout mbOpenAIParams
-            , OpenAI.frequencyPenalty = maybe Nothing frequencyPenalty mbOpenAIParams
-            , OpenAI.logitBias = maybe Nothing logitBias mbOpenAIParams
-            , OpenAI.logprobs = maybe Nothing logprobs mbOpenAIParams
-            , OpenAI.maxCompletionTokens = maybe Nothing maxCompletionTokens mbOpenAIParams
-            , OpenAI.maxTokens = maybe Nothing maxTokens mbOpenAIParams
-            , OpenAI.metadata = maybe Nothing metadata mbOpenAIParams
-            , OpenAI.modalities = maybe Nothing modalities mbOpenAIParams
-            , OpenAI.n = maybe Nothing n mbOpenAIParams
-            , OpenAI.parallelToolCalls = maybe Nothing parallelToolCalls mbOpenAIParams
-            , OpenAI.prediction = maybe Nothing prediction mbOpenAIParams
-            , OpenAI.presencePenalty = maybe Nothing presencePenalty mbOpenAIParams
-            , OpenAI.reasoningEffort = maybe Nothing reasoningEffort mbOpenAIParams
-            , OpenAI.responseFormat = maybe Nothing responseFormat mbOpenAIParams
-            , OpenAI.seed = maybe Nothing seed mbOpenAIParams
-            , OpenAI.serviceTier = maybe Nothing serviceTier mbOpenAIParams
-            , OpenAI.stop = maybe Nothing stop mbOpenAIParams
-            , OpenAI.store = maybe Nothing store mbOpenAIParams
-            , OpenAI.temperature = maybe Nothing temperature mbOpenAIParams
-            , OpenAI.toolChoice = maybe Nothing toolChoice mbOpenAIParams
-            , OpenAI.tools = maybe Nothing tools mbOpenAIParams
-            , OpenAI.topLogprobs = maybe Nothing topLogprobs mbOpenAIParams
-            , OpenAI.topP = maybe Nothing topP mbOpenAIParams
-            , OpenAI.user = maybe Nothing user mbOpenAIParams
-            , OpenAI.webSearchOptions = maybe Nothing webSearchOptions mbOpenAIParams
-            , OpenAI.audio = maybe Nothing audio mbOpenAIParams
+            , OpenAI.timeout = timeout =<< mbOpenAIParams
+            , OpenAI.frequencyPenalty = frequencyPenalty =<< mbOpenAIParams
+            , OpenAI.logitBias = logitBias =<< mbOpenAIParams
+            , OpenAI.logprobs = logprobs =<< mbOpenAIParams
+            , OpenAI.maxCompletionTokens = maxCompletionTokens =<< mbOpenAIParams
+            , OpenAI.maxTokens = maxTokens =<< mbOpenAIParams
+            , OpenAI.metadata = metadata =<< mbOpenAIParams
+            , OpenAI.modalities = modalities =<< mbOpenAIParams
+            , OpenAI.n = n =<< mbOpenAIParams
+            , OpenAI.parallelToolCalls = parallelToolCalls =<< mbOpenAIParams
+            , OpenAI.prediction = prediction =<< mbOpenAIParams
+            , OpenAI.presencePenalty = presencePenalty =<< mbOpenAIParams
+            , OpenAI.reasoningEffort = reasoningEffort =<< mbOpenAIParams
+            , OpenAI.responseFormat = responseFormat =<< mbOpenAIParams
+            , OpenAI.seed = seed =<< mbOpenAIParams
+            , OpenAI.serviceTier = serviceTier =<< mbOpenAIParams
+            , OpenAI.stop = stop =<< mbOpenAIParams
+            , OpenAI.store = store =<< mbOpenAIParams
+            , OpenAI.temperature = temperature =<< mbOpenAIParams
+            , OpenAI.toolChoice = toolChoice =<< mbOpenAIParams
+            , OpenAI.tools = tools =<< mbOpenAIParams
+            , OpenAI.topLogprobs = topLogprobs =<< mbOpenAIParams
+            , OpenAI.topP = topP =<< mbOpenAIParams
+            , OpenAI.user = user =<< mbOpenAIParams
+            , OpenAI.webSearchOptions = webSearchOptions =<< mbOpenAIParams
+            , OpenAI.audio = audio =<< mbOpenAIParams
             }
         )
     case eRes of
@@ -185,19 +191,6 @@ instance LLM.LLM OpenAI where
           Nothing -> return $ Left "Did not received any response"
           Just resp -> return $ Right $ LLM.from $ OpenAI.message resp
 
-  {-
-  let OpenAI.Message {..} = OpenAI.message resp
-   in pure $
-        Right $
-          maybe
-            ""
-            ( \c -> case c of
-                OpenAI.StringContent t -> t
-                OpenAI.ContentParts _ -> ""
-            )
-            content
-            -}
-
   stream OpenAI {..} msgs LLM.StreamHandler {onComplete, onToken} mbOpenAIParams = do
     let req =
           OpenAI.defaultChatCompletionRequest
@@ -205,32 +198,32 @@ instance LLM.LLM OpenAI where
             , OpenAI.baseUrl = baseUrl
             , OpenAI.messages = toOpenAIMessages msgs
             , OpenAI.stream = Just True -- Enable streaming'
-            , OpenAI.timeout = maybe Nothing timeout mbOpenAIParams
-            , OpenAI.frequencyPenalty = maybe Nothing frequencyPenalty mbOpenAIParams
-            , OpenAI.logitBias = maybe Nothing logitBias mbOpenAIParams
-            , OpenAI.logprobs = maybe Nothing logprobs mbOpenAIParams
-            , OpenAI.maxCompletionTokens = maybe Nothing maxCompletionTokens mbOpenAIParams
-            , OpenAI.maxTokens = maybe Nothing maxTokens mbOpenAIParams
-            , OpenAI.metadata = maybe Nothing metadata mbOpenAIParams
-            , OpenAI.modalities = maybe Nothing modalities mbOpenAIParams
-            , OpenAI.n = maybe Nothing n mbOpenAIParams
-            , OpenAI.parallelToolCalls = maybe Nothing parallelToolCalls mbOpenAIParams
-            , OpenAI.prediction = maybe Nothing prediction mbOpenAIParams
-            , OpenAI.presencePenalty = maybe Nothing presencePenalty mbOpenAIParams
-            , OpenAI.reasoningEffort = maybe Nothing reasoningEffort mbOpenAIParams
-            , OpenAI.responseFormat = maybe Nothing responseFormat mbOpenAIParams
-            , OpenAI.seed = maybe Nothing seed mbOpenAIParams
-            , OpenAI.serviceTier = maybe Nothing serviceTier mbOpenAIParams
-            , OpenAI.stop = maybe Nothing stop mbOpenAIParams
-            , OpenAI.store = maybe Nothing store mbOpenAIParams
-            , OpenAI.temperature = maybe Nothing temperature mbOpenAIParams
-            , OpenAI.toolChoice = maybe Nothing toolChoice mbOpenAIParams
-            , OpenAI.tools = maybe Nothing tools mbOpenAIParams
-            , OpenAI.topLogprobs = maybe Nothing topLogprobs mbOpenAIParams
-            , OpenAI.topP = maybe Nothing topP mbOpenAIParams
-            , OpenAI.user = maybe Nothing user mbOpenAIParams
-            , OpenAI.webSearchOptions = maybe Nothing webSearchOptions mbOpenAIParams
-            , OpenAI.audio = maybe Nothing audio mbOpenAIParams
+            , OpenAI.timeout = timeout =<< mbOpenAIParams
+            , OpenAI.frequencyPenalty = frequencyPenalty =<< mbOpenAIParams
+            , OpenAI.logitBias = logitBias =<< mbOpenAIParams
+            , OpenAI.logprobs = logprobs =<< mbOpenAIParams
+            , OpenAI.maxCompletionTokens = maxCompletionTokens =<< mbOpenAIParams
+            , OpenAI.maxTokens = maxTokens =<< mbOpenAIParams
+            , OpenAI.metadata = metadata =<< mbOpenAIParams
+            , OpenAI.modalities = modalities =<< mbOpenAIParams
+            , OpenAI.n = n =<< mbOpenAIParams
+            , OpenAI.parallelToolCalls = parallelToolCalls =<< mbOpenAIParams
+            , OpenAI.prediction = prediction =<< mbOpenAIParams
+            , OpenAI.presencePenalty = presencePenalty =<< mbOpenAIParams
+            , OpenAI.reasoningEffort = reasoningEffort =<< mbOpenAIParams
+            , OpenAI.responseFormat = responseFormat =<< mbOpenAIParams
+            , OpenAI.seed = seed =<< mbOpenAIParams
+            , OpenAI.serviceTier = serviceTier =<< mbOpenAIParams
+            , OpenAI.stop = stop =<< mbOpenAIParams
+            , OpenAI.store = store =<< mbOpenAIParams
+            , OpenAI.temperature = temperature =<< mbOpenAIParams
+            , OpenAI.toolChoice = toolChoice =<< mbOpenAIParams
+            , OpenAI.tools = tools =<< mbOpenAIParams
+            , OpenAI.topLogprobs = topLogprobs =<< mbOpenAIParams
+            , OpenAI.topP = topP =<< mbOpenAIParams
+            , OpenAI.user = user =<< mbOpenAIParams
+            , OpenAI.webSearchOptions = webSearchOptions =<< mbOpenAIParams
+            , OpenAI.audio = audio =<< mbOpenAIParams
             }
     OpenAI.createChatCompletionStream
       apiKey

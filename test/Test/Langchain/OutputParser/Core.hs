@@ -54,7 +54,8 @@ tests =
     , testCase "CommaSeparatedList parser should trim whitespace" $
         parse " item1 , item2 , item3 " @?= Right (CommaSeparatedList ["item1", "item2", "item3"])
     , testCase "JSONOutputStructure parser should parse valid JSON" $
-        parse "{\"name\":\"John\",\"age\":30}" @?= (Right (JSONOutputStructure (Person "John" 30)))
+        parse "{\"name\":\"John\",\"age\":30}"
+          @?= Right (JSONOutputStructure (Person "John" 30))
     , testCase "JSONOutputStructure parser should fail on invalid JSON" $
         case parse "{not valid json}" :: Either String (JSONOutputStructure Person) of
           Left _ -> assertBool "Should be Left" True

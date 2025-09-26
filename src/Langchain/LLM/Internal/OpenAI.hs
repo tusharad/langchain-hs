@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -20,7 +19,7 @@ Key Features
 - Default values and configurations for common use cases
 - Comprehensive error handling for API interactions
 
-### Example Usage
+Example Usage
 
 @
 import Data.Text (Text)
@@ -119,6 +118,7 @@ module Langchain.LLM.Internal.OpenAI
   ) where
 
 import Conduit
+import Control.Monad (unless, when)
 import Data.Aeson
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as LBS
@@ -146,10 +146,11 @@ import Network.HTTP.Types.Status (statusCode)
 {- | Represents a chunk of the chat completion response in a streaming context.
 Contains a list of possible choices for the completion.
 -}
-data ChatCompletionChunk = ChatCompletionChunk
+newtype ChatCompletionChunk = ChatCompletionChunk
   { chunkChoices :: [ChunkChoice]
-  -- ^ List of choices in this chunk of the response
-  -- TODO: add Usage
+  {- ^ List of choices in this chunk of the response
+  TODO: add Usage
+  -}
   }
   deriving (Show)
 
@@ -173,7 +174,7 @@ instance FromJSON ChunkChoice where
     ChunkChoice <$> v .: "delta" <*> v .:? "finish_reason"
 
 -- | Represents the incremental content added in a chat completion chunk.
-data Delta = Delta
+newtype Delta = Delta
   { contentForDelta :: Maybe Text
   -- ^ Optional text content added in this chunk
   }
@@ -835,7 +836,7 @@ instance ToJSON ResponseFormat where
       ]
 
 -- | Options for streaming responses.
-data StreamOptions = StreamOptions
+newtype StreamOptions = StreamOptions
   { includeUsage :: Bool
   -- ^ Whether to include usage information
   }
@@ -873,7 +874,7 @@ instance FromJSON WebSearchOptions where
       <*> v .:? "user_location"
 
 -- | Represents user location.
-data UserLocation = UserLocation
+newtype UserLocation = UserLocation
   { approximate :: ApproximateLocation
   -- ^ Approximate location details
   }
@@ -890,7 +891,7 @@ instance FromJSON UserLocation where
     UserLocation <$> v .: "approximate"
 
 -- | Represents approximate location.
-data ApproximateLocation = ApproximateLocation
+newtype ApproximateLocation = ApproximateLocation
   { locationType :: Text
   -- ^ Type of the location
   }
@@ -999,14 +1000,13 @@ createChatCompletion apiKey r = do
           setRequestSecure True $
             setRequestHeader "Content-Type" ["application/json"] $
               setRequestHeader "Authorization" ["Bearer " <> encodeUtf8 apiKey] $
-                setRequestBodyJSON r $
-                  request_
+                setRequestBodyJSON r request_
 
   response <- httpLbs req manager
   let status = statusCode $ getResponseStatus response
   if status >= 200 && status < 300
     then case eitherDecode (getResponseBody response) of
-      Left err -> return $ Left $ "JSON parse error: " <> err <> (show $ getResponseBody response)
+      Left err -> return $ Left $ "JSON parse error: " <> err <> show (getResponseBody response)
       Right completionResponse -> return $ Right completionResponse
     else return $ Left $ "API error: " <> show status <> " " <> show (getResponseBody response)
 
@@ -1024,8 +1024,7 @@ createChatCompletionStream apiKey r OpenAIStreamHandler {..} = do
   let httpReq =
         setRequestHeader "Authorization" ["Bearer " <> encodeUtf8 apiKey] $
           setRequestHeader "Content-Type" ["application/json"] $
-            setRequestBodyJSON r $
-              request_
+            setRequestBodyJSON r request_
 
   manager <-
     newManager
@@ -1045,26 +1044,29 @@ createChatCompletionStream apiKey r OpenAIStreamHandler {..} = do
   return $ Right ()
   where
     processLine bufferRef line = do
-      if BS.isPrefixOf "data: " line
-        then do
-          if line == "data: [DONE]"
-            then return () -- Stream is complete
-            else do
-              let content = BS.drop 6 line -- Remove "data: " prefix
-              case decode (LBS.fromStrict content) of
-                Just chunk -> onToken chunk
-                Nothing -> do
-                  -- Handle potential partial JSON by buffering
-                  oldBuffer <- readIORef bufferRef
-                  let newBuffer = oldBuffer <> content
-                  writeIORef bufferRef newBuffer
-                  -- Try to parse the combined buffer
-                  case decode (LBS.fromStrict newBuffer) of
-                    Just chunk -> do
-                      onToken chunk
-                      writeIORef bufferRef BS.empty -- Clear buffer after successful parse
-                    Nothing -> return () -- Keep in buffer for next chunk
-        else return () -- Ignore non-data lines
+      when
+        (BS.isPrefixOf "data: " line)
+        ( do
+            unless
+              (line == "data: [DONE]")
+              ( do
+                  let content = BS.drop 6 line -- Remove "data: " prefix
+                  case decode (LBS.fromStrict content) of
+                    Just chunk -> onToken chunk
+                    Nothing -> do
+                      -- Handle potential partial JSON by buffering
+                      oldBuffer <- readIORef bufferRef
+                      let newBuffer = oldBuffer <> content
+                      writeIORef bufferRef newBuffer
+                      -- Try to parse the combined buffer
+                      case decode (LBS.fromStrict newBuffer) of
+                        Just chunk -> do
+                          onToken chunk
+                          writeIORef bufferRef BS.empty
+                        -- Clear buffer after successful parse
+                        Nothing -> return () -- Keep in buffer for next chunk
+              )
+        )
 
 -- | Default prediction output.
 defaultPredictionOutput :: PredictionOutput

@@ -82,7 +82,7 @@ instance (Runnable r) => Runnable (WithConfig config r) where
   type RunnableInput (WithConfig config r) = RunnableInput r
   type RunnableOutput (WithConfig config r) = RunnableOutput r
 
-  invoke (WithConfig r1 _) input = invoke r1 input
+  invoke (WithConfig r1 _) = invoke r1
 
 {- | Cache results of a 'Runnable' to avoid duplicate computations.
 

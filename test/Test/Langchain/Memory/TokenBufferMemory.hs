@@ -27,7 +27,7 @@ assertRight (Left err) = error $ "Expected Right but got Left: " ++ err
 
 assertLeft :: String -> Either String a -> Assertion
 assertLeft expectedErr (Left actualErr) = actualErr @?= expectedErr
-assertLeft _ (Right _) = error $ "Expected Left but got Right"
+assertLeft _ (Right _) = error "Expected Left but got Right"
 
 runAddAndGet :: TB.TokenBufferMemory -> [Message] -> IO ChatMessage
 runAddAndGet initial msgs = do

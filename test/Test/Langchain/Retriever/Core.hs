@@ -21,6 +21,7 @@ data DummyLLM = DummyLLM
 instance LLM DummyLLM where
   type LLMParams DummyLLM = String
   type LLMStreamTokenType DummyLLM = Text
+
   -- When 'generate' is called, we return a fixed response in the format expected by the
   -- NumberSeparatedList parser. For example:
   --

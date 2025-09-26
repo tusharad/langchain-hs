@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -95,7 +96,7 @@ defaultHuggingfaceParams =
 
 instance LLM Huggingface where
   type LLMParams Huggingface = HuggingfaceParams
-  type (LLMStreamTokenType) Huggingface = Text
+  type LLMStreamTokenType Huggingface = Text
 
   generate Huggingface {..} prompt mbHuggingfaceParams = do
     eRes <-
@@ -104,20 +105,23 @@ instance LLM Huggingface where
         Huggingface.defaultHuggingfaceChatCompletionRequest
           { Huggingface.provider = provider
           , Huggingface.messages =
-              [Huggingface.defaultMessage {Huggingface.content = Huggingface.TextContent prompt}]
+              [ Huggingface.defaultMessage
+                  { Huggingface.content = Huggingface.TextContent prompt
+                  }
+              ]
           , Huggingface.model = modelName
           , Huggingface.stream = False
-          , Huggingface.maxTokens = maybe Nothing maxTokens mbHuggingfaceParams
-          , Huggingface.frequencyPenalty = maybe Nothing frequencyPenalty mbHuggingfaceParams
+          , Huggingface.maxTokens = maxTokens =<< mbHuggingfaceParams
+          , Huggingface.frequencyPenalty = frequencyPenalty =<< mbHuggingfaceParams
           , -- , Huggingface.logProbs = maybe Nothing logProbs mbHuggingfaceParams
-            Huggingface.presencePenalty = maybe Nothing presencePenalty mbHuggingfaceParams
+            Huggingface.presencePenalty = presencePenalty =<< mbHuggingfaceParams
           , -- , Huggingface.seed = maybe Nothing seed mbHuggingfaceParams
-            Huggingface.stop = maybe Nothing stop mbHuggingfaceParams
-          , Huggingface.temperature = maybe Nothing temperature mbHuggingfaceParams
+            Huggingface.stop = stop =<< mbHuggingfaceParams
+          , Huggingface.temperature = temperature =<< mbHuggingfaceParams
           , -- , Huggingface.toolPrompt = maybe Nothing toolPrompt mbHuggingfaceParams
             -- , Huggingface.topLogprobs = maybe Nothing topLogProbs mbHuggingfaceParams
-            Huggingface.topP = maybe Nothing topP mbHuggingfaceParams
-          , Huggingface.timeout = maybe Nothing timeout mbHuggingfaceParams
+            Huggingface.topP = topP =<< mbHuggingfaceParams
+          , Huggingface.timeout = timeout =<< mbHuggingfaceParams
           -- , Huggingface.streamOptions = maybe Nothing streamOptions mbHuggingfaceParams
           -- , Huggingface.responseFormat = maybe Nothing responseFormat mbHuggingfaceParams
           -- , Huggingface.tools = maybe Nothing tools mbHuggingfaceParams
@@ -132,7 +136,7 @@ instance LLM Huggingface where
             let Huggingface.Message {..} = Huggingface.message resp
              in pure $
                   Right $
-                    ( \c -> case c of
+                    ( \case
                         Huggingface.TextContent t -> t
                         _ -> ""
                     )
@@ -147,17 +151,17 @@ instance LLM Huggingface where
           , Huggingface.messages = toHuggingfaceMessages msgs
           , Huggingface.model = modelName
           , Huggingface.stream = False
-          , Huggingface.maxTokens = maybe Nothing maxTokens mbHuggingfaceParams
-          , Huggingface.frequencyPenalty = maybe Nothing frequencyPenalty mbHuggingfaceParams
+          , Huggingface.maxTokens = maxTokens =<< mbHuggingfaceParams
+          , Huggingface.frequencyPenalty = frequencyPenalty =<< mbHuggingfaceParams
           , -- , Huggingface.logProbs = maybe Nothing logProbs mbHuggingfaceParams
-            Huggingface.presencePenalty = maybe Nothing presencePenalty mbHuggingfaceParams
+            Huggingface.presencePenalty = presencePenalty =<< mbHuggingfaceParams
           , -- , Huggingface.seed = maybe Nothing seed mbHuggingfaceParams
-            Huggingface.stop = maybe Nothing stop mbHuggingfaceParams
-          , Huggingface.temperature = maybe Nothing temperature mbHuggingfaceParams
+            Huggingface.stop = stop =<< mbHuggingfaceParams
+          , Huggingface.temperature = temperature =<< mbHuggingfaceParams
           , -- , Huggingface.toolPrompt = maybe Nothing toolPrompt mbHuggingfaceParams
             -- , Huggingface.topLogprobs = maybe Nothing topLogProbs mbHuggingfaceParams
-            Huggingface.topP = maybe Nothing topP mbHuggingfaceParams
-          , Huggingface.timeout = maybe Nothing timeout mbHuggingfaceParams
+            Huggingface.topP = topP =<< mbHuggingfaceParams
+          , Huggingface.timeout = timeout =<< mbHuggingfaceParams
           -- , Huggingface.streamOptions = maybe Nothing streamOptions mbHuggingfaceParams
           -- , Huggingface.responseFormat = maybe Nothing responseFormat mbHuggingfaceParams
           -- , Huggingface.tools = maybe Nothing tools mbHuggingfaceParams
@@ -170,17 +174,6 @@ instance LLM Huggingface where
           Nothing -> return $ Left "Did not received any response"
           Just resp -> return $ Right $ from (Huggingface.message resp)
 
-  {-
-  let Huggingface.Message {..} = Huggingface.message resp
-   in pure $
-        Right $
-          ( \c -> case c of
-              Huggingface.TextContent t -> t
-              _ -> ""
-          )
-            content
-            -}
-
   stream Huggingface {..} msgs LLM.StreamHandler {..} mbHuggingfaceParams = do
     Huggingface.createChatCompletionStream
       apiKey
@@ -189,17 +182,17 @@ instance LLM Huggingface where
         , Huggingface.messages = toHuggingfaceMessages msgs
         , Huggingface.model = modelName
         , Huggingface.stream = True
-        , Huggingface.maxTokens = maybe Nothing maxTokens mbHuggingfaceParams
-        , Huggingface.frequencyPenalty = maybe Nothing frequencyPenalty mbHuggingfaceParams
+        , Huggingface.maxTokens = maxTokens =<< mbHuggingfaceParams
+        , Huggingface.frequencyPenalty = frequencyPenalty =<< mbHuggingfaceParams
         , -- , Huggingface.logProbs = maybe Nothing logProbs mbHuggingfaceParams
-          Huggingface.presencePenalty = maybe Nothing presencePenalty mbHuggingfaceParams
+          Huggingface.presencePenalty = presencePenalty =<< mbHuggingfaceParams
         , -- , Huggingface.seed = maybe Nothing seed mbHuggingfaceParams
-          Huggingface.stop = maybe Nothing stop mbHuggingfaceParams
-        , Huggingface.temperature = maybe Nothing temperature mbHuggingfaceParams
+          Huggingface.stop = stop =<< mbHuggingfaceParams
+        , Huggingface.temperature = temperature =<< mbHuggingfaceParams
         , -- , Huggingface.toolPrompt = maybe Nothing toolPrompt mbHuggingfaceParams
           -- , Huggingface.topLogprobs = maybe Nothing topLogProbs mbHuggingfaceParams
-          Huggingface.topP = maybe Nothing topP mbHuggingfaceParams
-        , Huggingface.timeout = maybe Nothing timeout mbHuggingfaceParams
+          Huggingface.topP = topP =<< mbHuggingfaceParams
+        , Huggingface.timeout = timeout =<< mbHuggingfaceParams
         -- , Huggingface.streamOptions = maybe Nothing streamOptions mbHuggingfaceParams
         -- , Huggingface.responseFormat = maybe Nothing responseFormat mbHuggingfaceParams
         -- , Huggingface.tools = maybe Nothing tools mbHuggingfaceParams

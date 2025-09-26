@@ -18,17 +18,17 @@ runApp = do
           emptyObject
             |+ ( "friends"
                , JArray
-                  ( JObject
-                      ( buildSchema $
-                          emptyObject
-                            |+ ("name", JString)
-                            |+ ("age", JNumber)
-                            |+ ("isAvailable", JBoolean)
-                            |! "name"
-                            |! "age"
-                            |! "isAvailable"
-                      )
-                  )
+                   ( JObject
+                       ( buildSchema $
+                           emptyObject
+                             |+ ("name", JString)
+                             |+ ("age", JNumber)
+                             |+ ("isAvailable", JBoolean)
+                             |! "name"
+                             |! "age"
+                             |! "isAvailable"
+                       )
+                   )
                )
   let prompt =
         "I have two friends. The first is Ollama 22 years old busy saving the world,"

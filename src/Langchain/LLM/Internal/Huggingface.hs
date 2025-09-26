@@ -49,6 +49,7 @@ module Langchain.LLM.Internal.Huggingface
   ) where
 
 import Conduit
+import Control.Monad (when)
 import Data.Aeson
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as LBS
@@ -157,7 +158,7 @@ instance FromJSON ToolChoice where
   parseJSON invalid = fail $ "Invalid tool choice: " ++ show invalid
 
 -- | Provides details for a specific tool choice.
-data SpecificToolChoice = SpecificToolChoice
+newtype SpecificToolChoice = SpecificToolChoice
   { specificToolChoiceFunction :: Value
   -- ^ Function details
   }
@@ -175,7 +176,7 @@ instance FromJSON SpecificToolChoice where
       <$> v .: "function"
 
 -- | Options for streaming responses.
-data StreamOptions = StreamOptions
+newtype StreamOptions = StreamOptions
   { includeUsage :: Bool
   -- ^ Whether to include usage information
   }
@@ -210,7 +211,7 @@ instance FromJSON Role where
     _ -> fail $ "Unknown role: " ++ T.unpack t
 
 -- | Image url object
-data ImageUrl = ImageUrl
+newtype ImageUrl = ImageUrl
   { url :: String
   }
   deriving (Eq, Show, Generic)
@@ -501,7 +502,7 @@ instance FromJSON ChatCompletionResponse where
       <*> v .: "time_info"
 
 -- | Response for stream
-data Delta = Delta
+newtype Delta = Delta
   { deltaContent :: Maybe Text
   }
   deriving (Eq, Show, Generic)
@@ -604,8 +605,7 @@ createChatCompletion apiKey r = do
               setRequestSecure True $
                 setRequestHeader "Content-Type" ["application/json"] $
                   setRequestHeader "Authorization" ["Bearer " <> encodeUtf8 apiKey] $
-                    setRequestBodyJSON r $
-                      request_
+                    setRequestBodyJSON r request_
 
       response <- httpLbs req manager
       let status = statusCode $ getResponseStatus response
@@ -613,7 +613,13 @@ createChatCompletion apiKey r = do
         then case eitherDecode (getResponseBody response) of
           Left err -> return $ Left $ "JSON parse error: " <> err
           Right completionResponse -> return $ Right completionResponse
-        else return $ Left $ "API error: " <> show status <> " " <> show (getResponseBody response)
+        else
+          return $
+            Left $
+              "API error: "
+                <> show status
+                <> " "
+                <> show (getResponseBody response)
 
 {- | Handler for streaming chat completion responses.
 Provides callbacks for processing each token and handling stream completion.
@@ -635,7 +641,10 @@ defaultHuggingfaceStreamHandler =
 
 -- | Streaming function for huggingface
 createChatCompletionStream ::
-  Text -> HuggingfaceChatCompletionRequest -> HuggingfaceStreamHandler -> IO (Either String ())
+  Text ->
+  HuggingfaceChatCompletionRequest ->
+  HuggingfaceStreamHandler ->
+  IO (Either String ())
 createChatCompletionStream apiKey r HuggingfaceStreamHandler {..} = do
   case getProviderLink (provider r) of
     Nothing -> pure $ Left "Incompatible provider"
@@ -646,8 +655,7 @@ createChatCompletionStream apiKey r HuggingfaceStreamHandler {..} = do
               setRequestMethod "POST" $
                 setRequestSecure True $
                   setRequestHeader "Content-Type" ["application/json"] $
-                    setRequestBodyJSON r $
-                      request_
+                    setRequestBodyJSON r request_
 
       manager <-
         newManager
@@ -667,24 +675,25 @@ createChatCompletionStream apiKey r HuggingfaceStreamHandler {..} = do
       return $ Right ()
       where
         processLine bufferRef line = do
-          if BS.isPrefixOf "data: " line
-            then do
-              do
-                let content = BS.drop 6 line -- Remove "data: " prefix
-                case decode (LBS.fromStrict content) of
-                  Just chunk -> onToken chunk
-                  Nothing -> do
-                    -- Handle potential partial JSON by buffering
-                    oldBuffer <- readIORef bufferRef
-                    let newBuffer = oldBuffer <> content
-                    writeIORef bufferRef newBuffer
-                    -- Try to parse the combined buffer
-                    case decode (LBS.fromStrict newBuffer) of
-                      Just chunk -> do
-                        onToken chunk
-                        writeIORef bufferRef BS.empty -- Clear buffer after successful parse
-                      Nothing -> return () -- Keep in buffer for next chunk
-            else return () -- Ignore non-data lines
+          when
+            (BS.isPrefixOf "data: " line)
+            ( do
+                do
+                  let content = BS.drop 6 line -- Remove "data: " prefix
+                  case decode (LBS.fromStrict content) of
+                    Just chunk -> onToken chunk
+                    Nothing -> do
+                      -- Handle potential partial JSON by buffering
+                      oldBuffer <- readIORef bufferRef
+                      let newBuffer = oldBuffer <> content
+                      writeIORef bufferRef newBuffer
+                      -- Try to parse the combined buffer
+                      case decode (LBS.fromStrict newBuffer) of
+                        Just chunk -> do
+                          onToken chunk
+                          writeIORef bufferRef BS.empty -- Clear buffer after successful parse
+                        Nothing -> return () -- Keep in buffer for next chunk
+            )
 
 instance LLM.MessageConvertible Message where
   -- to :: LLM.Message -> Message
@@ -706,7 +715,7 @@ instance LLM.MessageConvertible Message where
   from msg =
     LLM.Message
       { LLM.role = toRole (role msg)
-      , LLM.content = case (content msg) of
+      , LLM.content = case content msg of
           TextContent txt -> txt
           _ -> ""
       , LLM.messageData = LLM.defaultMessageData

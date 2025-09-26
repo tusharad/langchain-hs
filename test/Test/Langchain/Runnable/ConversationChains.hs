@@ -1,6 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Test.Langchain.Runnable.ConversationChains (tests) where
@@ -8,6 +7,7 @@ module Test.Langchain.Runnable.ConversationChains (tests) where
 import Data.IORef (IORef, modifyIORef, newIORef, readIORef, writeIORef)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as NE
+import Data.Text (Text)
 import Langchain.LLM.Core
 import Langchain.Memory.Core (BaseMemory (..))
 import Langchain.PromptTemplate (PromptTemplate (..))
@@ -15,9 +15,8 @@ import Langchain.Runnable.ConversationChain
 import Langchain.Runnable.Core
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertEqual, testCase, (@?=))
-import Data.Text (Text)
 
-data TestMemory = TestMemory (IORef [Message])
+newtype TestMemory = TestMemory (IORef [Message])
 
 instance BaseMemory TestMemory where
   addUserMessage (TestMemory ref) input = do
@@ -35,7 +34,7 @@ instance BaseMemory TestMemory where
     return $ Right (TestMemory ref)
 
   clear (TestMemory ref) = do
-    (modifyIORef ref (const []))
+    writeIORef ref []
     return $ Right $ TestMemory ref
 
   messages (TestMemory ref) = fmap Right (NE.fromList <$> readIORef ref)

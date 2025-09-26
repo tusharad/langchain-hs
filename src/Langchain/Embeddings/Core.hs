@@ -55,24 +55,26 @@ instance Embeddings TestEmbeddings where
 @
 -}
 class Embeddings embed where
-  -- | Convert documents to embedding vectors
-  --
-  --   Example:
-  --
-  --   >>> let doc = Document "Hello world" mempty
-  --   >>> embedDocuments TestEmbeddings [doc]
-  --   Right [[0.1, 0.2, 0.3]]
+  {- | Convert documents to embedding vectors
+
+  Example:
+
+  >>> let doc = Document "Hello world" mempty
+  >>> embedDocuments TestEmbeddings [doc]
+  Right [[0.1, 0.2, 0.3]]
+  -}
   embedDocuments :: embed -> [Document] -> IO (Either String [[Float]])
 
   embedDocumentsM :: MonadIO m => embed -> [Document] -> m (Either String [[Float]])
   embedDocumentsM embeddings docs = liftIO $ embedDocuments embeddings docs
 
-  -- | Convert query text to embedding vector
-  --
-  --   Example:
-  --
-  --   >>> embedQuery TestEmbeddings "Search query"
-  --   Right [0.4, 0.5, 0.6]
+  {- | Convert query text to embedding vector
+
+  Example:
+
+  >>> embedQuery TestEmbeddings "Search query"
+  Right [0.4, 0.5, 0.6]
+  -}
   embedQuery :: embed -> Text -> IO (Either String [Float])
 
   embedQueryM :: MonadIO m => embed -> Text -> m (Either String [Float])

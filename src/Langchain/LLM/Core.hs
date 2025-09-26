@@ -227,11 +227,13 @@ defaultMessageData =
 -- | Typeclass that all ChatModels should interface with
 class LLM llm where
   -- | Define the Parameter type for your LLM model.
-  type LLMStreamTokenType llm 
+  type LLMStreamTokenType llm
+
   type LLMParams llm
-  
-  -- | Invoke the language model with a single prompt.
-  --        Suitable for simple queries; returns either an error or generated text.
+
+  {- | Invoke the language model with a single prompt.
+       Suitable for simple queries; returns either an error or generated text.
+  -}
   generate ::
     -- | The type of the language model instance.
     llm ->
@@ -241,8 +243,9 @@ class LLM llm where
     Maybe (LLMParams llm) ->
     IO (Either String Text)
 
-  -- | Chat with the language model using a sequence of messages.
-  -- Suitable for multi-turn conversations; returns either an error or the response.
+  {- | Chat with the language model using a sequence of messages.
+  Suitable for multi-turn conversations; returns either an error or the response.
+  -}
   chat ::
     -- | The type of the language model instance.
     llm ->
@@ -253,14 +256,15 @@ class LLM llm where
     -- | The result of the chat, either an error or the response text.
     IO (Either String Message)
 
-  -- | Stream responses from the language model for a sequence of messages.
-  -- Uses callbacks to process tokens in real-time; returns either an error or unit.
-  stream :: 
-       llm 
-    -> ChatMessage 
-    -> StreamHandler (LLMStreamTokenType llm) 
-    -> Maybe (LLMParams llm) 
-    -> IO (Either String ())
+  {- | Stream responses from the language model for a sequence of messages.
+  Uses callbacks to process tokens in real-time; returns either an error or unit.
+  -}
+  stream ::
+    llm ->
+    ChatMessage ->
+    StreamHandler (LLMStreamTokenType llm) ->
+    Maybe (LLMParams llm) ->
+    IO (Either String ())
 
   -- Default implementations
 
@@ -294,7 +298,7 @@ class LLM llm where
     MonadIO m =>
     llm ->
     ChatMessage ->
-    StreamHandler (LLMStreamTokenType llm)->
+    StreamHandler (LLMStreamTokenType llm) ->
     Maybe (LLMParams llm) ->
     m (Either String ())
   streamM llm chatHistory sHandler mbParams = liftIO $ stream llm chatHistory sHandler mbParams

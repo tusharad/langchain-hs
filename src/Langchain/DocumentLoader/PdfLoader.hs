@@ -44,16 +44,25 @@ readPdf fPath = do
     catalog <- documentCatalog doc
     rootNode <- catalogPageNode catalog
     count <- pageNodeNKids rootNode
-    textList <- sequence [pageExtractText =<< pageNodePageByNum rootNode i | i <- [0 .. count - 1]]
-    pure
-      $ map
-        ( \(content, pageNum) ->
+    textList <-
+      sequence
+        [ pageExtractText
+            =<< pageNodePageByNum rootNode i
+        | i <- [0 .. count - 1]
+        ]
+    pure $
+      zipWith
+        ( \content pageNum ->
             Document
               { pageContent = content
-              , metadata = fromList [("page number", Number $ fromIntegral pageNum)]
+              , metadata =
+                  fromList
+                    [ ("page number", Number $ fromIntegral pageNum)
+                    ]
               }
         )
-      $ zip textList [1 .. count]
+        textList
+        [1 .. count]
 
 {- |
 A loader for PDF files.
@@ -62,7 +71,7 @@ The 'PdfLoader' data type encapsulates a 'FilePath' pointing to a PDF document.
 It implements the 'BaseLoader' interface to provide methods for loading and
 splitting PDF content.
 -}
-data PdfLoader = PdfLoader FilePath
+newtype PdfLoader = PdfLoader FilePath
 
 instance BaseLoader PdfLoader where
   -- \|
@@ -100,6 +109,10 @@ instance BaseLoader PdfLoader where
     if exists
       then do
         documents <- readPdf path
-        return $ Right $ splitText defaultCharacterSplitterOps (pageContent $ mconcat documents)
+        return $
+          Right $
+            splitText
+              defaultCharacterSplitterOps
+              (pageContent $ mconcat documents)
       else
         return $ Left $ "File not found: " ++ path

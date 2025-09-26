@@ -142,7 +142,7 @@ instance Tool WikipediaTool where
   --  - JSON parsing errors
   --  - Missing page content
   --
-  runTool tool q = searchWiki tool q
+  runTool = searchWiki
 
 -- | Perform a Wikipedia search and retrieve page extracts.
 searchWiki :: WikipediaTool -> Text -> IO Text
@@ -153,7 +153,13 @@ searchWiki tool q = do
     else do
       let pageIds = map pageid (take (topK tool) (search query))
       pages <- mapM (getPage tool) pageIds
-      let extracts = map (T.take (docMaxChars tool) . cleanHtmlContent . extract) pages
+      let extracts =
+            map
+              ( T.take (docMaxChars tool)
+                  . cleanHtmlContent
+                  . extract
+              )
+              pages
       return $ T.intercalate "\n\n" extracts
 
 -- | Perform a search on Wikipedia.
@@ -169,7 +175,10 @@ performSearch tool q = do
           ]
       url =
         T.pack $
-          "https://" <> T.unpack (languageCode tool) <> ".wikipedia.org/w/api.php?" <> urlEncode params
+          "https://"
+            <> T.unpack (languageCode tool)
+            <> ".wikipedia.org/w/api.php?"
+            <> urlEncode params
   request <- parseRequest (T.unpack url)
   response <- httpLbs request
   let body = getResponseBody response
@@ -189,7 +198,10 @@ getPage tool pageId = do
           ]
       url =
         T.pack $
-          "https://" <> T.unpack (languageCode tool) <> ".wikipedia.org/w/api.php?" <> urlEncode params
+          "https://"
+            <> T.unpack (languageCode tool)
+            <> ".wikipedia.org/w/api.php?"
+            <> urlEncode params
   request <- parseRequest (T.unpack url)
   response <- httpLbs request
   let body = getResponseBody response
@@ -204,13 +216,13 @@ urlEncode :: Map String String -> String
 urlEncode = concatMap (\(k, v) -> k ++ "=" ++ v ++ "&") . M.toList
 
 -- | Data types for JSON parsing.
-data SearchResponse = SearchResponse
+newtype SearchResponse = SearchResponse
   { query :: SearchQuery
   }
   deriving (Show, Generic, FromJSON)
 
 -- | Type for list of search result
-data SearchQuery = SearchQuery
+newtype SearchQuery = SearchQuery
   { search :: [SearchResult]
   }
   deriving (Show)
@@ -244,13 +256,13 @@ instance FromJSON SearchResult where
       <*> v .: "timestamp"
 
 -- | Wikipedia response
-data PageResponse = PageResponse
+newtype PageResponse = PageResponse
   { query :: Pages
   }
   deriving (Generic, Eq, Show, FromJSON)
 
 -- | Collection of Wikipedia pages, where key is page id
-data Pages = Pages
+newtype Pages = Pages
   { pages :: Map String Page
   }
   deriving (Generic, Eq, Show, FromJSON)
@@ -285,4 +297,4 @@ instance Runnable WikipediaTool where
   type RunnableOutput WikipediaTool = Text
 
   -- TODO: runTool should return an Either
-  invoke tool input = fmap Right $ runTool tool input
+  invoke tool input = Right <$> runTool tool input

@@ -71,7 +71,7 @@ shouldIncludeFile :: DirectoryLoaderOptions -> FilePath -> Bool
 shouldIncludeFile opts path =
   let ext = takeExtension path
       fName = takeFileName path
-      isHidden = if listToMaybe fName == Just '.' then True else False
+      isHidden = listToMaybe fName == Just '.'
       matchesExt = null (extensions opts) || ext `elem` extensions opts
       passesHiddenCheck = not (excludeHidden opts) || not isHidden
    in matchesExt && passesHiddenCheck

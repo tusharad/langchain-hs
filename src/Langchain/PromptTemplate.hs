@@ -123,7 +123,7 @@ renderFewShotPrompt FewShotPromptTemplate {..} = do
   -- Format each example using the example template
   formattedExamples <-
     mapM
-      (\ex -> interpolate ex fsExampleTemplate)
+      (`interpolate` fsExampleTemplate)
       fsExamples
   -- Join the formatted examples with the separator
   let examplesText = T.intercalate fsExampleSeparator formattedExamples
@@ -134,7 +134,7 @@ renderFewShotPrompt FewShotPromptTemplate {..} = do
 Placeholders are of the form {key}, where key is a sequence of alphanumeric characters and underscores.
 -}
 interpolate :: HM.Map Text Text -> Text -> Either String Text
-interpolate vars template = go template
+interpolate vars = go
   where
     go :: Text -> Either String Text
     go t =

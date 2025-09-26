@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Test.Langchain.LLM.Ollama (tests) where
@@ -200,4 +199,4 @@ tests =
     isErrorEvent (LLMError _) = True
     isErrorEvent _ = False
 
-    shouldContainAll xs ys = all (`elem` xs) ys
+    shouldContainAll xs = all (`elem` xs)

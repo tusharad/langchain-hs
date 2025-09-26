@@ -83,5 +83,5 @@ result <- generate (Ollama "llama3.2:latest" callbacks) "What is 2+2?" Nothing
 stdOutCallback :: Callback
 stdOutCallback event = case event of
   LLMStart -> putStrLn "Model operation started"
-  LLMEnd -> putStrLn $ "Model completed with"
+  LLMEnd -> putStrLn "Model completed with"
   LLMError err -> putStrLn $ "Error occurred: " ++ err

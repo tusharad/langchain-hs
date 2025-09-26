@@ -268,7 +268,7 @@ instance (Retriever a, LLM m) => Run.Runnable (MultiQueryRetriever a m) where
   type RunnableInput (MultiQueryRetriever a m) = Text
   type RunnableOutput (MultiQueryRetriever a m) = [Document]
 
-  invoke r query = _get_relevant_documents r query
+  invoke = _get_relevant_documents
 
 {- $examples
 Test case patterns:

@@ -41,7 +41,12 @@ module Langchain.Memory.Core
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Data.List.NonEmpty as NE
 import Data.Text (Text)
-import Langchain.LLM.Core (ChatMessage, Message (..), Role (..), defaultMessageData)
+import Langchain.LLM.Core
+  ( ChatMessage
+  , Message (..)
+  , Role (..)
+  , defaultMessageData
+  )
 import Langchain.Runnable.Core
 
 {- | Base typeclass for memory implementations
@@ -99,8 +104,9 @@ Right (WindowBufferMemory {maxWindowSize = 2, ...})
 -}
 data WindowBufferMemory = WindowBufferMemory
   { maxWindowSize :: Int
-  -- ^ Maximum number of messages to retain
-  -- ^ It is user's responsiblity to make sure the number is > 0.
+  {- ^ Maximum number of messages to retain
+  ^ It is user's responsiblity to make sure the number is > 0.
+  -}
   , windowBufferMessages :: ChatMessage
   -- ^ Current message buffer
   }
@@ -134,7 +140,9 @@ instance BaseMemory WindowBufferMemory where
     if length newMsgs > maxWindowSize
       then do
         let trimmedMsgs = removeOldestNonSystem newMsgs
-        pure $ Right $ winBuffMem {windowBufferMessages = NE.fromList trimmedMsgs}
+        pure $
+          Right $
+            winBuffMem {windowBufferMessages = NE.fromList trimmedMsgs}
       else
         pure $ Right $ winBuffMem {windowBufferMessages = NE.fromList newMsgs}
     where
@@ -179,7 +187,8 @@ instance BaseMemory WindowBufferMemory where
       Right $
         winBuffMem
           { windowBufferMessages =
-              NE.singleton $ Message System "You are an AI model" defaultMessageData
+              NE.singleton $
+                Message System "You are an AI model" defaultMessageData
           }
 
 {- | Trim chat history to last n messages
@@ -190,7 +199,9 @@ Example:
 [msg2, msg3]
 -}
 trimChatMessage :: Int -> ChatMessage -> ChatMessage
-trimChatMessage n msgs = NE.fromList $ drop (max 0 (NE.length msgs - n)) (NE.toList msgs)
+trimChatMessage n msgs =
+  NE.fromList $
+    drop (max 0 (NE.length msgs - n)) (NE.toList msgs)
 
 {- | Add and maintain window size
 Example:
@@ -209,7 +220,9 @@ Example:
 [Message System "You are Qwen"]
 -}
 initialChatMessage :: Text -> ChatMessage
-initialChatMessage systemPrompt = NE.singleton $ Message System systemPrompt defaultMessageData
+initialChatMessage systemPrompt =
+  NE.singleton $
+    Message System systemPrompt defaultMessageData
 
 instance Runnable WindowBufferMemory where
   type RunnableInput WindowBufferMemory = Text
@@ -222,7 +235,7 @@ instance Runnable WindowBufferMemory where
   --  >>> invoke memory "Hello"
   --  Right (WindowBufferMemory { ... })
   --
-  invoke memory input = addUserMessage memory input
+  invoke = addUserMessage
 
 {- $examples
 Test case patterns:

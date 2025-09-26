@@ -18,7 +18,7 @@ import Langchain.Tool.Core
 import Langchain.Tool.WebScraper
 import Langchain.Tool.WikipediaTool
 
-data MockTool = MockTool Text
+newtype MockTool = MockTool Text
   deriving (Show, Eq)
 
 instance Tool MockTool where

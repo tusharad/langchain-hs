@@ -1,6 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Test.Langchain.Runnable.Chains (tests) where
@@ -17,12 +16,12 @@ multiplyByTwo :: MockRunnable Int Int
 multiplyByTwo = MockRunnable (\x -> return $ Right (x * 2))
 
 evenCheck :: MockRunnable Int Bool
-evenCheck = MockRunnable (\x -> return $ Right (even x))
+evenCheck = MockRunnable $ return . Right . even
 
 failingMock :: MockRunnable a b
 failingMock = MockRunnable (\_ -> return $ Left "Mock error")
 
-data MockRunnable a b = MockRunnable {runMock :: a -> IO (Either String b)}
+newtype MockRunnable a b = MockRunnable {runMock :: a -> IO (Either String b)}
 
 instance Runnable (MockRunnable a b) where
   type RunnableInput (MockRunnable a b) = a
@@ -90,6 +89,9 @@ tests =
             assertEqual "Both branches run" (Right (True, 5)) result
         , testCase "Handles branch errors" $ do
             result <- branch failingMock addOne 5
-            assertEqual "Left error in first branch" (Left "Mock error" :: Either String (Bool, Int)) result
+            assertEqual
+              "Left error in first branch"
+              (Left "Mock error" :: Either String (Bool, Int))
+              result
         ]
     ]

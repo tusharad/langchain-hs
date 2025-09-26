@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 {- |
 Module      : Langchain.DocumentLoader.Core
 Description : Core document loading functionality for LangChain Haskell

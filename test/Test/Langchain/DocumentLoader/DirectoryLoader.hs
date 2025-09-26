@@ -21,7 +21,7 @@ import Langchain.DocumentLoader.DirectoryLoader
 
 -- | Creates a single file with the specified content.
 createTestFile :: FilePath -> String -> IO ()
-createTestFile path content = writeFile path content
+createTestFile = writeFile
 
 -- | Creates multiple files in a directory with specified relative paths and contents.
 createTestFiles :: FilePath -> [(FilePath, String)] -> IO ()
@@ -66,8 +66,18 @@ testBasicLoading = testCase "Basic loading" $
     case result of
       Left err -> assertFailure $ "Expected Right but got Left: " ++ err
       Right docs -> do
-        let docMap = Map.fromList [(fromMaybe "" (getSource d), pageContent d) | d <- docs]
-            expectedMap = Map.fromList [(file1, "Content of file1"), (file2, "Content of file2")]
+        let docMap =
+              Map.fromList
+                [ ( fromMaybe "" (getSource d)
+                  , pageContent d
+                  )
+                | d <- docs
+                ]
+            expectedMap =
+              Map.fromList
+                [ (file1, "Content of file1")
+                , (file2, "Content of file2")
+                ]
         docMap @?= expectedMap
 
 -- | Tests recursive loading with different depth limits.
@@ -80,7 +90,11 @@ testRecursiveLoading = testCase "Recursive loading" $
       , ("subdir1/file2.txt", "Content of file2")
       , ("subdir1/subsubdir/file3.txt", "Content of file3")
       ]
-    let allFiles = [dir </> "file1.txt", dir </> "subdir1/file2.txt", dir </> "subdir1/subsubdir/file3.txt"]
+    let allFiles =
+          [ dir </> "file1.txt"
+          , dir </> "subdir1/file2.txt"
+          , dir </> "subdir1/subsubdir/file3.txt"
+          ]
         level0Files = [dir </> "file1.txt"]
         level1Files = [dir </> "file1.txt", dir </> "subdir1/file2.txt"]
     -- Unlimited recursion
@@ -216,7 +230,10 @@ testErrorHandling =
   testGroup
     "Error handling"
     [ testCase "Non-existent directory" $ do
-        let loader = DirectoryLoader "non-existent-dir" defaultDirectoryLoaderOptions
+        let loader =
+              DirectoryLoader
+                "non-existent-dir"
+                defaultDirectoryLoaderOptions
         result <- load loader
         case result of
           Left err -> assertBool "Expected error message" (not $ null err)

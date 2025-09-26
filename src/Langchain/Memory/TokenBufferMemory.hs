@@ -14,11 +14,19 @@ Stability   : experimental
 Implementation of LangChain's Conversation token buffer.
 https://python.langchain.com/v0.1/docs/modules/memory/types/token_buffer/
 -}
-module Langchain.Memory.TokenBufferMemory (TokenBufferMemory (..), countTokens) where
+module Langchain.Memory.TokenBufferMemory
+  ( TokenBufferMemory (..)
+  , countTokens
+  ) where
 
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Text as T
-import Langchain.LLM.Core (ChatMessage, Message (..), Role (..), defaultMessageData)
+import Langchain.LLM.Core
+  ( ChatMessage
+  , Message (..)
+  , Role (..)
+  , defaultMessageData
+  )
 import Langchain.Memory.Core
 import Langchain.Runnable.Core (Runnable (..))
 
@@ -38,7 +46,9 @@ countTokens :: [Message] -> Int
 countTokens = sum . map go
   where
     go :: Message -> Int
-    go (Message _ content _) = ceiling @Double (fromIntegral (T.length content) / 4.0)
+    go (Message _ content _) =
+      ceiling @Double
+        (fromIntegral (T.length content) / 4.0)
 
 instance BaseMemory TokenBufferMemory where
   messages TokenBufferMemory {..} = pure $ Right tokenBufferMessages
@@ -51,18 +61,37 @@ instance BaseMemory TokenBufferMemory where
       else
         if newMsgTokenCount + currentMsgsTokenCount <= maxTokens
           then
-            pure (Right $ t {tokenBufferMessages = tokenBufferMessages <> NE.fromList [newMsg]})
-          else trimNonSystemMsgs (NE.toList tokenBufferMessages) newMsgTokenCount
+            pure
+              ( Right $
+                  t
+                    { tokenBufferMessages =
+                        tokenBufferMessages <> NE.fromList [newMsg]
+                    }
+              )
+          else
+            trimNonSystemMsgs
+              (NE.toList tokenBufferMessages)
+              newMsgTokenCount
     where
       trimNonSystemMsgs msgs newMsgTokenCount = do
         let trimmedMsgs = removeOldestNonSystem msgs
         if trimmedMsgs == msgs -- If no more non sys msg left
           then
-            pure (Left "Cannot add new message since system message and new message excedds limit")
+            pure
+              ( Left $
+                  "Cannot add new message since system message and "
+                    <> "new message excedds limit"
+              )
           else
             if countTokens trimmedMsgs + newMsgTokenCount <= maxTokens
               then
-                pure (Right $ t {tokenBufferMessages = NE.fromList $ trimmedMsgs <> [newMsg]})
+                pure
+                  ( Right $
+                      t
+                        { tokenBufferMessages =
+                            NE.fromList $ trimmedMsgs <> [newMsg]
+                        }
+                  )
               else trimNonSystemMsgs trimmedMsgs newMsgTokenCount
 
       removeOldestNonSystem = go
@@ -85,11 +114,12 @@ instance BaseMemory TokenBufferMemory where
       Right $
         tokBuffMem
           { tokenBufferMessages =
-              NE.singleton $ Message System "You are an AI model" defaultMessageData
+              NE.singleton $
+                Message System "You are an AI model" defaultMessageData
           }
 
 instance Runnable TokenBufferMemory where
   type RunnableInput TokenBufferMemory = T.Text
   type RunnableOutput TokenBufferMemory = TokenBufferMemory
 
-  invoke memory input = addUserMessage memory input
+  invoke = addUserMessage

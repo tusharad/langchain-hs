@@ -58,30 +58,33 @@ instance Runnable TextSplitter where
 @
 -}
 class Runnable r where
-  -- | The type of input the runnable accepts.
-  --
-  -- For example, an LLM might accept 'String' or 'PromptValue' as input.
+  {- | The type of input the runnable accepts.
+
+  For example, an LLM might accept 'String' or 'PromptValue' as input.
+  -}
   type RunnableInput r
 
-  -- | The type of output the runnable produces.
-  --
-  -- For example, an LLM might produce 'String' or 'LLMResult' as output.
+  {- | The type of output the runnable produces.
+
+  For example, an LLM might produce 'String' or 'LLMResult' as output.
+  -}
   type RunnableOutput r
 
-  -- | Core method to invoke (run) this component with a single input.
-  --
-  --   This is the primary method that must be implemented for any 'Runnable'.
-  --   It processes a single input and returns either an error message or the output.
-  --
-  --   Example usage:
-  --
-  --   @
-  --   let model = OpenAI { temperature = 0.7, model = "gpt-3.5-turbo" }
-  --   result <- invoke model "Explain monads in simple terms."
-  --   case result of
-  --     Left err -> putStrLn $ "Error: " ++ err
-  --     Right response -> putStrLn response
-  --   @
+  {- | Core method to invoke (run) this component with a single input.
+
+  This is the primary method that must be implemented for any 'Runnable'.
+  It processes a single input and returns either an error message or the output.
+
+  Example usage:
+
+  @
+  let model = OpenAI { temperature = 0.7, model = "gpt-3.5-turbo" }
+  result <- invoke model "Explain monads in simple terms."
+  case result of
+    Left err -> putStrLn $ "Error: " ++ err
+    Right response -> putStrLn response
+  @
+  -}
   invoke :: r -> RunnableInput r -> IO (Either String (RunnableOutput r))
 
   invokeM :: MonadIO m => r -> RunnableInput r -> m (Either String (RunnableOutput r))

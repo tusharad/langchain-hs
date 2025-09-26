@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -133,13 +132,23 @@ emptyObject = SchemaBuilder $ Schema HM.empty [] False
 -- | Add a simple field with a given name and type.
 addProperty :: Text -> JsonType -> SchemaBuilder -> SchemaBuilder
 addProperty name typ (SchemaBuilder s) =
-  SchemaBuilder $ s {schemaProperties = HM.insert name (Property typ) (schemaProperties s)}
+  SchemaBuilder $
+    s
+      { schemaProperties =
+          HM.insert name (Property typ) (schemaProperties s)
+      }
 
 -- | Add a nested object field with its own schema.
 addObjectProperty :: Text -> Schema -> SchemaBuilder -> SchemaBuilder
 addObjectProperty name nestedSchema (SchemaBuilder s) =
   SchemaBuilder $
-    s {schemaProperties = HM.insert name (Property (JObject nestedSchema)) (schemaProperties s)}
+    s
+      { schemaProperties =
+          HM.insert
+            name
+            (Property (JObject nestedSchema))
+            (schemaProperties s)
+      }
 
 -- | Mark a field as required.
 requireField :: Text -> SchemaBuilder -> SchemaBuilder

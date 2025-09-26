@@ -36,8 +36,9 @@ data GeminiEmbeddings = GeminiEmbeddings
   , dimensions :: Maybe Int
   -- ^ The number of dimensions the resulting output embeddings should have.
   , encodingFormat :: Maybe EncodingFormat
-  -- ^ The format to return the embeddings in.
-  --   ^ For now, only float is supported
+  {- ^ The format to return the embeddings in.
+  ^ For now, only float is supported
+  -}
   , embeddingsUser :: Maybe Text
   -- ^ A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse.
   , timeout :: Maybe Int

@@ -1,5 +1,3 @@
-{-# LANGUAGE RecordWildCards #-}
-
 {- |
 Module      : Langchain.VectorStore.InMemory
 Description : In-memory vector store implementation for LangChain Haskell
@@ -39,6 +37,7 @@ module Langchain.VectorStore.InMemory
   , cosineSimilarity
   ) where
 
+import Data.Bifunctor
 import Data.Int (Int64)
 import Data.List (sortBy)
 import qualified Data.Map.Strict as Map
@@ -119,8 +118,12 @@ instance Embeddings m => VectorStore (InMemory m) where
       Left err -> pure $ Left err
       Right floats -> do
         let currStore = store inMem
-            mbMaxKey = (Map.lookupMax currStore)
-            newStore = Map.fromList $ zip [(maybe 1 (\x -> fst x + 1) mbMaxKey) ..] (zip docs floats)
+            mbMaxKey = Map.lookupMax currStore
+            newStore =
+              Map.fromList $
+                zip
+                  [(maybe 1 (\x -> fst x + 1) mbMaxKey) ..]
+                  (zip docs floats)
             newInMem = inMem {store = Map.union newStore currStore}
         pure $ Right newInMem
 
@@ -132,7 +135,7 @@ instance Embeddings m => VectorStore (InMemory m) where
   --
   delete inMem ids = do
     let currStore = store inMem
-        newStore = foldl (\acc i -> Map.delete i acc) currStore ids
+        newStore = foldl (flip Map.delete) currStore ids
         newInMem = inMem {store = newStore}
     pure $ Right newInMem
 
@@ -159,9 +162,10 @@ instance Embeddings m => VectorStore (InMemory m) where
   similaritySearchByVector vs queryVec k = do
     let similarities =
           map
-            (\(doc, vec) -> (doc, cosineSimilarity queryVec vec))
-            (map snd $ Map.toList $ store vs)
-        sorted = sortBy (comparing (negate . snd)) similarities -- Sort in descending order
+            (second (cosineSimilarity queryVec) . snd)
+            (Map.toList $ store vs)
+        sorted = sortBy (comparing (negate . snd)) similarities
+        -- Sort in descending order
         topK = take k sorted
     return $ Right $ map fst topK
 

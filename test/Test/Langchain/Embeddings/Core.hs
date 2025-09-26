@@ -20,7 +20,9 @@ tests =
             result <- embedQuery embeddings "error query"
             case result of
               Left err ->
-                assertBool "Error message contains 'error'" ("error" `isInfixOf` (pack err))
+                assertBool
+                  "Error message contains 'error'"
+                  ("error" `isInfixOf` pack err)
               Right _ -> assertFailure "Expected API error propagation"
         ]
     ]

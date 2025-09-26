@@ -49,7 +49,7 @@ utilityTests =
     , testCase "cosineSimilarity should compute correct similarity" $ do
         assertBool
           "Expected near same similarity"
-          ((cosineSimilarity [1.0, 2.0, 3.0] [1.0, 2.0, 3.0]) >= 0.999999)
+          (cosineSimilarity [1.0, 2.0, 3.0] [1.0, 2.0, 3.0] >= 0.999999)
 
         let similarity = cosineSimilarity [1.0, 0.0, 0.0] [0.0, 1.0, 0.0]
         assertBool "Expected near 0" (abs similarity < 0.000001)

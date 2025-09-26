@@ -71,7 +71,7 @@ fetchAndScrape url = do
   case eResp of
     Left err -> pure $ Left (show err)
     Right r -> do
-      let rBody = (getResponseBody r)
+      let rBody = getResponseBody r
       let htmlContent = TE.decodeUtf8 $ LBS.toStrict rBody
 
       -- Clean and extract the content

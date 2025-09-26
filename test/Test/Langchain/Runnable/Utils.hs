@@ -1,6 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Test.Langchain.Runnable.Utils (tests) where
@@ -95,7 +94,7 @@ tests =
         ]
     ]
 
-data MockRunnable a b = MockRunnable {runMock :: a -> IO (Either String b)}
+newtype MockRunnable a b = MockRunnable {runMock :: a -> IO (Either String b)}
 
 instance Runnable (MockRunnable a b) where
   type RunnableInput (MockRunnable a b) = a

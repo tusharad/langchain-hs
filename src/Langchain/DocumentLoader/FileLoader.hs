@@ -43,7 +43,7 @@ Example:
 >>> FileLoader "docs/example.txt"
 FileLoader "docs/example.txt"
 -}
-data FileLoader = FileLoader FilePath
+newtype FileLoader = FileLoader FilePath
 
 instance BaseLoader FileLoader where
   -- \| Load document with file source metadata

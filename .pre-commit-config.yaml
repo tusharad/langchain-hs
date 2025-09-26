@@ -1,0 +1,16 @@
+repos:
+-   repo: local
+    hooks:
+    -   id: fourmolu
+        name: fourmolu
+        description: "Formatter for Haskell source code."
+        entry: fourmolu -i .
+        language: system
+        types: [haskell]
+
+    -   id: hlint
+        name: hlint
+        description: "Linter for Haskell source code."
+        entry: hlint .
+        language: system
+        types: [haskell]

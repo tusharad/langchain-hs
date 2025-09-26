@@ -57,12 +57,13 @@ instance Retriever CustomRetriever where
 @
 -}
 class Retriever a where
-  -- | Retrieve documents relevant to the query
-  --
-  --   Example:
-  --
-  --   >>> _get_relevant_documents (VectorStoreRetriever myStore) "AI"
-  --   Right [Document "AI definition...", ...]
+  {- | Retrieve documents relevant to the query
+
+  Example:
+
+  >>> _get_relevant_documents (VectorStoreRetriever myStore) "AI"
+  Right [Document "AI definition...", ...]
+  -}
   _get_relevant_documents :: a -> Text -> IO (Either String [Document])
 
   _get_relevant_documentsM :: MonadIO m => a -> Text -> m (Either String [Document])
@@ -112,7 +113,7 @@ instance VectorStore a => Runnable (VectorStoreRetriever a) where
   type RunnableInput (VectorStoreRetriever a) = Text
   type RunnableOutput (VectorStoreRetriever a) = [Document]
 
-  invoke retriever query = _get_relevant_documents retriever query
+  invoke = _get_relevant_documents
 
 {- $examples
 Test case patterns:

@@ -40,8 +40,9 @@ import Data.Text.Internal.Search (indices)
 Instances of this class define how to convert a 'Text' output into a value of type 'a'.
 -}
 class OutputParser a where
-  -- | Parse the given text into a value of type 'a'.
-  -- Returns 'Left' with an error message if parsing fails, or 'Right' with the parsed value.
+  {- | Parse the given text into a value of type 'a'.
+  Returns 'Left' with an error message if parsing fails, or 'Right' with the parsed value.
+  -}
   parse :: Text -> Either String a
 
 -- | Represents a list of text items separated by commas.
@@ -74,11 +75,11 @@ instance OutputParser Bool where
   -- @
   parse txt = do
     let txt' = T.strip $ T.toLower txt
-    if length (indices "true" txt') > 0
+    if not (null $ indices "true" txt')
       then
         Right True
       else
-        if length (indices "false" txt') > 0
+        if not (null $ indices "false" txt')
           then
             Right False
           else
@@ -172,7 +173,8 @@ instance OutputParser NumberSeparatedList where
           Nothing -> Left "No valid numbered items found"
           Just rest ->
             -- Parse the rest into items and wrap them in our newtype.
-            Right . NumberSeparatedList . map (T.pack . trim) $ parseItems rest
+            Right . NumberSeparatedList . map (T.pack . trim) $
+              parseItems rest
 
 {- | Drops noise until we find a valid boundary marker (number with dot)
 and then consumes the marker.
@@ -187,7 +189,7 @@ dropUntilAndConsumeBoundary s =
 Returns the index and length of the marker.
 -}
 findBoundary :: String -> Maybe (Int, Int)
-findBoundary s = go 0 s
+findBoundary = go 0
   where
     go _ [] = Nothing
     go i xs@(_ : rest) =
@@ -211,7 +213,12 @@ isBoundaryAt s =
                 (c : rest3)
                   | c == '.' ->
                       let (spaces2, _) = span isSpace rest3
-                       in Just (length digits + length spaces + 1 + length spaces2)
+                       in Just
+                            ( length digits
+                                + length spaces
+                                + 1
+                                + length spaces2
+                            )
                 _ -> Nothing
 
 -- | Recursively splits the string into items using the boundary markers.

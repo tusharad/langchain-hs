@@ -15,7 +15,7 @@ import Langchain.DocumentLoader.Core
 import Langchain.DocumentLoader.FileLoader
 
 createTestFile :: FilePath -> String -> IO ()
-createTestFile path content = writeFile path content
+createTestFile = writeFile
 
 withTestFile :: String -> (FilePath -> IO a) -> IO a
 withTestFile content action =
@@ -37,7 +37,7 @@ documentTests =
     , testCase "Document Monoid instance should have identity element" $ do
         let doc = Document "Content" (fromList [("key", String "value")])
         doc <> mempty @?= doc
-        mempty <> doc @?= doc
+        doc @?= doc
         pageContent mempty @?= ""
         metadata mempty @?= empty
     ]

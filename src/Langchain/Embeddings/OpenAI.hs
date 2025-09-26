@@ -146,11 +146,13 @@ data OpenAIEmbeddings = OpenAIEmbeddings
   , model :: Text
   -- ^ Model name for embeddings
   , dimensions :: Maybe Int
-  -- ^ The number of dimensions the resulting output embeddings should have.
-  --   ^ Only supported in text-embedding-3 or later
+  {- ^ The number of dimensions the resulting output embeddings should have.
+  ^ Only supported in text-embedding-3 or later
+  -}
   , encodingFormat :: Maybe EncodingFormat
-  -- ^ The format to return the embeddings in.
-  --   ^ For now, only float is supported
+  {- ^ The format to return the embeddings in.
+  ^ For now, only float is supported
+  -}
   , timeout :: Maybe Int
   -- ^ Override default responsetime out. unit = seconds.
   }

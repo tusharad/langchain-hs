@@ -240,7 +240,7 @@ Right "Haskell has a strong, static type system featuring type inference..."
 -}
 appendSequence ::
   ( Runnable r2
-  , RunnableOutput (RunnableSequence a b) ~ (RunnableInput r2)
+  , RunnableOutput (RunnableSequence a b) ~ RunnableInput r2
   ) =>
   RunnableSequence a b ->
   r2 ->

@@ -48,42 +48,47 @@ The use of type families allows for flexible yet type-safe tool composition,
 while the IO monad accommodates both pure and effectful implementations.
 -}
 class Tool a where
-  -- | Input type required by the tool
-  --
-  -- Example: For a weather lookup tool, this might be 'LocationCoordinates'
+  {- | Input type required by the tool
+
+  Example: For a weather lookup tool, this might be 'LocationCoordinates'
+  -}
   type Input a
 
-  -- | Output type produced by the tool
-  --
-  -- Example: For a calculator tool, this could be 'Int' or 'Double'
+  {- | Output type produced by the tool
+
+  Example: For a calculator tool, this could be 'Int' or 'Double'
+  -}
   type Output a
 
-  -- | Get the tool's unique identifier
-  --
-  -- >>> toolName (undefined :: Calculator)
-  -- "calculator"
+  {- | Get the tool's unique identifier
+
+  >>> toolName (undefined :: Calculator)
+  "calculator"
+  -}
   toolName :: a -> Text
 
-  -- | Get human-readable description of the tool's purpose
-  --
-  -- >>> toolDescription (undefined :: Calculator)
-  -- "Performs arithmetic operations on two integers"
+  {- | Get human-readable description of the tool's purpose
+
+  >>> toolDescription (undefined :: Calculator)
+  "Performs arithmetic operations on two integers"
+  -}
   toolDescription :: a -> Text
 
-  -- | Execute the tool with given input
-  --
-  -- This function bridges the gap between LLM abstractions and concrete
-  -- implementations. The IO context allows for:
-  --
-  -- * Pure computations (via 'pure')
-  -- * External API calls
-  -- * Database queries
-  --
-  -- Example implementation:
-  --
-  -- > runTool _ (a, b) = do
-  -- >   putStrLn "Calculating..."
-  -- >   pure (a + b)
+  {- | Execute the tool with given input
+
+  This function bridges the gap between LLM abstractions and concrete
+  implementations. The IO context allows for:
+
+  * Pure computations (via 'pure')
+  * External API calls
+  * Database queries
+
+  Example implementation:
+
+  > runTool _ (a, b) = do
+  >   putStrLn "Calculating..."
+  >   pure (a + b)
+  -}
   runTool :: a -> Input a -> IO (Output a)
 
   -- | MonadIO version of runTool

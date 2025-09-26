@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Test.Langchain.LLM.Core (tests) where
@@ -22,7 +21,7 @@ data TestLLM = TestLLM
 instance LLM TestLLM where
   type LLMParams TestLLM = Text
   type LLMStreamTokenType TestLLM = Text
- 
+
   generate m _ mbParams =
     pure $
       if shouldSucceed m

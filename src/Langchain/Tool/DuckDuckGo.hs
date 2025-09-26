@@ -24,7 +24,7 @@ import Langchain.Tool.Core
 import Network.HTTP.Simple
 
 -- | Icon data within related topics
-data Icon = Icon
+newtype Icon = Icon
   { iconURL :: Maybe Text
   }
   deriving (Show, Eq, Generic)
@@ -208,7 +208,7 @@ instance Tool DuckDuckGo where
           case eitherDecode body of
             Left err -> pure $ Left $ T.pack $ show err
             Right ddgResponse_ -> pure $ Right ddgResponse_
-        )
+      )
         `catch` \e -> pure $ Left $ T.pack $ show (e :: SomeException)
     case eResult of
       Left err -> pure err
@@ -241,7 +241,11 @@ answerSection resp =
 definitionSection :: DuckDuckGoResponse -> Maybe Text
 definitionSection resp = do
   def <- if T.null (definition resp) then Nothing else Just (definition resp)
-  url <- if T.null (definitionURL resp) then Nothing else Just (definitionURL resp)
+  url <-
+    if T.null (definitionURL resp)
+      then
+        Nothing
+      else Just (definitionURL resp)
   Just $ "Definition: " <> def <> "\nSource: " <> url
 
 relatedTopicsSection :: [RelatedTopic] -> Maybe Text

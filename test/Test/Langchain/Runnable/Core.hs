@@ -1,16 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Test.Langchain.Runnable.Core (tests) where
 
-import Data.IORef (modifyIORef, newIORef, readIORef)
+import Data.IORef (modifyIORef, newIORef, readIORef, writeIORef)
 import Langchain.Runnable.Core
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertEqual, testCase)
 
-data MockRunnable a b = MockRunnable
+newtype MockRunnable a b = MockRunnable
   { runMock :: a -> IO (Either String b)
   }
 
@@ -53,7 +52,7 @@ tests =
     , testCase "stream error" $ do
         ref <- newIORef []
         let mock = MockRunnable (\(_ :: String) -> return $ Left "stream error")
-            callback _ = modifyIORef ref (const ["should not be called" :: String])
+            callback _ = writeIORef ref ["should not be called" :: String]
         result <- stream mock "test" callback
         readRef <- readIORef ref
         assertEqual "Stream should return error" (Left "stream error") result
