@@ -7,7 +7,9 @@ module Main (main) where
 -- import App.Ollama.MultiAgent
 -- import App.Ollama.Agent
 -- import App.Gemini.Embeddings
-import App.Gemini.Streaming
+import App.Gemini.Runnable
+
+-- import App.Gemini.Streaming
 
 main :: IO ()
 main = runApp
