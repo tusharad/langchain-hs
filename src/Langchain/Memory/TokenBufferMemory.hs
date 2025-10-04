@@ -80,7 +80,7 @@ instance BaseMemory TokenBufferMemory where
           then
             pure
               ( Left $
-                  llmError "Cannot add new message since system message and new message excedds limit" Nothing Nothing
+                  llmError "Cannot add new message since system message and new message exceeds limit" Nothing Nothing
               )
           else
             if countTokens trimmedMsgs + newMsgTokenCount <= maxTokens
