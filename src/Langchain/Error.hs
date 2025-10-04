@@ -584,15 +584,7 @@ withContext component operation result = case result of
                     , contextTimestamp = contextTimestamp ctx
                     }
             }
-      Nothing ->
-        Left $ internalError
-          "withContext requires timestamp in errorContext - use withContextIO if you need to add context to an error without a timestamp"
-          Nothing
-          Nothing
-                      -- We use a dummy timestamp here, but actually, we should return Left
-                      -- So, we restructure the code below
-                }
-        }
+      Nothing -> Left err
   Right val -> Right val
 
 -- | Run an action and add context to any errors (IO version)
