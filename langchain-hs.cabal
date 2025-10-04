@@ -46,6 +46,7 @@ library
       Langchain.Embeddings.Gemini
       Langchain.Embeddings.Ollama
       Langchain.Embeddings.OpenAI
+      Langchain.Error
       Langchain.LLM.Core
       Langchain.LLM.Deepseek
       Langchain.LLM.Gemini
@@ -73,6 +74,7 @@ library
       Langchain.Tool.Utils
       Langchain.Tool.WebScraper
       Langchain.Tool.WikipediaTool
+      Langchain.Utils
       Langchain.VectorStore.Core
       Langchain.VectorStore.InMemory
   other-modules:
@@ -96,6 +98,7 @@ library
     , pdf-toolbox-document ==0.1.4
     , tagsoup <0.15
     , text >=1.2 && <3
+    , time >=1.9 && <1.15
     , transformers
     , vector <0.14
   default-language: Haskell2010
@@ -146,6 +149,7 @@ test-suite langchain-hs-test
     , tasty-hunit
     , temporary
     , text
+    , time >=1.9 && <1.15
     , transformers
     , vector <0.14
   default-language: Haskell2010

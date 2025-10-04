@@ -17,7 +17,9 @@ module Langchain.DocumentLoader.PdfLoader
 import Data.Aeson
 import Data.Map (fromList)
 import Langchain.DocumentLoader.Core
+import Langchain.Error (llmError)
 import Langchain.TextSplitter.Character
+import Langchain.Utils (showText)
 import Pdf.Document hiding (Document)
 import System.Directory (doesFileExist)
 
@@ -91,7 +93,9 @@ instance BaseLoader PdfLoader where
         content <- readPdf path
         return $ Right content
       else
-        return $ Left $ "File not found: " ++ path
+        return $
+          Left $
+            llmError (showText $ "File not found: " ++ path) Nothing Nothing
 
   -- \|
   --  Loads the raw content of the PDF file and splits it using a character splitter.
@@ -115,4 +119,6 @@ instance BaseLoader PdfLoader where
               defaultCharacterSplitterOps
               (pageContent $ mconcat documents)
       else
-        return $ Left $ "File not found: " ++ path
+        return $
+          Left $
+            llmError (showText $ "File not found: " ++ path) Nothing Nothing

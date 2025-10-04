@@ -4,6 +4,7 @@
 
 module Test.Langchain.Runnable.Chains (tests) where
 
+import Langchain.Error (LangchainError, llmError)
 import Langchain.Runnable.Chain
 import Langchain.Runnable.Core
 import Test.Tasty (TestTree, testGroup)
@@ -19,9 +20,9 @@ evenCheck :: MockRunnable Int Bool
 evenCheck = MockRunnable $ return . Right . even
 
 failingMock :: MockRunnable a b
-failingMock = MockRunnable (\_ -> return $ Left "Mock error")
+failingMock = MockRunnable (\_ -> return $ Left (llmError "Mock error" Nothing Nothing))
 
-newtype MockRunnable a b = MockRunnable {runMock :: a -> IO (Either String b)}
+newtype MockRunnable a b = MockRunnable {runMock :: a -> IO (Either LangchainError b)}
 
 instance Runnable (MockRunnable a b) where
   type RunnableInput (MockRunnable a b) = a
@@ -80,7 +81,7 @@ tests =
         , testCase "Propagates errors in chain" $ do
             let pipeline = failingMock |>> multiplyByTwo
             result <- pipeline ()
-            assertEqual "Error in first step" (Left "Mock error") result
+            assertEqual "Error in first step" (Left (llmError "Mock error" Nothing Nothing)) result
         ]
     , testGroup
         "Branch Tests"
@@ -91,7 +92,7 @@ tests =
             result <- branch failingMock addOne 5
             assertEqual
               "Left error in first branch"
-              (Left "Mock error" :: Either String (Bool, Int))
+              (Left (llmError "Mock error" Nothing Nothing) :: Either LangchainError (Bool, Int))
               result
         ]
     ]

@@ -2,9 +2,10 @@
 
 module Test.Langchain.Embeddings.Core (tests) where
 
-import Data.Text (isInfixOf, pack)
+import Data.Text (isInfixOf)
 import Langchain.Embeddings.Core
 import Langchain.Embeddings.Ollama
+import Langchain.Utils (showText)
 import Test.Tasty
 import Test.Tasty.HUnit
 
@@ -22,7 +23,7 @@ tests =
               Left err ->
                 assertBool
                   "Error message contains 'error'"
-                  ("error" `isInfixOf` pack err)
+                  ("error" `isInfixOf` showText err)
               Right _ -> assertFailure "Expected API error propagation"
         ]
     ]

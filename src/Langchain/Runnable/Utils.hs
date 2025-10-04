@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -38,6 +39,7 @@ module Langchain.Runnable.Utils
 
 import Control.Concurrent
 import Data.Map.Strict as Map
+import Langchain.Error (llmError)
 import Langchain.Runnable.Core
 
 {- | Wrapper for 'Runnable' components with configurable behavior.
@@ -242,4 +244,4 @@ instance (Runnable r) => Runnable (WithTimeout r) where
 
     case result of
       Just r_ -> return r_
-      Nothing -> return $ Left "Operation timed out"
+      Nothing -> return $ Left (llmError "Operation timed out" Nothing Nothing)

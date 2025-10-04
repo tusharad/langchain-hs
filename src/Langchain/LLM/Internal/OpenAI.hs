@@ -127,8 +127,10 @@ import Data.Map (Map)
 import qualified Data.Map as HM
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import GHC.Generics
+import Langchain.Error (LangchainError, llmError)
 import Langchain.LLM.Core (ToolCall (..))
 import qualified Langchain.LLM.Core as LLM
 import Langchain.LLM.Internal.SchemaBuilder
@@ -983,7 +985,8 @@ defaultChatCompletionRequest =
 {- | Creates a chat completion request and returns the response.
 Sends the request to OpenAI's API and parses the response.
 -}
-createChatCompletion :: Text -> ChatCompletionRequest -> IO (Either String ChatCompletionResponse)
+createChatCompletion ::
+  Text -> ChatCompletionRequest -> IO (Either LangchainError ChatCompletionResponse)
 createChatCompletion apiKey r = do
   request_ <-
     parseRequest $
@@ -1006,15 +1009,36 @@ createChatCompletion apiKey r = do
   let status = statusCode $ getResponseStatus response
   if status >= 200 && status < 300
     then case eitherDecode (getResponseBody response) of
-      Left err -> return $ Left $ "JSON parse error: " <> err <> show (getResponseBody response)
+      Left err ->
+        return $
+          Left $
+            llmError
+              ( T.pack $
+                  "JSON parse error: "
+                    <> err
+                    <> show (getResponseBody response)
+              )
+              Nothing
+              Nothing
       Right completionResponse -> return $ Right completionResponse
-    else return $ Left $ "API error: " <> show status <> " " <> show (getResponseBody response)
+    else
+      return $
+        Left $
+          llmError
+            ( T.pack $
+                "API error: "
+                  <> show status
+                  <> " "
+                  <> show (getResponseBody response)
+            )
+            Nothing
+            Nothing
 
 {- | Creates a streaming chat completion request.
 Processes the stream using the provided handler.
 -}
 createChatCompletionStream ::
-  Text -> ChatCompletionRequest -> OpenAIStreamHandler -> IO (Either String ())
+  Text -> ChatCompletionRequest -> OpenAIStreamHandler -> IO (Either LangchainError ())
 createChatCompletionStream apiKey r OpenAIStreamHandler {..} = do
   request_ <-
     parseRequest $

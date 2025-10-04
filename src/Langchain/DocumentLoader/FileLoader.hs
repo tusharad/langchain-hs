@@ -31,7 +31,9 @@ module Langchain.DocumentLoader.FileLoader
 import Data.Aeson
 import Data.Map (fromList)
 import Data.Text (pack)
+import qualified Data.Text as T
 import Langchain.DocumentLoader.Core
+import Langchain.Error (llmError)
 import Langchain.TextSplitter.Character
 import System.Directory (doesFileExist)
 
@@ -61,7 +63,13 @@ instance BaseLoader FileLoader where
         let meta = fromList [("source", String $ pack path)]
         return $ Right [Document (pack content) meta]
       else
-        return $ Left $ "File not found: " ++ path
+        return $
+          Left
+            ( llmError
+                (T.pack $ "File not found: " ++ path)
+                Nothing
+                Nothing
+            )
 
   -- \| Load and split content using default character splitter
   --
@@ -77,7 +85,13 @@ instance BaseLoader FileLoader where
         content <- readFile path
         return $ Right $ splitText defaultCharacterSplitterOps (pack content)
       else
-        return $ Left $ "File not found: " ++ path
+        return $
+          Left
+            ( llmError
+                (T.pack $ "File not found: " ++ path)
+                Nothing
+                Nothing
+            )
 
 {- $examples
 Test case patterns:

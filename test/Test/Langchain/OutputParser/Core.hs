@@ -7,6 +7,7 @@ import Test.Tasty.HUnit
 
 import Data.Aeson
 import Data.Text (Text)
+import Langchain.Error (LangchainError)
 import Langchain.OutputParser.Core
 
 data Person = Person
@@ -26,23 +27,23 @@ tests =
   testGroup
     "OutputParser Tests"
     [ testCase "Bool parser should parse 'true'" $
-        (parse "true" :: Either String Bool) @?= Right True
+        (parse "true" :: Either LangchainError Bool) @?= Right True
     , testCase "Bool parser should parse 'True'" $
-        (parse "True" :: Either String Bool) @?= Right True
+        (parse "True" :: Either LangchainError Bool) @?= Right True
     , testCase "Bool parser should parse 'TRUE'" $
-        (parse "TRUE" :: Either String Bool) @?= Right True
+        (parse "TRUE" :: Either LangchainError Bool) @?= Right True
     , testCase "Bool parser should parse 'true' with whitespace" $
-        (parse "  true  " :: Either String Bool) @?= Right True
+        (parse "  true  " :: Either LangchainError Bool) @?= Right True
     , testCase "Bool parser should parse 'false'" $
-        (parse "false" :: Either String Bool) @?= Right False
+        (parse "false" :: Either LangchainError Bool) @?= Right False
     , testCase "Bool parser should parse 'False'" $
-        (parse "False" :: Either String Bool) @?= Right False
+        (parse "False" :: Either LangchainError Bool) @?= Right False
     , testCase "Bool parser should parse 'FALSE'" $
-        (parse "FALSE" :: Either String Bool) @?= Right False
+        (parse "FALSE" :: Either LangchainError Bool) @?= Right False
     , testCase "Bool parser should parse 'false' with whitespace" $
-        (parse "  false  " :: Either String Bool) @?= Right False
+        (parse "  false  " :: Either LangchainError Bool) @?= Right False
     , testCase "Bool parser should fail on invalid input" $
-        case parse "not a boolean" :: Either String Bool of
+        case parse "not a boolean" :: Either LangchainError Bool of
           Left _ -> assertBool "Should be Left" True
           Right _ -> assertFailure "Should have failed parsing"
     , testCase "CommaSeparatedList parser should parse empty string" $
@@ -57,7 +58,7 @@ tests =
         parse "{\"name\":\"John\",\"age\":30}"
           @?= Right (JSONOutputStructure (Person "John" 30))
     , testCase "JSONOutputStructure parser should fail on invalid JSON" $
-        case parse "{not valid json}" :: Either String (JSONOutputStructure Person) of
+        case parse "{not valid json}" :: Either LangchainError (JSONOutputStructure Person) of
           Left _ -> assertBool "Should be Left" True
           Right _ -> assertFailure "Should have failed parsing"
     , testCase "NumberSeparatedList parser should parse numbered list" $
@@ -76,7 +77,7 @@ tests =
         parse "1 . First item\n2 . Second item"
           @?= Right (NumberSeparatedList ["First item", "Second item"])
     , testCase "NumberSeparatedList parser should fail if no numbers are found" $
-        case parse "No numbers here, just text" :: Either String NumberSeparatedList of
+        case parse "No numbers here, just text" :: Either LangchainError NumberSeparatedList of
           Left _ -> assertBool "Should be Left" True
           Right _ -> assertFailure "Should have failed parsing"
     ]

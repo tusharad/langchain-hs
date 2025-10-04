@@ -43,7 +43,7 @@ tests =
         let prompt = "What is functional programming?"
         result <- generate ollama prompt Nothing
         case result of
-          Left err -> assertFailure $ "Expected success, got error: " ++ err
+          Left err -> assertFailure $ "Expected success, got error: " ++ show err
           Right response -> do
             assertBool "Non-empty response expected" (T.length response > 0)
             events <- getEvents
@@ -57,36 +57,60 @@ tests =
         result <- generate ollama prompt Nothing
         case result of
           Left err -> do
-            assertBool "Error should mention model" ("model" `T.isInfixOf` T.pack err)
+            assertBool
+              "Error should mention model"
+              ("model" `T.isInfixOf` T.pack (show err))
             events <- getEvents
-            assertBool "LLM should tried to be started" (events `shouldContainAll` [LLMStart])
+            assertBool
+              "LLM should tried to be started"
+              (events `shouldContainAll` [LLMStart])
             length (filter isErrorEvent events) @?= 1
           Right _ -> assertFailure "Expected error, but got success"
     , testCase "chat returns text response for messages" $ do
         (callback, getEvents) <- captureEvents
         let ollama = Ollama testModelName [callback]
-        let messages = Message User "What's the capital of France?" defaultMessageData :| []
-        result <- chat ollama messages (Just $ defaultOllamaParams {responseTimeOut = Just 1200})
+        let messages =
+              Message
+                User
+                "What's the capital of France?"
+                defaultMessageData
+                :| []
+        result <-
+          chat
+            ollama
+            messages
+            (Just $ defaultOllamaParams {responseTimeOut = Just 1200})
         case result of
-          Left err -> assertFailure $ "Expected success, got error: " ++ err
+          Left err -> assertFailure $ "Expected success, got error: " ++ show err
           Right response -> do
             assertBool
               "Response should mention Paris"
               ("paris" `T.isInfixOf` T.toLower (content response))
             events <- getEvents
-            assertBool "LLM should be completed" (events `shouldContainAll` [LLMStart, LLMEnd])
+            assertBool
+              "LLM should be completed"
+              (events `shouldContainAll` [LLMStart, LLMEnd])
     , testCase "chat handles multi-turn conversations" $ do
         (callback, _) <- captureEvents
         let ollama = Ollama testModelName [callback]
         let messages =
               Message System "You are a helpful assistant." defaultMessageData
-                :| [ Message User "What's the capital of France?" defaultMessageData
-                   , Message Assistant "The capital of France is Paris." defaultMessageData
-                   , Message User "And what about Italy?" defaultMessageData
+                :| [ Message
+                       User
+                       "What's the capital of France?"
+                       defaultMessageData
+                   , Message
+                       Assistant
+                       "The capital of France is Paris."
+                       defaultMessageData
+                   , Message
+                       User
+                       "And what about Italy?"
+                       defaultMessageData
                    ]
         result <- chat ollama messages Nothing
         case result of
-          Left err -> assertFailure $ "Expected success, got error: " ++ err
+          Left err -> assertFailure $ "Expected success, got error: " ++ show err
           Right response ->
             assertBool
               "Response should mention Rome"
@@ -106,7 +130,7 @@ tests =
 
         result <- stream ollama messages handler Nothing
         case result of
-          Left err -> assertFailure $ "Expected success, got error: " ++ err
+          Left err -> assertFailure $ "Expected success, got error: " ++ show err
           Right () -> do
             tokens <- readIORef tokensRef
             assertBool "Should receive tokens" (not (null tokens))
@@ -115,7 +139,7 @@ tests =
         let input = Message User "What is 2+2?" defaultMessageData :| []
         result <- Run.invoke ollama (input, Nothing)
         case result of
-          Left err -> assertFailure $ "Expected success, got error: " ++ err
+          Left err -> assertFailure $ "Expected success, got error: " ++ show err
           Right response ->
             assertBool
               "Should mention 4"
@@ -144,7 +168,7 @@ tests =
         let params = defaultOllamaParams {system = Just systemMsg}
         result <- generate ollama prompt (Just params)
         case result of
-          Left err -> assertFailure $ "Expected success, got error: " ++ err
+          Left err -> assertFailure $ "Expected success, got error: " ++ show err
           Right response -> do
             assertBool "Response should mention 4" ("4" `T.isInfixOf` T.toLower response)
             events <- getEvents
@@ -156,7 +180,7 @@ tests =
         let params = defaultOllamaParams {format = Just O.JsonFormat}
         result <- generate ollama prompt (Just params)
         case result of
-          Left err -> assertFailure $ "Expected success, got error: " ++ err
+          Left err -> assertFailure $ "Expected success, got error: " ++ show err
           Right response -> do
             case eitherDecode (BSL.fromStrict $ T.encodeUtf8 response) :: Either String Value of
               Left _ -> assertFailure "Response is not valid JSON"
@@ -187,7 +211,7 @@ tests =
         let params = defaultOllamaParams {format = Just O.JsonFormat}
         result <- chat ollama messages (Just params)
         case result of
-          Left err -> assertFailure $ "Expected success, got error: " ++ err
+          Left err -> assertFailure $ "Expected success, got error: " ++ show err
           Right response -> do
             case eitherDecode (BSL.fromStrict $ T.encodeUtf8 (content response)) :: Either String Value of
               Left _ -> assertFailure "Response is not valid JSON"

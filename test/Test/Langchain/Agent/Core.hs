@@ -10,6 +10,7 @@ import qualified Data.List.NonEmpty as NE
 import qualified Data.Map.Strict as Map
 import Data.Text (Text, isInfixOf, pack)
 import Langchain.Agents.Core
+import Langchain.Error (internalError, llmError, toolError)
 import Langchain.LLM.Core
 import Langchain.Memory.Core (BaseMemory (..))
 import Langchain.PromptTemplate
@@ -41,7 +42,7 @@ instance Agent StepSequenceAgent where
   planNextAction (StepSequenceAgent ref _) _ = do
     steps <- readIORef ref
     case steps of
-      [] -> return $ Left "No steps left"
+      [] -> return $ Left (llmError "No steps left" Nothing Nothing)
       (step : rest) -> do
         writeIORef ref rest
         return $ Right step
@@ -75,20 +76,37 @@ tests =
     , testCase "executeTool tool not found" $ do
         let tools = []
         result <- executeTool tools "unknown-tool" "input"
-        assertEqual "Should return tool not found error" (Left "Tool not found: unknown-tool") result
+        assertEqual
+          "Should return tool not found error"
+          (Left (toolError "Tool not found: unknown-tool" Nothing Nothing))
+          result
     , testCase "executeTool tool throws exception" $ do
         let faultyAnyTool = customAnyTool FaultyTool id id
             tools = [faultyAnyTool]
         result <- executeTool tools "faulty-tool" "input"
         assertBool
           "Should return execution error"
-          ("Intentional tool error" `isInfixOf` pack (fromLeft "" result))
+          ( "Intentional tool error"
+              `isInfixOf` pack
+                ( show $
+                    fromLeft
+                      ( toolError
+                          "Intentional tool error"
+                          Nothing
+                          Nothing
+                      )
+                      result
+                )
+          )
     , testCase "runAgentLoop max iterations exceeded" $ do
         agentRef <- newIORef []
         let agent = StepSequenceAgent agentRef []
             initialState = AgentState (TestMemory []) [] []
         result <- runAgentLoop agent initialState 10 5
-        assertEqual "Should return max iteration error" (Left "Max iterations excedded") result
+        assertEqual
+          "Should return max iteration error"
+          (Left (internalError "Max iterations exceeded" Nothing Nothing))
+          result
     , testCase "runAgent immediate finish" $ do
         agentRef <- newIORef [Finish (AgentFinish (Map.singleton "result" "success") "Finished")]
         let agent = StepSequenceAgent agentRef []

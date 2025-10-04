@@ -21,6 +21,7 @@ module Langchain.Memory.TokenBufferMemory
 
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Text as T
+import Langchain.Error (llmError)
 import Langchain.LLM.Core
   ( ChatMessage
   , Message (..)
@@ -57,7 +58,7 @@ instance BaseMemory TokenBufferMemory where
         currentMsgsTokenCount = countTokens $ NE.toList tokenBufferMessages
     if newMsgTokenCount > maxTokens
       then
-        pure (Left "New message is exceeding limit")
+        pure (Left (llmError "New message is exceeding limit" Nothing Nothing))
       else
         if newMsgTokenCount + currentMsgsTokenCount <= maxTokens
           then
@@ -79,8 +80,7 @@ instance BaseMemory TokenBufferMemory where
           then
             pure
               ( Left $
-                  "Cannot add new message since system message and "
-                    <> "new message excedds limit"
+                  llmError "Cannot add new message since system message and new message excedds limit" Nothing Nothing
               )
           else
             if countTokens trimmedMsgs + newMsgTokenCount <= maxTokens

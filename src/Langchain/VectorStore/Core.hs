@@ -35,6 +35,7 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Int (Int64)
 import Data.Text (Text)
 import Langchain.DocumentLoader.Core
+import Langchain.Error (LangchainResult)
 
 -- TODO: Add delete document mechanism, for this we need to generate and use id (Int)
 
@@ -62,9 +63,9 @@ class VectorStore vs where
   >>> addDocuments myStore [Document "Test content" mempty]
   Right (updatedStoreWithNewDocs)
   -}
-  addDocuments :: vs -> [Document] -> IO (Either String vs)
+  addDocuments :: vs -> [Document] -> IO (LangchainResult vs)
 
-  addDocumentsM :: MonadIO m => vs -> [Document] -> m (Either String vs)
+  addDocumentsM :: MonadIO m => vs -> [Document] -> m (LangchainResult vs)
   addDocumentsM store docs = liftIO $ addDocuments store docs
 
   {- |
@@ -75,9 +76,9 @@ class VectorStore vs where
   >>> delete myStore [123]
   Right (storeWithoutDoc123)
   -}
-  delete :: vs -> [Int64] -> IO (Either String vs)
+  delete :: vs -> [Int64] -> IO (LangchainResult vs)
 
-  deleteM :: MonadIO m => vs -> [Int64] -> m (Either String vs)
+  deleteM :: MonadIO m => vs -> [Int64] -> m (LangchainResult vs)
   deleteM store ids = liftIO $ delete store ids
 
   {- | Find documents similar to query text
@@ -88,9 +89,9 @@ class VectorStore vs where
   >>> similaritySearch store "Haskell monads" 3
   Right [Document "Monads in FP...", ...]
   -}
-  similaritySearch :: vs -> Text -> Int -> IO (Either String [Document])
+  similaritySearch :: vs -> Text -> Int -> IO (LangchainResult [Document])
 
-  similaritySearchM :: MonadIO m => vs -> Text -> Int -> m (Either String [Document])
+  similaritySearchM :: MonadIO m => vs -> Text -> Int -> m (LangchainResult [Document])
   similaritySearchM store query k = liftIO $ similaritySearch store query k
 
   {- | Find documents similar to vector representation
@@ -101,9 +102,9 @@ class VectorStore vs where
   >>> similaritySearchByVector store [0.1, 0.3, ...] 5
   Right [mostSimilarDoc1, ...]
   -}
-  similaritySearchByVector :: vs -> [Float] -> Int -> IO (Either String [Document])
+  similaritySearchByVector :: vs -> [Float] -> Int -> IO (LangchainResult [Document])
 
-  similaritySearchByVectorM :: MonadIO m => vs -> [Float] -> Int -> m (Either String [Document])
+  similaritySearchByVectorM :: MonadIO m => vs -> [Float] -> Int -> m (LangchainResult [Document])
   similaritySearchByVectorM store vector k = liftIO $ similaritySearchByVector store vector k
 
 {- $examples

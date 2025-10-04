@@ -11,6 +11,7 @@ import Data.Either
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
+import Langchain.Error (llmError)
 import Langchain.LLM.Core
 
 data TestLLM = TestLLM
@@ -26,13 +27,13 @@ instance LLM TestLLM where
     pure $
       if shouldSucceed m
         then Right (fromMaybe (responseText m) mbParams)
-        else Left "Test error"
+        else Left (llmError "Test error" Nothing Nothing)
 
   chat m _ _ =
     pure $
       if shouldSucceed m
         then Right $ Message User (responseText m) defaultMessageData
-        else Left "Test error"
+        else Left (llmError "Test error" Nothing Nothing)
 
   stream m _ handler _ = do
     if shouldSucceed m
@@ -40,7 +41,7 @@ instance LLM TestLLM where
         onToken handler (responseText m)
         onComplete handler
         pure (Right ())
-      else pure (Left "Test error")
+      else pure (Left (llmError "Test error" Nothing Nothing))
 
 tests :: TestTree
 tests =
@@ -121,7 +122,7 @@ tests =
             , testCase "returns Left with error for failed generation" $ do
                 let failureLLM = TestLLM "Failure response" False
                 result <- generate failureLLM "Test prompt" Nothing
-                assertEqual "Failed generation" (Left "Test error") result
+                assertEqual "Failed generation" (Left (llmError "Test error" Nothing Nothing)) result
             ]
         , testGroup
             "chat"
@@ -136,7 +137,7 @@ tests =
                     singleMsg = Message User "Test prompt" defaultMessageData
                     chatMsgs = singleMsg :| []
                 result <- chat failureLLM chatMsgs Nothing
-                assertEqual "Failed chat" (Left "Test error") result
+                assertEqual "Failed chat" (Left (llmError "Test error" Nothing Nothing)) result
             ]
         , testGroup
             "stream"
@@ -161,7 +162,7 @@ tests =
                         , onComplete = pure ()
                         }
                 result <- stream failureLLM chatMsgs handler Nothing
-                assertEqual "Failed stream" (Left "Test error") result
+                assertEqual "Failed stream" (Left (llmError "Test error" Nothing Nothing)) result
             ]
         ]
     , testGroup

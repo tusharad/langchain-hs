@@ -11,6 +11,7 @@ import Langchain.Runnable.Core
 
 import qualified Data.List.NonEmpty as NE
 import Data.Text (Text)
+import Langchain.Error (toString)
 
 systemMsg :: Text -> Message
 systemMsg text = Message System text defaultMessageData
@@ -62,7 +63,7 @@ windowBufferMemoryTests =
             memory = WindowBufferMemory 3 initialMsgs
         result <- messages memory
         case result of
-          Left err -> assertFailure $ "Expected Right but got Left: " ++ err
+          Left err -> assertFailure $ "Expected Right but got Left: " ++ toString err
           Right msgs -> msgs @?= initialMsgs
     , testCase "addMessage should add message when under capacity" $ do
         let initialMsgs = NE.fromList [systemMsg "System"]
@@ -70,36 +71,51 @@ windowBufferMemoryTests =
             newMsg = userMsg "User1"
         result <- addMessage memory newMsg
         case result of
-          Left err -> assertFailure $ "Expected Right but got Left: " ++ err
+          Left err -> assertFailure $ "Expected Right but got Left: " ++ toString err
           Right newMemory -> do
             msgsResult <- messages newMemory
             case msgsResult of
-              Left err -> assertFailure $ "Expected Right but got Left: " ++ err
-              Right msgs -> NE.toList msgs @?= [systemMsg "System", userMsg "User1"]
+              Left err ->
+                assertFailure $
+                  "Expected Right but got Left: " ++ toString err
+              Right msgs ->
+                NE.toList msgs
+                  @?= [ systemMsg "System"
+                      , userMsg "User1"
+                      ]
     , testCase "addMessage should maintain max window size" $ do
-        let initialMsgs = NE.fromList [systemMsg "System", userMsg "User1", aiMsg "AI1"]
+        let initialMsgs =
+              NE.fromList
+                [ systemMsg "System"
+                , userMsg "User1"
+                , aiMsg "AI1"
+                ]
             memory = WindowBufferMemory 3 initialMsgs
             newMsg = userMsg "User2"
         result <- addMessage memory newMsg
         case result of
-          Left err -> assertFailure $ "Expected Right but got Left: " ++ err
+          Left err -> assertFailure $ "Expected Right but got Left: " ++ toString err
           Right newMemory -> do
             msgsResult <- messages newMemory
             case msgsResult of
-              Left err -> assertFailure $ "Expected Right but got Left: " ++ err
+              Left err -> assertFailure $ "Expected Right but got Left: " ++ toString err
               Right msgs -> do
                 NE.length msgs @?= 3
-                NE.toList msgs @?= [systemMsg "System", aiMsg "AI1", userMsg "User2"]
+                NE.toList msgs
+                  @?= [ systemMsg "System"
+                      , aiMsg "AI1"
+                      , userMsg "User2"
+                      ]
     , testCase "addUserMessage should add message with User role" $ do
         let initialMsgs = NE.fromList [systemMsg "System"]
             memory = WindowBufferMemory 3 initialMsgs
         result <- addUserMessage memory "Hello"
         case result of
-          Left err -> assertFailure $ "Expected Right but got Left: " ++ err
+          Left err -> assertFailure $ "Expected Right but got Left: " ++ toString err
           Right newMemory -> do
             msgsResult <- messages newMemory
             case msgsResult of
-              Left err -> assertFailure $ "Expected Right but got Left: " ++ err
+              Left err -> assertFailure $ "Expected Right but got Left: " ++ toString err
               Right msgs -> do
                 NE.length msgs @?= 2
                 NE.toList msgs @?= [systemMsg "System", userMsg "Hello"]
@@ -108,24 +124,35 @@ windowBufferMemoryTests =
             memory = WindowBufferMemory 3 initialMsgs
         result <- addAiMessage memory "I can help"
         case result of
-          Left err -> assertFailure $ "Expected Right but got Left: " ++ err
+          Left err -> assertFailure $ "Expected Right but got Left: " ++ toString err
           Right newMemory -> do
             msgsResult <- messages newMemory
             case msgsResult of
-              Left err -> assertFailure $ "Expected Right but got Left: " ++ err
+              Left err -> assertFailure $ "Expected Right but got Left: " ++ toString err
               Right msgs -> do
                 NE.length msgs @?= 2
-                NE.toList msgs @?= [systemMsg "System", aiMsg "I can help"]
+                NE.toList msgs
+                  @?= [ systemMsg "System"
+                      , aiMsg "I can help"
+                      ]
     , testCase "clear should reset to just system message" $ do
-        let initialMsgs = NE.fromList [systemMsg "System", userMsg "User1", aiMsg "AI1"]
+        let initialMsgs =
+              NE.fromList
+                [ systemMsg "System"
+                , userMsg "User1"
+                , aiMsg "AI1"
+                ]
             memory = WindowBufferMemory 3 initialMsgs
         result <- clear memory
         case result of
-          Left err -> assertFailure $ "Expected Right but got Left: " ++ err
+          Left err -> assertFailure $ "Expected Right but got Left: " ++ toString err
           Right newMemory -> do
             msgsResult <- messages newMemory
             case msgsResult of
-              Left err -> assertFailure $ "Expected Right but got Left: " ++ err
+              Left err ->
+                assertFailure $
+                  "Expected Right but got Left: "
+                    ++ toString err
               Right msgs -> do
                 NE.length msgs @?= 1
                 NE.head msgs @?= systemMsg "You are an AI model"
@@ -140,11 +167,11 @@ runnableTests =
             memory = WindowBufferMemory 3 initialMsgs
         result <- invoke memory "Test input"
         case result of
-          Left err -> assertFailure $ "Expected Right but got Left: " ++ err
+          Left err -> assertFailure $ "Expected Right but got Left: " ++ toString err
           Right newMemory -> do
             msgsResult <- messages newMemory
             case msgsResult of
-              Left err -> assertFailure $ "Expected Right but got Left: " ++ err
+              Left err -> assertFailure $ "Expected Right but got Left: " ++ toString err
               Right msgs -> do
                 NE.length msgs @?= 2
                 NE.toList msgs @?= [systemMsg "System", userMsg "Test input"]

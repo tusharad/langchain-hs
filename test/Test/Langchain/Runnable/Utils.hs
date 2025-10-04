@@ -6,12 +6,13 @@ module Test.Langchain.Runnable.Utils (tests) where
 
 import Control.Concurrent (threadDelay)
 import Data.IORef (IORef, modifyIORef, newIORef, readIORef)
+import Langchain.Error (LangchainError, llmError)
 import Langchain.Runnable.Core
 import Langchain.Runnable.Utils
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertEqual, testCase)
 
-data InvocationCounter a b = InvocationCounter (IORef Int) (a -> IO (Either String b))
+data InvocationCounter a b = InvocationCounter (IORef Int) (a -> IO (Either LangchainError b))
 
 instance Runnable (InvocationCounter a b) where
   type RunnableInput (InvocationCounter a b) = a
@@ -61,7 +62,7 @@ tests =
             let mock = InvocationCounter counter $ \_ -> do
                   cnt <- readIORef counter
                   if cnt < 1
-                    then return $ Left "Error"
+                    then return $ Left (llmError "Error" Nothing Nothing)
                     else return $ Right ("Success" :: String)
                 retryMock = Retry mock 3 5000 -- 1 retry, 5ms delay
             result <- invoke retryMock ("input" :: String)
@@ -70,11 +71,14 @@ tests =
             assertEqual "Invoked twice" 1 cnt
         , testCase "Retry exhausts retries and fails" $ do
             counter <- newIORef 0
-            let mock = InvocationCounter counter (\_ -> return $ Left "Error")
+            let mock = InvocationCounter counter (\_ -> return $ Left (llmError "Error" Nothing Nothing))
                 retryMock = Retry mock 2 1000 -- 2 retries
             result <- invoke retryMock ("input" :: String)
             cnt <- readIORef counter
-            assertEqual "All retries exhausted" (Left "Error" :: Either String String) result
+            assertEqual
+              "All retries exhausted"
+              (Left (llmError "Error" Nothing Nothing) :: Either LangchainError String)
+              result
             assertEqual "Three attempts made" 3 cnt
         ]
     , testGroup
@@ -90,11 +94,14 @@ tests =
                   return $ Right "Too slow"
                 timeoutMock = WithTimeout mock 100000 -- 100ms timeout
             result <- invoke timeoutMock ("input" :: String)
-            assertEqual "Timeout error" (Left "Operation timed out" :: Either String String) result
+            assertEqual
+              "Timeout error"
+              (Left (llmError "Operation timed out" Nothing Nothing) :: Either LangchainError String)
+              result
         ]
     ]
 
-newtype MockRunnable a b = MockRunnable {runMock :: a -> IO (Either String b)}
+newtype MockRunnable a b = MockRunnable {runMock :: a -> IO (Either LangchainError b)}
 
 instance Runnable (MockRunnable a b) where
   type RunnableInput (MockRunnable a b) = a

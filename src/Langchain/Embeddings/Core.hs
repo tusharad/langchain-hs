@@ -33,6 +33,7 @@ module Langchain.Embeddings.Core
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Text (Text)
 import Langchain.DocumentLoader.Core
+import Langchain.Error (LangchainResult)
 
 {- | Typeclass for embedding models following LangChain's pattern.
 Converts text/documents into numerical vectors for machine learning tasks.
@@ -63,9 +64,9 @@ class Embeddings embed where
   >>> embedDocuments TestEmbeddings [doc]
   Right [[0.1, 0.2, 0.3]]
   -}
-  embedDocuments :: embed -> [Document] -> IO (Either String [[Float]])
+  embedDocuments :: embed -> [Document] -> IO (LangchainResult [[Float]])
 
-  embedDocumentsM :: MonadIO m => embed -> [Document] -> m (Either String [[Float]])
+  embedDocumentsM :: MonadIO m => embed -> [Document] -> m (LangchainResult [[Float]])
   embedDocumentsM embeddings docs = liftIO $ embedDocuments embeddings docs
 
   {- | Convert query text to embedding vector
@@ -75,9 +76,9 @@ class Embeddings embed where
   >>> embedQuery TestEmbeddings "Search query"
   Right [0.4, 0.5, 0.6]
   -}
-  embedQuery :: embed -> Text -> IO (Either String [Float])
+  embedQuery :: embed -> Text -> IO (LangchainResult [Float])
 
-  embedQueryM :: MonadIO m => embed -> Text -> m (Either String [Float])
+  embedQueryM :: MonadIO m => embed -> Text -> m (LangchainResult [Float])
   embedQueryM embeddings query = liftIO $ embedQuery embeddings query
 
 {- $examples

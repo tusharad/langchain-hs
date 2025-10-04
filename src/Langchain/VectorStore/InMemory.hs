@@ -44,6 +44,7 @@ import qualified Data.Map.Strict as Map
 import Data.Ord (comparing)
 import Langchain.DocumentLoader.Core (Document)
 import Langchain.Embeddings.Core
+import Langchain.Error (LangchainError)
 import Langchain.VectorStore.Core
 
 {- | Compute dot product of two vectors
@@ -88,7 +89,7 @@ Example:
 >>> fromDocuments ollamaEmb [Document "Test" mempty]
 Right (InMemory {_store = ...})
 -}
-fromDocuments :: Embeddings m => m -> [Document] -> IO (Either String (InMemory m))
+fromDocuments :: Embeddings m => m -> [Document] -> IO (Either LangchainError (InMemory m))
 fromDocuments model docs = do
   let vs = emptyInMemoryVectorStore model
   addDocuments vs docs

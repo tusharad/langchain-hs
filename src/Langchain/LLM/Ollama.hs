@@ -54,7 +54,9 @@ import qualified Data.Ollama.Chat as OllamaChat
 import qualified Data.Ollama.Common.Types as O
 import qualified Data.Ollama.Generate as OllamaGenerate
 import Data.Text (Text)
+import qualified Data.Text as T
 import Langchain.Callback (Callback, Event (..))
+import Langchain.Error (llmError)
 import Langchain.LLM.Core
 import qualified Langchain.Runnable.Core as Run
 
@@ -170,7 +172,7 @@ instance LLM Ollama where
     case eRes of
       Left err -> do
         mapM_ (\cb -> cb (LLMError $ show err)) cbs
-        return $ Left (show err)
+        return $ Left (llmError (T.pack $ show err) Nothing Nothing)
       Right res -> do
         mapM_ (\cb -> cb LLMEnd) cbs
         return $ Right (OllamaGenerate.genResponse res)
@@ -214,11 +216,17 @@ instance LLM Ollama where
     case eRes of
       Left err -> do
         mapM_ (\cb -> cb (LLMError $ show err)) cbs
-        return $ Left (show err)
+        return $ Left (llmError (T.pack $ show err) Nothing Nothing)
       Right res -> do
         mapM_ (\cb -> cb LLMEnd) cbs
         case OllamaChat.message res of
-          Nothing -> return $ Left $ "Message field not found: " <> show res
+          Nothing ->
+            return $
+              Left $
+                llmError
+                  (T.pack $ "Message field not found: " <> show res)
+                  Nothing
+                  Nothing
           Just ollamaMsg -> return $ Right (from ollamaMsg)
 
   -- \| Streaming response handling.
@@ -265,7 +273,7 @@ instance LLM Ollama where
       case eRes of
         Left err -> do
           mapM_ (\cb -> cb (LLMError $ show err)) cbs
-          return $ Left (show err)
+          return $ Left (llmError (T.pack $ show err) Nothing Nothing)
         Right _ -> do
           onComplete
           mapM_ (\cb -> cb LLMEnd) cbs

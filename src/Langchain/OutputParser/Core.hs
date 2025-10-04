@@ -35,6 +35,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Text.Internal.Search (indices)
+import Langchain.Error (LangchainResult, parsingError)
 
 {- | Typeclass for parsing output from language models into specific types.
 Instances of this class define how to convert a 'Text' output into a value of type 'a'.
@@ -43,7 +44,7 @@ class OutputParser a where
   {- | Parse the given text into a value of type 'a'.
   Returns 'Left' with an error message if parsing fails, or 'Right' with the parsed value.
   -}
-  parse :: Text -> Either String a
+  parse :: Text -> LangchainResult a
 
 -- | Represents a list of text items separated by commas.
 newtype CommaSeparatedList = CommaSeparatedList [Text]
@@ -83,7 +84,7 @@ instance OutputParser Bool where
           then
             Right False
           else
-            Left "Invalid boolean value"
+            Left $ parsingError "Invalid boolean value" (Just "Bool") (Just txt)
 
 instance OutputParser CommaSeparatedList where
   -- \| Parse a comma-separated list from the text.
@@ -136,7 +137,8 @@ newtype FromJSON a => JSONOutputStructure a = JSONOutputStructure
 instance FromJSON a => OutputParser (JSONOutputStructure a) where
   parse txt =
     case eitherDecode (fromStrict $ encodeUtf8 txt) of
-      Left err -> Left $ "JSON parsing error: " ++ err
+      Left err ->
+        Left $ parsingError ("JSON parsing error: " <> T.pack err) (Just "JSONOutputStructure") (Just txt)
       Right val -> Right val
 
 -- | Represents a list of text items separated by numbered prefixes, like "1. First item".
@@ -170,7 +172,7 @@ instance OutputParser NumberSeparatedList where
   parse txt =
     let s = trim (T.unpack txt)
      in case dropUntilAndConsumeBoundary s of
-          Nothing -> Left "No valid numbered items found"
+          Nothing -> Left $ parsingError "No valid numbered items found" (Just "NumberSeparatedList") (Just txt)
           Just rest ->
             -- Parse the rest into items and wrap them in our newtype.
             Right . NumberSeparatedList . map (T.pack . trim) $

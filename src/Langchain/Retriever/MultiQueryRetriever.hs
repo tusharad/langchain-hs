@@ -50,6 +50,7 @@ import Data.List (nub)
 import qualified Data.Map.Strict as HM
 import Data.Text (Text)
 import qualified Data.Text as T
+import Langchain.Error (LangchainError, llmError)
 
 {- | Query generation prompt template
 Controls how the LLM generates multiple query variants from the original query.
@@ -175,7 +176,7 @@ Example:
 Right ["Haskell", "Haskell features", "Haskell applications"]
 -}
 generateQueries ::
-  LLM m => m -> QueryGenerationPrompt -> Text -> Int -> Bool -> IO (Either String [Text])
+  LLM m => m -> QueryGenerationPrompt -> Text -> Int -> Bool -> IO (Either LangchainError [Text])
 generateQueries model (QueryGenerationPrompt promptTemplate) query n includeOriginal = do
   let vars = HM.fromList [("query", query), ("num_queries", T.pack $ show n)]
   case renderPrompt promptTemplate vars of
@@ -185,8 +186,8 @@ generateQueries model (QueryGenerationPrompt promptTemplate) query n includeOrig
       case result of
         Left err -> return $ Left err
         Right response -> do
-          case parse response :: Either String NumberSeparatedList of
-            Left err -> return $ Left $ "Failed to parse LLM response: " ++ err
+          case parse response :: Either LangchainError NumberSeparatedList of
+            Left err -> return $ Left err
             Right (NumberSeparatedList queries) -> do
               let uniqueQueries = nub $ filter (not . T.null) queries
               return $
@@ -230,7 +231,7 @@ instance (Retriever a, LLM m) => Retriever (MultiQueryRetriever a m) where
         (includeOriginalQuery cfg)
 
     case queriesResult of
-      Left err -> return $ Left $ "Error generating queries: " ++ err
+      Left err -> return $ Left err
       Right queries -> do
         -- Get documents for each query
         results <- mapM (_get_relevant_documents baseRetriever) queries
@@ -239,7 +240,7 @@ instance (Retriever a, LLM m) => Retriever (MultiQueryRetriever a m) where
         let validResults = rights results
 
         if null validResults
-          then return $ Left "No valid results from any query"
+          then return $ Left (llmError "No valid results from any query" Nothing Nothing)
           else return $ Right $ combineDocuments validResults
 
 {-

@@ -56,6 +56,7 @@ import Data.Map (Map)
 import Data.Maybe (listToMaybe)
 import Data.Text (Text)
 import Langchain.Callback (Callback)
+import Langchain.Error (llmError)
 import Langchain.LLM.Core
 import qualified Langchain.LLM.Core as LLM
 import qualified Langchain.LLM.Internal.OpenAI as OpenAI
@@ -136,7 +137,7 @@ instance LLM.LLM OpenAI where
       Left err -> return $ Left err
       Right r -> do
         case listToMaybe ((\OpenAI.ChatCompletionResponse {..} -> choices) r) of
-          Nothing -> return $ Left "Did not received any response"
+          Nothing -> return $ Left (llmError "Did not received any response" Nothing Nothing)
           Just resp ->
             let OpenAI.Message {..} = OpenAI.message resp
              in pure $
@@ -188,7 +189,7 @@ instance LLM.LLM OpenAI where
       Left err -> return $ Left err
       Right r -> do
         case listToMaybe ((\OpenAI.ChatCompletionResponse {..} -> choices) r) of
-          Nothing -> return $ Left "Did not received any response"
+          Nothing -> return $ Left (llmError "Did not received any response" Nothing Nothing)
           Just resp -> return $ Right $ LLM.from $ OpenAI.message resp
 
   stream OpenAI {..} msgs LLM.StreamHandler {onComplete, onToken} mbOpenAIParams = do

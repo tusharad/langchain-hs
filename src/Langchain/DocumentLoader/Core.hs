@@ -53,6 +53,7 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Aeson
 import Data.Map (Map, empty)
 import Data.Text (Text)
+import Langchain.Error (LangchainResult)
 
 {- | Document container with content and metadata.
 Used for storing loaded data and associated metadata like source URLs or page numbers.
@@ -112,15 +113,15 @@ instance BaseLoader FilePath where
 -}
 class BaseLoader loader where
   -- | Load all documents from the source.
-  load :: loader -> IO (Either String [Document])
+  load :: loader -> IO (LangchainResult [Document])
 
-  loadM :: MonadIO m => loader -> m (Either String [Document])
+  loadM :: MonadIO m => loader -> m (LangchainResult [Document])
   loadM loader = liftIO $ load loader
 
   -- | Load all the document and split them using recursiveCharacterSpliter
-  loadAndSplit :: loader -> IO (Either String [Text])
+  loadAndSplit :: loader -> IO (LangchainResult [Text])
 
-  loadAndSplitM :: MonadIO m => loader -> m (Either String [Text])
+  loadAndSplitM :: MonadIO m => loader -> m (LangchainResult [Text])
   loadAndSplitM loader = liftIO $ loadAndSplit loader
 
 {- $examples

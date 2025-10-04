@@ -35,7 +35,9 @@ module Langchain.LLM.Huggingface
 import qualified Data.List.NonEmpty as NE
 import Data.Maybe
 import Data.Text (Text, unpack)
+import qualified Data.Text as T
 import Langchain.Callback
+import Langchain.Error (llmError)
 import Langchain.LLM.Core as LLM
 import qualified Langchain.LLM.Internal.Huggingface as Huggingface
 
@@ -128,10 +130,13 @@ instance LLM Huggingface where
           -- , Huggingface.toolChoice = maybe Nothing toolChoice mbHuggingfaceParams
           }
     case eRes of
-      Left err -> return $ Left err
+      Left err -> return $ Left (llmError (T.pack err) Nothing Nothing)
       Right r -> do
         case listToMaybe ((\Huggingface.ChatCompletionResponse {..} -> choices) r) of
-          Nothing -> return $ Left "Did not received any response"
+          Nothing ->
+            return $
+              Left
+                (llmError "Did not received any response" Nothing Nothing)
           Just resp ->
             let Huggingface.Message {..} = Huggingface.message resp
              in pure $
@@ -168,40 +173,47 @@ instance LLM Huggingface where
           -- , Huggingface.toolChoice = maybe Nothing toolChoice mbHuggingfaceParams
           }
     case eRes of
-      Left err -> return $ Left err
+      Left err -> return $ Left $ llmError (T.pack err) Nothing Nothing
       Right r -> do
-        case listToMaybe ((\Huggingface.ChatCompletionResponse {..} -> choices) r) of
-          Nothing -> return $ Left "Did not received any response"
+        case listToMaybe
+          ((\Huggingface.ChatCompletionResponse {..} -> choices) r) of
+          Nothing ->
+            return $
+              Left (llmError "Did not received any response" Nothing Nothing)
           Just resp -> return $ Right $ from (Huggingface.message resp)
 
   stream Huggingface {..} msgs LLM.StreamHandler {..} mbHuggingfaceParams = do
-    Huggingface.createChatCompletionStream
-      apiKey
-      Huggingface.defaultHuggingfaceChatCompletionRequest
-        { Huggingface.provider = provider
-        , Huggingface.messages = toHuggingfaceMessages msgs
-        , Huggingface.model = modelName
-        , Huggingface.stream = True
-        , Huggingface.maxTokens = maxTokens =<< mbHuggingfaceParams
-        , Huggingface.frequencyPenalty = frequencyPenalty =<< mbHuggingfaceParams
-        , -- , Huggingface.logProbs = maybe Nothing logProbs mbHuggingfaceParams
-          Huggingface.presencePenalty = presencePenalty =<< mbHuggingfaceParams
-        , -- , Huggingface.seed = maybe Nothing seed mbHuggingfaceParams
-          Huggingface.stop = stop =<< mbHuggingfaceParams
-        , Huggingface.temperature = temperature =<< mbHuggingfaceParams
-        , -- , Huggingface.toolPrompt = maybe Nothing toolPrompt mbHuggingfaceParams
-          -- , Huggingface.topLogprobs = maybe Nothing topLogProbs mbHuggingfaceParams
-          Huggingface.topP = topP =<< mbHuggingfaceParams
-        , Huggingface.timeout = timeout =<< mbHuggingfaceParams
-        -- , Huggingface.streamOptions = maybe Nothing streamOptions mbHuggingfaceParams
-        -- , Huggingface.responseFormat = maybe Nothing responseFormat mbHuggingfaceParams
-        -- , Huggingface.tools = maybe Nothing tools mbHuggingfaceParams
-        -- , Huggingface.toolChoice = maybe Nothing toolChoice mbHuggingfaceParams
-        }
-      Huggingface.HuggingfaceStreamHandler
-        { Huggingface.onComplete = onComplete
-        , Huggingface.onToken = onToken . chunkToText
-        }
+    eRes <-
+      Huggingface.createChatCompletionStream
+        apiKey
+        Huggingface.defaultHuggingfaceChatCompletionRequest
+          { Huggingface.provider = provider
+          , Huggingface.messages = toHuggingfaceMessages msgs
+          , Huggingface.model = modelName
+          , Huggingface.stream = True
+          , Huggingface.maxTokens = maxTokens =<< mbHuggingfaceParams
+          , Huggingface.frequencyPenalty = frequencyPenalty =<< mbHuggingfaceParams
+          , -- , Huggingface.logProbs = maybe Nothing logProbs mbHuggingfaceParams
+            Huggingface.presencePenalty = presencePenalty =<< mbHuggingfaceParams
+          , -- , Huggingface.seed = maybe Nothing seed mbHuggingfaceParams
+            Huggingface.stop = stop =<< mbHuggingfaceParams
+          , Huggingface.temperature = temperature =<< mbHuggingfaceParams
+          , -- , Huggingface.toolPrompt = maybe Nothing toolPrompt mbHuggingfaceParams
+            -- , Huggingface.topLogprobs = maybe Nothing topLogProbs mbHuggingfaceParams
+            Huggingface.topP = topP =<< mbHuggingfaceParams
+          , Huggingface.timeout = timeout =<< mbHuggingfaceParams
+          -- , Huggingface.streamOptions = maybe Nothing streamOptions mbHuggingfaceParams
+          -- , Huggingface.responseFormat = maybe Nothing responseFormat mbHuggingfaceParams
+          -- , Huggingface.tools = maybe Nothing tools mbHuggingfaceParams
+          -- , Huggingface.toolChoice = maybe Nothing toolChoice mbHuggingfaceParams
+          }
+        Huggingface.HuggingfaceStreamHandler
+          { Huggingface.onComplete = onComplete
+          , Huggingface.onToken = onToken . chunkToText
+          }
+    case eRes of
+      Left err -> pure $ Left $ llmError (T.pack err) Nothing Nothing
+      Right r -> pure $ Right r
     where
       chunkToText :: Huggingface.ChatCompletionChunk -> Text
       chunkToText Huggingface.ChatCompletionChunk {..} = do
