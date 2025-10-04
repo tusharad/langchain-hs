@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
 {- |
@@ -42,6 +43,8 @@ import qualified Data.Ollama.Embeddings as O
 import Data.Text (Text)
 import Langchain.DocumentLoader.Core
 import Langchain.Embeddings.Core
+import Langchain.Error (llmError)
+import Langchain.Utils (showText)
 
 {- | Ollama-specific embedding configuration
 Contains parameters for controlling:
@@ -87,7 +90,7 @@ instance Embeddings OllamaEmbeddings where
         Nothing
         Nothing
     case eRes of
-      Left ollamaErr -> return $ Left $ show ollamaErr
+      Left ollamaErr -> return $ Left $ llmError (showText ollamaErr) Nothing Nothing
       Right r -> return $ Right $ respondedEmbeddings r
 
   -- \| Query embedding implementation:
@@ -108,8 +111,8 @@ instance Embeddings OllamaEmbeddings where
         Nothing
         Nothing
     case fmap respondedEmbeddings res of
-      Left err -> pure $ Left (show err)
+      Left err -> pure $ Left (llmError (showText err) Nothing Nothing)
       Right lst ->
         case listToMaybe lst of
-          Nothing -> pure $ Left "Embeddings are empty"
+          Nothing -> pure $ Left (llmError "Embeddings are empty" Nothing Nothing)
           Just x -> pure $ Right x

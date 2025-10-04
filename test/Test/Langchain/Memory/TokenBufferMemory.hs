@@ -3,14 +3,17 @@
 
 module Test.Langchain.Memory.TokenBufferMemory (tests) where
 
+import Data.Either (isRight)
 import qualified Data.List.NonEmpty as NE
 import Data.Text (Text)
 import qualified Data.Text as T
+import Langchain.Error (llmError)
 import Langchain.LLM.Core
 import Langchain.Memory.Core (BaseMemory (..))
 import qualified Langchain.Memory.TokenBufferMemory as TB
 import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.HUnit (Assertion, assertFailure, testCase, (@?=))
+import Test.Tasty.HUnit
+
 #if MIN_VERSION_base(4,19,0)
 import Data.List (unsnoc)
 #else
@@ -20,14 +23,6 @@ unsnoc = foldr (\x -> Just . maybe ([], x) (\(~(a, b)) -> (x : a, b))) Nothing
 
 mkMsg :: Role -> Text -> Message
 mkMsg role1 content1 = Message role1 content1 defaultMessageData
-
-assertRight :: Either String a -> Assertion
-assertRight (Right _) = pure ()
-assertRight (Left err) = error $ "Expected Right but got Left: " ++ err
-
-assertLeft :: String -> Either String a -> Assertion
-assertLeft expectedErr (Left actualErr) = actualErr @?= expectedErr
-assertLeft _ (Right _) = error "Expected Left but got Right"
 
 runAddAndGet :: TB.TokenBufferMemory -> [Message] -> IO ChatMessage
 runAddAndGet initial msgs = do
@@ -91,7 +86,10 @@ addMessageTests =
         let initial = TB.TokenBufferMemory 1 (NE.fromList [mkMsg System ""])
             bigMsg = mkMsg User (T.replicate 10 "a") -- 10 chars → 2.5 tokens (ceil to 3)
         result <- addMessage initial bigMsg
-        assertLeft "New message is exceeding limit" result
+        assertEqual
+          "New message is exceeding limit"
+          (Left (llmError "New message is exceeding limit" Nothing Nothing))
+          result
     ]
 
 addUserAndAiMessageTests :: TestTree
@@ -106,7 +104,7 @@ addUserAndAiMessageTests =
           Right mem -> do
             let msgs = NE.toList $ TB.tokenBufferMessages mem
             unsnoc msgs @?= Just ([mkMsg System ""], mkMsg User userContent)
-          Left err -> assertFailure $ "Unexpected Left: " ++ err
+          Left err -> assertFailure $ "Unexpected Left: " ++ show err
     , testCase "addAiMessage adds Assistant role message" $ do
         let initial = TB.TokenBufferMemory 100 (NE.fromList [mkMsg System ""])
             aiContent = "I'm an assistant."
@@ -115,7 +113,7 @@ addUserAndAiMessageTests =
           Right mem -> do
             let msgs = NE.toList $ TB.tokenBufferMessages mem
             unsnoc msgs @?= Just ([mkMsg System ""], mkMsg Assistant aiContent)
-          Left err -> assertFailure $ "Unexpected Left: " ++ err
+          Left err -> assertFailure $ "Unexpected Left: " ++ show err
     ]
 
 clearTest :: TestTree
@@ -123,7 +121,7 @@ clearTest =
   testCase "clear resets messages to default system message" $ do
     let initial = TB.TokenBufferMemory 100 (NE.fromList [mkMsg User "old"])
     cleared <- clear initial
-    assertRight cleared
+    assertBool "Clear should be right" (isRight cleared)
     case cleared of
       Right mem ->
         TB.tokenBufferMessages mem

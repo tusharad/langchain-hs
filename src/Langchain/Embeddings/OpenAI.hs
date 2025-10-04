@@ -42,11 +42,13 @@ module Langchain.Embeddings.OpenAI
 import Data.Aeson
 import Data.Maybe
 import Data.Text (Text, unpack)
+import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import qualified Data.Vector as V
 import GHC.Generics
 import Langchain.DocumentLoader.Core
 import Langchain.Embeddings.Core
+import Langchain.Error (llmError)
 import Network.HTTP.Conduit
 import Network.HTTP.Simple
   ( getResponseBody
@@ -206,17 +208,17 @@ instance Embeddings OpenAIEmbeddings where
   embedDocuments openAIEmbeddings docs = do
     eRes <- openAIEmbeddingsRequest openAIEmbeddings (map pageContent docs)
     case eRes of
-      Left err -> pure $ Left err
+      Left err -> pure $ Left (llmError (T.pack err) Nothing Nothing)
       Right (OpenAIEmbeddingsResponse {..}) -> do
         pure $ Right $ map embeddings dataList
 
   embedQuery openAIEmbeddings query = do
     eRes <- openAIEmbeddingsRequest openAIEmbeddings [query]
     case eRes of
-      Left err -> pure $ Left err
+      Left err -> pure $ Left (llmError (T.pack err) Nothing Nothing)
       Right (OpenAIEmbeddingsResponse {..}) -> do
         case listToMaybe dataList of
-          Nothing -> pure $ Left "Embeddings are empty"
+          Nothing -> pure $ Left (llmError "Embeddings are empty" Nothing Nothing)
           Just x -> pure $ Right $ embeddings x
 
 -- Helper functions, model name functions

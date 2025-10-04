@@ -29,6 +29,7 @@ import Langchain.LLM.Core
 import qualified Langchain.LLM.Core as LLM
 import qualified Langchain.LLM.Internal.OpenAI as OpenAI
 import qualified Langchain.LLM.OpenAI as OpenAI
+import qualified Langchain.Runnable.Core as Run
 
 data Gemini = Gemini
   { apiKey :: Text
@@ -64,6 +65,12 @@ instance LLM.LLM Gemini where
   generate llm = LLM.generate (toOpenAI llm)
   chat llm = LLM.chat (toOpenAI llm)
   stream llm = LLM.stream (toOpenAI llm)
+
+instance Run.Runnable Gemini where
+  type RunnableInput Gemini = (LLM.ChatMessage, Maybe OpenAI.OpenAIParams)
+  type RunnableOutput Gemini = LLM.Message
+
+  invoke gemini (chatMessage, mbParams) = LLM.chat gemini chatMessage mbParams
 
 defaultGemini :: Gemini
 defaultGemini =

@@ -45,7 +45,7 @@ test_generateQueries = do
       queryPrompt = defaultQueryGenerationPrompt
   result <- generateQueries dummyLLM queryPrompt query numQueriesToGenerate includeOriginal
   case result of
-    Left err -> assertFailure ("generateQueries failed with error: " ++ err)
+    Left err -> assertFailure ("generateQueries failed with error: " ++ show err)
     Right qs -> do
       let expectedQueries =
             [ "original query"
@@ -65,7 +65,7 @@ test_MultiQueryRetriever = do
       originalQuery = "original query"
   result <- _get_relevant_documents mqRetriever originalQuery
   case result of
-    Left err -> assertFailure ("MultiQueryRetriever failed with error: " ++ err)
+    Left err -> assertFailure ("MultiQueryRetriever failed with error: " ++ show err)
     Right docs -> do
       -- Since generateQueries returns three queries (original plus two generated),
       -- and DummyRetriever returns one document per query, we expect 3 documents.

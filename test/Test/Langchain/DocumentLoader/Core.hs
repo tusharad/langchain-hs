@@ -13,6 +13,7 @@ import Test.Tasty.HUnit
 
 import Langchain.DocumentLoader.Core
 import Langchain.DocumentLoader.FileLoader
+import Langchain.Utils (showText)
 
 createTestFile :: FilePath -> String -> IO ()
 createTestFile = writeFile
@@ -50,7 +51,7 @@ fileLoaderTests =
         withTestFile "Test content for the file." $ \filePath -> do
           result <- load (FileLoader filePath)
           case result of
-            Left err -> assertFailure $ "Expected Right but got Left: " ++ err
+            Left err -> assertFailure $ "Expected Right but got Left: " ++ show err
             Right docs@(doc : _) -> do
               length docs @?= 1
               pageContent doc @?= "Test content for the file."
@@ -62,13 +63,13 @@ fileLoaderTests =
           Left err ->
             assertBool
               "Error message should mention file not found"
-              (T.isInfixOf "File not found" (T.pack err))
+              (T.isInfixOf "File not found" (showText err))
           Right _ -> assertFailure "Expected Left for non-existent file but got Right"
     , testCase "loadAndSplit should split content using defaultCharacterSplitterOps" $
         withTestFile "Paragraph 1\n\nParagraph 2\n\nParagraph 3" $ \filePath -> do
           result <- loadAndSplit (FileLoader filePath)
           case result of
-            Left err -> assertFailure $ "Expected Right but got Left: " ++ err
+            Left err -> assertFailure $ "Expected Right but got Left: " ++ show err
             Right chunks -> do
               chunks @?= ["Paragraph 1", "Paragraph 2", "Paragraph 3"]
     , testCase "loadAndSplit should return error for non-existent file" $ do
@@ -77,13 +78,13 @@ fileLoaderTests =
           Left err ->
             assertBool
               "Error message should mention file not found"
-              (T.isInfixOf "File not found" (T.pack err))
+              (T.isInfixOf "File not found" (showText err))
           Right _ -> assertFailure "Expected Left for non-existent file but got Right"
     , testCase "load should handle empty files" $
         withTestFile "" $ \filePath -> do
           result <- load (FileLoader filePath)
           case result of
-            Left err -> assertFailure $ "Expected Right but got Left: " ++ err
+            Left err -> assertFailure $ "Expected Right but got Left: " ++ show err
             Right docs@(doc : _) -> do
               length docs @?= 1
               pageContent doc @?= ""
@@ -92,7 +93,7 @@ fileLoaderTests =
         withTestFile (concat $ replicate 1000 "Line of test content\n") $ \filePath -> do
           result <- load (FileLoader filePath)
           case result of
-            Left err -> assertFailure $ "Expected Right but got Left: " ++ err
+            Left err -> assertFailure $ "Expected Right but got Left: " ++ show err
             Right docs@(doc : _) -> do
               length docs @?= 1
               T.length (pageContent doc) @?= 21000 -- 21 chars * 1000

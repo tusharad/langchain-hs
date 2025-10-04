@@ -41,6 +41,7 @@ module Langchain.Runnable.Chain
   ) where
 
 import Data.List (find)
+import Langchain.Error (LangchainError)
 import Langchain.Runnable.Core
 
 {- | Chains two 'Runnable' instances together sequentially.
@@ -61,7 +62,7 @@ chain ::
   r1 ->
   r2 ->
   RunnableInput r1 ->
-  IO (Either String (RunnableOutput r2))
+  IO (Either LangchainError (RunnableOutput r2))
 chain r1 r2 input = do
   output1 <- invoke r1 input
   case output1 of
@@ -86,7 +87,7 @@ branch ::
   r1 ->
   r2 ->
   a ->
-  IO (Either String (RunnableOutput r1, RunnableOutput r2))
+  IO (Either LangchainError (RunnableOutput r1, RunnableOutput r2))
 branch r1 r2 input = do
   result1 <- invoke r1 input
   result2 <- invoke r2 input
@@ -121,7 +122,7 @@ in runBranch textProcessor "How does this work?"
 :}
 Right "This is a question, so I'm handling it with the question processor."
 -}
-runBranch :: RunnableBranch a b -> a -> IO (Either String b)
+runBranch :: RunnableBranch a b -> a -> IO (Either LangchainError b)
 runBranch (RunnableBranch options defaultR) input =
   case find (\(cond, _) -> cond input) options of
     Just (_, r) -> invoke r input
@@ -156,7 +157,7 @@ in runMap lengthPalindrome "hello"
 :}
 Right False
 -}
-runMap :: RunnableMap a b c -> a -> IO (Either String c)
+runMap :: RunnableMap a b c -> a -> IO (Either LangchainError c)
 runMap (RunnableMap inputFn outputFn r) input = do
   result <- invoke r (inputFn input)
   return $ fmap outputFn result
@@ -185,7 +186,7 @@ data RunnableSequence a b where
     RunnableSequence a b -- RSCons adds a runnable at the front of the chain.
 
 -- | Run a sequence of runnables, chaining the output of one as input to the next.
-runSequence :: RunnableSequence a b -> RunnableInputHead a -> IO (Either String b)
+runSequence :: RunnableSequence a b -> RunnableInputHead a -> IO (Either LangchainError b)
 runSequence RSNil input = return (Right input)
 runSequence (RSCons r rs) input = do
   result <- invoke r input
@@ -260,7 +261,7 @@ Right "Monads in Haskell are a design pattern that allows for sequencing computa
   r1 ->
   r2 ->
   RunnableInput r1 ->
-  IO (Either String (RunnableOutput r2))
+  IO (Either LangchainError (RunnableOutput r2))
 (|>>) = chain
 
 infix 4 |>>

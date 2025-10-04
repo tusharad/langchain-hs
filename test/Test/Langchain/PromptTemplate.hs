@@ -27,7 +27,7 @@ tests =
         , testCase "returns an error for missing variables" $
             let missingVars = HM.fromList [("name", "Charlie")]
              in case renderPrompt template missingVars of
-                  Left err -> "place" `T.isInfixOf` T.pack err @? "Expected error to contain 'place'"
+                  Left err -> "place" `T.isInfixOf` T.pack (show err) @? "Expected error to contain 'place'"
                   Right _ -> assertFailure "Expected an error for missing variable"
                   {- TODO: Need to take care of incomplete brace cases
                   , testCase "handles unclosed braces" $
@@ -66,7 +66,7 @@ tests =
                     }
              in case renderFewShotPrompt badExamples of
                   Left err ->
-                    "input" `T.isInfixOf` T.pack err
+                    "input" `T.isInfixOf` T.pack (show err)
                       @? "Expected error to contain 'input'"
                   Right _ ->
                     assertFailure

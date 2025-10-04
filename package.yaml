@@ -39,6 +39,7 @@ dependencies:
 - tagsoup < 0.15
 - parsec < 4
 - transformers
+- time >= 1.9 && < 1.15
 
 ghc-options:
 - -Wall

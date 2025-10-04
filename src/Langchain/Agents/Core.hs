@@ -1,4 +1,5 @@
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
 {- |
@@ -30,6 +31,7 @@ import Data.List (find)
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import qualified Data.Text as T
+import Langchain.Error (LangchainResult, internalError, toolError)
 import Langchain.LLM.Core (Message (Message), Role (..), defaultMessageData)
 import Langchain.Memory.Core (BaseMemory (..))
 import Langchain.PromptTemplate (PromptTemplate)
@@ -87,7 +89,7 @@ data AnyTool = forall a. Tool a => AnyTool
 
 -- | Typeclass for Agent
 class Agent a where
-  planNextAction :: BaseMemory m => a -> AgentState m -> IO (Either String AgentStep)
+  planNextAction :: BaseMemory m => a -> AgentState m -> IO (LangchainResult AgentStep)
   agentPrompt :: a -> IO PromptTemplate
   agentTools :: a -> IO [AnyTool]
 
@@ -95,7 +97,7 @@ class Agent a where
     (BaseMemory mem, MonadIO m) =>
     a ->
     AgentState mem ->
-    m (Either String AgentStep)
+    m (LangchainResult AgentStep)
   planNextActionM agent agentState = liftIO $ planNextAction agent agentState
 
   agentPromptM :: MonadIO m => a -> m PromptTemplate
@@ -110,7 +112,7 @@ runAgent ::
   a ->
   AgentState m ->
   Text ->
-  IO (Either String AgentFinish)
+  IO (LangchainResult AgentFinish)
 runAgent agent initialState@AgentState {..} initialInput = do
   memWithInput <- addUserMessage agentMemory initialInput
   case memWithInput of
@@ -126,9 +128,10 @@ runAgentLoop ::
   AgentState m ->
   Int ->
   Int ->
-  IO (Either String AgentFinish)
+  IO (LangchainResult AgentFinish)
 runAgentLoop agent agentState@AgentState {..} currIter maxIter
-  | currIter > maxIter = return $ Left "Max iterations excedded"
+  | currIter > maxIter =
+      return $ Left $ internalError "Max iterations exceeded" (Just "Agent") (Just "runAgentLoop")
   | otherwise = do
       eStepResult <- runSingleStep agent agentState
       case eStepResult of
@@ -162,17 +165,18 @@ runSingleStep ::
   (Agent a, BaseMemory m) =>
   a ->
   AgentState m ->
-  IO (Either String AgentStep)
+  IO (LangchainResult AgentStep)
 runSingleStep = planNextAction
 
 {- |
 Execute a single tool call
 Handles tool lookup and input/output conversion.
 -}
-executeTool :: [AnyTool] -> Text -> Text -> IO (Either String Text)
+executeTool :: [AnyTool] -> Text -> Text -> IO (LangchainResult Text)
 executeTool tools toolName_ input = do
   case find (\(AnyTool t _ _) -> toolName t == toolName_) tools of
-    Nothing -> return $ Left $ "Tool not found: " <> T.unpack toolName_
+    Nothing ->
+      return $ Left $ toolError ("Tool not found: " <> toolName_) (Just toolName_) (Just "executeTool")
     Just (AnyTool {..}) -> do
       resultE <- try $ do
         let typedInput = textToInput input
@@ -182,7 +186,10 @@ executeTool tools toolName_ input = do
         Left ex ->
           return $
             Left $
-              "Tool execution error: " <> show (ex :: SomeException)
+              toolError
+                ("Tool execution error: " <> T.pack (show (ex :: SomeException)))
+                (Just toolName_)
+                (Just "executeTool")
         Right output -> return $ Right output
 
 {- |

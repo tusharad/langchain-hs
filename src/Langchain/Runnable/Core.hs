@@ -30,6 +30,7 @@ module Langchain.Runnable.Core
   ) where
 
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import Langchain.Error (LangchainResult)
 
 {- | The core 'Runnable' typeclass represents anything that can "run" with an input and produce an output.
 
@@ -85,14 +86,14 @@ class Runnable r where
     Right response -> putStrLn response
   @
   -}
-  invoke :: r -> RunnableInput r -> IO (Either String (RunnableOutput r))
+  invoke :: r -> RunnableInput r -> IO (LangchainResult (RunnableOutput r))
 
-  invokeM :: MonadIO m => r -> RunnableInput r -> m (Either String (RunnableOutput r))
+  invokeM :: MonadIO m => r -> RunnableInput r -> m (LangchainResult (RunnableOutput r))
   invokeM runnable input = liftIO $ invoke runnable input
 
-  batch :: r -> [RunnableInput r] -> IO (Either String [RunnableOutput r])
+  batch :: r -> [RunnableInput r] -> IO (LangchainResult [RunnableOutput r])
 
-  batchM :: MonadIO m => r -> [RunnableInput r] -> m (Either String [RunnableOutput r])
+  batchM :: MonadIO m => r -> [RunnableInput r] -> m (LangchainResult [RunnableOutput r])
   batchM runnable inputs = liftIO $ batch runnable inputs
 
   -- | Default implementation of batch that processes each input sequentially
@@ -100,7 +101,7 @@ class Runnable r where
     results <- mapM (invoke r) inputs
     return $ sequence results
 
-  stream :: r -> RunnableInput r -> (RunnableOutput r -> IO ()) -> IO (Either String ())
+  stream :: r -> RunnableInput r -> (RunnableOutput r -> IO ()) -> IO (LangchainResult ())
 
   -- | Default implementation that invokes the runnable and then calls the callback with the full result
   stream r input callback = do
@@ -111,5 +112,6 @@ class Runnable r where
         callback output
         return $ Right ()
 
-  streamM :: MonadIO m => r -> RunnableInput r -> (RunnableOutput r -> IO ()) -> m (Either String ())
+  streamM ::
+    MonadIO m => r -> RunnableInput r -> (RunnableOutput r -> IO ()) -> m (LangchainResult ())
   streamM runnable input callback = liftIO $ stream runnable input callback

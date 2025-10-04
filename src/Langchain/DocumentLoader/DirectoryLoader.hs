@@ -23,9 +23,11 @@ module Langchain.DocumentLoader.DirectoryLoader
 import Control.Concurrent.Async (mapConcurrently)
 import Control.Monad (filterM)
 import Data.Maybe (listToMaybe)
+import qualified Data.Text as T
 import Langchain.DocumentLoader.Core
 import Langchain.DocumentLoader.FileLoader (FileLoader (FileLoader))
 import Langchain.DocumentLoader.PdfLoader (PdfLoader (PdfLoader))
+import Langchain.Error (LangchainError, llmError)
 import Langchain.TextSplitter.Character
 import System.Directory (doesDirectoryExist, doesFileExist, listDirectory)
 import System.FilePath (takeExtension, takeFileName, (</>))
@@ -114,11 +116,18 @@ getFilesInDirectory opts currentDepth dir = do
 
   return $ filteredFiles ++ subFiles
 
-loadFileToDocument :: FilePath -> IO (Either String [Document])
+loadFileToDocument :: FilePath -> IO (Either LangchainError [Document])
 loadFileToDocument path = do
   exists <- doesFileExist path
   if not exists
-    then return $ Left $ "File does not exist: " ++ path
+    then
+      return $
+        Left
+          ( llmError
+              (T.pack $ "File does not exist: " ++ path)
+              Nothing
+              Nothing
+          )
     else do
       -- if file is pdf then read it using PdfLoader else use fileLoader
       if takeExtension path == ".pdf"
@@ -142,11 +151,13 @@ instance BaseLoader DirectoryLoader where
         let (errors, documents) = foldr separateResults ([], []) docs
 
         -- Return documents or combined error message
-        case errors of
-          [] -> return $ Right documents
-          _ -> return $ Left $ unlines errors
+        case listToMaybe errors of
+          Nothing -> return $ Right documents
+          Just err -> return $ Left err
       else
-        return $ Left $ "Directory does not exist: " ++ dirPath
+        return $
+          Left $
+            llmError (T.pack $ "Directory does not exist: " ++ dirPath) Nothing Nothing
     where
       separateResults (Left err) (errs, docs) = (err : errs, docs)
       separateResults (Right doc) (errs, docs) = (errs, doc <> docs)

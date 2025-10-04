@@ -5,12 +5,13 @@
 module Test.Langchain.Runnable.Core (tests) where
 
 import Data.IORef (modifyIORef, newIORef, readIORef, writeIORef)
+import Langchain.Error (LangchainError, llmError)
 import Langchain.Runnable.Core
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertEqual, testCase)
 
 newtype MockRunnable a b = MockRunnable
-  { runMock :: a -> IO (Either String b)
+  { runMock :: a -> IO (Either LangchainError b)
   }
 
 instance Runnable (MockRunnable a b) where
@@ -27,9 +28,12 @@ tests =
         result <- invoke mock "input"
         assertEqual "Should process input" (Right "input processed") result
     , testCase "invoke error" $ do
-        let mock = MockRunnable (\(_ :: String) -> return $ Left "mock error")
+        let mock = MockRunnable (\(_ :: String) -> return $ Left (llmError "mock error" Nothing Nothing))
         result <- invoke mock "input"
-        assertEqual "Should return error" (Left "mock error" :: Either String String) result
+        assertEqual
+          "Should return error"
+          (Left (llmError "mock error" Nothing Nothing) :: Either LangchainError String)
+          result
     , testCase "batch success" $ do
         let mock = MockRunnable (\(s :: String) -> return $ Right (s ++ "!"))
         result <- batch mock ["a", "b", "c"]
@@ -37,10 +41,10 @@ tests =
     , testCase "batch with error" $ do
         let mock = MockRunnable $ \(s :: String) ->
               if s == "b"
-                then return (Left "error in batch")
+                then return (Left (llmError "error in batch" Nothing Nothing))
                 else return (Right (s ++ "!"))
         result <- batch mock ["a", "b", "c"]
-        assertEqual "Should return first error" (Left "error in batch") result
+        assertEqual "Should return first error" (Left (llmError "error in batch" Nothing Nothing)) result
     , testCase "stream success" $ do
         ref <- newIORef []
         let mock = MockRunnable (\(s :: String) -> return $ Right (s ++ "!"))
@@ -51,10 +55,10 @@ tests =
         assertEqual "Callback called with correct value" ["test!"] readRef
     , testCase "stream error" $ do
         ref <- newIORef []
-        let mock = MockRunnable (\(_ :: String) -> return $ Left "stream error")
+        let mock = MockRunnable (\(_ :: String) -> return $ Left (llmError "stream error" Nothing Nothing))
             callback _ = writeIORef ref ["should not be called" :: String]
         result <- stream mock "test" callback
         readRef <- readIORef ref
-        assertEqual "Stream should return error" (Left "stream error") result
+        assertEqual "Stream should return error" (Left (llmError "stream error" Nothing Nothing)) result
         assertEqual "Callback not called" [] readRef
     ]

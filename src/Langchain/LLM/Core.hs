@@ -55,6 +55,7 @@ import qualified Data.Map as HM
 import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
 import GHC.Generics
+import Langchain.Error (LangchainResult)
 
 {- | Callbacks for handling streaming responses from a language model.
 This allows real-time processing of tokens as they are generated and an action
@@ -241,7 +242,7 @@ class LLM llm where
     Text ->
     -- | Optional configuration parameters.
     Maybe (LLMParams llm) ->
-    IO (Either String Text)
+    IO (LangchainResult Text)
 
   {- | Chat with the language model using a sequence of messages.
   Suitable for multi-turn conversations; returns either an error or the response.
@@ -254,7 +255,7 @@ class LLM llm where
     -- | Optional configuration parameters.
     Maybe (LLMParams llm) ->
     -- | The result of the chat, either an error or the response text.
-    IO (Either String Message)
+    IO (LangchainResult Message)
 
   {- | Stream responses from the language model for a sequence of messages.
   Uses callbacks to process tokens in real-time; returns either an error or unit.
@@ -264,7 +265,7 @@ class LLM llm where
     ChatMessage ->
     StreamHandler (LLMStreamTokenType llm) ->
     Maybe (LLMParams llm) ->
-    IO (Either String ())
+    IO (LangchainResult ())
 
   -- Default implementations
 
@@ -277,7 +278,7 @@ class LLM llm where
     Text ->
     -- | Optional configuration parameters.
     Maybe (LLMParams llm) ->
-    m (Either String Text)
+    m (LangchainResult Text)
   generateM llm prompt mbParams = liftIO $ generate llm prompt mbParams
 
   -- | MonadIO version of chat
@@ -290,7 +291,7 @@ class LLM llm where
     -- | Optional configuration parameters.
     Maybe (LLMParams llm) ->
     -- | The result of the chat, either an error or the response text.
-    m (Either String Message)
+    m (LangchainResult Message)
   chatM llm chatHistory mbParams = liftIO $ chat llm chatHistory mbParams
 
   -- | MonadIO version of stream
@@ -300,7 +301,7 @@ class LLM llm where
     ChatMessage ->
     StreamHandler (LLMStreamTokenType llm) ->
     Maybe (LLMParams llm) ->
-    m (Either String ())
+    m (LangchainResult ())
   streamM llm chatHistory sHandler mbParams = liftIO $ stream llm chatHistory sHandler mbParams
 
 class MessageConvertible a where

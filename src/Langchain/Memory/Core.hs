@@ -41,6 +41,7 @@ module Langchain.Memory.Core
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Data.List.NonEmpty as NE
 import Data.Text (Text)
+import Langchain.Error (LangchainResult)
 import Langchain.LLM.Core
   ( ChatMessage
   , Message (..)
@@ -62,33 +63,33 @@ instance BaseMemory MyMemory where
 -}
 class BaseMemory mem where
   -- | Retrieve current chat history
-  messages :: mem -> IO (Either String ChatMessage)
+  messages :: mem -> IO (LangchainResult ChatMessage)
 
   -- | Add user message to history
-  addUserMessage :: mem -> Text -> IO (Either String mem)
+  addUserMessage :: mem -> Text -> IO (LangchainResult mem)
 
   -- | Add AI response to history
-  addAiMessage :: mem -> Text -> IO (Either String mem)
+  addAiMessage :: mem -> Text -> IO (LangchainResult mem)
 
   -- | Add generic message to history
-  addMessage :: mem -> Message -> IO (Either String mem)
+  addMessage :: mem -> Message -> IO (LangchainResult mem)
 
   -- | Reset memory to initial state
-  clear :: mem -> IO (Either String mem)
+  clear :: mem -> IO (LangchainResult mem)
 
-  messagesM :: MonadIO m => mem -> m (Either String ChatMessage)
+  messagesM :: MonadIO m => mem -> m (LangchainResult ChatMessage)
   messagesM = liftIO . messages
 
-  addUserMessageM :: MonadIO m => mem -> Text -> m (Either String mem)
+  addUserMessageM :: MonadIO m => mem -> Text -> m (LangchainResult mem)
   addUserMessageM mem msg = liftIO $ addUserMessage mem msg
 
-  addAiMessageM :: MonadIO m => mem -> Text -> m (Either String mem)
+  addAiMessageM :: MonadIO m => mem -> Text -> m (LangchainResult mem)
   addAiMessageM mem msg = liftIO $ addAiMessage mem msg
 
-  addMessageM :: MonadIO m => mem -> Message -> m (Either String mem)
+  addMessageM :: MonadIO m => mem -> Message -> m (LangchainResult mem)
   addMessageM mem msg = liftIO $ addMessage mem msg
 
-  clearM :: MonadIO m => mem -> m (Either String mem)
+  clearM :: MonadIO m => mem -> m (LangchainResult mem)
   clearM mem = liftIO $ clear mem
 
 {- | Sliding window memory implementation.

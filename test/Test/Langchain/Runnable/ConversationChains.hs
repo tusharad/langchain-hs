@@ -8,6 +8,7 @@ import Data.IORef (IORef, modifyIORef, newIORef, readIORef, writeIORef)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as NE
 import Data.Text (Text)
+import Langchain.Error (LangchainError, llmError, memoryError)
 import Langchain.LLM.Core
 import Langchain.Memory.Core (BaseMemory (..))
 import Langchain.PromptTemplate (PromptTemplate (..))
@@ -42,14 +43,14 @@ instance BaseMemory TestMemory where
 data FailingMemory = FailingMemory
 
 instance BaseMemory FailingMemory where
-  addUserMessage _ _ = return $ Left "Memory error"
-  addAiMessage _ _ = return $ Left "Memory error"
-  messages _ = return $ Left "memory error"
-  addMessage _ _ = return $ Left "memory error"
-  clear _ = return $ Left "memory error"
+  addUserMessage _ _ = return $ Left $ memoryError "Memory error" Nothing Nothing
+  addAiMessage _ _ = return $ Left $ memoryError "Memory error" Nothing Nothing
+  messages _ = return $ Left $ memoryError "Memory error" Nothing Nothing
+  addMessage _ _ = return $ Left $ memoryError "Memory error" Nothing Nothing
+  clear _ = return $ Left $ memoryError "Memory error" Nothing Nothing
 
 data MockLLM = MockLLM
-  { llmResponse :: Either String Message
+  { llmResponse :: Either LangchainError Message
   , receivedMessages :: IORef [Message]
   }
 
@@ -92,15 +93,15 @@ tests =
             mockLLM = MockLLM (Right $ Message User "" defaultMessageData) nRef
             chain = ConversationChain failingMem mockLLM (PromptTemplate "")
         result <- invoke chain "Hi"
-        result @?= Left "Memory error"
+        result @?= Left (memoryError "Memory error" Nothing Nothing)
     , testCase "LLM returns error" $ do
         memRef <- newIORef []
         let testMem = TestMemory memRef
         msgRef <- newIORef []
-        let mockLLM = MockLLM (Left "LLM error") msgRef
+        let mockLLM = MockLLM (Left $ llmError "LLM error" Nothing Nothing) msgRef
             chain = ConversationChain testMem mockLLM (PromptTemplate "")
         result <- invoke chain "Hi"
-        result @?= Left "LLM error"
+        result @?= Left (llmError "LLM error" Nothing Nothing)
         -- Verify only user message in memory
         mem <- readIORef memRef
         assertEqual "Only user message in memory" [Message User "Hi" defaultMessageData] mem

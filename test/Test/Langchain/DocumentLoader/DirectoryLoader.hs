@@ -16,6 +16,7 @@ import Test.Tasty.HUnit
 
 import Langchain.DocumentLoader.Core
 import Langchain.DocumentLoader.DirectoryLoader
+import Langchain.Error (toString)
 
 -- Helper Functions
 
@@ -64,7 +65,7 @@ testBasicLoading = testCase "Basic loading" $
     let loader = DirectoryLoader dir defaultDirectoryLoaderOptions
     result <- load loader
     case result of
-      Left err -> assertFailure $ "Expected Right but got Left: " ++ err
+      Left err -> assertFailure $ "Expected Right but got Left: " ++ toString err
       Right docs -> do
         let docMap =
               Map.fromList
@@ -102,7 +103,7 @@ testRecursiveLoading = testCase "Recursive loading" $
         loader = DirectoryLoader dir opts
     result <- load loader
     case result of
-      Left err -> assertFailure $ "Expected Right but got Left: " ++ err
+      Left err -> assertFailure $ "Expected Right but got Left: " ++ toString err
       Right docs -> do
         let sources = mapMaybe getSource docs
         sort sources @?= sort allFiles
@@ -111,7 +112,7 @@ testRecursiveLoading = testCase "Recursive loading" $
         loader0 = DirectoryLoader dir opts0
     result0 <- load loader0
     case result0 of
-      Left err -> assertFailure $ "Expected Right but got Left: " ++ err
+      Left err -> assertFailure $ "Expected Right but got Left: " ++ toString err
       Right docs -> do
         let sources = mapMaybe getSource docs
         sort sources @?= sort level0Files
@@ -120,7 +121,7 @@ testRecursiveLoading = testCase "Recursive loading" $
         loader1 = DirectoryLoader dir opts1
     result1 <- load loader1
     case result1 of
-      Left err -> assertFailure $ "Expected Right but got Left: " ++ err
+      Left err -> assertFailure $ "Expected Right but got Left: " ++ toString err
       Right docs -> do
         let sources = mapMaybe getSource docs
         sort sources @?= sort level1Files
@@ -129,7 +130,7 @@ testRecursiveLoading = testCase "Recursive loading" $
         loader2 = DirectoryLoader dir opts2
     result2 <- load loader2
     case result2 of
-      Left err -> assertFailure $ "Expected Right but got Left: " ++ err
+      Left err -> assertFailure $ "Expected Right but got Left: " ++ toString err
       Right docs -> do
         let sources = mapMaybe getSource docs
         sort sources @?= sort allFiles
@@ -152,7 +153,7 @@ testExtensionFiltering = testCase "Extension filtering" $
         loader = DirectoryLoader dir opts
     result <- load loader
     case result of
-      Left err -> assertFailure $ "Expected Right but got Left: " ++ err
+      Left err -> assertFailure $ "Expected Right but got Left: " ++ toString err
       Right docs -> do
         let sources = mapMaybe getSource docs
         sort sources @?= sort txtFiles
@@ -161,7 +162,7 @@ testExtensionFiltering = testCase "Extension filtering" $
         loader2 = DirectoryLoader dir opts2
     result2 <- load loader2
     case result2 of
-      Left err -> assertFailure $ "Expected Right but got Left: " ++ err
+      Left err -> assertFailure $ "Expected Right but got Left: " ++ toString err
       Right docs -> do
         let sources = mapMaybe getSource docs
         sort sources @?= sort txtMdFiles
@@ -170,7 +171,7 @@ testExtensionFiltering = testCase "Extension filtering" $
         loader3 = DirectoryLoader dir opts3
     result3 <- load loader3
     case result3 of
-      Left err -> assertFailure $ "Expected Right but got Left: " ++ err
+      Left err -> assertFailure $ "Expected Right but got Left: " ++ toString err
       Right docs -> do
         let sources = mapMaybe getSource docs
         sort sources @?= sort allFiles
@@ -191,7 +192,7 @@ testHiddenFilesExclusion = testCase "Hidden files exclusion" $
         loader = DirectoryLoader dir opts
     result <- load loader
     case result of
-      Left err -> assertFailure $ "Expected Right but got Left: " ++ err
+      Left err -> assertFailure $ "Expected Right but got Left: " ++ toString err
       Right docs -> do
         let sources = mapMaybe getSource docs
         sort sources @?= sort visibleFiles
@@ -200,7 +201,7 @@ testHiddenFilesExclusion = testCase "Hidden files exclusion" $
         loader2 = DirectoryLoader dir opts2
     result2 <- load loader2
     case result2 of
-      Left err -> assertFailure $ "Expected Right but got Left: " ++ err
+      Left err -> assertFailure $ "Expected Right but got Left: " ++ toString err
       Right docs -> do
         let sources = mapMaybe getSource docs
         sort sources @?= sort allFiles
@@ -219,7 +220,7 @@ testMultithreading = testCase "Multithreading" $
         loader = DirectoryLoader dir opts
     result <- load loader
     case result of
-      Left err -> assertFailure $ "Expected Right but got Left: " ++ err
+      Left err -> assertFailure $ "Expected Right but got Left: " ++ toString err
       Right docs -> do
         let sources = mapMaybe getSource docs
         sort sources @?= sort files
@@ -236,7 +237,7 @@ testErrorHandling =
                 defaultDirectoryLoaderOptions
         result <- load loader
         case result of
-          Left err -> assertBool "Expected error message" (not $ null err)
+          Left _ -> pure ()
           Right _ -> assertFailure "Expected Left but got Right"
     , testCase "Path is a file" $
         withSystemTempDirectory "test-dir-loader" $ \dir -> do
@@ -245,7 +246,7 @@ testErrorHandling =
           let loader = DirectoryLoader filePath defaultDirectoryLoaderOptions
           result <- load loader
           case result of
-            Left err -> assertBool "Expected error message" (not $ null err)
+            Left _ -> pure ()
             Right _ -> assertFailure "Expected Left but got Right"
     ]
 

@@ -36,11 +36,11 @@ module Langchain.Retriever.Core
   ) where
 
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import Data.Text (Text)
 import Langchain.DocumentLoader.Core (Document)
+import Langchain.Error (LangchainResult)
 import Langchain.Runnable.Core
 import Langchain.VectorStore.Core
-
-import Data.Text (Text)
 
 {- | Typeclass for document retrieval systems
 Implementations should return documents relevant to a given query.
@@ -64,9 +64,9 @@ class Retriever a where
   >>> _get_relevant_documents (VectorStoreRetriever myStore) "AI"
   Right [Document "AI definition...", ...]
   -}
-  _get_relevant_documents :: a -> Text -> IO (Either String [Document])
+  _get_relevant_documents :: a -> Text -> IO (LangchainResult [Document])
 
-  _get_relevant_documentsM :: MonadIO m => a -> Text -> m (Either String [Document])
+  _get_relevant_documentsM :: MonadIO m => a -> Text -> m (LangchainResult [Document])
   _get_relevant_documentsM retriever query = liftIO $ _get_relevant_documents retriever query
 
 {- | Vector store-backed retriever implementation

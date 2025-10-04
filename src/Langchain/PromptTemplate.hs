@@ -40,6 +40,7 @@ module Langchain.PromptTemplate
 import qualified Data.Map.Strict as HM
 import Data.Text (Text)
 import qualified Data.Text as T
+import Langchain.Error (LangchainResult, validationError)
 import Langchain.Runnable.Core (Runnable (..))
 
 -- TODO: Add Mechanism for custom example selector
@@ -75,7 +76,7 @@ result <- renderPrompt template vars
 -- Result: Left "Missing variable: place"
 @
 -}
-renderPrompt :: PromptTemplate -> HM.Map Text Text -> Either String Text
+renderPrompt :: PromptTemplate -> HM.Map Text Text -> LangchainResult Text
 renderPrompt (PromptTemplate template) vars = interpolate vars template
 
 {- | Represents a few-shot prompt template with examples.
@@ -118,7 +119,7 @@ result <- renderFewShotPrompt fewShotTemplate
 -- Result: Right "Examples of {type}:\nInput: Hello\nOutput: Bonjour\n\nInput: Goodbye\nOutput: Au revoir\nNow translate: {query}"
 @
 -}
-renderFewShotPrompt :: FewShotPromptTemplate -> Either String Text
+renderFewShotPrompt :: FewShotPromptTemplate -> LangchainResult Text
 renderFewShotPrompt FewShotPromptTemplate {..} = do
   -- Format each example using the example template
   formattedExamples <-
@@ -133,23 +134,23 @@ renderFewShotPrompt FewShotPromptTemplate {..} = do
 {- | Interpolate variables into a template string.
 Placeholders are of the form {key}, where key is a sequence of alphanumeric characters and underscores.
 -}
-interpolate :: HM.Map Text Text -> Text -> Either String Text
+interpolate :: HM.Map Text Text -> Text -> LangchainResult Text
 interpolate vars = go
   where
-    go :: Text -> Either String Text
+    go :: Text -> LangchainResult Text
     go t =
       case T.breakOn "{" t of
         (before, after) | T.null after -> Right before
         (before, after') ->
           case T.breakOn "}" (T.drop 1 after') of
-            (_, after'') | T.null after'' -> Left "Unclosed brace"
+            (_, after'') | T.null after'' -> Left $ validationError "Unclosed brace" Nothing Nothing
             (key, after''') ->
               let key' = T.strip key
                in case HM.lookup key' vars of
                     Just val -> do
                       rest <- go (T.drop 1 after''')
                       return $ before <> val <> rest
-                    Nothing -> Left $ "Missing variable: " <> T.unpack key'
+                    Nothing -> Left $ validationError ("Missing variable: " <> key') (Just key') Nothing
 
 instance Runnable PromptTemplate where
   type RunnableInput PromptTemplate = HM.Map Text Text
