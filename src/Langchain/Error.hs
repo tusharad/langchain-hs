@@ -570,18 +570,27 @@ catchToLangchainError action = do
 withContext :: Text -> Text -> LangchainResult a -> LangchainResult a
 withContext component operation result = case result of
   Left err ->
-    Left $
-      err
-        { errorContext =
-            Just $
-              ErrorContext
-                { contextComponent = Just component
-                , contextOperation = Just operation
-                , contextInput = Nothing
-                , contextMetadata = []
-                , contextTimestamp = case errorContext err of
-                    Just ctx -> contextTimestamp ctx
-                    Nothing -> error "withContext requires timestamp - use withContextIO instead"
+    case errorContext err of
+      Just ctx ->
+        Left $
+          err
+            { errorContext =
+                Just $
+                  ErrorContext
+                    { contextComponent = Just component
+                    , contextOperation = Just operation
+                    , contextInput = Nothing
+                    , contextMetadata = []
+                    , contextTimestamp = contextTimestamp ctx
+                    }
+            }
+      Nothing ->
+        Left $ internalError
+          "withContext requires timestamp in errorContext - use withContextIO if you need to add context to an error without a timestamp"
+          Nothing
+          Nothing
+                      -- We use a dummy timestamp here, but actually, we should return Left
+                      -- So, we restructure the code below
                 }
         }
   Right val -> Right val
