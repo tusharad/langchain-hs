@@ -3,6 +3,7 @@
 
 module Test.Langchain.Memory.TokenBufferMemory (tests) where
 
+import Data.Either (isRight)
 import qualified Data.List.NonEmpty as NE
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -11,11 +12,10 @@ import Langchain.LLM.Core
 import Langchain.Memory.Core (BaseMemory (..))
 import qualified Langchain.Memory.TokenBufferMemory as TB
 import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.HUnit (assertBool, assertEqual, assertFailure, testCase, (@?=))
+import Test.Tasty.HUnit
 
 #if MIN_VERSION_base(4,19,0)
 import Data.List (unsnoc)
-import Data.Either (isRight)
 #else
 unsnoc :: [a] -> Maybe ([a], a)
 unsnoc = foldr (\x -> Just . maybe ([], x) (\(~(a, b)) -> (x : a, b))) Nothing

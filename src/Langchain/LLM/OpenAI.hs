@@ -263,7 +263,7 @@ instance Run.Runnable OpenAI where
 data OpenAIParams = OpenAIParams
   { timeout :: Maybe Int
   , frequencyPenalty :: Maybe Double
-  , logitBias :: Maybe (Map Text Double)
+  , logitBias :: Maybe (Map Text Int)
   , logprobs :: Maybe Bool
   , maxCompletionTokens :: Maybe Int
   , maxTokens :: Maybe Int
