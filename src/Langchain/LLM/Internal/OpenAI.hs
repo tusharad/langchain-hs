@@ -517,7 +517,7 @@ instance FromJSON MessageContent where
 
 data ContentPart
   = TextContentPart Text
-  | ImageUrlContentPart Text
+  | ImageUrlContentPart Text -- TODO: add quality type Auto | High | Low
   deriving (Show, Eq, Generic)
 
 instance ToJSON ContentPart where
@@ -542,7 +542,7 @@ instance FromJSON ContentPart where
       ( \v -> do
           contentType <- v .: "type"
           case contentType :: Text of
-            "text" -> TextContentPart <$> parseJSON val
+            "text" -> TextContentPart <$> v .: "text"
             "image_url" -> ImageUrlContentPart <$> parseJSON val
             _ -> fail $ "Unknown content type: " ++ T.unpack contentType
       )
@@ -1273,8 +1273,6 @@ createChatCompletion apiKey r = do
             setRequestHeader "Content-Type" ["application/json"] $
               setRequestHeader "Authorization" ["Bearer " <> encodeUtf8 apiKey] $
                 setRequestBodyJSON r request_
-  print ("sending request " :: String, req)
-  print ("request body " :: String, encode r)
   response <- httpLbs req manager
   let status = statusCode $ getResponseStatus response
   if status >= 200 && status < 300

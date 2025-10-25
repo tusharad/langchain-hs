@@ -82,7 +82,7 @@ singleImageDemo gemini = do
               }
       let chatMessage = NE.singleton $ LLM.from message
 
-      putStrLn "Sending image to gemini for analysis..."
+      putStrLn "Sending image to Gemini for analysis..."
       result <- chat gemini chatMessage Nothing
       case result of
         Left err -> do

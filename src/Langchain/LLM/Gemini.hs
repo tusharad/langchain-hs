@@ -21,7 +21,7 @@ with LangChain's processing pipelines.
 For more information on Gemini API, see: <https://ai.google.dev/gemini-api/docs>
 
 Notes:
-* Gemini only supports base64 encoded image content. Checkout examples.
+* Gemini only supports base64 encoded image content. Check out examples.
 * Uses OpenAI-compatible endpoint: https://ai.google.dev/gemini-api/docs/openai
 
 Example usage:
