@@ -55,7 +55,7 @@ Contains parameters for controlling:
 
 Example configuration:
 
->>> OllamaEmbeddings "nomic-embed" (Just False) (Just "1h")
+>>> OllamaEmbeddings "nomic-embed" (Just False) (Just 3600) Nothing
 OllamaEmbeddings {model = "nomic-embed", ...}
 -}
 data OllamaEmbeddings = OllamaEmbeddings
@@ -64,7 +64,7 @@ data OllamaEmbeddings = OllamaEmbeddings
   , defaultTruncate :: Maybe Bool
   -- ^ Optional flag to truncate input if supported by the API
   , defaultKeepAlive :: Maybe Int
-  -- ^ Keep model loaded for specified duration (e.g., "5m")
+  -- ^ Keep model loaded for specified duration in seconds (e.g., 300 for 5 minutes)
   , modelOptions :: Maybe O.ModelOptions
   -- ^ Optional model parameters (e.g., temperature) as specified in the Modelfile.
   }

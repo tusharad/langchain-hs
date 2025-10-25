@@ -23,12 +23,15 @@ dependencies:
 - base >= 4.7 && < 5
 - aeson
 - bytestring
-- text
-- langchain-hs
-- transformers
+- base64-bytestring
 - containers
+- directory
+- filepath
+- langchain-hs
 - ollama-haskell
 - scientific
+- text
+- transformers
 
 ghc-options:
 - -Wall

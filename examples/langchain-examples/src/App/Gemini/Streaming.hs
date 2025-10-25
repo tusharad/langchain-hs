@@ -14,12 +14,17 @@ openAIChunkToText :: OpenAI.ChatCompletionChunk -> T.Text
 openAIChunkToText completionChunk = do
   fromMaybe ""
     . OpenAI.contentForDelta
-    . OpenAI.delta
+    . OpenAI.chunkChoiceDelta
     . fromMaybe emptyChoice
     . listToMaybe
     $ OpenAI.chunkChoices completionChunk
   where
-    emptyChoice = OpenAI.ChunkChoice (OpenAI.Delta Nothing) Nothing
+    emptyChoice =
+      OpenAI.ChunkChoice
+        (OpenAI.Delta Nothing Nothing Nothing Nothing Nothing)
+        1
+        Nothing
+        Nothing
 
 runApp :: IO ()
 runApp = do

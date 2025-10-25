@@ -26,12 +26,14 @@ source-repository head
 library
   exposed-modules:
       App.Gemini.Embeddings
+      App.Gemini.ImageInput
       App.Gemini.Runnable
       App.Gemini.Streaming
       App.Ollama.Agent
       App.Ollama.MultiAgent
       App.Ollama.StructuredOutput
       App.Ollama.ToolCall
+      App.OpenAI.ImageInput
       App.OpenRouter.PdfQA
       App.OpenRouter.StructuredOutput
       App.OpenRouter.ToolCall
@@ -44,8 +46,11 @@ library
   build-depends:
       aeson
     , base >=4.7 && <5
+    , base64-bytestring
     , bytestring
     , containers
+    , directory
+    , filepath
     , langchain-hs
     , ollama-haskell
     , scientific
@@ -63,8 +68,11 @@ executable langchain-examples-exe
   build-depends:
       aeson
     , base >=4.7 && <5
+    , base64-bytestring
     , bytestring
     , containers
+    , directory
+    , filepath
     , langchain-examples
     , langchain-hs
     , ollama-haskell
@@ -84,8 +92,11 @@ test-suite langchain-examples-test
   build-depends:
       aeson
     , base >=4.7 && <5
+    , base64-bytestring
     , bytestring
     , containers
+    , directory
+    , filepath
     , langchain-examples
     , langchain-hs
     , ollama-haskell

@@ -156,7 +156,7 @@ instance LLM.LLM OpenAI where
         ( OpenAI.defaultChatCompletionRequest
             { OpenAI.model = openAIModelName
             , OpenAI.baseUrl = baseUrl
-            , OpenAI.messages = toOpenAIMessages msgs
+            , OpenAI.messages = NE.toList $ NE.map LLM.to msgs
             , OpenAI.timeout = timeout =<< mbOpenAIParams
             , OpenAI.frequencyPenalty = frequencyPenalty =<< mbOpenAIParams
             , OpenAI.logitBias = logitBias =<< mbOpenAIParams
@@ -197,7 +197,7 @@ instance LLM.LLM OpenAI where
           OpenAI.defaultChatCompletionRequest
             { OpenAI.model = openAIModelName
             , OpenAI.baseUrl = baseUrl
-            , OpenAI.messages = toOpenAIMessages msgs
+            , OpenAI.messages = NE.toList $ NE.map LLM.to msgs
             , OpenAI.stream = Just True -- Enable streaming'
             , OpenAI.timeout = timeout =<< mbOpenAIParams
             , OpenAI.frequencyPenalty = frequencyPenalty =<< mbOpenAIParams
@@ -232,25 +232,6 @@ instance LLM.LLM OpenAI where
       OpenAI.OpenAIStreamHandler
         { OpenAI.onComplete = onComplete
         , OpenAI.onToken = onToken
-        }
-
-toOpenAIMessages :: LLM.ChatMessage -> [OpenAI.Message]
-toOpenAIMessages msgs = map go (NE.toList msgs)
-  where
-    toRole :: LLM.Role -> OpenAI.Role
-    toRole r = case r of
-      LLM.System -> OpenAI.System
-      LLM.User -> OpenAI.User
-      LLM.Assistant -> OpenAI.Assistant
-      LLM.Tool -> OpenAI.Tool
-      LLM.Developer -> OpenAI.Developer
-      LLM.Function -> OpenAI.Function
-
-    go :: LLM.Message -> OpenAI.Message
-    go msg =
-      OpenAI.defaultMessage
-        { OpenAI.role = toRole $ LLM.role msg
-        , OpenAI.content = Just $ OpenAI.StringContent (LLM.content msg)
         }
 
 instance Run.Runnable OpenAI where

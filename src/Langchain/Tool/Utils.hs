@@ -2,13 +2,14 @@
 
 {- |
 Module      : Langchain.Tool.Utils
-Description : Tool for scrapping text content from URL
+Description : Common utility functions for LangChain tool modules
 Copyright   : (c) 2025 Tushar Adhatrao
 License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
 
-Common utility functions for Tool modules
+This module provides utility functions used by various tool implementations,
+particularly for HTML content processing and cleaning operations.
 -}
 module Langchain.Tool.Utils (cleanBodyContent, cleanHtmlContent) where
 

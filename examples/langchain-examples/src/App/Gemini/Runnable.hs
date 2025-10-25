@@ -27,6 +27,7 @@ import Control.Monad (forM_)
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
+import qualified Langchain.Error as Langchain
 import Langchain.LLM.Gemini
 import Langchain.LLM.OpenAI (OpenAIParams, defaultOpenAIParams)
 import Langchain.Runnable.Chain
@@ -131,7 +132,7 @@ basicRunnableDemo gemini = do
   result <- invoke gemini (singleMessage, Nothing)
   case result of
     Left err -> do
-      putStrLn $ "Error: " <> err
+      putStrLn $ Langchain.toString err
       exitFailure
     Right (Message _ response _) -> do
       putStrLn "Response received:"
@@ -148,7 +149,7 @@ basicRunnableDemo gemini = do
   batchResults <- batch gemini batchInputs
   case batchResults of
     Left err -> do
-      putStrLn $ "Batch error: " <> err
+      putStrLn $ Langchain.toString err
       exitFailure
     Right responses -> do
       putStrLn $ "Processed " <> show (length responses) <> " questions:"
@@ -162,7 +163,7 @@ basicRunnableDemo gemini = do
   streamResult <- Run.stream gemini (streamMessage, Nothing) $ \(Message _ c _) -> do
     T.putStr c
   case streamResult of
-    Left err -> putStrLn $ "\nStream error: " <> err
+    Left err -> putStrLn $ "\nStream error: " <> Langchain.toString err
     Right _ -> putStrLn "\nStream completed"
 
 chainCompositionDemo :: Gemini -> IO ()
@@ -182,11 +183,11 @@ chainCompositionDemo gemini = do
 
   result1 <- chain preprocessor gemini inputText
   case result1 of
-    Left err -> putStrLn $ "Chain error: " <> err
+    Left err -> putStrLn $ "Chain error: " <> Langchain.toString err
     Right geminiResponse -> do
       result2 <- invoke formatter geminiResponse
       case result2 of
-        Left err -> putStrLn $ "Format error: " <> err
+        Left err -> putStrLn $ "Format error: " <> Langchain.toString err
         Right formatted -> T.putStrLn formatted
 
   -- Method 2: Using RunnableSequence
@@ -196,18 +197,18 @@ chainCompositionDemo gemini = do
 
   pipelineResult <- invoke fullPipeline inputText
   case pipelineResult of
-    Left err -> putStrLn $ "Pipeline error: " <> err
+    Left err -> putStrLn $ "Pipeline error: " <> Langchain.toString err
     Right formatted -> T.putStrLn formatted
 
   -- Method 3: Using the |>> operator
   putStrLn "\nMethod 3: Using |>> operator"
   operatorResult <- (preprocessor |>> gemini) inputText
   case operatorResult of
-    Left err -> putStrLn $ "Operator chain error: " <> err
+    Left err -> putStrLn $ "Operator chain error: " <> Langchain.toString err
     Right geminiResponse -> do
       formatResult <- invoke formatter geminiResponse
       case formatResult of
-        Left err -> putStrLn $ "Format error: " <> err
+        Left err -> putStrLn $ "Format error: " <> Langchain.toString err
         Right formatted -> T.putStrLn formatted
 
 -- | Demonstrates conditional processing with RunnableBranch
@@ -247,11 +248,11 @@ conditionalProcessingDemo gemini = do
     putStrLn $ "\nTest " <> show i <> ": " <> T.unpack text
     branchResult <- runBranch textProcessor text
     case branchResult of
-      Left err -> putStrLn $ "Branch error: " <> err
+      Left err -> putStrLn $ "Branch error: " <> Langchain.toString err
       Right preprocessed -> do
         geminiResult <- invoke gemini preprocessed
         case geminiResult of
-          Left err -> putStrLn $ "Gemini error: " <> err
+          Left err -> putStrLn $ "Gemini error: " <> Langchain.toString err
           Right (Message _ response _) -> do
             putStrLn "Result:"
             T.putStrLn $ "  " <> T.take 80 response <> "..."
@@ -283,7 +284,7 @@ transformationDemo gemini = do
 
   mapResult <- runMap transformedGemini testQuestion
   case mapResult of
-    Left err -> putStrLn $ "Map error: " <> err
+    Left err -> putStrLn $ "Map error: " <> Langchain.toString err
     Right (Message _ transformed _) -> do
       putStrLn "Transformed result:"
       T.putStrLn $ "  " <> transformed
@@ -302,7 +303,7 @@ utilityWrappersDemo gemini = do
   putStrLn "Setting 30-second timeout for Gemini request..."
   timeoutResult <- invoke timeoutGemini (timeoutMessage, Nothing)
   case timeoutResult of
-    Left err -> putStrLn $ "Timeout error: " <> err
+    Left err -> putStrLn $ "Timeout error: " <> Langchain.toString err
     Right (Message _ response _) -> do
       putStrLn "Response within timeout:"
       T.putStrLn $ "  " <> T.take 80 response <> "..."
@@ -315,7 +316,7 @@ utilityWrappersDemo gemini = do
   putStrLn "Setting up retry mechanism (3 attempts, 1s delay)..."
   retryResult <- invoke retryGemini (retryMessage, Nothing)
   case retryResult of
-    Left err -> putStrLn $ "Retry failed: " <> err
+    Left err -> putStrLn $ "Retry failed: " <> Langchain.toString err
     Right (Message _ response _) -> do
       putStrLn "Response after retry attempts:"
       T.putStrLn $ "  " <> T.take 80 response <> "..."

@@ -86,12 +86,12 @@ data Role
     Assistant
   | -- | Tool role, for tool outputs or interactions
     Tool
-  | Developer
-  | -- | Special role for developer messages. Specific to only some integrations
+  | -- | Developer role for developer messages. Specific to only some integrations
+    Developer
+  | -- | Function role for function call messages. Specific to only some integrations
     Function
   deriving
-    ( -- | Function call messages. Specific to only some integrations
-      Eq
+    ( Eq
     , Show
     , Generic
     , ToJSON

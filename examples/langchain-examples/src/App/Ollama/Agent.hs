@@ -5,6 +5,7 @@ module App.Ollama.Agent (runApp) where
 import qualified Data.List.NonEmpty as HM
 import Langchain.Agents.Core
 import Langchain.Agents.Ollama
+import qualified Langchain.Error as Langchain
 import Langchain.LLM.Core
 import Langchain.Memory.Core
 
@@ -35,6 +36,6 @@ runApp = do
       as
       "https://tushar-adhatrao.in give me link of any repository from the github link from provided site"
   case eRes of
-    Left err -> putStrLn err
+    Left err -> putStrLn $ Langchain.toString err
     Right aFinish -> do
       print $ returnValues aFinish

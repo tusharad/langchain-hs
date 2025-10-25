@@ -40,6 +40,7 @@ dependencies:
 - parsec < 4
 - transformers
 - time >= 1.9 && < 1.15
+- base64-bytestring >= 1.2 && < 1.3
 
 ghc-options:
 - -Wall

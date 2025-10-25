@@ -7,7 +7,10 @@ module Main (main) where
 -- import App.Ollama.MultiAgent
 -- import App.Ollama.Agent
 -- import App.Gemini.Embeddings
-import App.Gemini.Runnable
+-- import App.Gemini.Runnable
+import App.Gemini.ImageInput
+
+-- import App.Gemini.Simple
 
 -- import App.Gemini.Streaming
 

@@ -1,20 +1,44 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 
 {- |
 Module      : Langchain.LLM.Gemini
-Description : Gemini integration for LangChain-hs
+Description : Google Gemini integration for LangChain Haskell
 Copyright   : (c) 2025 Tushar Adhatrao
 License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
 
-This module provides the 'Gemini' data type and implements the 'LLM' typeclass for interacting with Gemini models.
-It supports generating text, handling chat interactions, and streaming responses using Gemini's OpenAI compatibilty API.
-for more info, https://ai.google.dev/gemini-api/docs/openai
+This module provides the 'Gemini' data type and implements the 'LLM' typeclass for interacting
+with Google's Gemini language models through OpenAI-compatible API endpoints.
 
-This gemini type uses OpenAI module with baseUrl as "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
+The 'Gemini' type encapsulates the API key, model name, and callbacks for event handling.
+The 'LLM' instance methods ('generate', 'chat', 'stream') allow for seamless integration
+with LangChain's processing pipelines.
+
+For more information on Gemini API, see: <https://ai.google.dev/gemini-api/docs>
+
+Notes:
+* Gemini only supports base64 encoded image content. Checkout examples.
+* Uses OpenAI-compatible endpoint: https://ai.google.dev/gemini-api/docs/openai
+
+Example usage:
+
+@
+import Data.Text (Text)
+import qualified Langchain.LLM.Core as LLM
+import Langchain.LLM.Gemini (Gemini(..), defaultGemini)
+
+main :: IO()
+main = do
+  let gemini = defaultGemini { apiKey = "your-api-key" }
+  result <- LLM.generate gemini "Explain functional programming" Nothing
+  case result of
+    Left err -> putStrLn $ "Error: " ++ show err
+    Right response -> print response
+@
 -}
 module Langchain.LLM.Gemini
   ( Gemini (..)
@@ -27,7 +51,7 @@ import Data.Text (Text)
 import Langchain.Callback
 import Langchain.LLM.Core
 import qualified Langchain.LLM.Core as LLM
-import qualified Langchain.LLM.Internal.OpenAI as OpenAI
+import qualified Langchain.LLM.Internal.OpenAI as Internal
 import qualified Langchain.LLM.OpenAI as OpenAI
 import qualified Langchain.Runnable.Core as Run
 
@@ -60,11 +84,11 @@ toOpenAI Gemini {..} =
 
 instance LLM.LLM Gemini where
   type LLMParams Gemini = OpenAI.OpenAIParams
-  type LLMStreamTokenType Gemini = OpenAI.ChatCompletionChunk
+  type LLMStreamTokenType Gemini = Internal.ChatCompletionChunk
 
-  generate llm = LLM.generate (toOpenAI llm)
-  chat llm = LLM.chat (toOpenAI llm)
-  stream llm = LLM.stream (toOpenAI llm)
+  generate = LLM.generate . toOpenAI
+  chat = LLM.chat . toOpenAI
+  stream = LLM.stream . toOpenAI
 
 instance Run.Runnable Gemini where
   type RunnableInput Gemini = (LLM.ChatMessage, Maybe OpenAI.OpenAIParams)

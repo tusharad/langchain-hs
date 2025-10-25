@@ -3,7 +3,7 @@
 {-# LANGUAGE TypeFamilies #-}
 
 {- |
-Module      : Langchain.LLM.OpenAI
+Module      : Langchain.LLM.Deepseek
 Description : Deepseek integration for LangChain Haskell
 Copyright   : (c) 2025 Tushar Adhatrao
 License     : MIT
@@ -13,7 +13,9 @@ Stability   : experimental
 This module provides the 'Deepseek' data type and implements the 'LLM' typeclass for interacting with Deepseek's language models.
 It supports generating text, handling chat interactions, and streaming responses using Deepseek's API.
 
-This deepseek type uses OpenAI module with baseUrl as "https://api.deepseek.com";
+This implementation uses the OpenAI-compatible interface with baseUrl as "https://api.deepseek.com".
+
+For more information on Deepseek's API, see: <https://platform.deepseek.com/api-docs/>
 -}
 module Langchain.LLM.Deepseek
   ( Deepseek (..)
@@ -30,9 +32,9 @@ import qualified Langchain.LLM.OpenAI as OpenAI
 
 data Deepseek = Deepseek
   { apiKey :: Text
-  -- ^ The API key for authenticating with OpenAI's services.
+  -- ^ The API key for authenticating with Deepseek's services.
   , deepseekModelName :: Text
-  -- ^ The name of the Deepseek model to use (e.g., "gpt-3.5-turbo", "gpt-4").
+  -- ^ The name of the Deepseek model to use (e.g., "deepseek-chat", "deepseek-coder").
   , callbacks :: [Callback]
   -- ^ A list of callbacks for handling events during LLM operations.
   , baseUrl :: Maybe String
