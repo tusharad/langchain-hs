@@ -4,15 +4,30 @@
 
 {- |
 Module      : Langchain.LLM.OpenAICompatible
-Description : Internal module for OpenAI chat completion API interactions
+Description : Generic OpenAI-compatible API integration for LangChain Haskell
 Copyright   : (c) 2025 Tushar Adhatrao
 License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
 
-This module provides the 'OpenAICompatible' data type and
-implements the 'LLM' typeclass for interacting with OpenAICompatible APIs.
-Also provides some convenience functions for `LMStudio` and LLama.cpp
+This module provides a generic 'OpenAICompatible' data type and
+implements the 'LLM' typeclass for interacting with any service that provides
+an OpenAI-compatible API interface.
+
+Also provides convenience functions for popular providers like LMStudio, llama.cpp,
+and OpenRouter.
+
+Example usage:
+
+@
+-- Using with LMStudio
+let lmStudio = mkLMStudio "my-model" [] Nothing Nothing
+result <- generate lmStudio "What is functional programming?" Nothing
+
+-- Using with OpenRouter
+let openRouter = mkOpenRouter "anthropic/claude-3-opus" [] Nothing "your-api-key"
+result <- generate openRouter "Explain Haskell monads" Nothing
+@
 -}
 module Langchain.LLM.OpenAICompatible
   ( OpenAICompatible (..)

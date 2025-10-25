@@ -1,6 +1,51 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
+{- |
+Module      : Langchain.Agents.Ollama
+Description : Ollama agent implementation with native tool calling support
+Copyright   : (c) 2025 Tushar Adhatrao
+License     : MIT
+Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
+Stability   : experimental
+
+This module provides an agent implementation that leverages Ollama's native tool calling
+capabilities. The agent can use multiple tools to gather information and answer questions,
+making decisions about when to use tools and when to provide a final answer.
+
+Important: Not every Ollama model supports tool calling. It is the caller's responsibility
+to use a model that has tool calling capabilities (e.g., llama3.1, llama3.2).
+
+Example usage:
+
+@
+import Langchain.Agents.Ollama
+import Langchain.Memory.Core (WindowBufferMemory(..))
+import qualified Data.List.NonEmpty as NE
+
+main :: IO ()
+main = do
+  -- Create agent with default tools (WebScraper and Wikipedia)
+  let agent = OllamaAgent
+        { agentModelName = "llama3.2"
+        , ollamaAvailableTools = defaultOllamaTools
+        , agentSystemPrompt = defaultPrompt defaultOllamaTools
+        }
+
+  -- Create agent state with memory
+  let initialState = AgentState
+        { agentMemory = WindowBufferMemory 10 initialMessages
+        , agentToolResults = []
+        , agentSteps = []
+        }
+
+  -- Run the agent
+  result <- runAgent agent initialState "What is the latest news about AI?"
+  case result of
+    Left err -> putStrLn $ "Error: " ++ show err
+    Right finish -> putStrLn $ "Result: " ++ show (returnValues finish)
+@
+-}
 module Langchain.Agents.Ollama
   ( OllamaAgent (..)
   , defaultOllamaTools

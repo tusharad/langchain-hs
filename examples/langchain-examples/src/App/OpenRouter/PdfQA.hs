@@ -12,6 +12,7 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import Langchain.DocumentLoader.PdfLoader
 import Langchain.Embeddings.Ollama
+import qualified Langchain.Error as Langchain
 import Langchain.LLM.OpenAICompatible hiding (metadata)
 import Langchain.PromptTemplate
 import Langchain.Retriever.Core
@@ -66,7 +67,7 @@ runApp = do
     ExceptT $ fromDocuments ollamaEmbeddings docs
 
   case result of
-    Left err -> putStrLn $ "Error loading documents: " <> err
+    Left err -> putStrLn $ "Error loading documents: " <> Langchain.toString err
     Right vectorStore -> do
       let retriever = VectorStoreRetriever vectorStore
       TIO.putStrLn "PDF loaded. You can now ask questions. Type ':quit' to exit.\n"
@@ -94,7 +95,7 @@ runApp = do
               ExceptT $ chat openRouter (sysMsg <| (userMsg :| [])) Nothing
 
             case response of
-              Left err -> putStrLn $ "Error: " <> err
+              Left err -> putStrLn $ "Error: " <> Langchain.toString err
               Right r -> TIO.putStrLn $ stripSources r
 
       chatLoop

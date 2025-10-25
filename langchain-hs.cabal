@@ -86,6 +86,7 @@ library
       aeson ==2.*
     , async <3
     , base >=4.7 && <5
+    , base64-bytestring ==1.2.*
     , bytestring >=0.10
     , conduit >=1.2 && <1.4
     , containers >=0.6 && <0.9
@@ -133,6 +134,7 @@ test-suite langchain-hs-test
       aeson ==2.*
     , async <3
     , base >=4.7 && <5
+    , base64-bytestring ==1.2.*
     , bytestring >=0.10
     , conduit >=1.2 && <1.4
     , containers >=0.6 && <0.9

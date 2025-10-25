@@ -16,6 +16,7 @@ Key Features
 
 - Data types for chat completion requests and responses
 - Support for streaming chat completions with real-time token processing
+- Support for multimodal inputs (text and images)
 - Default values and configurations for common use cases
 - Comprehensive error handling for API interactions
 
@@ -41,8 +42,6 @@ case response of
   Right res -> print (choices res)
   Left err -> putStrLn $ "Error: " ++ err
 @
-
-- Streaming Chat Completions:
 
 @
 import Langchain.LLM.Internal.OpenAI
@@ -74,7 +73,10 @@ module Langchain.LLM.Internal.OpenAI
   , Message (..)
   , Role (..)
   , MessageContent (..)
+  , ContentPart (..)
   , TextContent (..)
+  , ImageUrlContent (..)
+  , ImageUrl (..)
   , InputTool (..)
   , FunctionDef (..)
   , FunctionParameters (..)
@@ -500,8 +502,8 @@ instance FromJSON Role where
 data MessageContent
   = -- | Simple text content
     StringContent Text
-  | -- | Structured content parts
-    ContentParts [TextContent]
+  | -- | Structured content parts (text, images, etc.)
+    ContentParts [ContentPart]
   deriving (Show, Eq, Generic)
 
 instance ToJSON MessageContent where
@@ -513,20 +515,53 @@ instance FromJSON MessageContent where
   parseJSON (Array arr) = ContentParts <$> parseJSON (Array arr)
   parseJSON invalid = fail $ "Invalid message content: " ++ show invalid
 
+data ContentPart
+  = TextContentPart Text
+  | ImageUrlContentPart Text -- TODO: add quality type Auto | High | Low
+  deriving (Show, Eq, Generic)
+
+instance ToJSON ContentPart where
+  toJSON (TextContentPart txt) =
+    object
+      [ "type" .= ("text" :: Text)
+      , "text" .= txt
+      ]
+  toJSON (ImageUrlContentPart imageUrlContent) =
+    object
+      [ "type" .= ("image_url" :: Text)
+      , "image_url"
+          .= object
+            [ "url" .= imageUrlContent
+            ]
+      ]
+
+instance FromJSON ContentPart where
+  parseJSON val =
+    withObject
+      "ContentPart"
+      ( \v -> do
+          contentType <- v .: "type"
+          case contentType :: Text of
+            "text" -> TextContentPart <$> v .: "text"
+            "image_url" -> ImageUrlContentPart <$> parseJSON val
+            _ -> fail $ "Unknown content type: " ++ T.unpack contentType
+      )
+      val
+
 -- | Represents a piece of text content with a type.
 data TextContent = TextContent
   { text_ :: Text
   -- ^ The text content
   , contentType :: Text
-  -- ^ The type of the content
+  -- ^ The type of the content, always "text"
   }
   deriving (Show, Eq, Generic)
 
 instance ToJSON TextContent where
   toJSON TextContent {..} =
     object
-      [ "text" .= text_
-      , "type" .= contentType
+      [ "type" .= contentType
+      , "text" .= text_
       ]
 
 instance FromJSON TextContent where
@@ -534,6 +569,49 @@ instance FromJSON TextContent where
     TextContent
       <$> v .: "text"
       <*> v .: "type"
+
+-- | Represents an image URL content part.
+data ImageUrlContent = ImageUrlContent
+  { imageUrlContentType :: Text
+  -- ^ The type of the content, always "image_url"
+  , imageUrl :: ImageUrl
+  -- ^ The image URL details
+  }
+  deriving (Show, Eq, Generic)
+
+instance ToJSON ImageUrlContent where
+  toJSON ImageUrlContent {..} =
+    object
+      [ "type" .= imageUrlContentType
+      , "image_url" .= imageUrl
+      ]
+
+instance FromJSON ImageUrlContent where
+  parseJSON = withObject "ImageUrlContent" $ \v ->
+    ImageUrlContent
+      <$> v .: "type"
+      <*> v .: "image_url"
+
+-- | Represents an image URL with optional detail level.
+data ImageUrl = ImageUrl
+  { imageUrlUrl :: Text
+  -- ^ The URL of the image
+  , imageUrlDetail :: Maybe Text
+  -- ^ Optional detail level: "low", "high", or "auto"
+  }
+  deriving (Show, Eq, Generic)
+
+instance ToJSON ImageUrl where
+  toJSON ImageUrl {..} =
+    object $
+      "url" .= imageUrlUrl
+        : maybe [] (\d -> ["detail" .= d]) imageUrlDetail
+
+instance FromJSON ImageUrl where
+  parseJSON = withObject "ImageUrl" $ \v ->
+    ImageUrl
+      <$> v .: "url"
+      <*> v .:? "detail"
 
 data InputTool = InputTool
   { toolType :: Text
@@ -1195,7 +1273,6 @@ createChatCompletion apiKey r = do
             setRequestHeader "Content-Type" ["application/json"] $
               setRequestHeader "Authorization" ["Bearer " <> encodeUtf8 apiKey] $
                 setRequestBodyJSON r request_
-
   response <- httpLbs req manager
   let status = statusCode $ getResponseStatus response
   if status >= 200 && status < 300
@@ -1371,7 +1448,10 @@ instance LLM.MessageConvertible Message where
   to msg =
     defaultMessage
       { role = toRole $ LLM.role msg
-      , content = Just $ StringContent (LLM.content msg)
+      , content =
+          createMessageContent
+            (LLM.content msg)
+            (LLM.messageImages (LLM.messageData msg))
       , name = LLM.name (LLM.messageData msg)
       , toolCalls = LLM.toolCalls (LLM.messageData msg)
       }
@@ -1385,16 +1465,23 @@ instance LLM.MessageConvertible Message where
         LLM.Developer -> Developer
         LLM.Function -> Function
 
+      createMessageContent :: T.Text -> Maybe [T.Text] -> Maybe MessageContent
+      createMessageContent textContent Nothing = Just $ StringContent textContent
+      createMessageContent textContent (Just []) = Just $ StringContent textContent
+      createMessageContent textContent (Just imageUrls) =
+        let textPart = TextContentPart textContent
+            imageParts = map ImageUrlContentPart imageUrls
+         in Just $ ContentParts (textPart : imageParts)
+
   from msg =
     LLM.Message
       { LLM.role = fromRole $ role msg
-      , LLM.content = case content msg of
-          Just (StringContent txt) -> txt
-          _ -> "" -- Handle other cases like `Nothing` or other content types as needed
+      , LLM.content = extractTextContent $ content msg
       , LLM.messageData =
           LLM.defaultMessageData
             { LLM.name = name msg
             , LLM.toolCalls = toolCalls msg
+            , LLM.messageImages = extractImageUrls $ content msg
             }
       }
     where
@@ -1406,3 +1493,15 @@ instance LLM.MessageConvertible Message where
         Tool -> LLM.Tool
         Developer -> LLM.Developer
         Function -> LLM.Function
+
+      extractTextContent :: Maybe MessageContent -> T.Text
+      extractTextContent (Just (StringContent txt)) = txt
+      extractTextContent (Just (ContentParts parts)) =
+        T.concat [txt | TextContentPart txt <- parts]
+      extractTextContent Nothing = ""
+
+      extractImageUrls :: Maybe MessageContent -> Maybe [T.Text]
+      extractImageUrls (Just (ContentParts parts)) =
+        let imageUrls = [url | ImageUrlContentPart url <- parts]
+         in if null imageUrls then Nothing else Just imageUrls
+      extractImageUrls _ = Nothing

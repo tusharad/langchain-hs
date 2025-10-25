@@ -11,6 +11,8 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import Langchain.Agents.Core
+import Langchain.Error (LangchainError)
+import qualified Langchain.Error as Langchain
 import Langchain.LLM.Ollama
 import Langchain.Memory.Core
 import Langchain.Tool.WikipediaTool (defaultWikipediaTool)
@@ -27,7 +29,7 @@ extractAfter marker text =
         then ""
         else T.strip $ T.drop 2 $ T.dropWhile (/= ':') afterMarker
 
-parseAgentOutput :: Text -> Either String AgentStep
+parseAgentOutput :: Text -> Either LangchainError AgentStep
 parseAgentOutput text
   | "FINAL ANSWER:" `T.isInfixOf` text =
       let answer = extractAfter "FINAL ANSWER:" text
@@ -50,11 +52,15 @@ parseAgentOutput text
                         , actionInput = T.strip input
                         , actionLog = text
                         }
-        _ -> Left $ "Could not parse tool call from text: " <> T.unpack text
+        _ ->
+          Left $
+            Langchain.fromString $
+              "Could not parse tool call from text: " <> T.unpack text
   | otherwise =
       Left $
-        "Could not parse agent output. Expected 'TOOL:' or 'FINAL ANSWER:'. Got: "
-          <> T.unpack text
+        Langchain.fromString $
+          "Could not parse agent output. Expected 'TOOL:' or 'FINAL ANSWER:'. Got: "
+            <> T.unpack text
 
 instance (LLM llm) => Agent (SimpleToolAgent llm) where
   planNextAction SimpleToolAgent {..} AgentState {..} = do
@@ -90,7 +96,7 @@ runApp = do
           )
 
       case eDescription of
-        Left err -> TIO.putStrLn $ "Vision model failed: " <> T.pack err
+        Left err -> TIO.putStrLn $ "Vision model failed: " <> Langchain.toText err
         Right description -> do
           TIO.putStrLn $ ">> Scene Description: " <> description
           TIO.putStrLn "--------------------------------------------"
@@ -124,7 +130,10 @@ runApp = do
 
           finalResult <- runAgent infoAgent initialState agentInitialPrompt
           case finalResult of
-            Left agentErr -> TIO.putStrLn $ "\nAgent failed: " <> T.pack agentErr
+            Left agentErr ->
+              TIO.putStrLn $
+                "\nAgent failed: "
+                  <> Langchain.toText agentErr
             Right agentFinish -> do
               let finalAnswer =
                     Map.findWithDefault

@@ -28,7 +28,7 @@ import Langchain.Embeddings.OpenAI
 
 data GeminiEmbeddings = GeminiEmbeddings
   { apiKey :: Text
-  -- ^ OpenAI API Key
+  -- ^ Gemini API Key
   , baseUrl :: Maybe String
   -- ^ base url; default "https://generativelanguage.googleapis.com/v1beta/openai"
   , model :: Text
@@ -40,7 +40,7 @@ data GeminiEmbeddings = GeminiEmbeddings
   ^ For now, only float is supported
   -}
   , embeddingsUser :: Maybe Text
-  -- ^ A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse.
+  -- ^ A unique identifier representing your end-user, which can help monitor and detect abuse.
   , timeout :: Maybe Int
   -- ^ Override default responsetime out. unit = seconds.
   }

@@ -1,6 +1,40 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 
+{- |
+Module      : Langchain.Tool.Calculator
+Description : Mathematical expression calculator tool for LangChain Haskell
+Copyright   : (c) 2025 Tushar Adhatrao
+License     : MIT
+Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
+Stability   : experimental
+
+This module provides a calculator tool that can be used with LangChain agents to perform
+arithmetic operations. It parses and evaluates mathematical expressions including:
+
+* Basic arithmetic: addition (+), subtraction (-), multiplication (*), division (/)
+* Exponentiation (^)
+* Parentheses for grouping
+* Floating-point numbers
+
+The calculator uses a parser combinator approach to handle operator precedence correctly.
+
+Example usage:
+
+@
+import Langchain.Tool.Calculator
+import Langchain.Tool.Core (runTool)
+
+main :: IO ()
+main = do
+  let calc = CalculatorTool
+  result <- runTool calc "2 + 3 * 4"
+  case result of
+    Left err -> putStrLn $ "Error: " ++ err
+    Right value -> putStrLn $ "Result: " ++ show value
+  -- Output: Result: 14.0
+@
+-}
 module Langchain.Tool.Calculator
   ( CalculatorTool (..)
   , Expr (..)

@@ -3,8 +3,8 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-{- | Module      : Langchain.VectorStore.InMemory
-Description : In-memory vector store implementation for LangChain Haskell
+{- | Module      : Langchain.Tool.Core
+Description : Core Tool typeclass for LangChain Haskell
 Copyright   : (c) 2025 Tushar Adhatrao
 License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
