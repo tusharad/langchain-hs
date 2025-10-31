@@ -30,7 +30,8 @@ module Langchain.DocumentLoader.FileLoader
 
 import Data.Aeson
 import Data.Map (fromList)
-import qualified Data.Text.Lazy as T
+import qualified Data.Text as T
+import qualified Data.Text.Lazy as TL
 import Langchain.DocumentLoader.Core
 import Langchain.Error (SomeException, llmError, try)
 import Langchain.TextSplitter.Character
@@ -64,17 +65,17 @@ instance BaseLoader FileLoader where
             return $
               Left $
                 llmError
-                  (T.toStrict $ T.pack $ "Error reading file: " ++ path ++ show (err :: SomeException))
+                  (T.pack $ "Error reading file: " ++ path ++ show (err :: SomeException))
                   Nothing
                   Nothing
           Right content -> do
-            let meta = fromList [("source", String $ T.toStrict $ T.pack path)]
-            return $ Right [Document (T.pack content) meta]
+            let meta = fromList [("source", String $ T.pack path)]
+            return $ Right [Document (TL.pack content) meta]
       else
         return $
           Left
             ( llmError
-                (T.toStrict $ T.pack $ "File not found: " ++ path)
+                (T.pack $ "File not found: " ++ path)
                 Nothing
                 Nothing
             )
@@ -96,15 +97,15 @@ instance BaseLoader FileLoader where
             return $
               Left $
                 llmError
-                  (T.toStrict $ T.pack $ "Error reading file: " ++ path ++ show (err :: SomeException))
+                  (T.pack $ "Error reading file: " ++ path ++ show (err :: SomeException))
                   Nothing
                   Nothing
-          Right content -> return $ Right $ splitText defaultCharacterSplitterOps (T.pack content)
+          Right content -> return $ Right $ splitText defaultCharacterSplitterOps (TL.pack content)
       else
         return $
           Left
             ( llmError
-                (T.toStrict $ T.pack $ "File not found: " ++ path)
+                (T.pack $ "File not found: " ++ path)
                 Nothing
                 Nothing
             )

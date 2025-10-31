@@ -270,7 +270,7 @@ defaultHugginfaceMessage :: Message
 defaultHugginfaceMessage =
   Message
     { role = User
-    , content = TextContent "What is the meaining of life?"
+    , content = TextContent "What is the meaning of life?"
     , name = Nothing
     }
 
