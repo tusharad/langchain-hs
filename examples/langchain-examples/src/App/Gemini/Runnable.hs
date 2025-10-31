@@ -42,7 +42,7 @@ data TextPreprocessor = TextPreprocessor
 
 instance Runnable TextPreprocessor where
   type RunnableInput TextPreprocessor = T.Text
-  type RunnableOutput TextPreprocessor = (ChatMessage, Maybe OpenAIParams)
+  type RunnableOutput TextPreprocessor = (ChatHistory, Maybe OpenAIParams)
 
   invoke _ input = do
     let preprocessed = "Please analyze the following text and provide insights: " <> input
@@ -65,7 +65,7 @@ data SentimentAnalyzer = SentimentAnalyzer
 
 instance Runnable SentimentAnalyzer where
   type RunnableInput SentimentAnalyzer = T.Text
-  type RunnableOutput SentimentAnalyzer = (ChatMessage, Maybe OpenAIParams)
+  type RunnableOutput SentimentAnalyzer = (ChatHistory, Maybe OpenAIParams)
 
   invoke _ input = do
     let prompt =
@@ -79,7 +79,7 @@ data KeywordExtractor = KeywordExtractor
 
 instance Runnable KeywordExtractor where
   type RunnableInput KeywordExtractor = T.Text
-  type RunnableOutput KeywordExtractor = (ChatMessage, Maybe OpenAIParams)
+  type RunnableOutput KeywordExtractor = (ChatHistory, Maybe OpenAIParams)
 
   invoke _ input = do
     let prompt = "Extract the top 5 keywords from this text, separated by commas: " <> input
@@ -93,7 +93,7 @@ data AnyType = First KeywordExtractor | Second SentimentAnalyzer | Default TextP
 
 instance Runnable AnyType where
   type RunnableInput AnyType = T.Text
-  type RunnableOutput AnyType = (ChatMessage, Maybe OpenAIParams)
+  type RunnableOutput AnyType = (ChatHistory, Maybe OpenAIParams)
 
   invoke (First keywordExtractor) input = invoke keywordExtractor input
   invoke (Second sentimentAnalyzer) input = invoke sentimentAnalyzer input

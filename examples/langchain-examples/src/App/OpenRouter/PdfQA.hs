@@ -10,6 +10,7 @@ import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
+import qualified Data.Text.Lazy as TL
 import Langchain.DocumentLoader.PdfLoader
 import Langchain.Embeddings.Ollama
 import qualified Langchain.Error as Langchain
@@ -74,7 +75,7 @@ runApp = do
 
       -- Interactive loop
       let docToText =
-            mconcat . map (\doc -> pageContent doc <> T.pack (show $ metadata doc))
+            mconcat . map (\doc -> TL.toStrict (pageContent doc) <> T.pack (show $ metadata doc))
       let promptTemplate = PromptTemplate systemTemplate
 
       let chatLoop = forever $ do

@@ -43,7 +43,7 @@ import qualified Data.List.NonEmpty as NE
 import Data.Text (Text)
 import Langchain.Error (LangchainResult)
 import Langchain.LLM.Core
-  ( ChatMessage
+  ( ChatHistory
   , Message (..)
   , Role (..)
   , defaultMessageData
@@ -63,7 +63,7 @@ instance BaseMemory MyMemory where
 -}
 class BaseMemory mem where
   -- | Retrieve current chat history
-  messages :: mem -> IO (LangchainResult ChatMessage)
+  messages :: mem -> IO (LangchainResult ChatHistory)
 
   -- | Add user message to history
   addUserMessage :: mem -> Text -> IO (LangchainResult mem)
@@ -77,7 +77,7 @@ class BaseMemory mem where
   -- | Reset memory to initial state
   clear :: mem -> IO (LangchainResult mem)
 
-  messagesM :: MonadIO m => mem -> m (LangchainResult ChatMessage)
+  messagesM :: MonadIO m => mem -> m (LangchainResult ChatHistory)
   messagesM = liftIO . messages
 
   addUserMessageM :: MonadIO m => mem -> Text -> m (LangchainResult mem)
@@ -108,7 +108,7 @@ data WindowBufferMemory = WindowBufferMemory
   {- ^ Maximum number of messages to retain
   ^ It is user's responsiblity to make sure the number is > 0.
   -}
-  , windowBufferMessages :: ChatMessage
+  , windowBufferMessages :: ChatHistory
   -- ^ Current message buffer
   }
   deriving (Show, Eq)
@@ -199,7 +199,7 @@ Example:
 >>> trimChatMessage 2 msgs
 [msg2, msg3]
 -}
-trimChatMessage :: Int -> ChatMessage -> ChatMessage
+trimChatMessage :: Int -> ChatHistory -> ChatHistory
 trimChatMessage n msgs =
   NE.fromList $
     drop (max 0 (NE.length msgs - n)) (NE.toList msgs)
@@ -211,7 +211,7 @@ Example:
 >>> addAndTrim 2 msg2 msgs
 [msg1, msg2]
 -}
-addAndTrim :: Int -> Message -> ChatMessage -> ChatMessage
+addAndTrim :: Int -> Message -> ChatHistory -> ChatHistory
 addAndTrim n msg msgs = trimChatMessage n (msgs <> NE.singleton msg)
 
 {- | Create initial chat history
@@ -220,7 +220,7 @@ Example:
 >>> initialChatMessage "You are Qwen"
 [Message System "You are Qwen"]
 -}
-initialChatMessage :: Text -> ChatMessage
+initialChatMessage :: Text -> ChatHistory
 initialChatMessage systemPrompt =
   NE.singleton $
     Message System systemPrompt defaultMessageData

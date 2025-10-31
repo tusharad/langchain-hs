@@ -44,6 +44,7 @@ import Data.Maybe
 import Data.Text (Text, unpack)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
+import qualified Data.Text.Lazy as TL
 import qualified Data.Vector as V
 import GHC.Generics
 import Langchain.DocumentLoader.Core
@@ -206,7 +207,7 @@ openAIEmbeddingsRequest OpenAIEmbeddings {..} txts = do
 
 instance Embeddings OpenAIEmbeddings where
   embedDocuments openAIEmbeddings docs = do
-    eRes <- openAIEmbeddingsRequest openAIEmbeddings (map pageContent docs)
+    eRes <- openAIEmbeddingsRequest openAIEmbeddings (map (TL.toStrict . pageContent) docs)
     case eRes of
       Left err -> pure $ Left (llmError (T.pack err) Nothing Nothing)
       Right (OpenAIEmbeddingsResponse {..}) -> do

@@ -6,6 +6,7 @@ import Data.Aeson (Value (..))
 import Data.Map (empty, fromList)
 import qualified Data.Map as Map
 import qualified Data.Text as T
+import qualified Data.Text.Lazy as TL
 import System.FilePath ((</>))
 import System.IO.Temp (withSystemTempDirectory)
 import Test.Tasty
@@ -96,7 +97,7 @@ fileLoaderTests =
             Left err -> assertFailure $ "Expected Right but got Left: " ++ show err
             Right docs@(doc : _) -> do
               length docs @?= 1
-              T.length (pageContent doc) @?= 21000 -- 21 chars * 1000
+              T.length (TL.toStrict $ pageContent doc) @?= 21000 -- 21 chars * 1000
             Right _ -> assertFailure "Document list is empty"
     ]
 

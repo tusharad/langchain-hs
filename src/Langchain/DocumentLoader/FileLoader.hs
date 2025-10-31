@@ -30,10 +30,10 @@ module Langchain.DocumentLoader.FileLoader
 
 import Data.Aeson
 import Data.Map (fromList)
-import Data.Text (pack)
 import qualified Data.Text as T
+import qualified Data.Text.Lazy as TL
 import Langchain.DocumentLoader.Core
-import Langchain.Error (llmError)
+import Langchain.Error (SomeException, llmError, try)
 import Langchain.TextSplitter.Character
 import System.Directory (doesFileExist)
 
@@ -59,9 +59,18 @@ instance BaseLoader FileLoader where
     exists <- doesFileExist path
     if exists
       then do
-        content <- readFile path
-        let meta = fromList [("source", String $ pack path)]
-        return $ Right [Document (pack content) meta]
+        eContent <- try $ readFile path
+        case eContent of
+          Left err ->
+            return $
+              Left $
+                llmError
+                  (T.pack $ "Error reading file: " ++ path ++ show (err :: SomeException))
+                  Nothing
+                  Nothing
+          Right content -> do
+            let meta = fromList [("source", String $ T.pack path)]
+            return $ Right [Document (TL.pack content) meta]
       else
         return $
           Left
@@ -82,8 +91,16 @@ instance BaseLoader FileLoader where
     exists <- doesFileExist path
     if exists
       then do
-        content <- readFile path
-        return $ Right $ splitText defaultCharacterSplitterOps (pack content)
+        eContent <- try $ readFile path
+        case eContent of
+          Left err ->
+            return $
+              Left $
+                llmError
+                  (T.pack $ "Error reading file: " ++ path ++ show (err :: SomeException))
+                  Nothing
+                  Nothing
+          Right content -> return $ Right $ splitText defaultCharacterSplitterOps (TL.pack content)
       else
         return $
           Left

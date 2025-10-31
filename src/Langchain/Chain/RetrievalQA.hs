@@ -20,6 +20,7 @@ import qualified Data.List.NonEmpty as NE
 import Data.Map.Strict (fromList)
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.Lazy as TL
 import Langchain.DocumentLoader.Core (Document (..))
 import Langchain.LLM.Core
 import Langchain.PromptTemplate (PromptTemplate (..), renderPrompt)
@@ -55,7 +56,7 @@ instance (LLM llm, Retriever retriever) => Runnable (RetrievalQA llm retriever) 
     case docResult of
       Left err -> return $ Left err
       Right docs -> do
-        let context = T.intercalate "\n\n" $ map (\(Document c _) -> c) docs
+        let context = T.intercalate "\n\n" $ map (\(Document c _) -> TL.toStrict c) docs
         let vars = [("context", context)]
 
         -- Render prompt with context and question

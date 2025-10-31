@@ -36,7 +36,7 @@ module Langchain.LLM.Core
     -- * Parameters
   , Message (..)
   , Role (..)
-  , ChatMessage
+  , ChatHistory
   , MessageData (..)
   , ToolCall (..)
   , ToolFunction (..)
@@ -44,6 +44,7 @@ module Langchain.LLM.Core
   , MessageConvertible (..)
 
     -- * Default Values
+  , defaultMessage
   , defaultMessageData
   ) where
 
@@ -211,7 +212,16 @@ instance FromJSON MessageData where
       <*> v .:? "thinking"
 
 -- | Type alias for NonEmpty Message
-type ChatMessage = NonEmpty Message
+type ChatHistory = NonEmpty Message
+
+-- | Default message with User role and no content.
+defaultMessage :: Message
+defaultMessage =
+  Message
+    { role = User
+    , content = ""
+    , messageData = defaultMessageData
+    }
 
 {- | Default message data with all fields set to Nothing.
 Use this for standard messages without additional metadata
@@ -251,7 +261,7 @@ class LLM llm where
     -- | The type of the language model instance.
     llm ->
     -- | A non-empty list of messages to send to the model.
-    ChatMessage ->
+    ChatHistory ->
     -- | Optional configuration parameters.
     Maybe (LLMParams llm) ->
     -- | The result of the chat, either an error or the response text.
@@ -262,7 +272,7 @@ class LLM llm where
   -}
   stream ::
     llm ->
-    ChatMessage ->
+    ChatHistory ->
     StreamHandler (LLMStreamTokenType llm) ->
     Maybe (LLMParams llm) ->
     IO (LangchainResult ())
@@ -287,7 +297,7 @@ class LLM llm where
     -- | The type of the language model instance.
     llm ->
     -- | A non-empty list of messages to send to the model.
-    ChatMessage ->
+    ChatHistory ->
     -- | Optional configuration parameters.
     Maybe (LLMParams llm) ->
     -- | The result of the chat, either an error or the response text.
@@ -298,7 +308,7 @@ class LLM llm where
   streamM ::
     MonadIO m =>
     llm ->
-    ChatMessage ->
+    ChatHistory ->
     StreamHandler (LLMStreamTokenType llm) ->
     Maybe (LLMParams llm) ->
     m (LangchainResult ())

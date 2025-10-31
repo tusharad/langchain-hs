@@ -43,7 +43,7 @@ module Langchain.LLM.Internal.Huggingface
   , getProviderLink
   , createChatCompletion
   , defaultHuggingfaceChatCompletionRequest
-  , defaultMessage
+  , defaultHugginfaceMessage
   , createChatCompletionStream
   , defaultHuggingfaceStreamHandler
   ) where
@@ -266,11 +266,11 @@ data Message = Message
   deriving (Eq, Show, Generic)
 
 -- | Default message type
-defaultMessage :: Message
-defaultMessage =
+defaultHugginfaceMessage :: Message
+defaultHugginfaceMessage =
   Message
     { role = User
-    , content = TextContent "What is the meaining of life?"
+    , content = TextContent "What is the meaning of life?"
     , name = Nothing
     }
 
@@ -362,7 +362,7 @@ defaultHuggingfaceChatCompletionRequest =
   HuggingfaceChatCompletionRequest
     { provider = Cerebras
     , timeout = Nothing
-    , messages = [defaultMessage]
+    , messages = [defaultHugginfaceMessage]
     , model = "llama-3.3-70b"
     , stream = False
     , maxTokens = Nothing
@@ -698,7 +698,7 @@ createChatCompletionStream apiKey r HuggingfaceStreamHandler {..} = do
 instance LLM.MessageConvertible Message where
   -- to :: LLM.Message -> Message
   to msg =
-    defaultMessage
+    defaultHugginfaceMessage
       { role = toRole $ LLM.role msg
       , content = TextContent (LLM.content msg)
       }
