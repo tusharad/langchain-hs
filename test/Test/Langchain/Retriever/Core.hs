@@ -6,6 +6,7 @@ module Test.Langchain.Retriever.Core (tests) where
 import Test.Tasty
 import Test.Tasty.HUnit
 
+import qualified Data.Text.Lazy as T
 import Langchain.DocumentLoader.Core (Document (..))
 import Langchain.LLM.Core (LLM (..))
 import qualified Langchain.LLM.Core as LLM
@@ -34,7 +35,7 @@ data DummyRetriever = DummyRetriever
 
 instance Retriever DummyRetriever where
   _get_relevant_documents _ query =
-    return $ Right [Document (query <> " result") HM.empty]
+    return $ Right [Document (T.fromStrict $ query <> " result") HM.empty]
 
 test_generateQueries :: Assertion
 test_generateQueries = do

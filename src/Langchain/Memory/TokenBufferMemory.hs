@@ -23,7 +23,7 @@ import qualified Data.List.NonEmpty as NE
 import qualified Data.Text as T
 import Langchain.Error (llmError)
 import Langchain.LLM.Core
-  ( ChatMessage
+  ( ChatHistory
   , Message (..)
   , Role (..)
   , defaultMessageData
@@ -35,7 +35,7 @@ import Langchain.Runnable.Core (Runnable (..))
 data TokenBufferMemory = TokenBufferMemory
   { maxTokens :: Int
   -- ^ Max number of tokens. 4 characters = 1 Token
-  , tokenBufferMessages :: ChatMessage
+  , tokenBufferMessages :: ChatHistory
   -- ^ Chat history (Nonempty List of Message)
   }
   deriving (Eq, Show)

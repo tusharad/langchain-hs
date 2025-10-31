@@ -46,6 +46,7 @@ module Langchain.LLM.OpenAI
 
     -- * Default functions
   , defaultOpenAIParams
+  , defaultOpenAI
 
     -- * Re-export
   , module Langchain.LLM.Core
@@ -235,7 +236,7 @@ instance LLM.LLM OpenAI where
         }
 
 instance Run.Runnable OpenAI where
-  type RunnableInput OpenAI = (LLM.ChatMessage, Maybe OpenAIParams)
+  type RunnableInput OpenAI = (LLM.ChatHistory, Maybe OpenAIParams)
   type RunnableOutput OpenAI = LLM.Message
 
   invoke = uncurry . LLM.chat
@@ -301,6 +302,10 @@ defaultOpenAIParams =
     , webSearchOptions = Nothing
     , audio = Nothing
     }
+
+-- | Default values for OpenAI
+defaultOpenAI :: OpenAI
+defaultOpenAI = OpenAI "your-api-key" "gpt-4.1-nano" [] Nothing
 
 {-
 ghci> :set -XOverloadedStrings

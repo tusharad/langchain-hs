@@ -43,6 +43,7 @@ module Langchain.LLM.Ollama
   ( Ollama (..)
   , OllamaParams (..)
   , defaultOllamaParams
+  , defaultOllama
 
     -- * Re-export
   , module Langchain.LLM.Core
@@ -337,7 +338,7 @@ instance MessageConvertible OllamaChat.Message where
           }
 
 instance Run.Runnable Ollama where
-  type RunnableInput Ollama = (ChatMessage, Maybe OllamaParams)
+  type RunnableInput Ollama = (ChatHistory, Maybe OllamaParams)
   type RunnableOutput Ollama = Message
 
   invoke = uncurry . chat
@@ -359,3 +360,7 @@ defaultOllamaParams =
     , tools = Nothing
     , think = Nothing
     }
+
+-- | Default values for Ollama
+defaultOllama :: Ollama
+defaultOllama = Ollama "llama3.2" []

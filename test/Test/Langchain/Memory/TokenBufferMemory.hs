@@ -24,7 +24,7 @@ unsnoc = foldr (\x -> Just . maybe ([], x) (\(~(a, b)) -> (x : a, b))) Nothing
 mkMsg :: Role -> Text -> Message
 mkMsg role1 content1 = Message role1 content1 defaultMessageData
 
-runAddAndGet :: TB.TokenBufferMemory -> [Message] -> IO ChatMessage
+runAddAndGet :: TB.TokenBufferMemory -> [Message] -> IO ChatHistory
 runAddAndGet initial msgs = do
   TB.tokenBufferMessages
     <$> foldl

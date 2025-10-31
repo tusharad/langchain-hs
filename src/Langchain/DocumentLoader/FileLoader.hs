@@ -30,10 +30,9 @@ module Langchain.DocumentLoader.FileLoader
 
 import Data.Aeson
 import Data.Map (fromList)
-import Data.Text (pack)
-import qualified Data.Text as T
+import qualified Data.Text.Lazy as T
 import Langchain.DocumentLoader.Core
-import Langchain.Error (llmError)
+import Langchain.Error (SomeException, llmError, try)
 import Langchain.TextSplitter.Character
 import System.Directory (doesFileExist)
 
@@ -59,14 +58,23 @@ instance BaseLoader FileLoader where
     exists <- doesFileExist path
     if exists
       then do
-        content <- readFile path
-        let meta = fromList [("source", String $ pack path)]
-        return $ Right [Document (pack content) meta]
+        eContent <- try $ readFile path
+        case eContent of
+          Left err ->
+            return $
+              Left $
+                llmError
+                  (T.toStrict $ T.pack $ "Error reading file: " ++ path ++ show (err :: SomeException))
+                  Nothing
+                  Nothing
+          Right content -> do
+            let meta = fromList [("source", String $ T.toStrict $ T.pack path)]
+            return $ Right [Document (T.pack content) meta]
       else
         return $
           Left
             ( llmError
-                (T.pack $ "File not found: " ++ path)
+                (T.toStrict $ T.pack $ "File not found: " ++ path)
                 Nothing
                 Nothing
             )
@@ -82,13 +90,21 @@ instance BaseLoader FileLoader where
     exists <- doesFileExist path
     if exists
       then do
-        content <- readFile path
-        return $ Right $ splitText defaultCharacterSplitterOps (pack content)
+        eContent <- try $ readFile path
+        case eContent of
+          Left err ->
+            return $
+              Left $
+                llmError
+                  (T.toStrict $ T.pack $ "Error reading file: " ++ path ++ show (err :: SomeException))
+                  Nothing
+                  Nothing
+          Right content -> return $ Right $ splitText defaultCharacterSplitterOps (T.pack content)
       else
         return $
           Left
             ( llmError
-                (T.pack $ "File not found: " ++ path)
+                (T.toStrict $ T.pack $ "File not found: " ++ path)
                 Nothing
                 Nothing
             )

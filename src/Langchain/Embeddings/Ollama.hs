@@ -41,6 +41,7 @@ import Data.Maybe
 import Data.Ollama.Embeddings
 import qualified Data.Ollama.Embeddings as O
 import Data.Text (Text)
+import qualified Data.Text.Lazy as T
 import Langchain.DocumentLoader.Core
 import Langchain.Embeddings.Core
 import Langchain.Error (llmError)
@@ -83,7 +84,7 @@ instance Embeddings OllamaEmbeddings where
     eRes <-
       embeddingOps
         model
-        (map pageContent docs)
+        (map (T.toStrict . pageContent) docs)
         defaultTruncate
         defaultKeepAlive
         modelOptions

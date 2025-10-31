@@ -52,7 +52,7 @@ module Langchain.DocumentLoader.Core
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Aeson
 import Data.Map (Map, empty)
-import Data.Text (Text)
+import Data.Text.Lazy (Text)
 import Langchain.Error (LangchainResult)
 
 {- | Document container with content and metadata.

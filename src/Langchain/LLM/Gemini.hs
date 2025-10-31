@@ -91,7 +91,7 @@ instance LLM.LLM Gemini where
   stream = LLM.stream . toOpenAI
 
 instance Run.Runnable Gemini where
-  type RunnableInput Gemini = (LLM.ChatMessage, Maybe OpenAI.OpenAIParams)
+  type RunnableInput Gemini = (LLM.ChatHistory, Maybe OpenAI.OpenAIParams)
   type RunnableOutput Gemini = LLM.Message
 
   invoke gemini (chatMessage, mbParams) = LLM.chat gemini chatMessage mbParams

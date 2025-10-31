@@ -26,7 +26,7 @@ module Langchain.LLM.Huggingface
 
     -- * Functions
   , defaultHuggingfaceParams
-  , Huggingface.defaultMessage
+  , Huggingface.defaultHugginfaceMessage
 
     -- * Re-export
   , module LLM
@@ -107,7 +107,7 @@ instance LLM Huggingface where
         Huggingface.defaultHuggingfaceChatCompletionRequest
           { Huggingface.provider = provider
           , Huggingface.messages =
-              [ Huggingface.defaultMessage
+              [ Huggingface.defaultHugginfaceMessage
                   { Huggingface.content = Huggingface.TextContent prompt
                   }
               ]
@@ -222,7 +222,7 @@ instance LLM Huggingface where
           Just Huggingface.ChoiceChunk {..} ->
             fromMaybe "" ((\Huggingface.Delta {..} -> deltaContent) delta)
 
-toHuggingfaceMessages :: LLM.ChatMessage -> [Huggingface.Message]
+toHuggingfaceMessages :: LLM.ChatHistory -> [Huggingface.Message]
 toHuggingfaceMessages msgs = map go (NE.toList msgs)
   where
     toRole :: LLM.Role -> Huggingface.Role
@@ -237,7 +237,7 @@ toHuggingfaceMessages msgs = map go (NE.toList msgs)
 
     go :: LLM.Message -> Huggingface.Message
     go msg =
-      Huggingface.defaultMessage
+      Huggingface.defaultHugginfaceMessage
         { Huggingface.role = toRole $ LLM.role msg
         , Huggingface.content = Huggingface.TextContent (LLM.content msg)
         }

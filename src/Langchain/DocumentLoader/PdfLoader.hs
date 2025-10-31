@@ -16,6 +16,7 @@ module Langchain.DocumentLoader.PdfLoader
 
 import Data.Aeson
 import Data.Map (fromList)
+import qualified Data.Text.Lazy as TL
 import Langchain.DocumentLoader.Core
 import Langchain.Error (llmError)
 import Langchain.TextSplitter.Character
@@ -63,7 +64,7 @@ readPdf fPath = do
                     ]
               }
         )
-        textList
+        (map TL.fromStrict textList)
         [1 .. count]
 
 {- |

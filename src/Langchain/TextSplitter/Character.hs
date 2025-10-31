@@ -35,8 +35,9 @@ module Langchain.TextSplitter.Character
   , splitText
   ) where
 
-import Data.Text (Text)
-import qualified Data.Text as T
+import Data.Int (Int64)
+import Data.Text.Lazy (Text)
+import qualified Data.Text.Lazy as T
 
 {- | Configuration for character-based text splitting
 Contains:
@@ -47,7 +48,7 @@ Contains:
 Default values follow LangChain's recommended settings for LLM input preparation.
 -}
 data CharacterSplitterOps = CharacterSplitterOps
-  { chunkSize :: Int
+  { chunkSize :: Int64
   , separator :: Text
   }
   deriving (Show, Eq)
