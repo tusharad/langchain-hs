@@ -95,6 +95,7 @@ library
     , http-conduit ==2.*
     , http-types >=0.11 && <0.13
     , ollama-haskell >=0.2.1
+    , openai >=2.2.1
     , parsec <4
     , pdf-toolbox-document ==0.1.4
     , tagsoup <0.15
@@ -144,6 +145,7 @@ test-suite langchain-hs-test
     , http-types >=0.11 && <0.13
     , langchain-hs
     , ollama-haskell >=0.2.1
+    , openai >=2.2.1
     , parsec <4
     , pdf-toolbox-document ==0.1.4
     , tagsoup <0.15

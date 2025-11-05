@@ -5,6 +5,9 @@ extra-deps:
   - git: https://github.com/tusharad/ollama-haskell
     commit: 33807a3a5a507e99d92b26e245c0aed582fde581
 
+  - git: https://github.com/MercuryTechnologies/openai
+    commit: 2031a05135b892a82b461558d19b813ab67cfb8f
+
   - pdf-toolbox-document-0.1.4@sha256:6016daf47765f4a06b23a90e59741f34f7c2c8561091a9db3caa922339037108,2405
 
   - pdf-toolbox-core-0.1.3@sha256:c75e5c95b043521bac74d77b2b606bc53006a96848290609858d684cc9470cae,3826
@@ -14,3 +17,7 @@ extra-deps:
   - cryptohash-0.11.9@sha256:59d9494ba0cc9eef087ecba2e12e4d3e2d3b0327dd1542af552e3dca0e7de70d,4230
 
   - cryptonite-0.30@sha256:12c85dea7be63e5ad90bcb487eb3846bf3c413347f94336fa1dede7b28f9936a,18301
+
+  - servant-multipart-client-0.12.2@sha256:e8105783e7dbef178a38dcfd05f4d12a8229eac88cfe49319f272dcb544e7365,2276
+
+  - random-1.2.1.3@sha256:117541ba0a177397a3333f94870f789ef050dca31b0688a19824b2bc401b8823,6237
