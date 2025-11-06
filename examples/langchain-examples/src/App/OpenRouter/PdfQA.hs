@@ -14,10 +14,15 @@ import qualified Data.Text.Lazy as TL
 import Langchain.DocumentLoader.PdfLoader
 import Langchain.Embeddings.Ollama
 import qualified Langchain.Error as Langchain
-import Langchain.LLM.OpenAICompatible hiding (metadata)
+import Langchain.LLM.OpenAICompatible
 import Langchain.PromptTemplate
 import Langchain.Retriever.Core
 import Langchain.VectorStore.InMemory
+import qualified OpenAI.V1.Chat.Completions as CreateChat hiding
+  ( ChatCompletionChunk (..)
+  , ChatCompletionObject (..)
+  )
+import qualified OpenAI.V1.Models as Models
 import System.Environment
 
 -- Template for system prompt
@@ -92,7 +97,15 @@ runApp = do
                   renderPrompt promptTemplate (HM.fromList [("context", context)])
               let sysMsg = Message System sysPrompt defaultMessageData
               let userMsg = Message User userInput defaultMessageData
-              ExceptT $ chat openRouter (sysMsg <| (userMsg :| [])) Nothing
+              ExceptT $
+                chat
+                  openRouter
+                  (sysMsg <| (userMsg :| []))
+                  ( Just $
+                      CreateChat._CreateChatCompletion
+                        { CreateChat.model = Models.Model "qwen/qwen3-coder:free"
+                        }
+                  )
 
             case response of
               Left err -> putStrLn $ "Error: " <> Langchain.toString err

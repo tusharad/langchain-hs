@@ -33,6 +33,12 @@ import Langchain.Runnable.Chain
 import Langchain.Runnable.Core
 import qualified Langchain.Runnable.Core as Run
 import Langchain.Runnable.Utils
+import qualified OpenAI.V1.Chat.Completions as CreateChat hiding
+  ( ChatCompletionChunk (..)
+  , ChatCompletionObject (..)
+  )
+import qualified OpenAI.V1.Chat.Completions as OpenAIV1
+import qualified OpenAI.V1.Models as Models
 import System.Environment
 import System.Exit
 
@@ -41,12 +47,19 @@ data TextPreprocessor = TextPreprocessor
 
 instance Runnable TextPreprocessor where
   type RunnableInput TextPreprocessor = T.Text
-  type RunnableOutput TextPreprocessor = (ChatHistory, Maybe OpenAIParams)
+  type RunnableOutput TextPreprocessor = (ChatHistory, Maybe OpenAIV1.CreateChatCompletion)
 
   invoke _ input = do
     let preprocessed = "Please analyze the following text and provide insights: " <> input
         message = NE.singleton $ Message User preprocessed defaultMessageData
-    return $ Right (message, Just defaultOpenAIParams)
+    return $
+      Right
+        ( message
+        , Just $
+            CreateChat._CreateChatCompletion
+              { CreateChat.model = Models.Model "gemini-2.5-flash"
+              }
+        )
 
 -- | Custom Runnable for response formatting
 data ResponseFormatter = ResponseFormatter
@@ -64,26 +77,26 @@ data SentimentAnalyzer = SentimentAnalyzer
 
 instance Runnable SentimentAnalyzer where
   type RunnableInput SentimentAnalyzer = T.Text
-  type RunnableOutput SentimentAnalyzer = (ChatHistory, Maybe OpenAIParams)
+  type RunnableOutput SentimentAnalyzer = (ChatHistory, Maybe OpenAIV1.CreateChatCompletion)
 
   invoke _ input = do
     let prompt =
           "Analyze the sentiment of this text and respond with only 'POSITIVE', 'NEGATIVE', or 'NEUTRAL': "
             <> input
         message = NE.singleton $ Message User prompt defaultMessageData
-    return $ Right (message, Just defaultOpenAIParams)
+    return $ Right (message, Nothing)
 
 -- | Custom Runnable for keyword extraction
 data KeywordExtractor = KeywordExtractor
 
 instance Runnable KeywordExtractor where
   type RunnableInput KeywordExtractor = T.Text
-  type RunnableOutput KeywordExtractor = (ChatHistory, Maybe OpenAIParams)
+  type RunnableOutput KeywordExtractor = (ChatHistory, Maybe OpenAIV1.CreateChatCompletion)
 
   invoke _ input = do
     let prompt = "Extract the top 5 keywords from this text, separated by commas: " <> input
         message = NE.singleton $ Message User prompt defaultMessageData
-    return $ Right (message, Just defaultOpenAIParams)
+    return $ Right (message, Nothing)
 
 {- | Any type for SentimentAnalyzer and KeywordExtractor
 Workaround for the issue that RunnableBranch requires the same type for all branches
@@ -92,7 +105,7 @@ data AnyType = First KeywordExtractor | Second SentimentAnalyzer | Default TextP
 
 instance Runnable AnyType where
   type RunnableInput AnyType = T.Text
-  type RunnableOutput AnyType = (ChatHistory, Maybe OpenAIParams)
+  type RunnableOutput AnyType = (ChatHistory, Maybe OpenAIV1.CreateChatCompletion)
 
   invoke (First keywordExtractor) input = invoke keywordExtractor input
   invoke (Second sentimentAnalyzer) input = invoke sentimentAnalyzer input
@@ -300,7 +313,15 @@ utilityWrappersDemo gemini = do
       timeoutMessage = NE.singleton $ Message User "Explain quantum computing." defaultMessageData
 
   putStrLn "Setting 30-second timeout for Gemini request..."
-  timeoutResult <- invoke timeoutGemini (timeoutMessage, Nothing)
+  timeoutResult <-
+    invoke
+      timeoutGemini
+      ( timeoutMessage
+      , Just $
+          CreateChat._CreateChatCompletion
+            { CreateChat.model = Models.Model "gemini-2.5-flash"
+            }
+      )
   case timeoutResult of
     Left err -> putStrLn $ "Timeout error: " <> Langchain.toString err
     Right (Message _ response _) -> do

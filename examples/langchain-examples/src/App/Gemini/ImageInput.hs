@@ -17,6 +17,11 @@ import Langchain.Error (toString)
 import Langchain.LLM.Core
 import qualified Langchain.LLM.Core as LLM
 import Langchain.LLM.Gemini
+import qualified OpenAI.V1.Chat.Completions as CreateChat hiding
+  ( ChatCompletionChunk (..)
+  , ChatCompletionObject (..)
+  )
+import qualified OpenAI.V1.Models as Models
 import System.Directory
 import System.Environment
 import System.Exit
@@ -81,7 +86,15 @@ singleImageDemo gemini = do
       let chatMessage = NE.singleton message
 
       putStrLn "Sending image to Gemini for analysis..."
-      result <- chat gemini chatMessage Nothing
+      result <-
+        chat
+          gemini
+          chatMessage
+          ( Just $
+              CreateChat._CreateChatCompletion
+                { CreateChat.model = Models.Model "gemini-2.5-flash"
+                }
+          )
       case result of
         Left err -> do
           putStrLn $ "Error: " <> toString err

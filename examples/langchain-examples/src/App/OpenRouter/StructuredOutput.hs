@@ -8,6 +8,7 @@ import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Langchain.LLM.OpenAICompatible
+import OpenAI.V1.Chat.Completions (_CreateChatCompletion)
 import qualified OpenAI.V1.Chat.Completions as CreateChat (CreateChatCompletion (..))
 import qualified OpenAI.V1.Models as Models
 import qualified OpenAI.V1.ResponseFormat as RF
@@ -47,7 +48,7 @@ runApp = do
       openRouter
       messageList
       ( Just $
-          CreateChat.CreateChatCompletion
+          _CreateChatCompletion
             { CreateChat.model = Models.Model "qwen/qwen3-coder:free"
             , CreateChat.response_format = Just responseFormat
             }

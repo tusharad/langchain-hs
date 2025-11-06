@@ -190,7 +190,7 @@ mkLMStudio callbacks' baseUrl' apiKey' =
   OpenAICompatible
     { apiKey = apiKey'
     , callbacks = callbacks'
-    , baseUrl = baseUrl'
+    , baseUrl = Just $ fromMaybe "http://localhost:1234/v1" baseUrl'
     , providerName = "LMStudio"
     }
 
@@ -200,7 +200,7 @@ mkLlamaCpp callbacks' baseUrl' apiKey' =
   OpenAICompatible
     { apiKey = apiKey'
     , callbacks = callbacks'
-    , baseUrl = baseUrl'
+    , baseUrl = Just $ fromMaybe "http://localhost:8080/v1" baseUrl'
     , providerName = "LlamaCpp"
     }
 
@@ -213,7 +213,7 @@ mkOpenRouter callbacks' baseUrl' apiKey' =
   OpenAICompatible
     { apiKey = apiKey' -- OpenRouter requires an API key
     , callbacks = callbacks'
-    , baseUrl = baseUrl'
+    , baseUrl = Just $ fromMaybe "https://openrouter.ai" baseUrl'
     , providerName = "OpenRouter"
     }
 
