@@ -29,7 +29,6 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified Langchain.Error as Langchain
 import Langchain.LLM.Gemini
-import Langchain.LLM.OpenAI (OpenAIParams, defaultOpenAIParams)
 import Langchain.Runnable.Chain
 import Langchain.Runnable.Core
 import qualified Langchain.Runnable.Core as Run

@@ -2,29 +2,22 @@
 
 module App.Gemini.Streaming (runApp) where
 
+import System.IO (hFlush, hPutStrLn, stderr, stdout)
+
 import qualified Data.List.NonEmpty as NE
 import Data.Maybe (fromMaybe, listToMaybe)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
+import qualified Data.Vector as V
 import Langchain.LLM.Gemini
-import qualified Langchain.LLM.Internal.OpenAI as OpenAI
+import qualified OpenAI.V1.Chat.Completions as Chat hiding (ChatCompletionObject (..))
 import System.Environment
 
-openAIChunkToText :: OpenAI.ChatCompletionChunk -> T.Text
-openAIChunkToText completionChunk = do
-  fromMaybe ""
-    . OpenAI.contentForDelta
-    . OpenAI.chunkChoiceDelta
-    . fromMaybe emptyChoice
-    . listToMaybe
-    $ OpenAI.chunkChoices completionChunk
-  where
-    emptyChoice =
-      OpenAI.ChunkChoice
-        (OpenAI.Delta Nothing Nothing Nothing Nothing Nothing)
-        1
-        Nothing
-        Nothing
+printChoice Chat.ChatCompletionChunk {Chat.choices = cs} = do
+  let Chat.ChunkChoice {Chat.delta = d} = V.head cs
+  case Chat.delta_content d of
+    Just content -> T.putStr content >> hFlush stdout
+    Nothing -> pure ()
 
 runApp :: IO ()
 runApp = do
@@ -48,7 +41,7 @@ runApp = do
               ]
       let sh =
             StreamHandler
-              { onToken = T.putStr . openAIChunkToText
+              { onToken = printChoice
               , onComplete = putStrLn "completed"
               }
       eRes <- stream gemini msgList sh Nothing

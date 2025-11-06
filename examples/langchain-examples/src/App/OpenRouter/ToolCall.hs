@@ -9,7 +9,6 @@ import qualified Data.Map as HM
 import Data.Maybe (fromMaybe)
 import Data.Scientific
 import qualified Data.Text as T
-import qualified Langchain.LLM.Internal.OpenAI as OpenAIInternal
 import Langchain.LLM.OpenAICompatible
 import System.Environment
 
@@ -21,7 +20,6 @@ runApp = do
   apiKey <- T.pack . fromMaybe "api-key" <$> lookupEnv "OPENAI_API_KEY"
   let openRouter =
         mkOpenRouter
-          "deepseek/deepseek-chat-v3-0324:free"
           []
           Nothing
           apiKey
@@ -32,42 +30,7 @@ runApp = do
               "What is 23+46? (Use tool)"
               defaultMessageData
           )
-      paramProp =
-        HM.fromList
-          [
-            ( "a"
-            , OpenAIInternal.FunctionParameters "number" Nothing Nothing Nothing
-            )
-          ,
-            ( "b"
-            , OpenAIInternal.FunctionParameters "number" Nothing Nothing Nothing
-            )
-          ]
-      functionParams =
-        OpenAIInternal.FunctionParameters
-          { parameterType = "object"
-          , requiredParams = Just ["a", "b"]
-          , parameterProperties = Just paramProp
-          , additionalProperties = Just False
-          }
-      functionDef =
-        OpenAIInternal.FunctionDef
-          { functionName = "addTwoNumbers"
-          , functionDescription = Just "Add two numbers"
-          , functionParameters = Just functionParams
-          , functionStrict = Nothing
-          }
-      inputTool =
-        OpenAIInternal.InputTool
-          { toolType = "function"
-          , function = functionDef
-          }
-  let mbOpenAIParams =
-        Just $
-          defaultOpenAIParams
-            { tools = Just [inputTool]
-            }
-  eRes <- chat openRouter messageList mbOpenAIParams
+  eRes <- chat openRouter messageList Nothing
   case eRes of
     Left err -> putStrLn $ "Error from chat: " ++ show err
     Right r -> do

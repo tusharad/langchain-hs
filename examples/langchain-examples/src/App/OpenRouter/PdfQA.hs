@@ -49,7 +49,6 @@ runApp = do
   -- Setup
   let openRouter =
         mkOpenRouter
-          "meta-llama/llama-3.3-8b-instruct:free"
           []
           Nothing
           aKey

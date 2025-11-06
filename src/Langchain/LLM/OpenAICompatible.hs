@@ -31,9 +31,9 @@ result <- generate openRouter "Explain Haskell monads" Nothing
 @
 -}
 module Langchain.LLM.OpenAICompatible
-  ( -- OpenAICompatible (..)
-    -- , OpenAI.OpenAIParams (..)
-    mkLMStudio
+  ( OpenAICompatible (..)
+  -- , OpenAI.OpenAIParams (..)
+  , mkLMStudio
   , mkLlamaCpp
   , mkOpenRouter
   , module Langchain.LLM.Core
@@ -48,6 +48,7 @@ import Langchain.Callback
 import qualified Langchain.Error as Error
 import Langchain.LLM.Core
 import qualified Langchain.LLM.Core as LLM
+import qualified Langchain.Runnable.Core as LLM
 import OpenAI.V1
 import OpenAI.V1.Chat.Completions
 import qualified OpenAI.V1.Chat.Completions as CreateCompletion (CreateChatCompletion (..))
@@ -215,3 +216,9 @@ mkOpenRouter callbacks' baseUrl' apiKey' =
     , baseUrl = baseUrl'
     , providerName = "OpenRouter"
     }
+
+instance LLM.Runnable OpenAICompatible where
+  type RunnableInput OpenAICompatible = (ChatHistory, Maybe OpenAIV1.CreateChatCompletion)
+  type RunnableOutput OpenAICompatible = LLM.Message
+
+  invoke = uncurry . chat

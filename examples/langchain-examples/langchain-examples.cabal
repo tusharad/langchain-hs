@@ -53,9 +53,11 @@ library
     , filepath
     , langchain-hs
     , ollama-haskell
+    , openai
     , scientific
     , text
     , transformers
+    , vector
   default-language: Haskell2010
 
 executable langchain-examples-exe
@@ -76,9 +78,11 @@ executable langchain-examples-exe
     , langchain-examples
     , langchain-hs
     , ollama-haskell
+    , openai
     , scientific
     , text
     , transformers
+    , vector
   default-language: Haskell2010
 
 test-suite langchain-examples-test
@@ -100,7 +104,9 @@ test-suite langchain-examples-test
     , langchain-examples
     , langchain-hs
     , ollama-haskell
+    , openai
     , scientific
     , text
     , transformers
+    , vector
   default-language: Haskell2010
