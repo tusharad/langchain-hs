@@ -1,7 +1,11 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 {- |
 Module      : Langchain.LLM.OpenAICompatible
@@ -40,9 +44,13 @@ module Langchain.LLM.OpenAICompatible
   ) where
 
 import Control.Exception (SomeException, try)
+import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.KeyMap as KM
+import qualified Data.ByteString.Lazy.Char8 as BSL
 import qualified Data.List.NonEmpty as NE
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, listToMaybe)
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
 import qualified Data.Vector as V
 import Langchain.Callback
 import qualified Langchain.Error as Error
@@ -53,9 +61,7 @@ import OpenAI.V1
 import OpenAI.V1.Chat.Completions
 import qualified OpenAI.V1.Chat.Completions as CreateCompletion (CreateChatCompletion (..))
 import qualified OpenAI.V1.Chat.Completions as OpenAIV1
-
--- import qualified Langchain.LLM.Internal.OpenAI as OpenAI
--- import qualified Langchain.LLM.OpenAI as OpenAI
+import qualified OpenAI.V1.ToolCall as OpenAIV1
 
 -- | Generic OpenAICompatible implementation for any service with an OpenAI-compatible API
 data OpenAICompatible = OpenAICompatible
@@ -72,59 +78,278 @@ data OpenAICompatible = OpenAICompatible
 instance Show OpenAICompatible where
   show OpenAICompatible {..} = show providerName
 
-toOpenAIMsg :: LLM.Message -> OpenAIV1.Message (V.Vector Content)
-toOpenAIMsg LLM.Message {..} = toRole role content
+-- | Helper function to extract text from OpenAI Message T.Text
+messageToText :: OpenAIV1.Message T.Text -> T.Text
+messageToText (OpenAIV1.User {OpenAIV1.content = c}) = c
+messageToText (OpenAIV1.System {OpenAIV1.content = c}) = c
+messageToText (OpenAIV1.Assistant {OpenAIV1.assistant_content = ac}) = fromMaybe "" ac
+messageToText (OpenAIV1.Tool {OpenAIV1.content = c}) = c
+
+-- | Helper function to extract text from Vector Content
+extractTextFromContent :: V.Vector OpenAIV1.Content -> T.Text
+extractTextFromContent contents =
+  fromMaybe "" $ listToMaybe $ V.toList $ V.mapMaybe getTextContent contents
   where
-    toRole LLM.User content1 =
-      OpenAIV1.User
-        { OpenAIV1.content = V.fromList [OpenAIV1.Text content1]
-        , name = Nothing
+    getTextContent :: OpenAIV1.Content -> Maybe T.Text
+    getTextContent (OpenAIV1.Text txt) = Just txt
+    getTextContent _ = Nothing
+
+{- | Helper function to create content list with text
+TODO: Add support for images and tool calls when openai library types are better understood
+-}
+makeContentList :: T.Text -> Maybe [T.Text] -> V.Vector OpenAIV1.Content
+makeContentList text mbImageData = do
+  let res = V.fromList [OpenAIV1.Text text]
+  res <> case mbImageData of
+    Just images ->
+      V.fromList
+        ( map
+            ( OpenAIV1.Image_URL
+                . (\urlText -> OpenAIV1.ImageURL {url = urlText, detail = Nothing})
+            )
+            images
+        )
+    Nothing -> V.empty
+
+toOpenAIToolCall :: [ToolCall] -> V.Vector OpenAIV1.ToolCall
+toOpenAIToolCall = V.fromList . map go
+  where
+    go :: ToolCall -> OpenAIV1.ToolCall
+    go = \case
+      ToolCall {toolCallId, toolCallFunction = ToolFunction {toolFunctionName, toolFunctionArguments}} ->
+        OpenAIV1.ToolCall_Function
+          { OpenAIV1.id = toolCallId
+          , OpenAIV1.function =
+              OpenAIV1.Function
+                { OpenAIV1.name = toolFunctionName
+                , OpenAIV1.arguments = T.decodeUtf8 $ BSL.toStrict $ Aeson.encode toolFunctionArguments
+                }
+          }
+
+fromOpenAIToolCall :: OpenAIV1.ToolCall -> ToolCall
+fromOpenAIToolCall = \case
+  OpenAIV1.ToolCall_Function
+    { OpenAIV1.id = tcId
+    , OpenAIV1.function =
+      OpenAIV1.Function
+        { OpenAIV1.name = fnName
+        , OpenAIV1.arguments = fnArgs
         }
-    toRole LLM.System content1 =
-      OpenAIV1.System
-        { OpenAIV1.content = V.fromList [OpenAIV1.Text content1]
-        , name = Nothing
+    } ->
+      let argsVal = Aeson.decode (BSL.fromStrict $ T.encodeUtf8 fnArgs) :: Maybe Aeson.Value
+          argsMap = case argsVal of
+            Just (Aeson.Object o) -> KM.toMapText o
+            _ -> mempty
+       in ToolCall
+            { toolCallId = tcId
+            , toolCallType = "function"
+            , toolCallFunction =
+                ToolFunction
+                  { toolFunctionName = fnName
+                  , toolFunctionArguments = argsMap
+                  }
+            }
+
+getToolId :: [ToolCall] -> T.Text
+getToolId toolCalls = case toolCalls of
+  (ToolCall {toolCallId} : _) -> toolCallId
+  [] -> ""
+
+getImageDataIfExists :: V.Vector OpenAIV1.Content -> Maybe [T.Text]
+getImageDataIfExists contents =
+  let images = V.toList $ V.mapMaybe getImageContent contents
+   in if null images then Nothing else Just images
+  where
+    getImageContent :: OpenAIV1.Content -> Maybe T.Text
+    getImageContent (OpenAIV1.Image_URL imgUrl) = Just $ url imgUrl
+    getImageContent _ = Nothing
+
+{- | MessageConvertible instance for OpenAIV1.Message (V.Vector OpenAIV1.Content)
+This is used for request messages
+-}
+instance LLM.MessageConvertible (OpenAIV1.Message (V.Vector OpenAIV1.Content)) where
+  -- \| Convert LLM.Message to OpenAIV1.Message (V.Vector OpenAIV1.Content)
+  to :: LLM.Message -> OpenAIV1.Message (V.Vector OpenAIV1.Content)
+  to msg =
+    let imagesData = LLM.messageImages $ LLM.messageData msg
+        contentVec = makeContentList (LLM.content msg) imagesData
+        msgName = LLM.name $ LLM.messageData msg
+     in case LLM.role msg of
+          LLM.User ->
+            OpenAIV1.User
+              { OpenAIV1.content = contentVec
+              , OpenAIV1.name = msgName
+              }
+          LLM.System ->
+            OpenAIV1.System
+              { OpenAIV1.content = contentVec
+              , OpenAIV1.name = msgName
+              }
+          LLM.Assistant ->
+            OpenAIV1.Assistant
+              { OpenAIV1.assistant_content = Just contentVec
+              , OpenAIV1.name = msgName
+              , OpenAIV1.refusal = Nothing
+              , OpenAIV1.assistant_audio = Nothing
+              , OpenAIV1.tool_calls = fmap toOpenAIToolCall <$> toolCalls $ messageData msg
+              }
+          LLM.Tool ->
+            OpenAIV1.Tool
+              { OpenAIV1.content = contentVec
+              , OpenAIV1.tool_call_id = fromMaybe "" $ fmap getToolId <$> toolCalls $ messageData msg
+              }
+          -- Fallback to User for unsupported roles (Developer, Function)
+          _ ->
+            OpenAIV1.User
+              { OpenAIV1.content = contentVec
+              , OpenAIV1.name = msgName
+              }
+
+  -- \| Convert OpenAIV1.Message (V.Vector OpenAIV1.Content) to LLM.Message
+  from :: OpenAIV1.Message (V.Vector OpenAIV1.Content) -> LLM.Message
+  from msg = case msg of
+    OpenAIV1.User {OpenAIV1.content = c, OpenAIV1.name = n} ->
+      LLM.Message
+        { LLM.role = LLM.User
+        , LLM.content = extractTextFromContent c
+        , LLM.messageData =
+            LLM.MessageData
+              { LLM.name = n
+              , LLM.toolCalls = Nothing
+              , LLM.messageImages = getImageDataIfExists c
+              , LLM.thinking = Nothing
+              }
         }
-    toRole LLM.Assistant content1 =
-      OpenAIV1.Assistant
-        { OpenAIV1.assistant_content = Just $ V.fromList [OpenAIV1.Text content1]
-        , name = Nothing
-        , refusal = Nothing
-        , assistant_audio = Nothing
-        , tool_calls = Nothing
+    OpenAIV1.System {OpenAIV1.content = c, OpenAIV1.name = n} ->
+      LLM.Message
+        { LLM.role = LLM.System
+        , LLM.content = extractTextFromContent c
+        , LLM.messageData =
+            LLM.MessageData
+              { LLM.name = n
+              , LLM.toolCalls = Nothing
+              , LLM.messageImages = getImageDataIfExists c
+              , LLM.thinking = Nothing
+              }
         }
-    toRole LLM.Tool content1 =
-      OpenAIV1.Tool
-        { OpenAIV1.content = V.fromList [OpenAIV1.Text content1]
-        , tool_call_id = ""
-        }
-    toRole _ content1 =
-      OpenAIV1.User
-        { OpenAIV1.content = V.fromList [OpenAIV1.Text content1]
-        , name = Nothing
+    OpenAIV1.Assistant
+      { OpenAIV1.assistant_content = ac
+      , OpenAIV1.name = n
+      , OpenAIV1.tool_calls = mbToolVector
+      } ->
+        LLM.Message
+          { LLM.role = LLM.Assistant
+          , LLM.content = maybe "" extractTextFromContent ac
+          , LLM.messageData =
+              LLM.MessageData
+                { LLM.name = n
+                , LLM.toolCalls = fmap (V.toList . V.map fromOpenAIToolCall) mbToolVector
+                , LLM.messageImages = getImageDataIfExists =<< ac
+                , LLM.thinking = Nothing
+                }
+          }
+    OpenAIV1.Tool {OpenAIV1.content = c, OpenAIV1.tool_call_id = toolCallid} ->
+      LLM.Message
+        { LLM.role = LLM.Tool
+        , LLM.content = extractTextFromContent c
+        , LLM.messageData =
+            LLM.MessageData
+              { LLM.name = Nothing
+              , LLM.toolCalls =
+                  Just
+                    [ ToolCall
+                        { toolCallId = toolCallid
+                        , toolCallType = "function"
+                        , toolCallFunction =
+                            ToolFunction
+                              { toolFunctionName = ""
+                              , toolFunctionArguments = mempty
+                              }
+                        }
+                    ]
+              , LLM.messageImages = getImageDataIfExists c
+              , LLM.thinking = Nothing
+              }
         }
 
+instance LLM.MessageConvertible (OpenAIV1.Message T.Text) where
+  to :: LLM.Message -> OpenAIV1.Message T.Text
+  to _ = error "Conversion to OpenAIV1.Message T.Text not implemented."
+
+  -- \| Convert OpenAIV1.Message T.Text to LLM.Message
+  from :: OpenAIV1.Message T.Text -> LLM.Message
+  from msg = case msg of
+    OpenAIV1.User {OpenAIV1.content = c, OpenAIV1.name = n} ->
+      LLM.Message
+        { LLM.role = LLM.User
+        , LLM.content = c
+        , LLM.messageData =
+            LLM.MessageData
+              { LLM.name = n
+              , LLM.toolCalls = Nothing
+              , LLM.messageImages = Nothing
+              , LLM.thinking = Nothing
+              }
+        }
+    OpenAIV1.System {OpenAIV1.content = c, OpenAIV1.name = n} ->
+      LLM.Message
+        { LLM.role = LLM.System
+        , LLM.content = c
+        , LLM.messageData =
+            LLM.MessageData
+              { LLM.name = n
+              , LLM.toolCalls = Nothing
+              , LLM.messageImages = Nothing
+              , LLM.thinking = Nothing
+              }
+        }
+    OpenAIV1.Assistant
+      { OpenAIV1.assistant_content = ac
+      , OpenAIV1.name = n
+      , OpenAIV1.tool_calls = mbToolVector
+      } ->
+        LLM.Message
+          { LLM.role = LLM.Assistant
+          , LLM.content = fromMaybe "" ac
+          , LLM.messageData =
+              LLM.MessageData
+                { LLM.name = n
+                , LLM.toolCalls = fmap (V.toList . V.map fromOpenAIToolCall) mbToolVector
+                , LLM.messageImages = Nothing
+                , LLM.thinking = Nothing
+                }
+          }
+    OpenAIV1.Tool {OpenAIV1.content = c, OpenAIV1.tool_call_id = toolCallid} ->
+      LLM.Message
+        { LLM.role = LLM.Tool
+        , LLM.content = c
+        , LLM.messageData =
+            LLM.MessageData
+              { LLM.name = Nothing
+              , LLM.toolCalls =
+                  Just
+                    [ ToolCall
+                        { toolCallId = toolCallid
+                        , toolCallType = "function"
+                        , toolCallFunction =
+                            ToolFunction
+                              { toolFunctionName = ""
+                              , toolFunctionArguments = mempty
+                              }
+                        }
+                    ]
+              , LLM.messageImages = Nothing
+              , LLM.thinking = Nothing
+              }
+        }
+
+-- | Helper function to convert LLM.Message to OpenAI Message (using MessageConvertible)
+toOpenAIMsg :: LLM.Message -> OpenAIV1.Message (V.Vector OpenAIV1.Content)
+toOpenAIMsg = LLM.to
+
+-- | Helper function to convert OpenAI Message to LLM.Message (using MessageConvertible)
 fromOpenAIMsg :: OpenAIV1.Message T.Text -> LLM.Message
-fromOpenAIMsg OpenAIV1.User {..} =
-  defaultMessage
-    { role = LLM.User
-    , content = content
-    }
-fromOpenAIMsg OpenAIV1.System {..} =
-  defaultMessage
-    { role = LLM.System
-    , content = content
-    }
-fromOpenAIMsg OpenAIV1.Assistant {..} =
-  defaultMessage
-    { role = LLM.Assistant
-    , content = fromMaybe "" assistant_content
-    }
-fromOpenAIMsg OpenAIV1.Tool {..} =
-  defaultMessage
-    { role = LLM.Tool
-    , content = content
-    }
+fromOpenAIMsg = LLM.from
 
 instance LLM.LLM OpenAICompatible where
   type LLMParams OpenAICompatible = OpenAIV1.CreateChatCompletion
@@ -144,13 +369,13 @@ instance LLM.LLM OpenAICompatible where
                       , name = Nothing
                       }
                   ]
-            , OpenAIV1.model = maybe "gpt-4o-mini" CreateCompletion.model mbLLMParams
+            , CreateCompletion.model = maybe "gpt-4o-mini" CreateCompletion.model mbLLMParams
             }
     case eRes of
       Left err -> pure $ Left $ Error.fromString $ show (err :: SomeException)
       Right (ChatCompletionObject {choices}) -> do
         let Choice {message} = V.head choices
-        pure (Right $ messageToContent message)
+        pure (Right $ messageToText message)
 
   chat OpenAICompatible {..} chatHistory mbLLMParams = do
     clientEnv <- getClientEnv $ maybe "https://api.openai.com" T.pack baseUrl
@@ -161,7 +386,7 @@ instance LLM.LLM OpenAICompatible where
           _CreateChatCompletion
             { OpenAIV1.messages =
                 V.fromList $ map toOpenAIMsg (NE.toList chatHistory)
-            , OpenAIV1.model = maybe "gpt-4o-mini" CreateCompletion.model mbLLMParams
+            , CreateCompletion.model = maybe "gpt-4o-mini" CreateCompletion.model mbLLMParams
             }
     case eRes of
       Left err -> pure $ Left $ Error.fromString $ show (err :: SomeException)
@@ -179,7 +404,7 @@ instance LLM.LLM OpenAICompatible where
           _CreateChatCompletion
             { OpenAIV1.messages =
                 V.fromList $ map toOpenAIMsg (NE.toList chatHistory)
-            , OpenAIV1.model = maybe "gpt-4o-mini" CreateCompletion.model mbLLMParams
+            , CreateCompletion.model = maybe "gpt-4o-mini" CreateCompletion.model mbLLMParams
             }
     _ <- createChatCompletionStreamTyped req_ onEvent
     pure $ Right ()

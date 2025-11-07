@@ -85,7 +85,7 @@ toOpenAI OpenAI {..} =
     , baseUrl =
         Just $
           fromMaybe
-            "https://generativelanguage.googleapis.com/v1beta/openai"
+            "https://api.openai.com"
             baseUrl
     , providerName = "OpenAI"
     }
