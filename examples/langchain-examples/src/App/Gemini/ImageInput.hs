@@ -17,7 +17,11 @@ import Langchain.Error (toString)
 import Langchain.LLM.Core
 import qualified Langchain.LLM.Core as LLM
 import Langchain.LLM.Gemini
-import qualified Langchain.LLM.Internal.OpenAI as OpenAI
+import qualified OpenAI.V1.Chat.Completions as CreateChat hiding
+  ( ChatCompletionChunk (..)
+  , ChatCompletionObject (..)
+  )
+import qualified OpenAI.V1.Models as Models
 import System.Directory
 import System.Environment
 import System.Exit
@@ -60,7 +64,7 @@ encodeImage filePath = do
 
 singleImageDemo :: Gemini -> IO ()
 singleImageDemo gemini = do
-  let textPart = OpenAI.TextContentPart "What is in this image? Describe it in detail."
+  let textPart = "What is in this image? Describe it in detail."
   let sampleImagePath = "./sample.png"
   mbBase64ImageData <- encodeImage sampleImagePath
   case mbBase64ImageData of
@@ -69,21 +73,28 @@ singleImageDemo gemini = do
       exitFailure
     Just base64ImageData -> do
       let imageUrlPart =
-            OpenAI.ImageUrlContentPart
-              ( "data:image/"
-                  <> T.pack (drop 1 $ takeExtension sampleImagePath)
-                  <> ";base64,"
-                  <> base64ImageData
-              )
+            "data:image/"
+              <> T.pack (drop 1 $ takeExtension sampleImagePath)
+              <> ";base64,"
+              <> base64ImageData
       let message =
-            OpenAI.defaultMessage
-              { OpenAI.role = OpenAI.User
-              , OpenAI.content = Just (OpenAI.ContentParts [textPart, imageUrlPart])
+            LLM.defaultMessage
+              { LLM.role = User
+              , LLM.content = textPart
+              , LLM.messageData = LLM.defaultMessageData {messageImages = Just [imageUrlPart]}
               }
-      let chatMessage = NE.singleton $ LLM.from message
+      let chatMessage = NE.singleton message
 
       putStrLn "Sending image to Gemini for analysis..."
-      result <- chat gemini chatMessage Nothing
+      result <-
+        chat
+          gemini
+          chatMessage
+          ( Just $
+              CreateChat._CreateChatCompletion
+                { CreateChat.model = Models.Model "gemini-2.5-flash"
+                }
+          )
       case result of
         Left err -> do
           putStrLn $ "Error: " <> toString err

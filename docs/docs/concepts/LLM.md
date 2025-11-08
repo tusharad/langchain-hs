@@ -68,7 +68,7 @@ data Message = Message
 The `Message` type represents a single message in the chat conversation. It has three fields:
   - `role`: The role of the message sender (Possible values are User, Assistant, System, Tool, Developer, Function).
   - `content`: The content of the message (Text).
-  - `messageData`: Additional data associated with the message, such as name or toolcalls (soon to be depreceted). You can use `defaultMessageData` to create a default instance of `MessageData` with no additional data.
+  - `messageData`: Additional data associated with the message, such as name or tool calls. You can use `defaultMessageData` to create a default instance of `MessageData` with no additional data.
 
 ## Writing your own LLM
 
@@ -158,7 +158,7 @@ For full control, construct the type directly:
 let customClient = OpenAICompatible
   { apiKey = Just "your-api-key"
   , modelName = "custom-mistral"
-  , callbacks = [stdOutCallbacl]  -- Example with logging callback
+  , callbacks = [stdOutCallback]  -- Example with logging callback
   , baseUrl = Just "https://my-ai-server.com/openai/v1"
   , defaultBaseUrl = "http://localhost:8080/v1"
   , providerName = "MyCustomProvider"

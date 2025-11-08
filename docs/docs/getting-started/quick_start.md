@@ -79,8 +79,8 @@ main :: IO ()
 main = do
   let openAI = OpenAI
         { apiKey = "your-api-key"
-        , openAIModelName = "gpt-4.1-nano"
         , callbacks = []
+        , baseUrl = Nothing
         }
   result <- LLM.generate openAI "Tell me a joke" Nothing
   case result of
@@ -88,7 +88,7 @@ main = do
     Right response -> putStrLn response
     ```
 In above code:
-1. Setup the `OpenAI` LLM with the api key, model name and optional list of callback functions.
+1. Setup the `OpenAI` LLM with the api key and optional list of callback functions. You can specify a custom base URL if needed.
 2. Call the `generate` function with the prompt and optional parameters.
 3. Handle the result, which can be either an error or the generated text.
 4. The `generate` function returns a `Text` response, which you can print or use as needed.
@@ -154,7 +154,7 @@ runApp :: IO ()
 runApp = do
   let ollamaLLM = Ollama "llama3.2" []  
   let chatHistory = fromList
-        [ Message System "Explain everthing with a texas accent." defaultMessageData
+        [ Message System "Explain everything with a texas accent." defaultMessageData
         , Message User "What is functional programming?" defaultMessageData
         ]
   chatResult <- chat ollamaLLM chatHistory Nothing
@@ -177,7 +177,7 @@ For Ollama, Make sure the model that you want to use is installed on your local 
 `Message` constructor takes 3 parameters:
 1. `role`: The role of the message sender (System, User, Assistant).
 2. `content`: The content of the message (Text).
-3. `metadata`: Optional metadata for the message (A type containing a optinal name and optional list of toolnames) (Currently unstable).
+3. `messageData`: Optional metadata for the message (A type containing an optional name and optional list of tool calls).
 4. `defaultMessageData`: A default value for the metadata, which can be used if no specific metadata is provided.
 
 `chat` takes a `NonEmpty` list of `Message` as input. The `NonEmpty` type ensures that the list is not empty, which is important for chat history. 
@@ -200,7 +200,6 @@ main :: IO ()
 main = do
   let openAI = OpenAI
         { apiKey = "your-api-key"
-        , openAIModelName = "gpt-4.1-nano"
         , callbacks = []
         , baseUrl = Nothing
         }
@@ -214,7 +213,7 @@ main = do
     Right response -> putStrLn $ "Chat Response:\n" ++ T.unpack response
     ```
 In above code:
-1. Setup the `OpenAI` LLM with the api key, model name and optional list of callback functions.
+1. Setup the `OpenAI` LLM with the api key and optional list of callback functions. You can specify a custom base URL if needed.
 2. Create a `chatHistory` using `fromList` with `Message` constructor.
 3. Call the `chat` function with the `chatHistory` and optional parameters.
 4. Handle the result, which can be either an error or the generated text.
@@ -224,7 +223,7 @@ In above code:
 `Message` constructor takes 3 parameters:
 1. `role`: The role of the message sender (System, User, Assistant).
 2. `content`: The content of the message (Text).
-3. `metadata`: Optional metadata for the message (A type containing a optinal name and optional list of toolnames) (Currently unstable).
+3. `metadata`: Optional metadata for the message (A type containing a optional name and optional list of toolnames) (Currently unstable).
 4. `defaultMessageData`: A default value for the metadata, which can be used if no specific metadata is provided.
 `chat` takes a `NonEmpty` list of `Message` as input. The `NonEmpty` type ensures that the list is not empty, which is important for chat history.
 :::
@@ -270,7 +269,7 @@ In above code:
 `Message` constructor takes 3 parameters:
 1. `role`: The role of the message sender (System, User, Assistant).
 2. `content`: The content of the message (Text).
-3. `metadata`: Optional metadata for the message (A type containing a optinal name and optional list of toolnames) (Currently unstable).
+3. `metadata`: Optional metadata for the message (A type containing a optional name and optional list of toolnames) (Currently unstable).
 4. `defaultMessageData`: A default value for the metadata, which can be used if no specific metadata is provided.
 `chat` takes a `NonEmpty` list of `Message` as input. The `NonEmpty` type ensures that the list is not empty, which is important for chat history.
 :::
@@ -332,7 +331,7 @@ The StreamHandler takes two functions:
 `Message` constructor takes 3 parameters:
 1. `role`: The role of the message sender (System, User, Assistant).
 2. `content`: The content of the message (Text).
-3. `metadata`: Optional metadata for the message (A type containing a optinal name and optional list of toolnames) (Currently unstable).
+3. `metadata`: Optional metadata for the message (A type containing a optional name and optional list of toolnames) (Currently unstable).
 4. `defaultMessageData`: A default value for the metadata, which can be used if no specific metadata is provided.
 `stream` takes a `NonEmpty` list of `Message` as input. The `NonEmpty` type ensures that the list is not empty, which is important for chat history.
 :::
@@ -355,7 +354,6 @@ runApp = do
     let openAI =
             OpenAI
                 { apiKey = "your-api-key"
-                , openAIModelName = "gpt-4.1-nano"
                 , callbacks = []
                 , baseUrl = Nothing
                 }
@@ -391,7 +389,7 @@ The StreamHandler takes two functions:
 `Message` constructor takes 3 parameters:
 1. `role`: The role of the message sender (System, User, Assistant).
 2. `content`: The content of the message (Text).
-3. `metadata`: Optional metadata for the message (A type containing a optinal name and optional list of toolnames) (Currently unstable).
+3. `metadata`: Optional metadata for the message (A type containing a optional name and optional list of toolnames) (Currently unstable).
 4. `defaultMessageData`: A default value for the metadata, which can be used if no specific metadata is provided.
 `stream` takes a `NonEmpty` list of `Message` as input. The `NonEmpty` type ensures that the list is not empty, which is important for chat history.
 :::
@@ -449,7 +447,7 @@ The StreamHandler takes two functions:
 `Message` constructor takes 3 parameters:
 1. `role`: The role of the message sender (System, User, Assistant).
 2. `content`: The content of the message (Text).
-3. `metadata`: Optional metadata for the message (A type containing a optinal name and optional list of toolnames) (Currently unstable).
+3. `metadata`: Optional metadata for the message (A type containing a optional name and optional list of toolnames) (Currently unstable).
 4. `defaultMessageData`: A default value for the metadata, which can be used if no specific metadata is provided.
 `stream` takes a `NonEmpty` list of `Message` as input. The `NonEmpty` type ensures that the list is not empty, which is important for chat history.
 :::

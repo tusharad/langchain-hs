@@ -27,14 +27,13 @@ import Data.Text (Text)
 import Langchain.Callback
 import Langchain.LLM.Core
 import qualified Langchain.LLM.Core as LLM
-import qualified Langchain.LLM.Internal.OpenAI as OpenAI
-import qualified Langchain.LLM.OpenAI as OpenAI
+import Langchain.LLM.OpenAICompatible (OpenAICompatible (..))
+import qualified Langchain.Runnable.Core as Run
+import qualified OpenAI.V1.Chat.Completions as OpenAIV1
 
 data Deepseek = Deepseek
   { apiKey :: Text
   -- ^ The API key for authenticating with Deepseek's services.
-  , deepseekModelName :: Text
-  -- ^ The name of the Deepseek model to use (e.g., "deepseek-chat", "deepseek-coder").
   , callbacks :: [Callback]
   -- ^ A list of callbacks for handling events during LLM operations.
   , baseUrl :: Maybe String
@@ -42,21 +41,27 @@ data Deepseek = Deepseek
   }
 
 instance Show Deepseek where
-  show Deepseek {..} = "Deepseek " ++ show deepseekModelName
+  show _ = "Deepseek"
 
-toOpenAI :: Deepseek -> OpenAI.OpenAI
+toOpenAI :: Deepseek -> OpenAICompatible
 toOpenAI Deepseek {..} =
-  OpenAI.OpenAI
-    { OpenAI.apiKey = apiKey
-    , OpenAI.openAIModelName = deepseekModelName
-    , OpenAI.callbacks = callbacks
-    , OpenAI.baseUrl = Just $ fromMaybe "https://api.deepseek.com" baseUrl
+  OpenAICompatible
+    { apiKey = apiKey
+    , callbacks = callbacks
+    , baseUrl = Just $ fromMaybe "https://api.deepseek.com" baseUrl
+    , providerName = "Deepseek"
     }
 
 instance LLM.LLM Deepseek where
-  type LLMParams Deepseek = OpenAI.OpenAIParams
-  type LLMStreamTokenType Deepseek = OpenAI.ChatCompletionChunk
+  type LLMParams Deepseek = OpenAIV1.CreateChatCompletion
+  type LLMStreamTokenType Deepseek = OpenAIV1.ChatCompletionChunk
 
   generate deepseek = LLM.generate (toOpenAI deepseek)
   chat deepseek = LLM.chat (toOpenAI deepseek)
   stream deepseek = LLM.stream (toOpenAI deepseek)
+
+instance Run.Runnable Deepseek where
+  type RunnableInput Deepseek = (ChatHistory, Maybe OpenAIV1.CreateChatCompletion)
+  type RunnableOutput Deepseek = LLM.Message
+
+  invoke = uncurry . chat

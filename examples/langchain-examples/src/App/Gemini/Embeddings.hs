@@ -19,7 +19,7 @@ runApp = do
             defaultGeminiEmbeddings
               { apiKey = T.pack aKey
               }
-      eRes <- embedQuery geminiEmbed "Some large query to emebed"
+      eRes <- embedQuery geminiEmbed "Some large query to embed"
       case eRes of
         Left err -> putStrLn $ "Something went wrong: " <> Langchain.toString err
         Right r -> print r

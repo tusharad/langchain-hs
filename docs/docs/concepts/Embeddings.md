@@ -50,11 +50,11 @@ data DeepseekEmbedding = DeepseekEmbedding {
   model :: Text
 }
 
-instance Embeddings Deepseek where
-  embedDocuments OpenAIEmbedding docs = do
+instance Embeddings DeepseekEmbedding where
+  embedDocuments DeepseekEmbedding{..} docs = do
     -- Your implementation here
     return $ Right []
-  embedQuery OpenAIEmbedding{..} query = do
+  embedQuery DeepseekEmbedding{..} query = do
     -- Your implementation here
     return $ Right []
 ```

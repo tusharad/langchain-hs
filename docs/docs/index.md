@@ -4,14 +4,14 @@ sidebar_position: 1
 
 # langchain-hs Documentation
 
-Lanchain-hs is the Haskell implementation of [LangChain](https://www.langchain.com/).
+Langchain-hs is the Haskell implementation of [LangChain](https://www.langchain.com/).
 
 ## Welcome to langchain-hs
 
 Langchain-hs brings the power of LangChain to Haskell, enabling type-safe LLM application development with:
 
 - Composable pipelines using Haskell's type system
-- Closely following with Offical LangChain concepts
+- Closely following with Official LangChain concepts
 - Performance through functional programming patterns
 - Support for Ollama, OpenAI and custom LLM integrations
 
@@ -21,7 +21,7 @@ Check out the [Quickstart](getting-started/quick_start) guide to get started wit
 
 ## Components 
 
-This documenation provides an overview of the core components of langchain-hs. Each component is designed to be modular, composable and interchangeble, allowing you to build complex applications with ease. 
+This documentation provides an overview of the core components of langchain-hs. Each component is designed to be modular, composable and interchangeable, allowing you to build complex applications with ease. 
 
 Langchain-hs is built around the core concepts of LangChain; You will find documentation for each components including:
 

@@ -16,8 +16,12 @@ import qualified Data.Text.IO as T
 import Langchain.Error (toString)
 import Langchain.LLM.Core
 import qualified Langchain.LLM.Core as LLM
-import qualified Langchain.LLM.Internal.OpenAI as OpenAI
 import Langchain.LLM.OpenAI
+import qualified OpenAI.V1.Chat.Completions as CreateChat hiding
+  ( ChatCompletionChunk (..)
+  , ChatCompletionObject (..)
+  )
+import qualified OpenAI.V1.Models as Models
 import System.Directory
 import System.Environment
 import System.Exit
@@ -34,7 +38,6 @@ runApp = do
       let openai =
             OpenAI
               { apiKey = T.pack aKey
-              , openAIModelName = "gpt-4o-mini"
               , callbacks = []
               , baseUrl = Nothing
               }
@@ -66,7 +69,7 @@ encodeImage filePath = do
 
 singleImageDemo :: OpenAI -> IO ()
 singleImageDemo openai = do
-  let textPart = OpenAI.TextContentPart "What is in this image? Describe it in detail."
+  let textPart = "What is in this image? Describe it in detail."
   let sampleImagePath = "./sample.png"
   mbBase64ImageData <- encodeImage sampleImagePath
   case mbBase64ImageData of
@@ -75,21 +78,28 @@ singleImageDemo openai = do
       exitFailure
     Just base64ImageData -> do
       let imageUrlPart =
-            OpenAI.ImageUrlContentPart
-              ( "data:image/"
-                  <> T.pack (drop 1 $ takeExtension sampleImagePath)
-                  <> ";base64,"
-                  <> base64ImageData
-              )
+            "data:image/"
+              <> T.pack (drop 1 $ takeExtension sampleImagePath)
+              <> ";base64,"
+              <> base64ImageData
       let message =
-            OpenAI.defaultMessage
-              { OpenAI.role = OpenAI.User
-              , OpenAI.content = Just (OpenAI.ContentParts [textPart, imageUrlPart])
+            LLM.defaultMessage
+              { LLM.role = User
+              , LLM.content = textPart
+              , LLM.messageData = LLM.defaultMessageData {messageImages = Just [imageUrlPart]}
               }
-      let chatMessage = NE.singleton $ LLM.from message
+      let chatMessage = NE.singleton message
 
-      putStrLn "\nSending image to OpenAI for analysis..."
-      result <- chat openai chatMessage Nothing
+      putStrLn "Sending image to OpenAI for analysis..."
+      result <-
+        chat
+          openai
+          chatMessage
+          ( Just $
+              CreateChat._CreateChatCompletion
+                { CreateChat.model = Models.Model "gpt-4o-mini"
+                }
+          )
       case result of
         Left err -> do
           putStrLn $ "Error: " <> toString err

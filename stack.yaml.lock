@@ -16,6 +16,17 @@ packages:
     commit: 33807a3a5a507e99d92b26e245c0aed582fde581
     git: https://github.com/tusharad/ollama-haskell
 - completed:
+    commit: 2031a05135b892a82b461558d19b813ab67cfb8f
+    git: https://github.com/MercuryTechnologies/openai
+    name: openai
+    pantry-tree:
+      sha256: b6d37a8aae100e690b97ae1b688157a22053fb21f47ab622324625f3a8b1667d
+      size: 5200
+    version: 2.2.1
+  original:
+    commit: 2031a05135b892a82b461558d19b813ab67cfb8f
+    git: https://github.com/MercuryTechnologies/openai
+- completed:
     hackage: pdf-toolbox-document-0.1.4@sha256:6016daf47765f4a06b23a90e59741f34f7c2c8561091a9db3caa922339037108,2405
     pantry-tree:
       sha256: 6530b803d559773deb1bcd62ec0828b715a4572798faecbf669e91f829298b7c
@@ -50,6 +61,20 @@ packages:
       size: 23323
   original:
     hackage: cryptonite-0.30@sha256:12c85dea7be63e5ad90bcb487eb3846bf3c413347f94336fa1dede7b28f9936a,18301
+- completed:
+    hackage: servant-multipart-client-0.12.2@sha256:e8105783e7dbef178a38dcfd05f4d12a8229eac88cfe49319f272dcb544e7365,2276
+    pantry-tree:
+      sha256: d0a337c6bc04203ed449939cce4cbe958b58147a71faf6cc967469decbdd0324
+      size: 400
+  original:
+    hackage: servant-multipart-client-0.12.2@sha256:e8105783e7dbef178a38dcfd05f4d12a8229eac88cfe49319f272dcb544e7365,2276
+- completed:
+    hackage: random-1.2.1.3@sha256:117541ba0a177397a3333f94870f789ef050dca31b0688a19824b2bc401b8823,6237
+    pantry-tree:
+      sha256: 79fdbb95ca2d108acb7b01903dbe288008cecbdc558105b7fdc095bfff7f3e09
+      size: 1528
+  original:
+    hackage: random-1.2.1.3@sha256:117541ba0a177397a3333f94870f789ef050dca31b0688a19824b2bc401b8823,6237
 snapshots:
 - completed:
     sha256: 00a21f6385077a5340603ff2cb3cd625502e533f09a80c99959ca5754073cac1

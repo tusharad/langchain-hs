@@ -51,15 +51,14 @@ import Data.Text (Text)
 import Langchain.Callback
 import Langchain.LLM.Core
 import qualified Langchain.LLM.Core as LLM
-import qualified Langchain.LLM.Internal.OpenAI as Internal
-import qualified Langchain.LLM.OpenAI as OpenAI
+import Langchain.LLM.OpenAICompatible (OpenAICompatible)
+import qualified Langchain.LLM.OpenAICompatible as OpenAICompatible
 import qualified Langchain.Runnable.Core as Run
+import qualified OpenAI.V1.Chat.Completions as OpenAIV1
 
 data Gemini = Gemini
   { apiKey :: Text
   -- ^ The API key for authenticating with Gemini's services.
-  , geminiModelName :: Text
-  -- ^ The name of the Gemini model to use (e.g., "gemini-2.0-flash").
   , callbacks :: [Callback]
   -- ^ A list of callbacks for handling events during LLM operations.
   , baseUrl :: Maybe String
@@ -67,40 +66,39 @@ data Gemini = Gemini
   }
 
 instance Show Gemini where
-  show Gemini {..} = "Gemini " ++ show geminiModelName
+  show _ = "Gemini"
 
-toOpenAI :: Gemini -> OpenAI.OpenAI
+toOpenAI :: Gemini -> OpenAICompatible
 toOpenAI Gemini {..} =
-  OpenAI.OpenAI
-    { OpenAI.apiKey = apiKey
-    , OpenAI.openAIModelName = geminiModelName
-    , OpenAI.callbacks = callbacks
-    , OpenAI.baseUrl =
+  OpenAICompatible.OpenAICompatible
+    { apiKey = apiKey
+    , callbacks = callbacks
+    , baseUrl =
         Just $
           fromMaybe
             "https://generativelanguage.googleapis.com/v1beta/openai"
             baseUrl
+    , providerName = "Gemini"
     }
 
 instance LLM.LLM Gemini where
-  type LLMParams Gemini = OpenAI.OpenAIParams
-  type LLMStreamTokenType Gemini = Internal.ChatCompletionChunk
+  type LLMParams Gemini = OpenAIV1.CreateChatCompletion
+  type LLMStreamTokenType Gemini = OpenAIV1.ChatCompletionChunk
 
   generate = LLM.generate . toOpenAI
   chat = LLM.chat . toOpenAI
   stream = LLM.stream . toOpenAI
 
 instance Run.Runnable Gemini where
-  type RunnableInput Gemini = (LLM.ChatHistory, Maybe OpenAI.OpenAIParams)
+  type RunnableInput Gemini = (ChatHistory, Maybe OpenAIV1.CreateChatCompletion)
   type RunnableOutput Gemini = LLM.Message
 
-  invoke gemini (chatMessage, mbParams) = LLM.chat gemini chatMessage mbParams
+  invoke = uncurry . chat
 
 defaultGemini :: Gemini
 defaultGemini =
   Gemini
     { apiKey = ""
-    , geminiModelName = "gemini-2.5-flash"
     , callbacks = []
     , baseUrl = Just "https://generativelanguage.googleapis.com/v1beta/openai"
     }

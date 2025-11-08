@@ -41,7 +41,7 @@ Right now, langchain-hs provides below integrations, with more integrations plan
 - `PdfLoader`: Loads documents from a PDF file path.
 - `DirectoryLoader`: Loads documents from a directory. It can recursively load files from subdirectories and filter files based on their extensions.
 
-**DiretoryLaoderOptions**
+**DirectoryLoaderOptions**
 
 ```haskell
 data DirectoryLoaderOptions = DirectoryLoaderOptions

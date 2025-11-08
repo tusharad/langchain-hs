@@ -32,6 +32,8 @@ dependencies:
 - scientific
 - text
 - transformers
+- openai
+- vector
 
 ghc-options:
 - -Wall

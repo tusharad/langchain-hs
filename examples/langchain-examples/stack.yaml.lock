@@ -15,6 +15,17 @@ packages:
   original:
     commit: 33807a3a5a507e99d92b26e245c0aed582fde581
     git: https://github.com/tusharad/ollama-haskell
+- completed:
+    commit: 2031a05135b892a82b461558d19b813ab67cfb8f
+    git: https://github.com/MercuryTechnologies/openai
+    name: openai
+    pantry-tree:
+      sha256: b6d37a8aae100e690b97ae1b688157a22053fb21f47ab622324625f3a8b1667d
+      size: 5200
+    version: 2.2.1
+  original:
+    commit: 2031a05135b892a82b461558d19b813ab67cfb8f
+    git: https://github.com/MercuryTechnologies/openai
 snapshots:
 - completed:
     sha256: a3501d1b61a539371d85305fe73e1134fc08e7c97498a42952455f011fd97ecf
