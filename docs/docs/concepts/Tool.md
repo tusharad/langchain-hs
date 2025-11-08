@@ -172,7 +172,7 @@ Calculator tool can perform Add, Sub, Mul, Div, Pow operation and return type wo
 
 :::Warning
 
-Write now, duckduckgo tool only returns result if the search term has an abstract card. 
+Right now, duckduckgo tool only returns result if the search term has an abstract card. 
 It does not return links, only abstract summary
 
 :::

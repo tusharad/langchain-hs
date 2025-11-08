@@ -91,7 +91,7 @@ const config: Config = {
           items: [
             {
               label: 'Github',
-              to: 'https://github.com/tusharad/lanchain-hs',
+              to: 'https://github.com/tusharad/langchain-hs',
             },
           ],
         },

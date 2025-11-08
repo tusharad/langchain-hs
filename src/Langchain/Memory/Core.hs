@@ -106,7 +106,7 @@ Right (WindowBufferMemory {maxWindowSize = 2, ...})
 data WindowBufferMemory = WindowBufferMemory
   { maxWindowSize :: Int
   {- ^ Maximum number of messages to retain
-  ^ It is user's responsiblity to make sure the number is > 0.
+  ^ It is user's responsibility to make sure the number is > 0.
   -}
   , windowBufferMessages :: ChatHistory
   -- ^ Current message buffer

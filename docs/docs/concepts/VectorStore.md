@@ -29,7 +29,7 @@ The `InMemory` vector store is a simple implementation that stores documents and
 Below is an example that:
  - Reads a 20 pages long pdf file and generates a list of documents.
  - Sets up an OllamaEmbeddings model.
- - Creates an InMemoryVectoStore with model and documents.
+ - Creates an InMemoryVectorStore with model and documents.
  - Fetches top 2 documents that are closest to the given query.
 
  ```haskell

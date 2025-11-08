@@ -28,7 +28,6 @@ main :: IO()
 main = do
   let openAI = OpenAI
         { apiKey = "your-api-key"
-        , openAIModelName = "gpt-3.5-turbo"
         , callbacks = []
         , baseUrl = Nothing
         }
@@ -112,20 +111,3 @@ instance Run.Runnable OpenAI where
 -- | Default values for OpenAI
 defaultOpenAI :: OpenAI
 defaultOpenAI = OpenAI "your-api-key" [] Nothing
-
-{-
-ghci> :set -XOverloadedStrings
-ghci> let o = OpenAI { apiKey = <my api key>
-    , openAIModelName = "gpt-4.1-nano"
-    , Langchain.LLM.OpenAI.callbacks = []
-    }
-ghci> eRes <- generate o "What is 2+2" Nothing
-ghci> eRes
-Right "2 + 2 equals 4."
-ghci> import qualified Data.List.NonEmpty as NE
-ghci> let msg = Langchain.LLM.Core.Message Langchain.LLM.Core.User "What is 2+2" defaultMessageData
-ghci> let chatMsg = NE.fromList [msg]
-ghci> eRes <- chat o chatMsg Nothing
-ghci> eRes
-Right "2 + 2 equals 4."
--}
