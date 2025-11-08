@@ -59,8 +59,6 @@ import qualified OpenAI.V1.Chat.Completions as OpenAIV1
 data Gemini = Gemini
   { apiKey :: Text
   -- ^ The API key for authenticating with Gemini's services.
-  , geminiModelName :: Text
-  -- ^ The name of the Gemini model to use (e.g., "gemini-2.0-flash").
   , callbacks :: [Callback]
   -- ^ A list of callbacks for handling events during LLM operations.
   , baseUrl :: Maybe String
@@ -68,7 +66,7 @@ data Gemini = Gemini
   }
 
 instance Show Gemini where
-  show Gemini {..} = "Gemini " ++ show geminiModelName
+  show _ = "Gemini"
 
 toOpenAI :: Gemini -> OpenAICompatible
 toOpenAI Gemini {..} =
@@ -101,7 +99,6 @@ defaultGemini :: Gemini
 defaultGemini =
   Gemini
     { apiKey = ""
-    , geminiModelName = "gemini-2.5-flash"
     , callbacks = []
     , baseUrl = Just "https://generativelanguage.googleapis.com/v1beta/openai"
     }

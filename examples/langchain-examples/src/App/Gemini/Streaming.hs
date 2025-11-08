@@ -34,7 +34,6 @@ runApp = do
       let gemini =
             Gemini
               { apiKey = T.pack aKey
-              , geminiModelName = "gemini-2.5-flash"
               , callbacks = []
               , baseUrl = Nothing
               }

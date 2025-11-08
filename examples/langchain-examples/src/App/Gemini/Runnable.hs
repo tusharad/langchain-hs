@@ -46,20 +46,17 @@ import System.Exit
 data TextPreprocessor = TextPreprocessor
 
 instance Runnable TextPreprocessor where
-  type RunnableInput TextPreprocessor = T.Text
-  type RunnableOutput TextPreprocessor = (ChatHistory, Maybe OpenAIV1.CreateChatCompletion)
+  type RunnableInput TextPreprocessor = (T.Text, Maybe OpenAIV1.CreateChatCompletion)
+  type
+    RunnableOutput TextPreprocessor =
+      (ChatHistory, Maybe OpenAIV1.CreateChatCompletion)
 
-  invoke _ input = do
-    let preprocessed = "Please analyze the following text and provide insights: " <> input
+  invoke _ (input, mbParams) = do
+    let preprocessed =
+          "Please analyze the following text and provide insights: "
+            <> input
         message = NE.singleton $ Message User preprocessed defaultMessageData
-    return $
-      Right
-        ( message
-        , Just $
-            CreateChat._CreateChatCompletion
-              { CreateChat.model = Models.Model "gemini-2.5-flash"
-              }
-        )
+    return $ Right (message, mbParams)
 
 -- | Custom Runnable for response formatting
 data ResponseFormatter = ResponseFormatter
@@ -76,35 +73,48 @@ instance Runnable ResponseFormatter where
 data SentimentAnalyzer = SentimentAnalyzer
 
 instance Runnable SentimentAnalyzer where
-  type RunnableInput SentimentAnalyzer = T.Text
-  type RunnableOutput SentimentAnalyzer = (ChatHistory, Maybe OpenAIV1.CreateChatCompletion)
+  type RunnableInput SentimentAnalyzer = (T.Text, Maybe OpenAIV1.CreateChatCompletion)
+  type
+    RunnableOutput SentimentAnalyzer =
+      ( ChatHistory
+      , Maybe OpenAIV1.CreateChatCompletion
+      )
 
-  invoke _ input = do
+  invoke _ (input, mbParams) = do
     let prompt =
           "Analyze the sentiment of this text and respond with only 'POSITIVE', 'NEGATIVE', or 'NEUTRAL': "
             <> input
         message = NE.singleton $ Message User prompt defaultMessageData
-    return $ Right (message, Nothing)
+    return $ Right (message, mbParams)
 
 -- | Custom Runnable for keyword extraction
 data KeywordExtractor = KeywordExtractor
 
 instance Runnable KeywordExtractor where
-  type RunnableInput KeywordExtractor = T.Text
-  type RunnableOutput KeywordExtractor = (ChatHistory, Maybe OpenAIV1.CreateChatCompletion)
+  type RunnableInput KeywordExtractor = (T.Text, Maybe OpenAIV1.CreateChatCompletion)
+  type
+    RunnableOutput KeywordExtractor =
+      ( ChatHistory
+      , Maybe OpenAIV1.CreateChatCompletion
+      )
 
-  invoke _ input = do
-    let prompt = "Extract the top 5 keywords from this text, separated by commas: " <> input
+  invoke _ (input, mbParams) = do
+    let prompt =
+          "Extract the top 5 keywords from this text, separated by commas: "
+            <> input
         message = NE.singleton $ Message User prompt defaultMessageData
-    return $ Right (message, Nothing)
+    return $ Right (message, mbParams)
 
 {- | Any type for SentimentAnalyzer and KeywordExtractor
 Workaround for the issue that RunnableBranch requires the same type for all branches
 -}
-data AnyType = First KeywordExtractor | Second SentimentAnalyzer | Default TextPreprocessor
+data AnyType
+  = First KeywordExtractor
+  | Second SentimentAnalyzer
+  | Default TextPreprocessor
 
 instance Runnable AnyType where
-  type RunnableInput AnyType = T.Text
+  type RunnableInput AnyType = (T.Text, Maybe OpenAIV1.CreateChatCompletion)
   type RunnableOutput AnyType = (ChatHistory, Maybe OpenAIV1.CreateChatCompletion)
 
   invoke (First keywordExtractor) input = invoke keywordExtractor input
@@ -141,7 +151,15 @@ basicRunnableDemo gemini = do
   -- Single invoke
   putStrLn "\nSingle Invoke:"
   let singleMessage = NE.singleton $ Message User "What is Haskell? Answer it in one sentence" defaultMessageData
-  result <- invoke gemini (singleMessage, Nothing)
+  result <-
+    invoke
+      gemini
+      ( singleMessage
+      , Just $
+          CreateChat._CreateChatCompletion
+            { CreateChat.model = Models.Model "gemini-2.5-flash"
+            }
+      )
   case result of
     Left err -> do
       putStrLn $ Langchain.toString err
@@ -156,7 +174,17 @@ basicRunnableDemo gemini = do
         , "Explain monads briefly."
         , "What are the benefits of Haskell?"
         ]
-      batchInputs = map (\q -> (NE.singleton $ Message User q defaultMessageData, Nothing)) questions
+      batchInputs =
+        map
+          ( \q ->
+              ( NE.singleton $ Message User q defaultMessageData
+              , Just $
+                  CreateChat._CreateChatCompletion
+                    { CreateChat.model = Models.Model "gemini-2.5-flash"
+                    }
+              )
+          )
+          questions
 
   batchResults <- batch gemini batchInputs
   case batchResults of
@@ -172,8 +200,16 @@ basicRunnableDemo gemini = do
   putStrLn "\nStreaming Response:"
   let streamMessage = NE.singleton $ Message User "Tell me a short joke about programming." defaultMessageData
   putStr "Streaming: "
-  streamResult <- Run.stream gemini (streamMessage, Nothing) $ \(Message _ c _) -> do
-    T.putStr c
+  streamResult <- Run.stream
+    gemini
+    ( streamMessage
+    , Just $
+        CreateChat._CreateChatCompletion
+          { CreateChat.model = Models.Model "gemini-2.5-flash"
+          }
+    )
+    $ \(Message _ c _) -> do
+      T.putStr c
   case streamResult of
     Left err -> putStrLn $ "\nStream error: " <> Langchain.toString err
     Right _ -> putStrLn "\nStream completed"
@@ -193,7 +229,16 @@ chainCompositionDemo gemini = do
   putStrLn "\n Method 1: Using chain function"
   let inputText = "Artificial Intelligence is transforming the world."
 
-  result1 <- chain preprocessor gemini inputText
+  result1 <-
+    chain
+      preprocessor
+      gemini
+      ( inputText
+      , Just $
+          CreateChat._CreateChatCompletion
+            { CreateChat.model = Models.Model "gemini-2.5-flash"
+            }
+      )
   case result1 of
     Left err -> putStrLn $ "Chain error: " <> Langchain.toString err
     Right geminiResponse -> do
@@ -207,14 +252,29 @@ chainCompositionDemo gemini = do
   let pipeline = buildSequence preprocessor gemini
       fullPipeline = appendSequence pipeline formatter
 
-  pipelineResult <- invoke fullPipeline inputText
+  pipelineResult <-
+    invoke
+      fullPipeline
+      ( inputText
+      , Just $
+          CreateChat._CreateChatCompletion
+            { CreateChat.model = Models.Model "gemini-2.5-flash"
+            }
+      )
   case pipelineResult of
     Left err -> putStrLn $ "Pipeline error: " <> Langchain.toString err
     Right formatted -> T.putStrLn formatted
 
   -- Method 3: Using the |>> operator
   putStrLn "\nMethod 3: Using |>> operator"
-  operatorResult <- (preprocessor |>> gemini) inputText
+  operatorResult <-
+    (preprocessor |>> gemini)
+      ( inputText
+      , Just $
+          CreateChat._CreateChatCompletion
+            { CreateChat.model = Models.Model "gemini-2.5-flash"
+            }
+      )
   case operatorResult of
     Left err -> putStrLn $ "Operator chain error: " <> Langchain.toString err
     Right geminiResponse -> do
@@ -233,8 +293,8 @@ conditionalProcessingDemo gemini = do
       keywordExtractor = KeywordExtractor
 
       -- Conditions for branching
-      isQuestion text = "?" `T.isSuffixOf` T.strip text
-      isShort text = T.length text < 50
+      isQuestion (text, _) = "?" `T.isSuffixOf` T.strip text
+      isShort (text, _) = T.length text < 50
 
       -- Create branched processor that uses the same output type
       -- We'll create a unified processor that handles all cases
@@ -253,12 +313,21 @@ conditionalProcessingDemo gemini = do
   let testTexts =
         [ "How are you feeling today?" -- Question
         , "AI is amazing!" -- Short text
-        , "The future of artificial intelligence looks very promising with all the recent developments." -- Long text
+        , "The future of artificial intelligence looks very "
+            <> "promising with all the recent developments." -- Long text
         ]
 
   forM_ (zip ([1 ..] :: [Int]) testTexts) $ \(i, text) -> do
     putStrLn $ "\nTest " <> show i <> ": " <> T.unpack text
-    branchResult <- runBranch textProcessor text
+    branchResult <-
+      runBranch
+        textProcessor
+        ( text
+        , Just $
+            CreateChat._CreateChatCompletion
+              { CreateChat.model = Models.Model "gemini-2.5-flash"
+              }
+        )
     case branchResult of
       Left err -> putStrLn $ "Branch error: " <> Langchain.toString err
       Right preprocessed -> do
@@ -279,7 +348,12 @@ transformationDemo gemini = do
   let inputTransform text =
         let enhanced = "Please provide a concise answer: " <> text
             message = NE.singleton $ Message User enhanced defaultMessageData
-         in (message, Nothing)
+         in ( message
+            , Just $
+                CreateChat._CreateChatCompletion
+                  { CreateChat.model = Models.Model "gemini-2.5-flash"
+                  }
+            )
 
       outputTransform (Message r c msgData) =
         Message r ("Summary: " <> T.take 100 c <> "...") msgData
@@ -310,7 +384,9 @@ utilityWrappersDemo gemini = do
   -- Demo WithTimeout
   putStrLn "\n🔹 WithTimeout Wrapper:"
   let timeoutGemini = WithTimeout gemini 30000000 -- 30 seconds timeout
-      timeoutMessage = NE.singleton $ Message User "Explain quantum computing." defaultMessageData
+      timeoutMessage =
+        NE.singleton $
+          Message User "Explain quantum computing." defaultMessageData
 
   putStrLn "Setting 30-second timeout for Gemini request..."
   timeoutResult <-
@@ -331,10 +407,20 @@ utilityWrappersDemo gemini = do
   -- Demo Retry
   putStrLn "\nRetry Wrapper:"
   let retryGemini = Retry gemini 3 1000000 -- 3 retries, 1 second delay
-      retryMessage = NE.singleton $ Message User "What is the meaning of life?" defaultMessageData
+      retryMessage =
+        NE.singleton $
+          Message User "What is the meaning of life?" defaultMessageData
 
   putStrLn "Setting up retry mechanism (3 attempts, 1s delay)..."
-  retryResult <- invoke retryGemini (retryMessage, Nothing)
+  retryResult <-
+    invoke
+      retryGemini
+      ( retryMessage
+      , Just $
+          CreateChat._CreateChatCompletion
+            { CreateChat.model = Models.Model "gemini-2.5-flash"
+            }
+      )
   case retryResult of
     Left err -> putStrLn $ "Retry failed: " <> Langchain.toString err
     Right (Message _ response _) -> do

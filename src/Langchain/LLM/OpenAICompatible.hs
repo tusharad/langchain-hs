@@ -18,27 +18,9 @@ Stability   : experimental
 This module provides a generic 'OpenAICompatible' data type and
 implements the 'LLM' typeclass for interacting with any service that provides
 an OpenAI-compatible API interface.
-
-Also provides convenience functions for popular providers like LMStudio, llama.cpp,
-and OpenRouter.
-
-Example usage:
-
-@
--- Using with LMStudio
-let lmStudio = mkLMStudio "my-model" [] Nothing Nothing
-result <- generate lmStudio "What is functional programming?" Nothing
-
--- Using with OpenRouter
-let openRouter = mkOpenRouter "anthropic/claude-3-opus" [] Nothing "your-api-key"
-result <- generate openRouter "Explain Haskell monads" Nothing
-@
 -}
 module Langchain.LLM.OpenAICompatible
   ( OpenAICompatible (..)
-  -- , OpenAI.OpenAIParams (..)
-  , mkLMStudio
-  , mkLlamaCpp
   , mkOpenRouter
   , module Langchain.LLM.Core
   ) where
@@ -59,7 +41,6 @@ import qualified Langchain.LLM.Core as LLM
 import qualified Langchain.Runnable.Core as LLM
 import OpenAI.V1
 import OpenAI.V1.Chat.Completions
-import qualified OpenAI.V1.Chat.Completions as CreateCompletion (CreateChatCompletion (..))
 import qualified OpenAI.V1.Chat.Completions as OpenAIV1
 import qualified OpenAI.V1.ToolCall as OpenAIV1
 
@@ -94,9 +75,7 @@ extractTextFromContent contents =
     getTextContent (OpenAIV1.Text txt) = Just txt
     getTextContent _ = Nothing
 
-{- | Helper function to create content list with text
-TODO: Add support for images and tool calls when openai library types are better understood
--}
+-- | Helper function to create content list with text
 makeContentList :: T.Text -> Maybe [T.Text] -> V.Vector OpenAIV1.Content
 makeContentList text mbImageData = do
   let res = V.fromList [OpenAIV1.Text text]
@@ -358,10 +337,12 @@ instance LLM.LLM OpenAICompatible where
   generate OpenAICompatible {..} prompt mbLLMParams = do
     clientEnv <- getClientEnv $ maybe "https://api.openai.com" T.pack baseUrl
     let Methods {createChatCompletion} = makeMethods clientEnv apiKey Nothing Nothing
+    let openaiParams = fromMaybe _CreateChatCompletion mbLLMParams
+
     eRes <-
       try $
         createChatCompletion
-          _CreateChatCompletion
+          openaiParams
             { OpenAIV1.messages =
                 V.fromList
                   [ OpenAIV1.User
@@ -369,7 +350,6 @@ instance LLM.LLM OpenAICompatible where
                       , name = Nothing
                       }
                   ]
-            , CreateCompletion.model = maybe "gpt-4o-mini" CreateCompletion.model mbLLMParams
             }
     case eRes of
       Left err -> pure $ Left $ Error.fromString $ show (err :: SomeException)
@@ -380,14 +360,11 @@ instance LLM.LLM OpenAICompatible where
   chat OpenAICompatible {..} chatHistory mbLLMParams = do
     clientEnv <- getClientEnv $ maybe "https://api.openai.com" T.pack baseUrl
     let Methods {createChatCompletion} = makeMethods clientEnv apiKey Nothing Nothing
+    let openaiParams = fromMaybe _CreateChatCompletion mbLLMParams
     eRes <-
       try $
         createChatCompletion
-          _CreateChatCompletion
-            { OpenAIV1.messages =
-                V.fromList $ map toOpenAIMsg (NE.toList chatHistory)
-            , CreateCompletion.model = maybe "gpt-4o-mini" CreateCompletion.model mbLLMParams
-            }
+          openaiParams {OpenAIV1.messages = V.fromList $ map toOpenAIMsg (NE.toList chatHistory)}
     case eRes of
       Left err -> pure $ Left $ Error.fromString $ show (err :: SomeException)
       Right (ChatCompletionObject {choices}) -> do
@@ -400,34 +377,11 @@ instance LLM.LLM OpenAICompatible where
 
     clientEnv <- getClientEnv $ maybe "https://api.openai.com" T.pack baseUrl
     let Methods {createChatCompletionStreamTyped} = makeMethods clientEnv apiKey Nothing Nothing
-    let req_ =
-          _CreateChatCompletion
-            { OpenAIV1.messages =
-                V.fromList $ map toOpenAIMsg (NE.toList chatHistory)
-            , CreateCompletion.model = maybe "gpt-4o-mini" CreateCompletion.model mbLLMParams
-            }
+    let openaiParams = fromMaybe _CreateChatCompletion mbLLMParams
+
+    let req_ = openaiParams {OpenAIV1.messages = V.fromList $ map toOpenAIMsg (NE.toList chatHistory)}
     _ <- createChatCompletionStreamTyped req_ onEvent
     pure $ Right ()
-
--- | Create an LMStudio instance
-mkLMStudio :: [Callback] -> Maybe String -> T.Text -> OpenAICompatible
-mkLMStudio callbacks' baseUrl' apiKey' =
-  OpenAICompatible
-    { apiKey = apiKey'
-    , callbacks = callbacks'
-    , baseUrl = Just $ fromMaybe "http://localhost:1234/v1" baseUrl'
-    , providerName = "LMStudio"
-    }
-
--- | Create a llama.cpp instance
-mkLlamaCpp :: [Callback] -> Maybe String -> T.Text -> OpenAICompatible
-mkLlamaCpp callbacks' baseUrl' apiKey' =
-  OpenAICompatible
-    { apiKey = apiKey'
-    , callbacks = callbacks'
-    , baseUrl = Just $ fromMaybe "http://localhost:8080/v1" baseUrl'
-    , providerName = "LlamaCpp"
-    }
 
 {- | Create an OpenRouter instance
 OpenRouter provides access to multiple model providers through a single API
@@ -438,7 +392,7 @@ mkOpenRouter callbacks' baseUrl' apiKey' =
   OpenAICompatible
     { apiKey = apiKey' -- OpenRouter requires an API key
     , callbacks = callbacks'
-    , baseUrl = Just $ fromMaybe "https://openrouter.ai" baseUrl'
+    , baseUrl = Just $ fromMaybe "https://openrouter.ai/api" baseUrl'
     , providerName = "OpenRouter"
     }
 
