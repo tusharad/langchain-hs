@@ -25,6 +25,9 @@ source-repository head
 
 library
   exposed-modules:
+      App.Agent.CustomAgent
+      App.Agent.SimpleAgent
+      App.Agent.ToolAgent
       App.Gemini.Embeddings
       App.Gemini.ImageInput
       App.Gemini.Runnable

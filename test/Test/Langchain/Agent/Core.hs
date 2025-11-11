@@ -1,140 +1,138 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeFamilies #-}
 
 module Test.Langchain.Agent.Core (tests) where
 
-import Control.Exception (throwIO)
-import Data.IORef (IORef, newIORef, readIORef, writeIORef)
-import qualified Data.List.NonEmpty as NE
 import qualified Data.Map.Strict as Map
-import Data.Text (Text, isInfixOf, pack)
-import Langchain.Agents.Core
-import Langchain.Error (internalError, llmError, toolError)
-import Langchain.LLM.Core
-import Langchain.Memory.Core (BaseMemory (..))
-import Langchain.PromptTemplate
-import Langchain.Tool.Core (Tool (..))
-import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.HUnit (assertBool, assertEqual, testCase)
-
-data DummyTool = DummyTool deriving (Show)
-
-instance Tool DummyTool where
-  type Input DummyTool = Text
-  type Output DummyTool = Text
-  toolName _ = "dummy-tool"
-  toolDescription _ = "dummy tool description"
-  runTool _ input = return $ "Processed: " <> input
-
-data FaultyTool = FaultyTool deriving (Show)
-
-instance Tool FaultyTool where
-  type Input FaultyTool = Text
-  type Output FaultyTool = Text
-  toolName _ = "faulty-tool"
-  toolDescription _ = "fulty tool description"
-  runTool _ _ = throwIO $ userError "Intentional tool error"
-
-data StepSequenceAgent = StepSequenceAgent (IORef [AgentStep]) [AnyTool]
-
-instance Agent StepSequenceAgent where
-  planNextAction (StepSequenceAgent ref _) _ = do
-    steps <- readIORef ref
-    case steps of
-      [] -> return $ Left (llmError "No steps left" Nothing Nothing)
-      (step : rest) -> do
-        writeIORef ref rest
-        return $ Right step
-  agentTools (StepSequenceAgent _ tools) = return tools
-  agentPrompt _ = return $ PromptTemplate "test prompt"
-
--- Test Memory Implementation
-
-newtype TestMemory = TestMemory [Message]
-
-instance BaseMemory TestMemory where
-  addMessage (TestMemory msgs) newMsg = return $ Right $ TestMemory (msgs ++ [newMsg])
-  addUserMessage (TestMemory msgs) input = do
-    let userMsg = Message User input defaultMessageData
-    return $ Right $ TestMemory (msgs ++ [userMsg])
-  addAiMessage (TestMemory msgs) input = do
-    let aiMsg = Message System input defaultMessageData
-    return $ Right $ TestMemory (msgs ++ [aiMsg])
-  messages (TestMemory msgs) = return $ Right $ NE.fromList msgs
-  clear _ = return $ Right (TestMemory [])
+import qualified Data.Text as T
+import Data.Time (getCurrentTime)
+import Langchain.Agent.Core
+import Test.Tasty
+import Test.Tasty.HUnit
 
 tests :: TestTree
 tests =
   testGroup
-    "Agent Tests"
-    [ testCase "executeTool valid tool" $ do
-        let dummyAnyTool = customAnyTool DummyTool id id
-            tools = [dummyAnyTool]
-        result <- executeTool tools "dummy-tool" "test input"
-        assertEqual "Should process input" (Right "Processed: test input") result
-    , testCase "executeTool tool not found" $ do
-        let tools = []
-        result <- executeTool tools "unknown-tool" "input"
-        assertEqual
-          "Should return tool not found error"
-          (Left (toolError "Tool not found: unknown-tool" Nothing Nothing))
-          result
-    , testCase "executeTool tool throws exception" $ do
-        let faultyAnyTool = customAnyTool FaultyTool id id
-            tools = [faultyAnyTool]
-        result <- executeTool tools "faulty-tool" "input"
-        assertBool
-          "Should return execution error"
-          ( "Intentional tool error"
-              `isInfixOf` pack
-                ( show $
-                    fromLeft
-                      ( toolError
-                          "Intentional tool error"
-                          Nothing
-                          Nothing
-                      )
-                      result
-                )
-          )
-    , testCase "runAgentLoop max iterations exceeded" $ do
-        agentRef <- newIORef []
-        let agent = StepSequenceAgent agentRef []
-            initialState = AgentState (TestMemory []) [] []
-        result <- runAgentLoop agent initialState 10 5
-        assertEqual
-          "Should return max iteration error"
-          (Left (internalError "Max iterations exceeded" Nothing Nothing))
-          result
-    , testCase "runAgent immediate finish" $ do
-        agentRef <- newIORef [Finish (AgentFinish (Map.singleton "result" "success") "Finished")]
-        let agent = StepSequenceAgent agentRef []
-            initialState = AgentState (TestMemory []) [] []
-        result <- runAgent agent initialState "input"
-        assertEqual
-          "Should return finish result"
-          (Right (AgentFinish (Map.singleton "result" "success") "Finished"))
-          result
-    , testCase "runAgentLoop continue then finish" $ do
-        agentRef <-
-          newIORef
-            [ Continue (AgentAction "dummy-tool" "input" "log")
-            , Finish (AgentFinish Map.empty "Done")
-            ]
-        let dummyAnyTool = customAnyTool DummyTool id id
-            agent = StepSequenceAgent agentRef [dummyAnyTool]
-            initialState = AgentState (TestMemory []) [] []
-        result <- runAgentLoop agent initialState 0 10
-        assertEqual "Should finish after one step" (Right (AgentFinish Map.empty "Done")) result
-    , testCase "customAnyTool wraps correctly" $ do
-        let tool = customAnyTool DummyTool id id
-            input = "test"
-            expectedOutput = "Processed: test"
-        result <- executeTool [tool] "dummy-tool" input
-        assertEqual "Should apply conversions" (Right expectedOutput) result
+    "Agent.Core"
+    [ testFormatScratchpad
+    , testFormatToolDescriptors
+    , testDefaultAgentConfig
+    , testAgentAction
+    , testAgentFinish
     ]
-  where
-    fromLeft :: a -> Either a b -> a
-    fromLeft _ (Left x) = x
-    fromLeft def _ = def
+
+testFormatScratchpad :: TestTree
+testFormatScratchpad =
+  testGroup
+    "formatScratchpad"
+    [ testCase "empty scratchpad" $ do
+        let result = formatScratchpad []
+        result @?= ""
+    , testCase "single step" $ do
+        now <- getCurrentTime
+        let action =
+              AgentAction
+                { actionTool = "calculator"
+                , actionToolInput = "2+2"
+                , actionLog = "I need to calculate"
+                , actionMetadata = Map.empty
+                }
+            step = AgentStep action "4" now
+            result = formatScratchpad [step]
+        T.isInfixOf "Thought: I need to calculate" result @? "Should contain thought"
+        T.isInfixOf "Action: calculator" result @? "Should contain action"
+        T.isInfixOf "Action Input: 2+2" result @? "Should contain input"
+        T.isInfixOf "Observation: 4" result @? "Should contain observation"
+    , testCase "multiple steps" $ do
+        now <- getCurrentTime
+        let action1 =
+              AgentAction
+                { actionTool = "search"
+                , actionToolInput = "weather"
+                , actionLog = "Search for weather"
+                , actionMetadata = Map.empty
+                }
+            action2 =
+              AgentAction
+                { actionTool = "calculator"
+                , actionToolInput = "10*2"
+                , actionLog = "Calculate result"
+                , actionMetadata = Map.empty
+                }
+            step1 = AgentStep action1 "sunny" now
+            step2 = AgentStep action2 "20" now
+            result = formatScratchpad [step1, step2]
+        T.isInfixOf "Action: search" result @? "Should contain first action"
+        T.isInfixOf "Action: calculator" result @? "Should contain second action"
+    ]
+
+testFormatToolDescriptors :: TestTree
+testFormatToolDescriptors =
+  testGroup
+    "formatToolDescriptors"
+    [ testCase "empty tools list" $ do
+        let result = formatToolDescriptors []
+        result @?= ""
+    , testCase "single tool" $ do
+        let tool =
+              ToolDescriptor
+                { toolDescName = "calculator"
+                , toolDescDescription = "Performs calculations"
+                , toolDescInputSchema = Nothing
+                }
+            result = formatToolDescriptors [tool]
+        result @?= "- calculator: Performs calculations"
+    , testCase "multiple tools" $ do
+        let tool1 =
+              ToolDescriptor
+                { toolDescName = "calculator"
+                , toolDescDescription = "Does math"
+                , toolDescInputSchema = Nothing
+                }
+            tool2 =
+              ToolDescriptor
+                { toolDescName = "search"
+                , toolDescDescription = "Searches web"
+                , toolDescInputSchema = Nothing
+                }
+            result = formatToolDescriptors [tool1, tool2]
+        T.isInfixOf "calculator: Does math" result @? "Should contain calculator"
+        T.isInfixOf "search: Searches web" result @? "Should contain search"
+    ]
+
+testDefaultAgentConfig :: TestTree
+testDefaultAgentConfig =
+  testCase "defaultAgentConfig has expected values" $ do
+    let config = defaultAgentConfig
+    maxIterations config @?= 15
+    maxExecutionTime config @?= Nothing
+    returnIntermediateSteps config @?= False
+    handleParsingErrors config @?= True
+    verboseLogging config @?= False
+
+testAgentAction :: TestTree
+testAgentAction =
+  testCase "AgentAction construction" $ do
+    let action =
+          AgentAction
+            { actionTool = "test_tool"
+            , actionToolInput = "test input"
+            , actionLog = "test log"
+            , actionMetadata = Map.fromList [("key", "value")]
+            }
+    actionTool action @?= "test_tool"
+    actionToolInput action @?= "test input"
+    actionLog action @?= "test log"
+    Map.lookup "key" (actionMetadata action) @?= Just "value"
+
+testAgentFinish :: TestTree
+testAgentFinish =
+  testCase "AgentFinish construction" $ do
+    let finish =
+          AgentFinish
+            { agentOutput = "final answer"
+            , finishMetadata = Map.fromList [("iterations", "5")]
+            , finishLog = "completion log"
+            }
+    agentOutput finish @?= "final answer"
+    finishLog finish @?= "completion log"
+    Map.lookup "iterations" (finishMetadata finish) @?= Just "5"

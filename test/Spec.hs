@@ -1,6 +1,6 @@
-import qualified Test.Langchain.Agent.Core as AgentTest
-
--- import qualified Test.Langchain.Agent.ReactAgent as ReactAgentTest
+import qualified Test.Langchain.Agent.Core as AgentCoreTest
+import qualified Test.Langchain.Agent.Executor as AgentExecutorTest
+import qualified Test.Langchain.Agent.ReAct as AgentReActTest
 import qualified Test.Langchain.DocumentLoader.Core as DocumentLoaderTest
 import qualified Test.Langchain.DocumentLoader.DirectoryLoader as DirectoryLoaderTest
 import qualified Test.Langchain.Embeddings.Core as EmbeddingsTest
@@ -37,9 +37,10 @@ main =
       , EmbeddingsTest.tests
       , RetrieverTest.tests
       , ToolTest.tests
-      , AgentTest.tests
-      , -- , ReactAgentTest.tests
-        RunnableTest.tests
+      , AgentCoreTest.tests
+      , AgentExecutorTest.tests
+      , AgentReActTest.tests
+      , RunnableTest.tests
       , RunnableUtilsTest.tests
       , RunnableChainsTest.tests
       , ConverationChainsTest.tests
