@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -65,6 +66,9 @@ module Langchain.Agent.Core
   , ToolDescriptor (..)
   , ToolResult (..)
   , ToolExecutor
+  , AnyTool (..)
+  , wrapTool
+  , executeAnyTool
 
     -- * Agent Events
   , AgentEvent (..)
@@ -72,6 +76,7 @@ module Langchain.Agent.Core
     -- * Utilities
   , formatScratchpad
   , formatToolDescriptors
+  , toolToDescriptor
   ) where
 
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -82,8 +87,9 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time (UTCTime)
 import GHC.Generics (Generic)
-import Langchain.Error (LangchainError, LangchainResult)
+import Langchain.Error (LangchainError, LangchainResult, toolError)
 import Langchain.LLM.Core (ChatHistory)
+import Langchain.Tool.Core (Tool (..))
 
 {- | Represents an action that an agent has decided to take.
 
@@ -172,6 +178,30 @@ Takes a tool name and input, returns the result.
 -}
 type ToolExecutor = Text -> Text -> IO (LangchainResult Text)
 
+{- | Wrapper for any Tool instance that can be used by agents.
+
+Converts Tool typeclass instances to text-based execution.
+-}
+data AnyTool = forall t. Tool t => AnyTool
+  { anyToolInstance :: t
+  , anyToolInputParser :: Text -> Maybe (Input t)
+  , anyToolOutputFormatter :: Output t -> Text
+  }
+
+-- | Convert a Tool instance to AnyTool with custom parsers.
+wrapTool ::
+  Tool t =>
+  t ->
+  (Text -> Maybe (Input t)) ->
+  (Output t -> Text) ->
+  AnyTool
+wrapTool tool parser formatter =
+  AnyTool
+    { anyToolInstance = tool
+    , anyToolInputParser = parser
+    , anyToolOutputFormatter = formatter
+    }
+
 {- | Current state of the agent during execution.
 
 Tracks:
@@ -237,12 +267,12 @@ data AgentCallbacks = AgentCallbacks
 Used for logging and monitoring.
 -}
 data AgentEvent
-  = AgentStarted {eventInput :: Text, eventTimestamp :: UTCTime}
-  | AgentActionPlanned {eventAction :: AgentAction, eventTimestamp :: UTCTime}
-  | AgentToolExecuted {eventStep :: AgentStep, eventTimestamp :: UTCTime}
-  | AgentFinished {eventFinish :: AgentFinish, eventTimestamp :: UTCTime}
-  | AgentErrorOccurred {eventError :: LangchainError, eventTimestamp :: UTCTime}
-  | AgentIteration {eventIteration :: Int, eventTimestamp :: UTCTime}
+  = AgentStarted Text UTCTime
+  | AgentActionPlanned AgentAction UTCTime
+  | AgentToolExecuted AgentStep UTCTime
+  | AgentFinished AgentFinish UTCTime
+  | AgentErrorOccurred LangchainError UTCTime
+  | AgentIteration Int UTCTime
   deriving (Show, Eq, Generic, ToJSON, FromJSON)
 
 {- | Core Agent typeclass.
@@ -309,7 +339,7 @@ class Agent a where
     Text ->
     Text ->
     m (LangchainResult Text)
-  executeToolM agent toolName input = liftIO $ executeTool agent toolName input
+  executeToolM a t i = liftIO $ executeTool a t i
 
   -- | MonadIO version of initialize
   initializeM ::
@@ -387,3 +417,27 @@ formatToolDescriptors tools =
     formatTool :: ToolDescriptor -> Text
     formatTool ToolDescriptor {..} =
       "- " <> toolDescName <> ": " <> toolDescDescription
+
+-- | Convert AnyTool to ToolDescriptor.
+toolToDescriptor :: AnyTool -> ToolDescriptor
+toolToDescriptor (AnyTool tool _ _) =
+  ToolDescriptor
+    { toolDescName = toolName tool
+    , toolDescDescription = toolDescription tool
+    , toolDescInputSchema = Nothing
+    }
+
+-- | Execute an AnyTool with text input.
+executeAnyTool :: AnyTool -> Text -> IO (LangchainResult Text)
+executeAnyTool (AnyTool tool parser formatter) input =
+  case parser input of
+    Nothing ->
+      return $
+        Left $
+          toolError
+            ("Failed to parse input for tool: " <> toolName tool)
+            (Just $ toolName tool)
+            Nothing
+    Just parsedInput -> do
+      output <- runTool tool parsedInput
+      return $ Right $ formatter output

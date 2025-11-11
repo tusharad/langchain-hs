@@ -66,13 +66,13 @@ import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import qualified Data.Text as T
 import Langchain.Agent.Core
-import Langchain.Agent.Tools (ToolRegistry, lookupTool, toolToDescriptor)
 import Langchain.Error
   ( LangchainResult
   , agentError
   , parsingError
   )
 import Langchain.LLM.Core (LLM, Message (..), Role (..), chat, defaultMessageData)
+import Langchain.Tool.Core (toolName)
 
 {- | ReAct agent configuration.
 
@@ -80,13 +80,12 @@ Contains:
 - The LLM to use for reasoning
 - Available tools
 - System prompt (optional custom prompt)
-- Tool execution registry
 -}
 data ReActAgent llm = ReActAgent
   { reactLLM :: llm
   -- ^ The language model for reasoning
-  , reactTools :: ToolRegistry
-  -- ^ Available tools and their executors
+  , reactTools :: [AnyTool]
+  -- ^ Available tools
   , reactSystemPrompt :: Text
   -- ^ System prompt template
   , reactMaxThinkingSteps :: Int
@@ -110,11 +109,11 @@ data ReActOutput
 
 Parameters:
 - LLM instance
-- Tool registry
+- List of tools
 
 Returns a configured ReAct agent.
 -}
-createReActAgent :: llm -> ToolRegistry -> ReActAgent llm
+createReActAgent :: llm -> [AnyTool] -> ReActAgent llm
 createReActAgent llm tools =
   ReActAgent
     { reactLLM = llm
@@ -129,7 +128,7 @@ Allows customization of the system prompt.
 -}
 createReActAgentWithPrompt ::
   llm ->
-  ToolRegistry ->
+  [AnyTool] ->
   Text ->
   ReActAgent llm
 createReActAgentWithPrompt llm tools prompt =
@@ -206,14 +205,14 @@ parseReActOutput :: Text -> LangchainResult ReActOutput
 parseReActOutput output =
   let stripped = T.strip output
    in -- Try to parse Final Answer first
-      if "Final Answer:" `T.isPrefixOf` stripped
-        then
-          let answer = T.strip $ T.drop (T.length "Final Answer:") stripped
+      if "Final Answer:" `T.isInfixOf` stripped
+        then do
+          let answer = T.strip $ T.drop (T.length "Final Answer:") (snd $ "Final Answer:" `T.breakOn` stripped)
            in Right $ ReActFinalAnswer answer
         else
-          if "final answer:" `T.isPrefixOf` T.toLower stripped
+          if "final answer:" `T.isInfixOf` T.toLower stripped
             then
-              let answer = T.strip $ T.drop (T.length "final answer:") stripped
+              let answer = T.strip $ T.drop (T.length "final answer:") (snd $ "final answer:" `T.breakOn` stripped)
                in Right $ ReActFinalAnswer answer
             else -- Try to parse Action/Action Input
               case parseAction stripped of
@@ -234,43 +233,45 @@ parseAction :: Text -> Maybe (Text, Text)
 parseAction text = do
   -- Find "Action:"
   let text' = T.strip text
-  actionPrefix <- findPrefix ["Action:", "action:"] text'
+  actionPrefix <- findInfix ["Action:", "action:"] text'
   let afterAction = T.strip $ T.drop (T.length actionPrefix) text'
 
   -- Extract tool name (everything before Action Input)
   case T.breakOn "Action Input:" afterAction of
     (_, "") -> case T.breakOn "action input:" afterAction of
       (_, "") -> Nothing -- No Action Input found
-      (toolName, rest) ->
+      (toolName_, rest) ->
         let input = T.strip $ T.drop (T.length "action input:") rest
-         in Just (T.strip toolName, input)
-    (toolName, rest) ->
+         in Just (T.strip toolName_, input)
+    (toolName_, rest) ->
       let input = T.strip $ T.drop (T.length "Action Input:") rest
-       in Just (T.strip toolName, input)
+       in Just (T.strip toolName_, input)
 
 -- | Parse "Thought: ..." pattern.
 parseThought :: Text -> Maybe Text
 parseThought text = do
   let text' = T.strip text
-  prefix <- findPrefix ["Thought:", "thought:"] text'
+  prefix <- findInfix ["Thought:", "thought:"] text'
   let thought = T.strip $ T.drop (T.length prefix) text'
   if T.null thought
     then Nothing
     else Just thought
 
--- | Find the first matching prefix from a list.
-findPrefix :: [Text] -> Text -> Maybe Text
-findPrefix [] _ = Nothing
-findPrefix (p : ps) text =
-  if p `T.isPrefixOf` text
-    then Just p
-    else findPrefix ps text
+-- | Find the first matching infix from a list.
+findInfix :: [Text] -> Text -> Maybe Text
+findInfix [] _ = Nothing
+findInfix (p : ps) text = if p `T.isInfixOf` text then Just (snd $ p `T.breakOn` text) else findInfix ps text
 
 -- | ReAct agent implementation of the Agent typeclass.
 instance LLM llm => Agent (ReActAgent llm) where
   plan agent state = do
     let tools = getTools agent
-        prompt = formatReActPrompt (reactSystemPrompt agent) tools (agentScratchpad state) (agentInput state)
+        prompt =
+          formatReActPrompt
+            (reactSystemPrompt agent)
+            tools
+            (agentScratchpad state)
+            (agentInput state)
 
     -- Build message for LLM
     let userMsg =
@@ -301,11 +302,11 @@ instance LLM llm => Agent (ReActAgent llm) where
                   ("Agent only provided thought without action: " <> thought)
                   Nothing
                   Nothing
-          Right (ReActAction toolName toolInput) -> do
+          Right (ReActAction toolName_ toolInput) -> do
             -- Agent wants to execute a tool
             let action =
                   AgentAction
-                    { actionTool = toolName
+                    { actionTool = toolName_
                     , actionToolInput = toolInput
                     , actionLog = responseText
                     , actionMetadata = Map.empty
@@ -321,18 +322,25 @@ instance LLM llm => Agent (ReActAgent llm) where
                     }
             return $ Right $ Right finish
 
-  getTools agent = map toolToDescriptor (Map.elems $ reactTools agent)
+  getTools agent = map toolToDescriptor (reactTools agent)
 
-  executeTool agent toolName input = do
-    case lookupTool toolName (reactTools agent) of
+  executeTool agent name input = do
+    case findTool name (reactTools agent) of
       Nothing ->
         return $
           Left $
             agentError
-              ("Tool not found: " <> toolName)
-              (Just toolName)
+              ("Tool not found: " <> name)
+              (Just name)
               (Just "executeTool")
-      Just tool -> tool input
+      Just anyTool -> executeAnyTool anyTool input
+    where
+      findTool :: Text -> [AnyTool] -> Maybe AnyTool
+      findTool targetName tools =
+        let matches = filter (\(AnyTool t _ _) -> toolName t == targetName) tools
+         in case matches of
+              (t : _) -> Just t
+              [] -> Nothing
 
 {- | Build ReAct prompt template.
 

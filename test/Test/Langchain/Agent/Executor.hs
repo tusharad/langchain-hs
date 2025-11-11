@@ -5,6 +5,7 @@ module Test.Langchain.Agent.Executor (tests) where
 
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Map.Strict as Map
+import Data.Maybe (fromMaybe, listToMaybe)
 import Data.Time (getCurrentTime)
 import Langchain.Agent.Core
 import Langchain.Agent.Executor
@@ -67,5 +68,7 @@ testRecordStep =
         newState = recordStep state step
     length (agentScratchpad newState) @?= 1
     agentIterations newState @?= 1
-    let recordedStep = head (agentScratchpad newState)
+    let recordedStep =
+          fromMaybe (AgentStep action "fake step" now) $
+            listToMaybe (agentScratchpad newState)
     stepObservation recordedStep @?= "observation"

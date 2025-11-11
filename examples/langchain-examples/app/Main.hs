@@ -2,8 +2,7 @@ module Main (main) where
 
 -- import App.OpenRouter.PdfQA
 -- import App.OpenRouter.ToolCall
-import App.Ollama.StructuredOutput
-
+-- import App.Ollama.StructuredOutput
 -- import App.Ollama.ToolCall
 -- import App.OpenRouter.StructuredOutput
 -- import App.Ollama.MultiAgent
@@ -14,6 +13,7 @@ import App.Ollama.StructuredOutput
 -- import App.Gemini.Simple
 -- import App.Gemini.Streaming
 -- import App.OpenAI.ImageInput
+import App.Agent.SimpleAgent
 
 main :: IO ()
 main = runApp

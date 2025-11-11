@@ -37,7 +37,6 @@ library
       Langchain.Agent.Core
       Langchain.Agent.Executor
       Langchain.Agent.ReAct
-      Langchain.Agent.Tools
       Langchain.Callback
       Langchain.Chain.RetrievalQA
       Langchain.DocumentLoader.Core
