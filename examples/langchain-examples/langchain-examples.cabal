@@ -25,12 +25,11 @@ source-repository head
 
 library
   exposed-modules:
+      App.Agent.SimpleAgent
       App.Gemini.Embeddings
       App.Gemini.ImageInput
       App.Gemini.Runnable
       App.Gemini.Streaming
-      App.Ollama.Agent
-      App.Ollama.MultiAgent
       App.Ollama.StructuredOutput
       App.Ollama.ToolCall
       App.OpenAI.ImageInput

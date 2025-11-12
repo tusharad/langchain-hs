@@ -109,6 +109,7 @@ module Langchain.Error
 import Control.Exception (Exception, SomeException, displayException, try)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Aeson (FromJSON, ToJSON)
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time (UTCTime, getCurrentTime)
@@ -387,12 +388,12 @@ runnableErrorWithContext msg runnableType operation ctx =
 parsingError :: Text -> Maybe Text -> Maybe Text -> LangchainError
 parsingError msg _parserType _input =
   LangchainError
-    { errorMessage = msg
+    { errorMessage = msg <> fromMaybe "" _parserType
     , errorSeverity = Medium
     , errorCategory = ParsingError
     , errorContext = Nothing
     , errorCause = Nothing
-    , errorCode = Nothing
+    , errorCode = _input
     }
 
 -- | Create a parsing error with context

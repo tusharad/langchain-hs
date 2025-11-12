@@ -1,4 +1,6 @@
 import qualified Test.Langchain.Agent.Core as AgentTest
+import qualified Test.Langchain.Agent.Executor as ExecutorTest
+import qualified Test.Langchain.Agent.ReAct as ReActTest
 
 -- import qualified Test.Langchain.Agent.ReactAgent as ReactAgentTest
 import qualified Test.Langchain.DocumentLoader.Core as DocumentLoaderTest
@@ -38,8 +40,9 @@ main =
       , RetrieverTest.tests
       , ToolTest.tests
       , AgentTest.tests
-      , -- , ReactAgentTest.tests
-        RunnableTest.tests
+      , ExecutorTest.tests
+      , ReActTest.tests
+      , RunnableTest.tests
       , RunnableUtilsTest.tests
       , RunnableChainsTest.tests
       , ConverationChainsTest.tests
