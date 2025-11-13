@@ -71,7 +71,7 @@ import Langchain.Error
   , agentError
   , parsingError
   )
-import Langchain.LLM.Core (LLM, Message (..), Role (..), chat, defaultMessageData)
+import Langchain.LLM.Core (LLM (LLMParams), Message (..), Role (..), chat, defaultMessageData)
 import Langchain.Tool.Core (toolName)
 
 {- | ReAct agent configuration.
@@ -84,6 +84,8 @@ Contains:
 data ReActAgent llm = ReActAgent
   { reactLLM :: llm
   -- ^ The language model for reasoning
+  , reactLLMParams :: Maybe (LLMParams llm)
+  -- ^ the llm params for language model
   , reactTools :: [AnyTool]
   -- ^ Available tools
   , reactSystemPrompt :: Text
@@ -113,10 +115,11 @@ Parameters:
 
 Returns a configured ReAct agent.
 -}
-createReActAgent :: llm -> [AnyTool] -> ReActAgent llm
-createReActAgent llm tools =
+createReActAgent :: llm -> Maybe (LLMParams llm) -> [AnyTool] -> ReActAgent llm
+createReActAgent llm mbLlmParams tools =
   ReActAgent
     { reactLLM = llm
+    , reactLLMParams = mbLlmParams
     , reactTools = tools
     , reactSystemPrompt = reActSystemPrompt
     , reactMaxThinkingSteps = 3
@@ -128,12 +131,14 @@ Allows customization of the system prompt.
 -}
 createReActAgentWithPrompt ::
   llm ->
+  Maybe (LLMParams llm) ->
   [AnyTool] ->
   Text ->
   ReActAgent llm
-createReActAgentWithPrompt llm tools prompt =
+createReActAgentWithPrompt llm mbLlmParams tools prompt =
   ReActAgent
     { reactLLM = llm
+    , reactLLMParams = mbLlmParams
     , reactTools = tools
     , reactSystemPrompt = prompt
     , reactMaxThinkingSteps = 3
@@ -284,7 +289,7 @@ instance LLM llm => Agent (ReActAgent llm) where
         messages = NE.fromList [userMsg]
 
     -- Get LLM response
-    eResponse <- chat (reactLLM agent) messages Nothing -- TODO: pass LLM params instead of Nothing
+    eResponse <- chat (reactLLM agent) messages (reactLLMParams agent)
     case eResponse of
       Left err -> return $ Left err
       Right responseMsg -> do

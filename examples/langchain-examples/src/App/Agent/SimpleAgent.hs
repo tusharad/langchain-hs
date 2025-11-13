@@ -70,7 +70,7 @@ runApp = do
 
   let ageFinder = wrapTool AgeFinderTool Just (either T.pack id)
   let tools2 = [ageFinder]
-  let agent2 = createReActAgent llm tools2
+  let agent2 = createReActAgent llm Nothing tools2
   result2 <-
     runAgentExecutor
       agent2
