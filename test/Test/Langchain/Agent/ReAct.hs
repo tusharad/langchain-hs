@@ -63,7 +63,6 @@ testPlanReturnsFinishWhenNoToolCalls = testCase "plan returns AgentFinish when n
       state =
         AgentState
           { agentChatHistory = NE.fromList [defaultMessage {content = "test"}]
-          , agentScratchpad = []
           , agentInput = "test input"
           , agentIterations = 0
           }
@@ -95,7 +94,6 @@ testPlanReturnsActionWhenToolCallsPresent = testCase "plan returns AgentAction w
       state =
         AgentState
           { agentChatHistory = NE.fromList [defaultMessage {content = "test"}]
-          , agentScratchpad = []
           , agentInput = "test input"
           , agentIterations = 0
           }
@@ -116,7 +114,6 @@ testPlanPropagatesLLMError = testCase "plan propagates LLM error" $ do
       state =
         AgentState
           { agentChatHistory = NE.fromList [defaultMessage {content = "test"}]
-          , agentScratchpad = []
           , agentInput = "test input"
           , agentIterations = 0
           }
@@ -180,7 +177,6 @@ testInitializeSetsUpStateCorrectly = testCase "initialize sets up state correctl
       inputState =
         AgentState
           { agentChatHistory = NE.fromList [defaultMessage]
-          , agentScratchpad = []
           , agentInput = "What is 2+2?"
           , agentIterations = 0
           }
@@ -190,7 +186,6 @@ testInitializeSetsUpStateCorrectly = testCase "initialize sets up state correctl
     Right newState -> do
       assertEqual "Input should be preserved" "What is 2+2?" (agentInput newState)
       assertEqual "Iterations should be 0" 0 (agentIterations newState)
-      assertEqual "Scratchpad should be empty" [] (agentScratchpad newState)
 
       -- Check chat history has system message and user message
       let history = NE.toList (agentChatHistory newState)

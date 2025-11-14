@@ -27,7 +27,6 @@ module Langchain.Agent.Core
   , AgentAction (..)
   , AgentFinish (..)
   , AgentStep (..)
-  , AgentScratchpad
 
     -- * Agent State and Configuration
   , AgentState (..)
@@ -50,12 +49,12 @@ import Langchain.Error (LangchainError, LangchainResult)
 import Langchain.LLM.Core (ChatHistory, ToolCall)
 import Langchain.Tool.Core
 
--- | Represents an action that an agent has decided to take.
+-- | Represents an action (ToolCall) that an agent has decided to take.
 data AgentAction = AgentAction
   { actionToolCall :: [ToolCall]
   -- ^ tool call
   , actionLog :: Text
-  -- ^ Agent's reasoning or thoughts (for debugging/logging)
+  -- ^ LLM's response while suggesting the tool call
   , actionMetadata :: Map Text Text
   -- ^ Additional metadata about the action
   }
@@ -77,17 +76,11 @@ data AgentStep = AgentStep
   { stepAction :: AgentAction
   -- ^ The action that was executed
   , stepObservation :: Text
-  -- ^ The result/observation from the action
+  -- ^ The result/observation from the executed tool call
   , stepTimestamp :: UTCTime
   -- ^ When this step occurred
   }
   deriving (Show, Eq)
-
-{- | The scratchpad maintains the history of actions and observations
-during agent execution. This helps the agent track what it has done
-and plan future actions.
--}
-type AgentScratchpad = [AgentStep]
 
 {- | Current state of the agent during execution.
 
@@ -99,8 +92,6 @@ Tracks:
 data AgentState = AgentState
   { agentChatHistory :: ChatHistory
   -- ^ Message history with the LLM
-  , agentScratchpad :: AgentScratchpad
-  -- ^ History of actions and observations
   , agentInput :: Text
   -- ^ Current user input/query
   , agentIterations :: Int

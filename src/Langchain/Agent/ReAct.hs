@@ -144,7 +144,6 @@ instance LLM llm => Agent (ReActAgent llm) where
                     { content = userInput
                     }
                 ]
-          , agentScratchpad = []
           , agentInput = userInput
           , agentIterations = 0
           }

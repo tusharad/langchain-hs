@@ -70,7 +70,6 @@ createInitialState :: Text -> AgentState
 createInitialState input =
   AgentState
     { agentChatHistory = NE.singleton systemMessage
-    , agentScratchpad = []
     , agentInput = input
     , agentIterations = 0
     }
@@ -171,7 +170,6 @@ executeAgentLoop agent config callbacks initialState startTime =
                         stateWithToolCall
                           { agentChatHistory =
                               agentChatHistory stateWithToolCall <> NE.fromList (map toolResultToMsg observations)
-                          , agentScratchpad = agentScratchpad stateWithToolCall ++ newSteps
                           , agentIterations = agentIterations stateWithToolCall + 1
                           }
                   loop newState (steps ++ newSteps)
