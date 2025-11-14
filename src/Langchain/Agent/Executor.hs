@@ -170,10 +170,9 @@ executeAgentLoop agent config callbacks initialState startTime =
                   let newState =
                         stateWithToolCall
                           { agentChatHistory =
-                              agentChatHistory state
-                                `NE.append` NE.fromList (map toolResultToMsg observations)
-                          , agentScratchpad = agentScratchpad state ++ newSteps
-                          , agentIterations = agentIterations state + 1
+                              agentChatHistory stateWithToolCall <> NE.fromList (map toolResultToMsg observations)
+                          , agentScratchpad = agentScratchpad stateWithToolCall ++ newSteps
+                          , agentIterations = agentIterations stateWithToolCall + 1
                           }
                   loop newState (steps ++ newSteps)
     actionToMsg action =

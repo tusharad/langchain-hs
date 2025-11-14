@@ -53,7 +53,7 @@ instance Tool AgeFinderTool where
 runApp :: IO ()
 runApp = do
   let llm = Ollama "qwen3:4b" []
-  let tools2 = [ToolAcceptingToolCall AgeFinderTool]
+  let tools = [ToolAcceptingToolCall AgeFinderTool]
   let paramProp =
         HM.fromList
           [ ("name", FunctionParameters "string" Nothing Nothing Nothing)
@@ -82,14 +82,14 @@ runApp = do
           defaultOllamaParams
             { tools = Just [inputTool]
             }
-  let agent2 = createReActAgent llm mbOllamaParams tools2
-  result2 <-
+  let agent = createReActAgent llm mbOllamaParams tools
+  result <-
     runAgentExecutor
-      agent2
+      agent
       defaultAgentConfig
       defaultAgentCallbacks
       "What is the age of Alice? If Alice's age is more than 30, find age of Bob as well."
-  case result2 of
+  case result of
     Left err -> putStrLn $ "Error: " <> toString err
     Right execResult -> do
       putStrLn $ "Got answer: " <> T.unpack (agentOutput $ executionFinish execResult)

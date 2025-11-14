@@ -106,18 +106,13 @@ data AgentState = AgentState
   , agentIterations :: Int
   -- ^ Number of iterations so far
   }
-
--- deriving (Show, Eq, Generic)
+  deriving (Show, Eq, Generic)
 
 data AgentConfig = AgentConfig
   { maxIterations :: Int
   -- ^ Maximum number of agent steps (default: 15)
   , maxExecutionTime :: Maybe Int
   -- ^ Maximum execution time in seconds (Nothing = no limit)
-  , returnIntermediateSteps :: Bool
-  -- ^ Whether to include intermediate steps in result (default: False)
-  , handleParsingErrors :: Bool
-  -- ^ Whether to recover from parsing errors (default: True)
   , verboseLogging :: Bool
   -- ^ Enable verbose logging (default: False)
   }
@@ -155,7 +150,7 @@ instance Eq ToolAcceptingToolCall where
 
 instance Show ToolAcceptingToolCall where
   show (ToolAcceptingToolCall t) =
-    "ToolAcceptingToolCall { name = " ++ show (toolName t)
+    "ToolAcceptingToolCall { name = " ++ show (toolName t) ++ " }"
 
 {- | Core Agent typeclass.
 
@@ -232,8 +227,6 @@ defaultAgentConfig =
   AgentConfig
     { maxIterations = 15
     , maxExecutionTime = Nothing
-    , returnIntermediateSteps = False
-    , handleParsingErrors = True
     , verboseLogging = False
     }
 
