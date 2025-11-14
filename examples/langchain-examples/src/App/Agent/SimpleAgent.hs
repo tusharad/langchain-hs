@@ -1,20 +1,22 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
 
 {- |
 Module      : App.Agent.SimpleAgent
-Description : Simple agent example using calculator and web scraper tools
+Description : Simple agent example
 Copyright   : (c) 2025 Tushar Adhatrao
 License     : MIT
-
-This example demonstrates how to create and use a simple ReAct agent
-with basic tools like calculator and web scraper.
-
-Usage:
-> cabal run langchain-examples -- simple-agent
 -}
 module App.Agent.SimpleAgent (runApp) where
 
+import Data.Aeson
+import qualified Data.Map as HM
+import Data.Ollama.Chat
+  ( FunctionDef (..)
+  , FunctionParameters (..)
+  , InputTool (..)
+  )
 import qualified Data.Text as T
 import Langchain.Agent.Core
 import Langchain.Agent.Executor
@@ -33,49 +35,59 @@ getAge name_ = case name_ of
 data AgeFinderTool = AgeFinderTool
 
 instance Tool AgeFinderTool where
-  type Input AgeFinderTool = T.Text
-  type Output AgeFinderTool = (Either String T.Text)
+  type Input AgeFinderTool = ToolCall
+  type Output AgeFinderTool = T.Text
 
   toolName _ = "age_finder"
   toolDescription _ = "Finds the age of a person given their name."
-  runTool _ input = pure $ Right $ getAge input
+  runTool _ (ToolCall _ _ ToolFunction {..}) = do
+    if toolFunctionName == "age_finder"
+      then do
+        case HM.lookup "name" toolFunctionArguments of
+          Nothing -> pure "Unknown"
+          Just (String name_) -> pure $ getAge name_
+          _ -> pure "Unknown"
+      else pure "Unknown"
 
 -- | Main application entry point.
 runApp :: IO ()
 runApp = do
-  putStrLn "=== Simple ReAct Agent Example ==="
-  let llm = Ollama "gemma3" []
-  let config =
-        defaultAgentConfig
-          { maxIterations = 10
-          , verboseLogging = True
-          , returnIntermediateSteps = True
+  let llm = Ollama "qwen3:4b" []
+  let tools2 = [ToolAcceptingToolCall AgeFinderTool]
+  let paramProp =
+        HM.fromList
+          [ ("name", FunctionParameters "string" Nothing Nothing Nothing)
+          ]
+      functionParams =
+        FunctionParameters
+          { parameterType = "object"
+          , requiredParams = Just ["name"]
+          , parameterProperties = Just paramProp
+          , additionalProperties = Just False
           }
-      callbacks_ =
-        defaultAgentCallbacks
-          { onAgentStart = \input -> do
-              putStrLn $ "Agent started with input: " <> T.unpack input
-              putStrLn ""
-          , onAgentAction = \action -> do
-              putStrLn $ "Tool: " <> T.unpack (actionTool action)
-              putStrLn $ "Input: " <> T.unpack (actionToolInput action)
-          , onAgentObservation = \obs -> do
-              putStrLn $ "Observation: " <> T.unpack (T.take 100 obs)
-              putStrLn ""
-          , onAgentFinish = \_ -> do
-              putStrLn "Agent finish!"
-          , onAgentError = \err -> do
-              putStrLn $ "Error: " <> toString err
+      functionDef =
+        FunctionDef
+          { functionName = "age_finder"
+          , functionDescription = Just "Finds the age of a person given their name."
+          , functionParameters = Just functionParams
+          , functionStrict = Nothing
           }
-
-  let ageFinder = wrapTool AgeFinderTool Just (either T.pack id)
-  let tools2 = [ageFinder]
-  let agent2 = createReActAgent llm Nothing tools2
+      inputTool =
+        InputTool
+          { toolType = "function"
+          , function = functionDef
+          }
+  let mbOllamaParams =
+        Just $
+          defaultOllamaParams
+            { tools = Just [inputTool]
+            }
+  let agent2 = createReActAgent llm mbOllamaParams tools2
   result2 <-
     runAgentExecutor
       agent2
-      config
-      callbacks_
+      defaultAgentConfig
+      defaultAgentCallbacks
       "What is the age of Alice? If Alice's age is more than 30, find age of Bob as well."
   case result2 of
     Left err -> putStrLn $ "Error: " <> toString err

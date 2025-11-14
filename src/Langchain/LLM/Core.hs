@@ -312,7 +312,8 @@ class LLM llm where
     StreamHandler (LLMStreamTokenType llm) ->
     Maybe (LLMParams llm) ->
     m (LangchainResult ())
-  streamM llm chatHistory sHandler mbParams = liftIO $ stream llm chatHistory sHandler mbParams
+  streamM llm chatHistory sHandler mbParams =
+    liftIO $ stream llm chatHistory sHandler mbParams
 
 class MessageConvertible a where
   to :: Message -> a

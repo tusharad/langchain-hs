@@ -1,9 +1,10 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 
 {- |
 Module      : Langchain.Agent.Core
@@ -14,36 +15,9 @@ Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
 
 This module provides the foundational types and typeclasses for building agents
-in langchain-hs. Agents are autonomous systems that use language models to determine
-which actions to take and in what order.
-
-The design is inspired by:
-- LangChain Python: https://docs.langchain.com/oss/python/langchain/agents
-- OpenAI Agents: https://openai.github.io/openai-agents-python/
-
-Key concepts:
-
-* 'Agent': The core decision-making component that uses an LLM to choose actions
-* 'AgentAction': Represents an action to be executed (tool call)
-* 'AgentFinish': Represents the final output when the agent completes its task
-* 'AgentStep': Combines an action with its observation (result)
-* 'AgentExecutor': Orchestrates the agent execution loop
-
-Example usage:
-
-@
-import Langchain.Agent.Core
-import Langchain.Agent.ReAct
-import Langchain.Tool.Calculator
-
-main :: IO ()
-main = do
-  let agent = createReActAgent llm tools
-  result <- runAgent agent "What is 25 * 4?"
-  case result of
-    Left err -> putStrLn $ "Error: " ++ show err
-    Right finish -> putStrLn $ agentOutput finish
-@
+in langchain-hs. An LLM Agent runs tools in a loop to achieve a goal.
+An agent runs until a stop condition is met -
+when the model emits a final output or an iteration limit is reached.
 -}
 module Langchain.Agent.Core
   ( -- * Agent Typeclass
@@ -62,60 +36,32 @@ module Langchain.Agent.Core
   , defaultAgentConfig
   , defaultAgentCallbacks
 
-    -- * Tool Integration
-  , ToolDescriptor (..)
-  , ToolResult (..)
-  , ToolExecutor
-  , AnyTool (..)
-  , wrapTool
-  , executeAnyTool
-
-    -- * Agent Events
-  , AgentEvent (..)
-
-    -- * Utilities
-  , formatScratchpad
-  , formatToolDescriptors
-  , toolToDescriptor
+    -- * Tool support
+  , ToolAcceptingToolCall (..)
   ) where
 
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.Aeson (FromJSON, ToJSON)
-import qualified Data.Aeson as A
+import Data.Aeson
 import Data.Map.Strict (Map)
 import Data.Text (Text)
-import qualified Data.Text as T
 import Data.Time (UTCTime)
 import GHC.Generics (Generic)
-import Langchain.Error (LangchainError, LangchainResult, toolError)
-import Langchain.LLM.Core (ChatHistory)
-import Langchain.Tool.Core (Tool (..))
+import Langchain.Error (LangchainError, LangchainResult)
+import Langchain.LLM.Core (ChatHistory, ToolCall)
+import Langchain.Tool.Core
 
-{- | Represents an action that an agent has decided to take.
-
-An action consists of:
-- A tool to execute
-- Input to provide to that tool
-- Optional reasoning/thoughts that led to this decision
--}
+-- | Represents an action that an agent has decided to take.
 data AgentAction = AgentAction
-  { actionTool :: Text
-  -- ^ Name of the tool to execute
-  , actionToolInput :: Text
-  -- ^ Input to provide to the tool
+  { actionToolCall :: [ToolCall]
+  -- ^ tool call
   , actionLog :: Text
   -- ^ Agent's reasoning or thoughts (for debugging/logging)
   , actionMetadata :: Map Text Text
   -- ^ Additional metadata about the action
   }
-  deriving (Show, Eq, Generic, ToJSON, FromJSON)
+  deriving (Show, Eq)
 
-{- | Represents the final result when an agent completes its task.
-
-Contains:
-- The final output to return to the user
-- Metadata about the execution
--}
+-- | Represents the final result when an agent completes its task.
 data AgentFinish = AgentFinish
   { agentOutput :: Text
   -- ^ The final answer or result
@@ -126,12 +72,7 @@ data AgentFinish = AgentFinish
   }
   deriving (Show, Eq, Generic, ToJSON, FromJSON)
 
-{- | Represents one step in the agent's execution.
-
-Each step consists of:
-- The action that was taken
-- The observation (result) from executing that action
--}
+-- | Represents one step in the agent's execution.
 data AgentStep = AgentStep
   { stepAction :: AgentAction
   -- ^ The action that was executed
@@ -140,67 +81,13 @@ data AgentStep = AgentStep
   , stepTimestamp :: UTCTime
   -- ^ When this step occurred
   }
-  deriving (Show, Eq, Generic, ToJSON, FromJSON)
+  deriving (Show, Eq)
 
 {- | The scratchpad maintains the history of actions and observations
 during agent execution. This helps the agent track what it has done
 and plan future actions.
 -}
 type AgentScratchpad = [AgentStep]
-
-{- | Describes a tool available to the agent.
-
-This is a simplified representation that can be passed to the LLM
-to help it understand what tools are available.
--}
-data ToolDescriptor = ToolDescriptor
-  { toolDescName :: Text
-  -- ^ Tool name
-  , toolDescDescription :: Text
-  -- ^ What the tool does
-  , toolDescInputSchema :: Maybe A.Value
-  -- ^ Optional JSON schema for tool input
-  }
-  deriving (Show, Eq, Generic, ToJSON, FromJSON)
-
-{- | Result of executing a tool.
-
-Can be either successful with output, or an error.
--}
-data ToolResult
-  = ToolSuccess Text
-  | ToolFailure Text
-  deriving (Show, Eq, Generic, ToJSON, FromJSON)
-
-{- | Function type for executing tools.
-
-Takes a tool name and input, returns the result.
--}
-type ToolExecutor = Text -> Text -> IO (LangchainResult Text)
-
-{- | Wrapper for any Tool instance that can be used by agents.
-
-Converts Tool typeclass instances to text-based execution.
--}
-data AnyTool = forall t. Tool t => AnyTool
-  { anyToolInstance :: t
-  , anyToolInputParser :: Text -> Maybe (Input t)
-  , anyToolOutputFormatter :: Output t -> Text
-  }
-
--- | Convert a Tool instance to AnyTool with custom parsers.
-wrapTool ::
-  Tool t =>
-  t ->
-  (Text -> Maybe (Input t)) ->
-  (Output t -> Text) ->
-  AnyTool
-wrapTool tool parser formatter =
-  AnyTool
-    { anyToolInstance = tool
-    , anyToolInputParser = parser
-    , anyToolOutputFormatter = formatter
-    }
 
 {- | Current state of the agent during execution.
 
@@ -219,16 +106,9 @@ data AgentState = AgentState
   , agentIterations :: Int
   -- ^ Number of iterations so far
   }
-  deriving (Show, Eq, Generic)
 
-{- | Configuration for agent execution.
+-- deriving (Show, Eq, Generic)
 
-Controls:
-- Maximum number of iterations before stopping
-- Maximum execution time
-- Whether to return intermediate steps
-- Error handling behavior
--}
 data AgentConfig = AgentConfig
   { maxIterations :: Int
   -- ^ Maximum number of agent steps (default: 15)
@@ -244,7 +124,6 @@ data AgentConfig = AgentConfig
   deriving (Show, Eq, Generic, ToJSON, FromJSON)
 
 {- | Callbacks for agent events.
-
 Allows hooking into various points in the agent lifecycle.
 -}
 data AgentCallbacks = AgentCallbacks
@@ -262,18 +141,21 @@ data AgentCallbacks = AgentCallbacks
   -- ^ Called after each complete step
   }
 
-{- | Events that occur during agent execution.
+-- | Tool for Agents
+data ToolAcceptingToolCall where
+  ToolAcceptingToolCall ::
+    ( Tool t
+    , Input t ~ ToolCall
+    , Output t ~ Text
+    ) =>
+    t -> ToolAcceptingToolCall
 
-Used for logging and monitoring.
--}
-data AgentEvent
-  = AgentStarted Text UTCTime
-  | AgentActionPlanned AgentAction UTCTime
-  | AgentToolExecuted AgentStep UTCTime
-  | AgentFinished AgentFinish UTCTime
-  | AgentErrorOccurred LangchainError UTCTime
-  | AgentIteration Int UTCTime
-  deriving (Show, Eq, Generic, ToJSON, FromJSON)
+instance Eq ToolAcceptingToolCall where
+  (ToolAcceptingToolCall t1) == (ToolAcceptingToolCall t2) = toolName t1 == toolName t2
+
+instance Show ToolAcceptingToolCall where
+  show (ToolAcceptingToolCall t) =
+    "ToolAcceptingToolCall { name = " ++ show (toolName t)
 
 {- | Core Agent typeclass.
 
@@ -292,24 +174,13 @@ class Agent a where
     AgentState ->
     IO (LangchainResult (Either AgentAction AgentFinish))
 
-  {- | Get the tools available to this agent.
+  -- | Get the tools available to this agent.
+  getTools :: a -> [ToolAcceptingToolCall]
 
-  Returns descriptions of all tools the agent can use.
-  -}
-  getTools :: a -> [ToolDescriptor]
-
-  {- | Execute a tool.
-
-  Takes the tool name and input, returns the observation.
-  -}
-  executeTool ::
-    a ->
-    Text ->
-    Text ->
-    IO (LangchainResult Text)
+  -- | Execute a tool.
+  executeTool :: a -> ToolCall -> IO (LangchainResult Text)
 
   {- | Prepare the agent for execution.
-
   Initialize any necessary state before starting.
   Default implementation does nothing.
   -}
@@ -317,7 +188,6 @@ class Agent a where
   initialize _ state = pure $ Right state
 
   {- | Clean up after agent execution.
-
   Release resources, save state, etc.
   Default implementation does nothing.
   -}
@@ -333,13 +203,8 @@ class Agent a where
   planM agent state = liftIO $ plan agent state
 
   -- | MonadIO version of executeTool
-  executeToolM ::
-    MonadIO m =>
-    a ->
-    Text ->
-    Text ->
-    m (LangchainResult Text)
-  executeToolM a t i = liftIO $ executeTool a t i
+  executeToolM :: MonadIO m => a -> ToolCall -> m (LangchainResult Text)
+  executeToolM a i = liftIO $ executeTool a i
 
   -- | MonadIO version of initialize
   initializeM ::
@@ -373,7 +238,6 @@ defaultAgentConfig =
     }
 
 {- | Default agent callbacks (all no-ops).
-
 Useful as a starting point for custom callbacks.
 -}
 defaultAgentCallbacks :: AgentCallbacks
@@ -386,58 +250,3 @@ defaultAgentCallbacks =
     , onAgentError = \_ -> pure ()
     , onAgentStep = \_ -> pure ()
     }
-
-{- | Format the scratchpad for display.
-
-Converts the action-observation history into a readable format
-that can be shown to the LLM.
--}
-formatScratchpad :: AgentScratchpad -> Text
-formatScratchpad steps =
-  T.intercalate "\n\n" $ map formatStep steps
-  where
-    formatStep :: AgentStep -> Text
-    formatStep AgentStep {..} =
-      let AgentAction {..} = stepAction
-       in T.unlines
-            [ "Your Thought: " <> actionLog
-            , "Previous Tool: " <> actionTool
-            , "Previous Tool Input: " <> actionToolInput
-            , "Previous Tool Result: " <> stepObservation
-            ]
-
-{- | Format tool descriptors for the LLM.
-
-Creates a readable description of available tools.
--}
-formatToolDescriptors :: [ToolDescriptor] -> Text
-formatToolDescriptors tools =
-  T.intercalate "\n" $ map formatTool tools
-  where
-    formatTool :: ToolDescriptor -> Text
-    formatTool ToolDescriptor {..} =
-      "- " <> toolDescName <> ": " <> toolDescDescription
-
--- | Convert AnyTool to ToolDescriptor.
-toolToDescriptor :: AnyTool -> ToolDescriptor
-toolToDescriptor (AnyTool tool _ _) =
-  ToolDescriptor
-    { toolDescName = toolName tool
-    , toolDescDescription = toolDescription tool
-    , toolDescInputSchema = Nothing
-    }
-
--- | Execute an AnyTool with text input.
-executeAnyTool :: AnyTool -> Text -> IO (LangchainResult Text)
-executeAnyTool (AnyTool tool parser formatter) input =
-  case parser input of
-    Nothing ->
-      return $
-        Left $
-          toolError
-            ("Failed to parse input for tool: " <> toolName tool)
-            (Just $ toolName tool)
-            Nothing
-    Just parsedInput -> do
-      output <- runTool tool parsedInput
-      return $ Right $ formatter output
