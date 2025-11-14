@@ -108,8 +108,6 @@ test-suite langchain-hs-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Test.Langchain.Agent.Core
-      Test.Langchain.Agent.Executor
       Test.Langchain.Agent.ReAct
       Test.Langchain.DocumentLoader.Core
       Test.Langchain.DocumentLoader.DirectoryLoader

@@ -46,9 +46,9 @@ import Langchain.LLM.Core
 
 data AgentExecutionResult = AgentExecutionResult
   { executionFinish :: AgentFinish
-  -- ^ The final output
+  -- ^ The final result of the agent execution
   , executionSteps :: [AgentStep]
-  -- ^ All intermediate steps taken
+  -- ^ All tool calls made and their results
   , executionMetrics :: ExecutionMetrics
   -- ^ Performance metrics
   }
@@ -56,16 +56,17 @@ data AgentExecutionResult = AgentExecutionResult
 
 data ExecutionMetrics = ExecutionMetrics
   { metricsIterations :: Int
-  -- ^ Number of plan-execute cycles
+  -- ^ Number of agent iterations
   , metricsExecutionTime :: Double
   -- ^ Total time in seconds
   , metricsToolCalls :: Int
-  -- ^ Number of tool executions
+  -- ^ Number of tool calls made
   , metricsSuccess :: Bool
   -- ^ Whether execution completed successfully
   }
   deriving (Show, Eq)
 
+-- | Create the initial state of the agent.
 createInitialState :: Text -> AgentState
 createInitialState input =
   AgentState
@@ -188,6 +189,22 @@ executeAgentLoop agent config callbacks initialState startTime =
         , content = res
         }
 
+{- |
+ Runs the agent executor.
+
+ This function initializes the agent, runs the agent loop, and returns the final result.
+
+ Arguments:
+ - agent: The agent to run
+ - config: The agent configuration
+ - callbacks: The agent callbacks
+ - input: The input to the agent
+
+ Returns:
+ - The final result of the agent execution
+ - The execution metrics
+ - The execution steps
+-}
 runAgentExecutor ::
   Agent a =>
   a ->

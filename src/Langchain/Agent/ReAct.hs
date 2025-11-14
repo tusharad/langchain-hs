@@ -9,18 +9,8 @@ License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
 
-This module implements the ReAct (Reasoning and Acting) agent pattern.
-ReAct combines reasoning traces and task-specific actions in an interleaved manner,
-allowing the agent to:
-
-1. Think about what to do next
-2. Take an action
-3. Observe the result
-4. Repeat until the task is complete
-
-The ReAct pattern is based on the paper:
-\"ReAct: Synergizing Reasoning and Acting in Language Models\"
-https://arxiv.org/abs/2210.03629
+This module implements the ReAct (Reasoning + Acting) agent pattern.
+ReAct combines reasoning traces and task-specific actions in an interleaved manner.
 -}
 module Langchain.Agent.ReAct
   ( -- * Agent Creation
@@ -42,6 +32,15 @@ import qualified Langchain.Error as Error
 import Langchain.LLM.Core
 import Langchain.Tool.Core
 
+{- | ReAct agent.
+
+Arguments:
+- llm: The language model
+- llmParams: The language model parameters
+- systemPrompt: The system prompt
+- maxThinkingSteps: The maximum number of thinking steps before forcing action
+- tools: The tools available to the agent.
+-}
 data ReActAgent llm = ReActAgent
   { reactLLM :: llm
   -- ^ The language model for reasoning
@@ -54,8 +53,27 @@ data ReActAgent llm = ReActAgent
   , reactTools :: [ToolAcceptingToolCall]
   }
 
+{- | Create a ReAct agent.
+
+Arguments:
+- llm: The language model
+- llmParams: The language model parameters
+- tools: The tools available to the agent
+
+Important:
+- It is user's responsibility to wrap the tools into ToolAcceptingToolCall.
+- It is user's responsibility to pass tool_calls as part of LLMParams.
+- The tool_calls shall be same as the reactTools (ToolAcceptingToolCall) list.
+-}
 createReActAgent ::
-  llm -> Maybe (LLMParams llm) -> [ToolAcceptingToolCall] -> ReActAgent llm
+  -- | The language model
+  llm ->
+  -- | The language model parameters
+  Maybe (LLMParams llm) ->
+  -- | The tools available to the agent
+  [ToolAcceptingToolCall] ->
+  -- | The ReAct agent
+  ReActAgent llm
 createReActAgent llm mbLlmParams tools =
   ReActAgent
     { reactLLM = llm
@@ -65,11 +83,17 @@ createReActAgent llm mbLlmParams tools =
     , reactTools = tools
     }
 
+-- | Create a ReAct agent with a custom system prompt.
 createReActAgentWithPrompt ::
+  -- | The language model
   llm ->
+  -- | The language model parameters
   Maybe (LLMParams llm) ->
+  -- | The tools available to the agent
   [ToolAcceptingToolCall] ->
+  -- | The custom system prompt
   Text ->
+  -- | The ReAct agent
   ReActAgent llm
 createReActAgentWithPrompt llm mbLlmParams tools prompt =
   ReActAgent
@@ -80,6 +104,7 @@ createReActAgentWithPrompt llm mbLlmParams tools prompt =
     , reactTools = tools
     }
 
+-- | Default system prompt for the ReAct agent.
 reActSystemPrompt :: Text
 reActSystemPrompt =
   "You are a helpful AI assistant that uses tools to answer user questions."

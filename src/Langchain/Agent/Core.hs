@@ -86,8 +86,8 @@ data AgentStep = AgentStep
 
 Tracks:
 - Chat history with the LLM
-- Scratchpad (action-observation pairs)
 - Current input being processed
+- Number of iterations so far
 -}
 data AgentState = AgentState
   { agentChatHistory :: ChatHistory
@@ -118,7 +118,7 @@ data AgentCallbacks = AgentCallbacks
   , onAgentAction :: AgentAction -> IO ()
   -- ^ Called before executing an action
   , onAgentObservation :: Text -> IO ()
-  -- ^ Called after receiving an observation
+  -- ^ Called after receiving an observation / result of the tool call
   , onAgentFinish :: AgentFinish -> IO ()
   -- ^ Called when agent completes
   , onAgentError :: LangchainError -> IO ()
@@ -127,7 +127,33 @@ data AgentCallbacks = AgentCallbacks
   -- ^ Called after each complete step
   }
 
--- | Tool for Agents
+{- |
+A ToolAcceptingToolCall is a special type of tool that can be used by an agent to execute a tool call.
+It is a wrapper around a tool type whose input is a ToolCall and output is a Text.
+It is user's responsibility wrap your existing tool into this type.
+
+Example:
+
+> data AgeFinderTool = AgeFinderTool
+> instance Tool AgeFinderTool where
+>   type Input AgeFinderTool = ToolCall
+>   type Output AgeFinderTool = Text
+>   toolName _ = "age_finder"
+>   toolDescription _ = "Finds the age of a person given their name."
+>   runTool _ (ToolCall _ _ ToolFunction {..}) = do
+>     if toolFunctionName == "age_finder"
+>       then do
+>         case HM.lookup "name" toolFunctionArguments of
+>           Nothing -> pure "Unknown"
+>           Just (String name_) -> pure $ getAge name_
+>           _ -> pure "Unknown"
+>       else pure "Unknown"
+>
+>   getAge name_ = case name_ of
+>     "Alice" -> "30"
+>     "Bob" -> "25"
+>     _ -> "Unknown"
+-}
 data ToolAcceptingToolCall where
   ToolAcceptingToolCall ::
     ( Tool t
@@ -152,8 +178,8 @@ class Agent a where
   {- | Plan the next action or finish.
 
   Given the current state, decide:
-  - What action to take next (Left AgentAction), or
-  - That the task is complete (Right AgentFinish)
+  - What tool call to make next (Left AgentAction), or
+  - That the task is complete and return the final result (Right AgentFinish)
   -}
   plan ::
     a ->
@@ -209,8 +235,6 @@ class Agent a where
 Sensible defaults:
 - 15 max iterations
 - No time limit
-- Don't return intermediate steps
-- Handle parsing errors
 - No verbose logging
 -}
 defaultAgentConfig :: AgentConfig
