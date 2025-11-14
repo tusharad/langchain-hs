@@ -34,7 +34,6 @@ where
 
 import Control.Monad (when)
 import qualified Data.List.NonEmpty as NE
-import Data.Maybe (listToMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time (UTCTime, diffUTCTime, getCurrentTime)
@@ -42,7 +41,6 @@ import Langchain.Agent.Core
 import Langchain.Error
   ( LangchainResult
   , agentError
-  , fromString
   )
 import Langchain.LLM.Core
 
@@ -153,35 +151,31 @@ executeAgentLoop agent config callbacks initialState startTime =
                           agentChatHistory state
                             `NE.append` NE.singleton (actionToMsg action)
                       }
-              let mbActionCall = listToMaybe (actionToolCall action)
-              case mbActionCall of
-                Nothing -> pure $ Left (fromString "ToolCall list is empty")
-                Just actionCall -> do
-                  eResult <- executeTool agent actionCall -- TODO: mapM all
-                  case eResult of
-                    Left err -> do
-                      -- TODO: handle parsing error
-                      onAgentError callbacks err
-                      return $ Left err
-                    Right observation -> do
-                      onAgentObservation callbacks observation
-                      when (verboseLogging config) $
-                        putStrLn $
-                          "[Agent] Observation: " <> T.unpack observation
-                      -- Record step
-                      timestamp <- getCurrentTime
-                      let step = AgentStep action observation timestamp
-                      onAgentStep callbacks step
-                      -- Update state and continue
-                      let newState =
-                            stateWithToolCall
-                              { agentChatHistory =
-                                  agentChatHistory state
-                                    `NE.append` NE.singleton (toolResultToMsg observation)
-                              , agentScratchpad = agentScratchpad state ++ [step]
-                              , agentIterations = agentIterations state + 1
-                              }
-                      loop newState (steps ++ [step])
+              eRes <- sequenceA <$> traverse (executeTool agent) (actionToolCall action)
+              case eRes of
+                Left err -> do
+                  -- TODO: handle parsing error
+                  onAgentError callbacks err
+                  return $ Left err
+                Right observations -> do
+                  mapM_ (onAgentObservation callbacks) observations
+                  when (verboseLogging config) $
+                    putStrLn $
+                      "[Agent] Observation: " <> mconcat (T.unpack <$> observations)
+                  -- Record step
+                  timestamp <- getCurrentTime
+                  let newSteps = map (\obs -> AgentStep action obs timestamp) observations
+                  mapM_ (onAgentStep callbacks) newSteps
+                  -- Update state and continue
+                  let newState =
+                        stateWithToolCall
+                          { agentChatHistory =
+                              agentChatHistory state
+                                `NE.append` NE.fromList (map toolResultToMsg observations)
+                          , agentScratchpad = agentScratchpad state ++ newSteps
+                          , agentIterations = agentIterations state + 1
+                          }
+                  loop newState (steps ++ newSteps)
     actionToMsg action =
       defaultMessage
         { role = Assistant
