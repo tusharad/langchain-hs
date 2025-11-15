@@ -32,7 +32,13 @@ utilityTests =
         NE.length result @?= 1
         NE.head result @?= systemMsg prompt
     , testCase "trimChatMessage should keep specified number of messages" $ do
-        let msgs = NE.fromList [systemMsg "System", userMsg "User1", aiMsg "AI1", userMsg "User2"]
+        let msgs =
+              NE.fromList
+                [ systemMsg "System"
+                , userMsg "User1"
+                , aiMsg "AI1"
+                , userMsg "User2"
+                ]
             trimmed = trimChatMessage 2 msgs
         NE.length trimmed @?= 2
         NE.toList trimmed @?= [aiMsg "AI1", userMsg "User2"]
