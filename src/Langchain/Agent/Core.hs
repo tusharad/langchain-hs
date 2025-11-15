@@ -27,6 +27,7 @@ module Langchain.Agent.Core
   , AgentAction (..)
   , AgentFinish (..)
   , AgentStep (..)
+  , PlanResult (..)
 
     -- * Agent State and Configuration
   , AgentState (..)
@@ -141,7 +142,9 @@ data AgentConfig = AgentConfig
   , verboseLogging :: Bool
   -- ^ Enable verbose logging (default: False)
   , stateMemory :: Maybe SomeMemory
-  -- ^ Configure type of Chat memory you want use. (default: windowBufferMessages with 100 size)
+  {- ^ Configure type of Chat memory you want use.
+  ^ (default: windowBufferMessages with 100 window size)
+  -}
   }
   deriving (Show)
 
@@ -166,6 +169,7 @@ data AgentCallbacks = AgentCallbacks
 {- |
 A ToolAcceptingToolCall is a special type of tool that
 can be used by an agent to execute a tool call.
+
 It is a wrapper around a tool type whose input is a ToolCall and output is a Text.
 It is user's responsibility wrap your existing tool into this type.
 
@@ -206,6 +210,9 @@ instance Show ToolAcceptingToolCall where
   show (ToolAcceptingToolCall t) =
     "ToolAcceptingToolCall { name = " ++ show (toolName t) ++ " }"
 
+data PlanResult = Continue AgentAction | Done AgentFinish
+  deriving (Eq, Show)
+
 {- | Core Agent typeclass.
 
 An agent is a system that can plan and execute actions to accomplish a task.
@@ -221,7 +228,7 @@ class Agent a where
   plan ::
     a ->
     AgentState ->
-    IO (LangchainResult (Either AgentAction AgentFinish))
+    IO (LangchainResult PlanResult)
 
   -- | Get the tools available to this agent.
   getTools :: a -> [ToolAcceptingToolCall]
@@ -248,7 +255,7 @@ class Agent a where
     MonadIO m =>
     a ->
     AgentState ->
-    m (LangchainResult (Either AgentAction AgentFinish))
+    m (LangchainResult PlanResult)
   planM agent state = liftIO $ plan agent state
 
   -- | MonadIO version of executeTool

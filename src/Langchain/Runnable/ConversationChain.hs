@@ -31,7 +31,6 @@ module Langchain.Runnable.ConversationChain
     ConversationChain (..)
   ) where
 
-import Control.Monad.IO.Class (MonadIO (liftIO))
 import Control.Monad.Trans.Except
 import Data.Text (Text)
 import Langchain.LLM.Core
@@ -155,13 +154,8 @@ instance (BaseMemory m, LLM l) => Runnable (ConversationChain m l) where
   --  @
   --
   invoke chain input = runExceptT $ do
-    -- Add user message to memory
     updatedMem <- ExceptT $ addUserMessage (memory chain) input
-    -- Get all messages
     allMessages <- ExceptT $ messages updatedMem
-    -- Get response from LLM
     response <- ExceptT $ chat (llm chain) allMessages Nothing
-    -- Store AI response in memory
-    _ <- liftIO $ addAiMessage updatedMem (content response)
-    -- Return the AI response content
+    _ <- ExceptT $ addAiMessage updatedMem (content response)
     return $ content response

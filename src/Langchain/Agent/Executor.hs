@@ -33,6 +33,8 @@ module Langchain.Agent.Executor
 where
 
 import Control.Monad (when)
+import Control.Monad.IO.Class (MonadIO (liftIO))
+import Control.Monad.Trans.Except
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -144,27 +146,23 @@ executeAgentLoop agent config callbacks initialState startTime =
   loop initialState []
   where
     loop :: AgentState -> [AgentStep] -> IO (LangchainResult AgentExecutionResult)
-    loop state steps = do
-      currentTime <- getCurrentTime
+    loop state steps = runExceptT $ do
+      currentTime <- liftIO getCurrentTime
       let elapsedSeconds = realToFrac $ diffUTCTime currentTime startTime
       -- Check termination conditions
       if not (shouldContinue config state elapsedSeconds)
         then do
           let err = agentError "Agent execution exceeded limits" Nothing Nothing
-          onAgentError callbacks err
-          return $ Left err
+          ExceptT $ pure $ Left err
         else do
           -- Plan next action
           when (verboseLogging config) $
-            putStrLn $
-              "[Agent] Planning iteration " <> show (agentIterations state)
-          ePlan <- plan agent state
-          case ePlan of
-            Left err -> do
-              -- TODO: handling parsing error
-              onAgentError callbacks err
-              return $ Left err
-            Right (Right finish) -> do
+            liftIO $
+              putStrLn $
+                "[Agent] Planning iteration " <> show (agentIterations state)
+          plan_ <- ExceptT $ plan agent state
+          case plan_ of
+            (Done finish) -> do
               -- Agent has finished
               let metrics =
                     ExecutionMetrics
@@ -173,47 +171,37 @@ executeAgentLoop agent config callbacks initialState startTime =
                       , metricsToolCalls = length steps
                       , metricsSuccess = True
                       }
-              return $ Right $ AgentExecutionResult finish steps metrics
-            Right (Left action) -> do
+              return $ AgentExecutionResult finish steps metrics
+            (Continue action) -> do
               -- Execute action
-              onAgentAction callbacks action
+              liftIO $ onAgentAction callbacks action
               when (verboseLogging config) $
-                putStrLn $
-                  "[Agent] Executing: " <> show (actionToolCall action)
+                liftIO $
+                  putStrLn $
+                    "[Agent] Executing: " <> show (actionToolCall action)
               -- add toolCalls in state memory
-              eStateWithAction <- addActionToState state action
-              case eStateWithAction of
-                Left err -> do
-                  onAgentError callbacks err
-                  return $ Left err
-                Right stateWithToolCall -> do
-                  eRes <- sequenceA <$> traverse (executeTool agent) (actionToolCall action)
-                  case eRes of
-                    Left err -> do
-                      -- TODO: handle parsing error
-                      onAgentError callbacks err
-                      return $ Left err
-                    Right observations -> do
-                      mapM_ (onAgentObservation callbacks) observations
-                      when (verboseLogging config) $
-                        putStrLn $
-                          "[Agent] Observation: " <> mconcat (T.unpack <$> observations)
-                      -- Record step
-                      timestamp <- getCurrentTime
-                      let newSteps = map (\obs -> AgentStep action obs timestamp) observations
-                      mapM_ (onAgentStep callbacks) newSteps
-                      -- Update state memory with tool results and continue
-                      eStateWithObs <- addObservationsToState stateWithToolCall observations
-                      case eStateWithObs of
-                        Left err -> do
-                          onAgentError callbacks err
-                          return $ Left err
-                        Right newStateWithObs -> do
-                          let newState =
-                                newStateWithObs
-                                  { agentIterations = agentIterations newStateWithObs + 1
-                                  }
-                          loop newState (steps ++ newSteps)
+              stateWithAction <- ExceptT $ addActionToState state action
+              observations <-
+                ExceptT $
+                  sequenceA <$> traverse (executeTool agent) (actionToolCall action)
+              mapM_ (liftIO . onAgentObservation callbacks) observations
+              when (verboseLogging config) $
+                liftIO $
+                  putStrLn $
+                    "[Agent] Observation: " <> mconcat (T.unpack <$> observations)
+              -- Record step
+              timestamp <- liftIO getCurrentTime
+              let newSteps = map (\obs -> AgentStep action obs timestamp) observations
+              mapM_ (liftIO . onAgentStep callbacks) newSteps
+              -- Update state memory with tool results and continue
+              newStateWithObs <-
+                ExceptT $
+                  addObservationsToState stateWithAction observations
+              let newState =
+                    newStateWithObs
+                      { agentIterations = agentIterations newStateWithObs + 1
+                      }
+              ExceptT (loop newState (steps ++ newSteps))
 
 {- |
  Runs the agent executor.
@@ -253,6 +241,7 @@ runAgentExecutor agent config callbacks input = do
       -- Finalize agent
       case result of
         Left err -> do
+          onAgentError callbacks err
           finalize agent state
           return $ Left err
         Right execResult -> do

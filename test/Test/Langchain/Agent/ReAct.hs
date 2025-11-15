@@ -71,7 +71,7 @@ testPlanReturnsFinishWhenNoToolCalls = testCase "plan returns AgentFinish when n
 
   result <- plan agent state
   case result of
-    Right (Right finish) -> do
+    Right (Done finish) -> do
       assertEqual "Output should match content" "Final answer" (agentOutput finish)
       assertEqual "Log should match content" "Final answer" (finishLog finish)
     _ -> assertFailure $ "Expected Right (Right AgentFinish), got: " ++ show result
@@ -103,7 +103,7 @@ testPlanReturnsActionWhenToolCallsPresent = testCase "plan returns AgentAction w
 
   result <- plan agent state
   case result of
-    Right (Left action) -> do
+    Right (Continue action) -> do
       assertEqual "Should have one tool call" 1 (length $ actionToolCall action)
       assertEqual "Log should match content" "Let me search" (actionLog action)
     _ -> assertFailure $ "Expected Right (Left AgentAction), got: " ++ show result

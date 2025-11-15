@@ -22,6 +22,7 @@ module Langchain.Agent.ReAct
   , reActSystemPrompt
   ) where
 
+import Control.Monad.Trans.Except
 import Data.List (find)
 import qualified Data.Map as Map
 import Data.Text (Text)
@@ -115,37 +116,27 @@ instance LLM llm => Agent (ReActAgent llm) where
         mbParams = reactLLMParams agent
     -- Get messages from memory - use case to handle existential type
     case agentMemory state of
-      SomeMemory mem -> do
-        eMsgs <- messages mem
-        case eMsgs of
-          Left err -> pure $ Left err
-          Right msgs -> do
-            eRes <- chat llm msgs mbParams
-            case eRes of
-              Left err -> pure $ Left err
-              Right respMsg -> do
-                case toolCalls (messageData respMsg) of
-                  Nothing -> do
-                    -- No tool calls requested. Assume content as the final result
-                    pure $
-                      Right
-                        ( Right $
-                            AgentFinish
-                              { agentOutput = content respMsg
-                              , finishMetadata = Map.empty -- TODO: Add stuff from state
-                              , finishLog = content respMsg
-                              }
-                        )
-                  Just toolCallList -> do
-                    pure $
-                      Right
-                        ( Left
-                            AgentAction
-                              { actionToolCall = toolCallList
-                              , actionLog = content respMsg
-                              , actionMetadata = Map.empty -- TODO: what to add here?
-                              }
-                        )
+      SomeMemory mem -> runExceptT $ do
+        msgs <- ExceptT $ messages mem
+        respMsg <- ExceptT $ chat llm msgs mbParams
+        case toolCalls (messageData respMsg) of
+          Nothing -> do
+            -- No tool calls requested. Assume content as the final result
+            pure $
+              Done $
+                AgentFinish
+                  { agentOutput = content respMsg
+                  , finishMetadata = Map.empty -- TODO: Add stuff from state
+                  , finishLog = content respMsg
+                  }
+          Just toolCallList -> do
+            pure $
+              Continue
+                AgentAction
+                  { actionToolCall = toolCallList
+                  , actionLog = content respMsg
+                  , actionMetadata = Map.empty -- TODO: what to add here?
+                  }
 
   getTools = reactTools
 
@@ -166,24 +157,13 @@ instance LLM llm => Agent (ReActAgent llm) where
         userInput = agentInput state
         sysMsg = defaultMessage {role = System, content = sysPrompt}
         userMsg = defaultMessage {role = User, content = userInput}
-
-    -- Use case to handle existential type
     case agentMemory state of
-      SomeMemory mem -> do
-        -- Add system message first
-        eMemWithSys <- addMessage mem sysMsg
-        case eMemWithSys of
-          Left err -> pure $ Left err
-          Right memWithSys -> do
-            -- Then add user message
-            eMemWithUser <- addMessage memWithSys userMsg
-            case eMemWithUser of
-              Left err -> pure $ Left err
-              Right memWithUser -> do
-                pure $
-                  Right
-                    AgentState
-                      { agentMemory = SomeMemory memWithUser
-                      , agentInput = userInput
-                      , agentIterations = 0
-                      }
+      SomeMemory mem -> runExceptT $ do
+        memWithSys <- ExceptT $ addMessage mem sysMsg
+        memWithUser <- ExceptT $ addMessage memWithSys userMsg
+        pure
+          AgentState
+            { agentMemory = SomeMemory memWithUser
+            , agentInput = userInput
+            , agentIterations = 0
+            }
