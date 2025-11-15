@@ -33,7 +33,7 @@ module Langchain.Agent.Executor
 where
 
 import Control.Monad (when)
-import qualified Data.List.NonEmpty as NE
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time (UTCTime, diffUTCTime, getCurrentTime)
@@ -43,6 +43,7 @@ import Langchain.Error
   , agentError
   )
 import Langchain.LLM.Core
+import Langchain.Memory.Core (BaseMemory (..), WindowBufferMemory (..), initialChatMessage)
 
 data AgentExecutionResult = AgentExecutionResult
   { executionFinish :: AgentFinish
@@ -66,20 +67,19 @@ data ExecutionMetrics = ExecutionMetrics
   }
   deriving (Show, Eq)
 
--- | Create the initial state of the agent.
-createInitialState :: Text -> AgentState
-createInitialState input =
+-- | Create the initial state of the agent with default memory.
+createInitialState :: Maybe SomeMemory -> Text -> AgentState
+createInitialState mbSomeMemory input =
   AgentState
-    { agentChatHistory = NE.singleton systemMessage
+    { agentMemory = fromMaybe (SomeMemory defaultMemory) mbSomeMemory
     , agentInput = input
     , agentIterations = 0
     }
   where
-    systemMessage =
-      Message
-        { role = System
-        , content = "You are a helpful AI assistant."
-        , messageData = defaultMessageData
+    defaultMemory =
+      WindowBufferMemory
+        { maxWindowSize = 100
+        , windowBufferMessages = initialChatMessage "You are a helpful AI assistant."
         }
 
 {-
@@ -95,6 +95,42 @@ shouldContinue AgentConfig {..} state elapsedSeconds =
     timeOk = case maxExecutionTime of
       Nothing -> True
       Just maxTime -> elapsedSeconds < fromIntegral maxTime
+
+-- | Helper function to add an action to the state's memory
+addActionToState :: AgentState -> AgentAction -> IO (LangchainResult AgentState)
+addActionToState state action =
+  case agentMemory state of
+    SomeMemory mem -> do
+      eMemWithAction <- addMessage mem (actionToMsg action)
+      case eMemWithAction of
+        Left err -> pure $ Left err
+        Right memWithAction -> pure $ Right $ state {agentMemory = SomeMemory memWithAction}
+  where
+    actionToMsg act =
+      defaultMessage
+        { role = Assistant
+        , content = actionLog act
+        , messageData =
+            defaultMessageData
+              { toolCalls = Just (actionToolCall act)
+              }
+        }
+
+-- | Helper function to add observations to the state's memory
+addObservationsToState :: AgentState -> [Text] -> IO (LangchainResult AgentState)
+addObservationsToState state observations =
+  case agentMemory state of
+    SomeMemory mem -> do
+      eMemsWithObs <- sequenceA <$> traverse (addMessage mem . toolResultToMsg) observations
+      case eMemsWithObs of
+        Left err -> pure $ Left err
+        Right mems -> pure $ Right $ state {agentMemory = SomeMemory (last mems)}
+  where
+    toolResultToMsg res =
+      defaultMessage
+        { role = Tool
+        , content = res
+        }
 
 executeAgentLoop ::
   Agent a =>
@@ -144,50 +180,40 @@ executeAgentLoop agent config callbacks initialState startTime =
               when (verboseLogging config) $
                 putStrLn $
                   "[Agent] Executing: " <> show (actionToolCall action)
-              -- add toolCalls in state chatHistory
-              let stateWithToolCall =
-                    state
-                      { agentChatHistory =
-                          agentChatHistory state
-                            `NE.append` NE.singleton (actionToMsg action)
-                      }
-              eRes <- sequenceA <$> traverse (executeTool agent) (actionToolCall action)
-              case eRes of
+              -- add toolCalls in state memory
+              eStateWithAction <- addActionToState state action
+              case eStateWithAction of
                 Left err -> do
-                  -- TODO: handle parsing error
                   onAgentError callbacks err
                   return $ Left err
-                Right observations -> do
-                  mapM_ (onAgentObservation callbacks) observations
-                  when (verboseLogging config) $
-                    putStrLn $
-                      "[Agent] Observation: " <> mconcat (T.unpack <$> observations)
-                  -- Record step
-                  timestamp <- getCurrentTime
-                  let newSteps = map (\obs -> AgentStep action obs timestamp) observations
-                  mapM_ (onAgentStep callbacks) newSteps
-                  -- Update state and continue
-                  let newState =
-                        stateWithToolCall
-                          { agentChatHistory =
-                              agentChatHistory stateWithToolCall <> NE.fromList (map toolResultToMsg observations)
-                          , agentIterations = agentIterations stateWithToolCall + 1
-                          }
-                  loop newState (steps ++ newSteps)
-    actionToMsg action =
-      defaultMessage
-        { role = Assistant
-        , content = actionLog action
-        , messageData =
-            defaultMessageData
-              { toolCalls = Just (actionToolCall action)
-              }
-        }
-    toolResultToMsg res =
-      defaultMessage
-        { role = Tool
-        , content = res
-        }
+                Right stateWithToolCall -> do
+                  eRes <- sequenceA <$> traverse (executeTool agent) (actionToolCall action)
+                  case eRes of
+                    Left err -> do
+                      -- TODO: handle parsing error
+                      onAgentError callbacks err
+                      return $ Left err
+                    Right observations -> do
+                      mapM_ (onAgentObservation callbacks) observations
+                      when (verboseLogging config) $
+                        putStrLn $
+                          "[Agent] Observation: " <> mconcat (T.unpack <$> observations)
+                      -- Record step
+                      timestamp <- getCurrentTime
+                      let newSteps = map (\obs -> AgentStep action obs timestamp) observations
+                      mapM_ (onAgentStep callbacks) newSteps
+                      -- Update state memory with tool results and continue
+                      eStateWithObs <- addObservationsToState stateWithToolCall observations
+                      case eStateWithObs of
+                        Left err -> do
+                          onAgentError callbacks err
+                          return $ Left err
+                        Right newStateWithObs -> do
+                          let newState =
+                                newStateWithObs
+                                  { agentIterations = agentIterations newStateWithObs + 1
+                                  }
+                          loop newState (steps ++ newSteps)
 
 {- |
  Runs the agent executor.
@@ -215,7 +241,7 @@ runAgentExecutor ::
 runAgentExecutor agent config callbacks input = do
   startTime <- getCurrentTime
   onAgentStart callbacks input
-  let initialState = createInitialState input
+  let initialState = createInitialState (stateMemory config) input
   eInitState <- initialize agent initialState
   case eInitState of
     Left err -> do

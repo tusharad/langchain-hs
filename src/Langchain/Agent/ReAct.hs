@@ -23,13 +23,13 @@ module Langchain.Agent.ReAct
   ) where
 
 import Data.List (find)
-import qualified Data.List.NonEmpty as NE
 import qualified Data.Map as Map
 import Data.Text (Text)
 import qualified Data.Text as T
 import Langchain.Agent.Core
 import qualified Langchain.Error as Error
 import Langchain.LLM.Core
+import Langchain.Memory.Core (BaseMemory (..))
 import Langchain.Tool.Core
 
 {- | ReAct agent.
@@ -113,33 +113,39 @@ instance LLM llm => Agent (ReActAgent llm) where
   plan agent state = do
     let llm = reactLLM agent
         mbParams = reactLLMParams agent
-    let msgs = agentChatHistory state
-    eRes <- chat llm msgs mbParams
-    case eRes of
-      Left err -> pure $ Left err
-      Right respMsg -> do
-        case toolCalls (messageData respMsg) of
-          Nothing -> do
-            -- No tool calls requested. Assume content as the final result
-            pure $
-              Right
-                ( Right $
-                    AgentFinish
-                      { agentOutput = content respMsg
-                      , finishMetadata = Map.empty -- TODO: Add stuff from state
-                      , finishLog = content respMsg
-                      }
-                )
-          Just toolCallList -> do
-            pure $
-              Right
-                ( Left
-                    AgentAction
-                      { actionToolCall = toolCallList
-                      , actionLog = content respMsg
-                      , actionMetadata = Map.empty -- TODO: what to add here?
-                      }
-                )
+    -- Get messages from memory - use case to handle existential type
+    case agentMemory state of
+      SomeMemory mem -> do
+        eMsgs <- messages mem
+        case eMsgs of
+          Left err -> pure $ Left err
+          Right msgs -> do
+            eRes <- chat llm msgs mbParams
+            case eRes of
+              Left err -> pure $ Left err
+              Right respMsg -> do
+                case toolCalls (messageData respMsg) of
+                  Nothing -> do
+                    -- No tool calls requested. Assume content as the final result
+                    pure $
+                      Right
+                        ( Right $
+                            AgentFinish
+                              { agentOutput = content respMsg
+                              , finishMetadata = Map.empty -- TODO: Add stuff from state
+                              , finishLog = content respMsg
+                              }
+                        )
+                  Just toolCallList -> do
+                    pure $
+                      Right
+                        ( Left
+                            AgentAction
+                              { actionToolCall = toolCallList
+                              , actionLog = content respMsg
+                              , actionMetadata = Map.empty -- TODO: what to add here?
+                              }
+                        )
 
   getTools = reactTools
 
@@ -156,22 +162,28 @@ instance LLM llm => Agent (ReActAgent llm) where
       Just (ToolAcceptingToolCall selectedTool) -> Right <$> runTool selectedTool toolCall
 
   initialize agent state = do
-    pure $
-      Right
-        AgentState
-          { agentChatHistory =
-              NE.fromList
-                [ defaultMessage
-                    { role = System
-                    , content = sysPrompt
-                    }
-                , defaultMessage
-                    { content = userInput
-                    }
-                ]
-          , agentInput = userInput
-          , agentIterations = 0
-          }
-    where
-      sysPrompt = reactSystemPrompt agent
-      userInput = agentInput state
+    let sysPrompt = reactSystemPrompt agent
+        userInput = agentInput state
+        sysMsg = defaultMessage {role = System, content = sysPrompt}
+        userMsg = defaultMessage {role = User, content = userInput}
+
+    -- Use case to handle existential type
+    case agentMemory state of
+      SomeMemory mem -> do
+        -- Add system message first
+        eMemWithSys <- addMessage mem sysMsg
+        case eMemWithSys of
+          Left err -> pure $ Left err
+          Right memWithSys -> do
+            -- Then add user message
+            eMemWithUser <- addMessage memWithSys userMsg
+            case eMemWithUser of
+              Left err -> pure $ Left err
+              Right memWithUser -> do
+                pure $
+                  Right
+                    AgentState
+                      { agentMemory = SomeMemory memWithUser
+                      , agentInput = userInput
+                      , agentIterations = 0
+                      }

@@ -37,6 +37,9 @@ module Langchain.Agent.Core
 
     -- * Tool support
   , ToolAcceptingToolCall (..)
+
+    -- * Memory support
+  , SomeMemory (..)
   ) where
 
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -46,7 +49,8 @@ import Data.Text (Text)
 import Data.Time (UTCTime)
 import GHC.Generics (Generic)
 import Langchain.Error (LangchainError, LangchainResult)
-import Langchain.LLM.Core (ChatHistory, ToolCall)
+import Langchain.LLM.Core (ToolCall)
+import Langchain.Memory.Core (BaseMemory)
 import Langchain.Tool.Core
 
 -- | Represents an action (ToolCall) that an agent has decided to take.
@@ -82,22 +86,52 @@ data AgentStep = AgentStep
   }
   deriving (Show, Eq)
 
+{- |
+A SomeMemory is a wrapper around any type that implements BaseMemory.
+
+> data MyMemory = MyMemory { ... }
+> instance BaseMemory MyMemory where ...
+>
+> let memory = MyMemory { ... }
+> let someMemory = SomeMemory memory
+>
+> let msg = defaultMessage { role = System, content = "You are an AI assistant" }
+> let someMemory2 = SomeMemory (WindowBufferMemory 5 (NE.fromList [msg]))
+-}
+data SomeMemory where
+  SomeMemory ::
+    (BaseMemory m) =>
+    m ->
+    SomeMemory
+
+instance Show SomeMemory where
+  show (SomeMemory _) = "SomeMemory { <memory instance> }"
+
 {- | Current state of the agent during execution.
 
 Tracks:
-- Chat history with the LLM
+- Memory instance for managing chat history
 - Current input being processed
 - Number of iterations so far
 -}
 data AgentState = AgentState
-  { agentChatHistory :: ChatHistory
-  -- ^ Message history with the LLM
+  { agentMemory :: SomeMemory
+  -- ^ Memory instance for managing chat history with the LLM
   , agentInput :: Text
   -- ^ Current user input/query
   , agentIterations :: Int
   -- ^ Number of iterations so far
   }
-  deriving (Show, Eq, Generic)
+
+instance Show AgentState where
+  show (AgentState mem inp iters) =
+    "AgentState { agentMemory = "
+      ++ show mem
+      ++ ", agentInput = "
+      ++ show inp
+      ++ ", agentIterations = "
+      ++ show iters
+      ++ " }"
 
 data AgentConfig = AgentConfig
   { maxIterations :: Int
@@ -106,8 +140,10 @@ data AgentConfig = AgentConfig
   -- ^ Maximum execution time in seconds (Nothing = no limit)
   , verboseLogging :: Bool
   -- ^ Enable verbose logging (default: False)
+  , stateMemory :: Maybe SomeMemory
+  -- ^ Configure type of Chat memory you want use. (default: windowBufferMessages with 100 size)
   }
-  deriving (Show, Eq, Generic, ToJSON, FromJSON)
+  deriving (Show)
 
 {- | Callbacks for agent events.
 Allows hooking into various points in the agent lifecycle.
@@ -128,7 +164,8 @@ data AgentCallbacks = AgentCallbacks
   }
 
 {- |
-A ToolAcceptingToolCall is a special type of tool that can be used by an agent to execute a tool call.
+A ToolAcceptingToolCall is a special type of tool that
+can be used by an agent to execute a tool call.
 It is a wrapper around a tool type whose input is a ToolCall and output is a Text.
 It is user's responsibility wrap your existing tool into this type.
 
@@ -236,6 +273,7 @@ Sensible defaults:
 - 15 max iterations
 - No time limit
 - No verbose logging
+- WindowBufferMemory with window size 100
 -}
 defaultAgentConfig :: AgentConfig
 defaultAgentConfig =
@@ -243,6 +281,7 @@ defaultAgentConfig =
     { maxIterations = 15
     , maxExecutionTime = Nothing
     , verboseLogging = False
+    , stateMemory = Nothing
     }
 
 {- | Default agent callbacks (all no-ops).

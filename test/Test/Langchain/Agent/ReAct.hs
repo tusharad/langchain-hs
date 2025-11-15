@@ -11,6 +11,7 @@ import Langchain.Agent.Core
 import Langchain.Agent.ReAct
 import Langchain.Error (LangchainError, llmError)
 import Langchain.LLM.Core
+import Langchain.Memory.Core (BaseMemory (..), WindowBufferMemory (..))
 import Langchain.Tool.Core
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -60,9 +61,10 @@ testPlanReturnsFinishWhenNoToolCalls = testCase "plan returns AgentFinish when n
   let mockMsg = Message Assistant "Final answer" defaultMessageData
       mockLLM = MockLLM (Right mockMsg)
       agent = createReActAgent mockLLM Nothing []
+      testMemory = WindowBufferMemory 10 (NE.fromList [defaultMessage {content = "test"}])
       state =
         AgentState
-          { agentChatHistory = NE.fromList [defaultMessage {content = "test"}]
+          { agentMemory = SomeMemory testMemory
           , agentInput = "test input"
           , agentIterations = 0
           }
@@ -91,9 +93,10 @@ testPlanReturnsActionWhenToolCallsPresent = testCase "plan returns AgentAction w
       mockMsg = Message Assistant "Let me search" msgData
       mockLLM = MockLLM (Right mockMsg)
       agent = createReActAgent mockLLM Nothing []
+      testMemory = WindowBufferMemory 10 (NE.fromList [defaultMessage {content = "test"}])
       state =
         AgentState
-          { agentChatHistory = NE.fromList [defaultMessage {content = "test"}]
+          { agentMemory = SomeMemory testMemory
           , agentInput = "test input"
           , agentIterations = 0
           }
@@ -111,9 +114,10 @@ testPlanPropagatesLLMError = testCase "plan propagates LLM error" $ do
   let mockError = llmError "LLM failed" Nothing Nothing
       mockLLM = MockLLM (Left mockError)
       agent = createReActAgent mockLLM Nothing []
+      testMemory = WindowBufferMemory 10 (NE.fromList [defaultMessage {content = "test"}])
       state =
         AgentState
-          { agentChatHistory = NE.fromList [defaultMessage {content = "test"}]
+          { agentMemory = SomeMemory testMemory
           , agentInput = "test input"
           , agentIterations = 0
           }
@@ -174,9 +178,10 @@ testInitializeSetsUpStateCorrectly :: TestTree
 testInitializeSetsUpStateCorrectly = testCase "initialize sets up state correctly" $ do
   let mockLLM = MockLLM (Right defaultMessage)
       agent = createReActAgent mockLLM Nothing []
+      testMemory = WindowBufferMemory 10 (NE.fromList [defaultMessage])
       inputState =
         AgentState
-          { agentChatHistory = NE.fromList [defaultMessage]
+          { agentMemory = SomeMemory testMemory
           , agentInput = "What is 2+2?"
           , agentIterations = 0
           }
@@ -187,13 +192,19 @@ testInitializeSetsUpStateCorrectly = testCase "initialize sets up state correctl
       assertEqual "Input should be preserved" "What is 2+2?" (agentInput newState)
       assertEqual "Iterations should be 0" 0 (agentIterations newState)
 
-      -- Check chat history has system message and user message
-      let history = NE.toList (agentChatHistory newState)
-      assertEqual "Should have 2 messages" 2 (length history)
-      case history of
-        (sysMsg : userMsg : _) -> do
-          assertEqual "First message should be System" System (role sysMsg)
-          assertEqual "Second message should be User" User (role userMsg)
-          assertEqual "User message content should match input" "What is 2+2?" (content userMsg)
-        _ -> assertFailure "Expected at least 2 messages in history"
+      -- Check chat history has system message and user message by accessing memory
+      case agentMemory newState of
+        SomeMemory mem -> do
+          eHistory <- messages mem
+          case eHistory of
+            Right history -> do
+              let historyList = NE.toList history
+              assertEqual "Should have 3 messages (initial + system + user)" 3 (length historyList)
+              case reverse historyList of
+                (userMsg : sysMsg : _) -> do
+                  assertEqual "Last message should be User" User (role userMsg)
+                  assertEqual "Second to last message should be System" System (role sysMsg)
+                  assertEqual "User message content should match input" "What is 2+2?" (content userMsg)
+                _ -> assertFailure "Expected at least 2 messages in history"
+            Left err -> assertFailure $ "Failed to get messages from memory: " ++ show err
     Left err -> assertFailure $ "Expected Right, got error: " ++ show err
