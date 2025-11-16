@@ -101,7 +101,7 @@ getFilesInDirectory opts currentDepth dir = do
         -- Skip hidden directories if excludeHidden is set
         let visibleSubdirs =
               if excludeHidden opts
-                then filter (\d -> not (null d) && last d /= '.') subdirs
+                then filter (\d -> not (null d) && last d /= '.') subdirs -- TODO: incorrect hidden file check
                 else subdirs
 
         -- Process subdirectories (potentially in parallel)

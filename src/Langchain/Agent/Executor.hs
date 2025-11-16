@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 
 {- |
@@ -40,12 +41,13 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time (UTCTime, diffUTCTime, getCurrentTime)
 import Langchain.Agent.Core
+import Langchain.Agent.Middleware
 import Langchain.Error
   ( LangchainResult
   , agentError
   )
 import Langchain.LLM.Core
-import Langchain.Memory.Core (BaseMemory (..), WindowBufferMemory (..), initialChatMessage)
+import Langchain.Memory.Core
 
 data AgentExecutionResult = AgentExecutionResult
   { executionFinish :: AgentFinish
@@ -139,51 +141,60 @@ executeAgentLoop ::
   a ->
   AgentConfig ->
   AgentCallbacks ->
+  [AgentMiddleware a] ->
   AgentState ->
   UTCTime ->
   IO (LangchainResult AgentExecutionResult)
-executeAgentLoop agent config callbacks initialState startTime =
-  loop initialState []
+executeAgentLoop agent config callbacks middlewares initialState startTime =
+  loop agent initialState []
   where
-    loop :: AgentState -> [AgentStep] -> IO (LangchainResult AgentExecutionResult)
-    loop state steps = runExceptT $ do
+    loop agent0 state0 steps = runExceptT $ do
       currentTime <- liftIO getCurrentTime
       let elapsedSeconds = realToFrac $ diffUTCTime currentTime startTime
       -- Check termination conditions
-      if not (shouldContinue config state elapsedSeconds)
+      if not (shouldContinue config state0 elapsedSeconds)
         then do
           let err = agentError "Agent execution exceeded limits" Nothing Nothing
-          ExceptT $ pure $ Left err
+          ExceptT . pure $ Left err
         else do
           -- Plan next action
           when (verboseLogging config) $
             liftIO $
               putStrLn $
-                "[Agent] Planning iteration " <> show (agentIterations state)
-          plan_ <- ExceptT $ plan agent state
+                "[Agent] Planning iteration " <> show (agentIterations state0)
+          (state1, agent1) <-
+            liftIO $
+              applyMiddlewares beforeModelCall middlewares (state0, agent0)
+          plan_ <- ExceptT $ plan agent1 state1
+          (state2, agent2) <-
+            liftIO $
+              applyMiddlewares afterModelCall middlewares (state1, agent1)
           case plan_ of
             (Done finish) -> do
               -- Agent has finished
               let metrics =
                     ExecutionMetrics
-                      { metricsIterations = agentIterations state
+                      { metricsIterations = agentIterations state2
                       , metricsExecutionTime = elapsedSeconds
                       , metricsToolCalls = length steps
                       , metricsSuccess = True
                       }
               return $ AgentExecutionResult finish steps metrics
             (Continue action) -> do
+              -- add toolCalls in state memory
+              state3 <- ExceptT $ addActionToState state2 action
               -- Execute action
               liftIO $ onAgentAction callbacks action
+              (state4, agent4) <-
+                liftIO $
+                  applyMiddlewares beforeToolCall middlewares (state3, agent2)
               when (verboseLogging config) $
                 liftIO $
                   putStrLn $
                     "[Agent] Executing: " <> show (actionToolCall action)
-              -- add toolCalls in state memory
-              stateWithAction <- ExceptT $ addActionToState state action
               observations <-
                 ExceptT $
-                  sequenceA <$> traverse (executeTool agent) (actionToolCall action)
+                  sequenceA <$> traverse (executeTool agent4) (actionToolCall action)
               mapM_ (liftIO . onAgentObservation callbacks) observations
               when (verboseLogging config) $
                 liftIO $
@@ -194,14 +205,17 @@ executeAgentLoop agent config callbacks initialState startTime =
               let newSteps = map (\obs -> AgentStep action obs timestamp) observations
               mapM_ (liftIO . onAgentStep callbacks) newSteps
               -- Update state memory with tool results and continue
-              newStateWithObs <-
+              state5 <-
                 ExceptT $
-                  addObservationsToState stateWithAction observations
+                  addObservationsToState state4 observations
+              (state6, agent6) <-
+                liftIO $
+                  applyMiddlewares afterToolCall middlewares (state5, agent4)
               let newState =
-                    newStateWithObs
-                      { agentIterations = agentIterations newStateWithObs + 1
+                    state6
+                      { agentIterations = agentIterations state6 + 1
                       }
-              ExceptT (loop newState (steps ++ newSteps))
+              ExceptT (loop agent6 newState (steps ++ newSteps))
 
 {- |
  Runs the agent executor.
@@ -224,27 +238,29 @@ runAgentExecutor ::
   a ->
   AgentConfig ->
   AgentCallbacks ->
+  [AgentMiddleware a] ->
   Text ->
   IO (LangchainResult AgentExecutionResult)
-runAgentExecutor agent config callbacks input = do
+runAgentExecutor agent0 config callbacks middlewares input = do
   startTime <- getCurrentTime
   onAgentStart callbacks input
   let initialState = createInitialState (stateMemory config) input
-  eInitState <- initialize agent initialState
+  eInitState <- initialize agent0 initialState
   case eInitState of
     Left err -> do
       onAgentError callbacks err
       return $ Left err
-    Right state -> do
+    Right state0 -> do
       -- Run the agent loop
-      result <- executeAgentLoop agent config callbacks state startTime
+      (state1, agent1) <- applyMiddlewares beforeAgent middlewares (state0, agent0)
+      result <- executeAgentLoop agent1 config callbacks middlewares state1 startTime
       -- Finalize agent
       case result of
         Left err -> do
           onAgentError callbacks err
-          finalize agent state
+          finalize agent1 state1
           return $ Left err
         Right execResult -> do
-          finalize agent state
+          finalize agent1 state1
           onAgentFinish callbacks (executionFinish execResult)
           return $ Right execResult
