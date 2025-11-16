@@ -8,14 +8,15 @@
 Module:      Langchain.LLM.Core
 Copyright:   (c) 2025 Tushar Adhatrao
 License:     MIT
-Description: Core implementation of langchain chat models
+Description: Core implementation of langchain LLMs
 Maintainer:  Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability:   experimental
 
 This module provides the core types and typeclasses for the Langchain library in Haskell,
-which is designed to facilitate interaction with language models (LLMs). It defines a standardized
-interface that allows different LLM implementations to be used interchangeably, promoting code reuse
-and modularity.
+which is designed to facilitate interaction with language models (LLMs).
+
+It defines a standardized interface that allows different LLM implementations
+to be used interchangeably, promoting code reuse and modularity.
 
 The main components include:
 
@@ -312,7 +313,8 @@ class LLM llm where
     StreamHandler (LLMStreamTokenType llm) ->
     Maybe (LLMParams llm) ->
     m (LangchainResult ())
-  streamM llm chatHistory sHandler mbParams = liftIO $ stream llm chatHistory sHandler mbParams
+  streamM llm chatHistory sHandler mbParams =
+    liftIO $ stream llm chatHistory sHandler mbParams
 
 class MessageConvertible a where
   to :: Message -> a

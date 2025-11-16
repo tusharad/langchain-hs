@@ -60,6 +60,7 @@ runApp = do
   case eRes of
     Left err -> putStrLn $ "Error from chat: " ++ show err
     Right r -> do
+      print ("r: " :: String, r)
       putStrLn "LLM response"
       case toolCalls (messageData r) of
         Nothing -> putStrLn "Message not found from chat response"

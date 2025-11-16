@@ -1,0 +1,306 @@
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
+
+{- |
+Module      : Langchain.Agent.Core
+Description : Core types and abstractions for LangChain agents
+Copyright   : (c) 2025 Tushar Adhatrao
+License     : MIT
+Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
+Stability   : experimental
+
+This module provides the foundational types and typeclasses for building agents
+in langchain-hs. An LLM Agent runs tools in a loop to achieve a goal.
+An agent runs until a stop condition is met -
+when the model emits a final output or an iteration limit is reached.
+-}
+module Langchain.Agent.Core
+  ( -- * Agent Typeclass
+    Agent (..)
+
+    -- * Agent Actions and Results
+  , AgentAction (..)
+  , AgentFinish (..)
+  , AgentStep (..)
+  , PlanResult (..)
+
+    -- * Agent State and Configuration
+  , AgentState (..)
+  , AgentConfig (..)
+  , AgentCallbacks (..)
+  , defaultAgentConfig
+  , defaultAgentCallbacks
+
+    -- * Tool support
+  , ToolAcceptingToolCall (..)
+
+    -- * Memory support
+  , SomeMemory (..)
+  ) where
+
+import Control.Monad.IO.Class (MonadIO, liftIO)
+import Data.Aeson
+import Data.Map.Strict (Map)
+import Data.Text (Text)
+import Data.Time (UTCTime)
+import GHC.Generics (Generic)
+import Langchain.Error (LangchainError, LangchainResult)
+import Langchain.LLM.Core (ToolCall)
+import Langchain.Memory.Core (BaseMemory)
+import Langchain.Tool.Core
+
+-- | Represents an action (ToolCall) that an agent has decided to take.
+data AgentAction = AgentAction
+  { actionToolCall :: [ToolCall]
+  -- ^ tool call
+  , actionLog :: Text
+  -- ^ LLM's response while suggesting the tool call
+  , actionMetadata :: Map Text Text
+  -- ^ Additional metadata about the action
+  }
+  deriving (Show, Eq)
+
+-- | Represents the final result when an agent completes its task.
+data AgentFinish = AgentFinish
+  { agentOutput :: Text
+  -- ^ The final answer or result
+  , finishMetadata :: Map Text Text
+  -- ^ Additional information about the execution
+  , finishLog :: Text
+  -- ^ Final thoughts or reasoning
+  }
+  deriving (Show, Eq, Generic, ToJSON, FromJSON)
+
+-- | Represents one step in the agent's execution.
+data AgentStep = AgentStep
+  { stepAction :: AgentAction
+  -- ^ The action that was executed
+  , stepObservation :: Text
+  -- ^ The result/observation from the executed tool call
+  , stepTimestamp :: UTCTime
+  -- ^ When this step occurred
+  }
+  deriving (Show, Eq)
+
+{- |
+A SomeMemory is a wrapper around any type that implements BaseMemory.
+
+> data MyMemory = MyMemory { ... }
+> instance BaseMemory MyMemory where ...
+>
+> let memory = MyMemory { ... }
+> let someMemory = SomeMemory memory
+>
+> let msg = defaultMessage { role = System, content = "You are an AI assistant" }
+> let someMemory2 = SomeMemory (WindowBufferMemory 5 (NE.fromList [msg]))
+-}
+data SomeMemory where
+  SomeMemory ::
+    (BaseMemory m) =>
+    m ->
+    SomeMemory
+
+instance Show SomeMemory where
+  show (SomeMemory _) = "SomeMemory { <memory instance> }"
+
+{- | Current state of the agent during execution.
+
+Tracks:
+- Memory instance for managing chat history
+- Current input being processed
+- Number of iterations so far
+-}
+data AgentState = AgentState
+  { agentMemory :: SomeMemory
+  -- ^ Memory instance for managing chat history with the LLM
+  , agentInput :: Text
+  -- ^ Current user input/query
+  , agentIterations :: Int
+  -- ^ Number of iterations so far
+  }
+
+instance Show AgentState where
+  show (AgentState mem inp iters) =
+    "AgentState { agentMemory = "
+      ++ show mem
+      ++ ", agentInput = "
+      ++ show inp
+      ++ ", agentIterations = "
+      ++ show iters
+      ++ " }"
+
+data AgentConfig = AgentConfig
+  { maxIterations :: Int
+  -- ^ Maximum number of agent steps (default: 15)
+  , maxExecutionTime :: Maybe Int
+  -- ^ Maximum execution time in seconds (Nothing = no limit)
+  , verboseLogging :: Bool
+  -- ^ Enable verbose logging (default: False)
+  , stateMemory :: Maybe SomeMemory
+  {- ^ Configure type of Chat memory you want use.
+  ^ (default: windowBufferMessages with 100 window size)
+  -}
+  }
+  deriving (Show)
+
+{- | Callbacks for agent events.
+Allows hooking into various points in the agent lifecycle.
+-}
+data AgentCallbacks = AgentCallbacks
+  { onAgentStart :: Text -> IO ()
+  -- ^ Called when agent starts with the input
+  , onAgentAction :: AgentAction -> IO ()
+  -- ^ Called before executing an action
+  , onAgentObservation :: Text -> IO ()
+  -- ^ Called after receiving an observation / result of the tool call
+  , onAgentFinish :: AgentFinish -> IO ()
+  -- ^ Called when agent completes
+  , onAgentError :: LangchainError -> IO ()
+  -- ^ Called when an error occurs
+  , onAgentStep :: AgentStep -> IO ()
+  -- ^ Called after each complete step
+  }
+
+{- |
+A ToolAcceptingToolCall is a special type of tool that
+can be used by an agent to execute a tool call.
+
+It is a wrapper around a tool type whose input is a ToolCall and output is a Text.
+It is user's responsibility wrap your existing tool into this type.
+
+Example:
+
+> data AgeFinderTool = AgeFinderTool
+> instance Tool AgeFinderTool where
+>   type Input AgeFinderTool = ToolCall
+>   type Output AgeFinderTool = Text
+>   toolName _ = "age_finder"
+>   toolDescription _ = "Finds the age of a person given their name."
+>   runTool _ (ToolCall _ _ ToolFunction {..}) = do
+>     if toolFunctionName == "age_finder"
+>       then do
+>         case HM.lookup "name" toolFunctionArguments of
+>           Nothing -> pure "Unknown"
+>           Just (String name_) -> pure $ getAge name_
+>           _ -> pure "Unknown"
+>       else pure "Unknown"
+>
+>   getAge name_ = case name_ of
+>     "Alice" -> "30"
+>     "Bob" -> "25"
+>     _ -> "Unknown"
+-}
+data ToolAcceptingToolCall where
+  ToolAcceptingToolCall ::
+    ( Tool t
+    , Input t ~ ToolCall
+    , Output t ~ Text
+    ) =>
+    t -> ToolAcceptingToolCall
+
+instance Eq ToolAcceptingToolCall where
+  (ToolAcceptingToolCall t1) == (ToolAcceptingToolCall t2) = toolName t1 == toolName t2
+
+instance Show ToolAcceptingToolCall where
+  show (ToolAcceptingToolCall t) =
+    "ToolAcceptingToolCall { name = " ++ show (toolName t) ++ " }"
+
+data PlanResult = Continue AgentAction | Done AgentFinish
+  deriving (Eq, Show)
+
+{- | Core Agent typeclass.
+
+An agent is a system that can plan and execute actions to accomplish a task.
+Different agent types (ReAct, Plan-and-Execute, etc.) implement this interface.
+-}
+class Agent a where
+  {- | Plan the next action or finish.
+
+  Given the current state, decide:
+  - What tool call to make next (Left AgentAction), or
+  - That the task is complete and return the final result (Right AgentFinish)
+  -}
+  plan ::
+    a ->
+    AgentState ->
+    IO (LangchainResult PlanResult)
+
+  -- | Get the tools available to this agent.
+  getTools :: a -> [ToolAcceptingToolCall]
+
+  -- | Execute a tool.
+  executeTool :: a -> ToolCall -> IO (LangchainResult Text)
+
+  {- | Prepare the agent for execution.
+  Initialize any necessary state before starting.
+  Default implementation does nothing.
+  -}
+  initialize :: a -> AgentState -> IO (LangchainResult AgentState)
+  initialize _ state = pure $ Right state
+
+  {- | Clean up after agent execution.
+  Release resources, save state, etc.
+  Default implementation does nothing.
+  -}
+  finalize :: a -> AgentState -> IO ()
+  finalize _ _ = pure ()
+
+  -- | MonadIO version of plan
+  planM ::
+    MonadIO m =>
+    a ->
+    AgentState ->
+    m (LangchainResult PlanResult)
+  planM agent state = liftIO $ plan agent state
+
+  -- | MonadIO version of executeTool
+  executeToolM :: MonadIO m => a -> ToolCall -> m (LangchainResult Text)
+  executeToolM a i = liftIO $ executeTool a i
+
+  -- | MonadIO version of initialize
+  initializeM ::
+    MonadIO m =>
+    a ->
+    AgentState ->
+    m (LangchainResult AgentState)
+  initializeM agent state = liftIO $ initialize agent state
+
+  -- | MonadIO version of finalize
+  finalizeM :: MonadIO m => a -> AgentState -> m ()
+  finalizeM agent state = liftIO $ finalize agent state
+
+{- | Default agent configuration.
+
+Sensible defaults:
+- 15 max iterations
+- No time limit
+- No verbose logging
+- WindowBufferMemory with window size 100
+-}
+defaultAgentConfig :: AgentConfig
+defaultAgentConfig =
+  AgentConfig
+    { maxIterations = 15
+    , maxExecutionTime = Nothing
+    , verboseLogging = False
+    , stateMemory = Nothing
+    }
+
+{- | Default agent callbacks (all no-ops).
+Useful as a starting point for custom callbacks.
+-}
+defaultAgentCallbacks :: AgentCallbacks
+defaultAgentCallbacks =
+  AgentCallbacks
+    { onAgentStart = \_ -> pure ()
+    , onAgentAction = \_ -> pure ()
+    , onAgentObservation = \_ -> pure ()
+    , onAgentFinish = \_ -> pure ()
+    , onAgentError = \_ -> pure ()
+    , onAgentStep = \_ -> pure ()
+    }

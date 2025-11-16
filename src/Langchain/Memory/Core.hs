@@ -120,7 +120,6 @@ instance BaseMemory WindowBufferMemory where
   --
   --  >>> messages (WindowBufferMemory 5 initialMessages)
   --  Right initialMessages
-  --
   messages WindowBufferMemory {..} = pure $ Right windowBufferMessages
 
   -- \| Add message with window trimming
@@ -133,7 +132,6 @@ instance BaseMemory WindowBufferMemory where
   --
   --  >>> addMessage mem msg3
   --  Right (WindowBufferMemory {windowBufferMessages = [msg2, msg3]})
-  --
   addMessage winBuffMem@WindowBufferMemory {..} newMsg = do
     let currentMsgs = NE.toList windowBufferMessages
         newMsgs = currentMsgs ++ [newMsg]
@@ -162,7 +160,6 @@ instance BaseMemory WindowBufferMemory where
   --
   --  >>> addUserMessage mem "Hello"
   --  Right (WindowBufferMemory { ... })
-  --
   addUserMessage winBuffMem uMsg =
     addMessage winBuffMem (Message User uMsg defaultMessageData)
 
@@ -172,7 +169,6 @@ instance BaseMemory WindowBufferMemory where
   --
   --  >>> addAiMessage mem "Response"
   --  Right (WindowBufferMemory { ... })
-  --
   addAiMessage winBuffMem uMsg =
     addMessage winBuffMem (Message Assistant uMsg defaultMessageData)
 
@@ -182,7 +178,6 @@ instance BaseMemory WindowBufferMemory where
   --
   --  >>> clear mem
   --  Right (WindowBufferMemory { windowBufferMessages = [systemMsg] })
-  --
   clear winBuffMem =
     pure $
       Right $
@@ -235,7 +230,6 @@ instance Runnable WindowBufferMemory where
   --
   --  >>> invoke memory "Hello"
   --  Right (WindowBufferMemory { ... })
-  --
   invoke = addUserMessage
 
 {- $examples
