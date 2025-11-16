@@ -163,11 +163,11 @@ executeAgentLoop agent config callbacks middlewares initialState startTime =
               putStrLn $
                 "[Agent] Planning iteration " <> show (agentIterations state0)
           (state1, agent1) <-
-            liftIO $
+            ExceptT $
               applyMiddlewares beforeModelCall middlewares (state0, agent0)
           plan_ <- ExceptT $ plan agent1 state1
           (state2, agent2) <-
-            liftIO $
+            ExceptT $
               applyMiddlewares afterModelCall middlewares (state1, agent1)
           case plan_ of
             (Done finish) -> do
@@ -186,7 +186,7 @@ executeAgentLoop agent config callbacks middlewares initialState startTime =
               -- Execute action
               liftIO $ onAgentAction callbacks action
               (state4, agent4) <-
-                liftIO $
+                ExceptT $
                   applyMiddlewares beforeToolCall middlewares (state3, agent2)
               when (verboseLogging config) $
                 liftIO $
@@ -209,7 +209,7 @@ executeAgentLoop agent config callbacks middlewares initialState startTime =
                 ExceptT $
                   addObservationsToState state4 observations
               (state6, agent6) <-
-                liftIO $
+                ExceptT $
                   applyMiddlewares afterToolCall middlewares (state5, agent4)
               let newState =
                     state6
@@ -244,23 +244,18 @@ runAgentExecutor ::
 runAgentExecutor agent0 config callbacks middlewares input = do
   startTime <- getCurrentTime
   onAgentStart callbacks input
-  let initialState = createInitialState (stateMemory config) input
-  eInitState <- initialize agent0 initialState
-  case eInitState of
-    Left err -> do
-      onAgentError callbacks err
-      return $ Left err
-    Right state0 -> do
-      -- Run the agent loop
-      (state1, agent1) <- applyMiddlewares beforeAgent middlewares (state0, agent0)
-      result <- executeAgentLoop agent1 config callbacks middlewares state1 startTime
-      -- Finalize agent
-      case result of
-        Left err -> do
-          onAgentError callbacks err
-          finalize agent1 state1
-          return $ Left err
-        Right execResult -> do
-          finalize agent1 state1
-          onAgentFinish callbacks (executionFinish execResult)
-          return $ Right execResult
+  runExceptT $ do
+    let initialState = createInitialState (stateMemory config) input
+    state0 <- ExceptT $ initialize agent0 initialState
+    (state1, agent1) <-
+      ExceptT $
+        applyMiddlewares beforeAgent middlewares (state0, agent0)
+    result <-
+      ExceptT $
+        executeAgentLoop agent1 config callbacks middlewares state1 startTime
+    (state2, agent2) <-
+      ExceptT $
+        applyMiddlewares afterAgent middlewares (state1, agent1)
+    liftIO $ finalize agent2 state2
+    liftIO $ onAgentFinish callbacks (executionFinish result)
+    return result

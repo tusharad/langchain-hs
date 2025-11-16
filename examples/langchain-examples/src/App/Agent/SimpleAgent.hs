@@ -21,7 +21,6 @@ import qualified Data.Ollama.Chat as O
 import qualified Data.Text as T
 import Langchain.Agent.Core
 import Langchain.Agent.Executor
-import Langchain.Agent.Middleware
 import Langchain.Agent.ReAct
 import Langchain.Error (toString)
 import Langchain.LLM.Ollama
@@ -90,7 +89,7 @@ runApp = do
       agent
       defaultAgentConfig
       defaultAgentCallbacks
-      [humanInLoopMiddleware]
+      []
       "What is the age of Alice? If Alice's age is more than 30, find age of Bob as well."
   case result of
     Left err -> putStrLn $ "Error: " <> toString err
