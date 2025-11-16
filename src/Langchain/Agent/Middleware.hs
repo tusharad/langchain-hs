@@ -93,7 +93,7 @@ humanInLoopMiddleware =
           SomeMemory mem -> do
             eRes <- messages mem
             case eRes of
-              Left _ -> fail "message fetching failed"
+              Left err -> pure $ Left err
               Right msgs -> do
                 let msg = NE.last msgs
                     toolCallLst = toolCalls $ messageData msg
@@ -124,7 +124,7 @@ toolCallLimitMiddleware maxCalls = do
               pure $
                 Left $
                   agentError
-                    (T.pack "Tool call limit exceeded: " <> T.pack (show maxCalls))
+                    (T.pack $ "Tool call limit exceeded: " <> show maxCalls)
                     Nothing
                     (Just (T.pack "toolCallLimitMiddleware"))
             else do

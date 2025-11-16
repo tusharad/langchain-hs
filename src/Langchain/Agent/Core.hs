@@ -49,7 +49,7 @@ import Data.Map.Strict (Map)
 import Data.Text (Text)
 import Data.Time (UTCTime)
 import GHC.Generics (Generic)
-import Langchain.Error (LangchainError, LangchainResult)
+import Langchain.Error (LangchainResult)
 import Langchain.LLM.Core (ToolCall)
 import Langchain.Memory.Core (BaseMemory)
 import Langchain.Tool.Core
@@ -160,8 +160,6 @@ data AgentCallbacks = AgentCallbacks
   -- ^ Called after receiving an observation / result of the tool call
   , onAgentFinish :: AgentFinish -> IO ()
   -- ^ Called when agent completes
-  , onAgentError :: LangchainError -> IO ()
-  -- ^ Called when an error occurs
   , onAgentStep :: AgentStep -> IO ()
   -- ^ Called after each complete step
   }
@@ -301,6 +299,5 @@ defaultAgentCallbacks =
     , onAgentAction = \_ -> pure ()
     , onAgentObservation = \_ -> pure ()
     , onAgentFinish = \_ -> pure ()
-    , onAgentError = \_ -> pure ()
     , onAgentStep = \_ -> pure ()
     }

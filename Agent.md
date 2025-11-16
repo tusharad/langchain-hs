@@ -102,7 +102,6 @@ data AgentCallbacks = AgentCallbacks
   , onAgentAction :: AgentAction -> IO ()
   , onAgentObservation :: Text -> IO ()
   , onAgentFinish :: AgentFinish -> IO ()
-  , onAgentError :: LangchainError -> IO ()
   , onAgentStep :: AgentStep -> IO ()
   }
 
@@ -481,8 +480,6 @@ let callbacks = defaultAgentCallbacks
           putStrLn $ "Tool result: " <> T.unpack obs
       , onAgentFinish = \finish -> do
           putStrLn $ "Task complete: " <> T.unpack (agentOutput finish)
-      , onAgentError = \err -> do
-          putStrLn $ "Error occurred: " <> show err
       }
 
 result <- runAgentExecutor agent defaultAgentConfig callbacks [] input
