@@ -89,6 +89,7 @@ runApp = do
       agent
       defaultAgentConfig
       defaultAgentCallbacks
+      []
       "What is the age of Alice? If Alice's age is more than 30, find age of Bob as well."
   case result of
     Left err -> putStrLn $ "Error: " <> toString err

@@ -36,6 +36,7 @@ library
   exposed-modules:
       Langchain.Agent.Core
       Langchain.Agent.Executor
+      Langchain.Agent.Middleware
       Langchain.Agent.ReAct
       Langchain.Callback
       Langchain.Chain.RetrievalQA
