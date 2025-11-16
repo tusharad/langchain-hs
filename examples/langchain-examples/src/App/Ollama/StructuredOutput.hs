@@ -6,6 +6,7 @@ import qualified Data.List.NonEmpty as NE
 import Data.Ollama.Chat
   ( Format (..)
   )
+import qualified Data.Ollama.Chat as O
 import Data.Ollama.Common.SchemaBuilder
 import qualified Data.Text.IO as T
 import Langchain.LLM.Ollama
@@ -38,8 +39,8 @@ runApp = do
 
   let mbOllamaParams =
         Just $
-          defaultOllamaParams
-            { format = Just $ SchemaFormat schema
+          O.defaultChatOps
+            { O.format = Just $ SchemaFormat schema
             }
   eRes <- chat ollamaLLM messageList mbOllamaParams
   case eRes of

@@ -11,6 +11,7 @@ import Data.Ollama.Chat
   , FunctionParameters (..)
   , InputTool (..)
   )
+import qualified Data.Ollama.Chat as O
 import Data.Scientific
 import Langchain.LLM.Ollama
 
@@ -53,8 +54,8 @@ runApp = do
           }
   let mbOllamaParams =
         Just $
-          defaultOllamaParams
-            { tools = Just [inputTool]
+          O.defaultChatOps
+            { O.tools = Just [inputTool]
             }
   eRes <- chat ollamaLLM messageList mbOllamaParams
   case eRes of

@@ -20,7 +20,7 @@ import Langchain.Callback (stdOutCallback)
 import Langchain.DocumentLoader.Core
 import Langchain.DocumentLoader.PdfLoader
 import Langchain.Embeddings.Ollama
-import Langchain.LLM.Ollama (Ollama (..), OllamaParams (..), defaultOllamaParams)
+import Langchain.LLM.Ollama (Ollama (..))
 import Langchain.Retriever.Core (VectorStoreRetriever (..))
 import Langchain.Runnable.Core (Runnable (invoke))
 import Langchain.VectorStore.InMemory (fromDocuments)
@@ -51,7 +51,7 @@ runApp = do
                     let myQA =
                             RetrievalQA
                                 { llm = ollamaLLM
-                                , llmParams = Just (defaultOllamaParams{options = Just $ object [("num_ctx", Number 10000)]})
+                                , llmParams = Nothing
                                 , retriever = vsRetriever
                                 , prompt = defaultQAPrompt
                                 }
