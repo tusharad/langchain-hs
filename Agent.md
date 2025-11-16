@@ -263,6 +263,15 @@ instance Tool MyExistingToolWrapper where
     pure $ convertToText result
 ```
 
+## Middlewares
+
+Middlewares provide a powerful way to intercept and modify agent execution at various stages. They allow you to add functionality like logging, rate limiting, retries, and more without modifying the agent implementation.
+
+### Available Middlewares
+
+1. **Tool Call Limit** - Limits the number of tool invocations
+2. **Human-in-the-Loop** - Pauses for human approval before tool execution
+
 ## Running an Agent
 
 ### Agent Executor
@@ -275,6 +284,7 @@ runAgentExecutor ::
   a ->                              -- The agent
   AgentConfig ->                    -- Configuration
   AgentCallbacks ->                 -- Callbacks
+  [AgentMiddleware a] ->            -- Middlewares
   Text ->                           -- User input/query
   IO (LangchainResult AgentExecutionResult)
 ```
@@ -382,11 +392,12 @@ main = do
   -- 5. Create the agent
   let agent = createReActAgent llm mbOllamaParams tools
   
-  -- 6. Run the agent
+  -- 6. Run the agent (with no middlewares)
   result <- runAgentExecutor
     agent
     defaultAgentConfig
     defaultAgentCallbacks
+    []  -- No middlewares
     "What is the age of Alice?"
   
   -- 7. Handle the result
@@ -474,7 +485,7 @@ let callbacks = defaultAgentCallbacks
           putStrLn $ "Error occurred: " <> show err
       }
 
-result <- runAgentExecutor agent defaultAgentConfig callbacks input
+result <- runAgentExecutor agent defaultAgentConfig callbacks [] input
 ```
 
 ## Best Practices

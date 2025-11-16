@@ -1,16 +1,43 @@
 {-# LANGUAGE RankNTypes #-}
 
+{- |
+Module      : Langchain.Agent.Middleware
+Description : Built-in middlewares for LangChain agents
+Copyright   : (c) 2025 Tushar Adhatrao
+License     : MIT
+Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
+Stability   : experimental
+
+This module provides a comprehensive set of built-in middlewares for agents,
+similar to Python LangChain's middleware system. Middlewares allow you to hook
+into various points in the agent execution lifecycle.
+
+Available middlewares:
+- defaultMiddleware: No-op middleware (base implementation)
+- humanInLoopMiddleware: Pause for human approval before tool execution
+- toolCallLimitMiddleware: Limit the number of tool calls
+-}
 module Langchain.Agent.Middleware
-  ( AgentMiddleware (..)
+  ( -- * Middleware Type
+    AgentMiddleware (..)
   , applyMiddlewares
+
+    -- * Built-in Middlewares
   , defaultMiddleware
   , humanInLoopMiddleware
+  , toolCallLimitMiddleware
   ) where
 
 import Control.Monad (foldM)
+import Data.IORef (modifyIORef', newIORef, readIORef)
 import qualified Data.List.NonEmpty as NE
+import qualified Data.Text as T
 import Langchain.Agent.Core
-import Langchain.Error (LangchainResult, fromString)
+import Langchain.Error
+  ( LangchainResult
+  , agentError
+  , fromString
+  )
 import Langchain.LLM.Core (Message (messageData), MessageData (toolCalls))
 import Langchain.Memory.Core (BaseMemory (messages))
 
@@ -51,6 +78,13 @@ applyMiddlewares f mws st =
     (Right st)
     mws
 
+{- | Human-in-the-loop middleware.
+Pauses execution before each tool call and asks for human approval.
+This is useful for sensitive operations or debugging.
+
+Example:
+> runAgentExecutor agent config callbacks [humanInLoopMiddleware] "input"
+-}
 humanInLoopMiddleware :: Agent a => AgentMiddleware a
 humanInLoopMiddleware =
   defaultMiddleware
@@ -70,3 +104,30 @@ humanInLoopMiddleware =
                   then pure $ Right (st, a)
                   else pure $ Left $ fromString "Tool call rejected by human"
     }
+
+{- | Tool call limit middleware.
+Limits the total number of tool calls during agent execution.
+This helps prevent excessive tool usage and control costs.
+
+Example:
+> toolCallLimitMiddleware 20  -- Limit to 20 tool calls
+-}
+toolCallLimitMiddleware :: Agent a => Int -> IO (AgentMiddleware a)
+toolCallLimitMiddleware maxCalls = do
+  counter <- newIORef 0
+  pure $
+    defaultMiddleware
+      { beforeToolCall = \(st, a) -> do
+          count <- readIORef counter
+          if count >= maxCalls
+            then
+              pure $
+                Left $
+                  agentError
+                    (T.pack "Tool call limit exceeded: " <> T.pack (show maxCalls))
+                    Nothing
+                    (Just (T.pack "toolCallLimitMiddleware"))
+            else do
+              modifyIORef' counter (+ 1)
+              pure $ Right (st, a)
+      }
