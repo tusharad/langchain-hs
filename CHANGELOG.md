@@ -8,6 +8,28 @@ and this project adheres to the
 
 ## Unreleased
 
+## 0.0.3.0 - 2025-11-16
+
+### Added
+
+- Added Agent middleware support.
+- Added image input support for OpenAI and Gemini.
+
+### Fixed
+
+- Fixed Ollama stream's onComplete callback.
+- Fixed system_fingerprint field to be nullable.
+
+### Changed
+
+- * Revamped Agent module with native tool_call support and improved architecture.
+- * Migrated to Mercury's OpenAI client.
+- * Changed Ollama params to use ChatOps type.
+- * Renamed ChatMessage to ChatHistory.
+- * Parameterized StreamHandler Token type.
+- * Added Langchain error type for better error handling.
+- Updated ollama-haskell to 0.2.1.0.
+
 ## 0.0.2.0 - 2025-05-04
 
 ### Added
