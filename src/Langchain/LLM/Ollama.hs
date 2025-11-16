@@ -162,7 +162,7 @@ instance LLM Ollama where
   --  >>> stream (Ollama "llama3" []) messages handler Nothing
   --  Token: H Token: i Complete
   --
-  -- Note: Don't pass streamHandler in ChatOps's stream field. It will be overriden.
+  -- Note: Don't pass streamHandler in ChatOps's stream field. It will be overridden.
   stream
     (Ollama model_ cbs)
     messages

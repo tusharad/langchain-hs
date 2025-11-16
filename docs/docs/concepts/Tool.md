@@ -120,11 +120,11 @@ askQuestion conv question = do
     (llm conv)
     newMessages
     Nothing
-        
   case eRes of
     Left err -> pure (Left err, conv { messages = newMessages })
     Right answer -> do
-      let updatedMessages = newMessages <> NE.fromList [Message Assistant answer defaultMessageData]
+      let updatedMessages = newMessages 
+                    <> NE.fromList [Message Assistant answer defaultMessageData]
       pure (Right answer, conv { messages = updatedMessages })
 
 runApp :: IO ()
