@@ -318,6 +318,7 @@ import Langchain.Agent.Executor
 import Langchain.Agent.ReAct
 import Langchain.LLM.Ollama
 import Langchain.Tool.Core
+import qualified Data.Ollama.Chat as O
 
 -- Define your tool
 data AgeFinderTool = AgeFinderTool
@@ -374,9 +375,9 @@ main = do
         }
   
   -- 4. Create LLM parameters with tool definitions
-  let mbOllamaParams = Just $ defaultOllamaParams
-        { tools = Just [inputTool]
-        }
+  let mbOllamaParams = Just $ O.defaultChatOps
+            { O.tools = Just [inputTool]
+            }
   
   -- 5. Create the agent
   let agent = createReActAgent llm mbOllamaParams tools
@@ -413,8 +414,8 @@ You **MUST** pass tool definitions to the LLM parameters. The exact format depen
 
 **For Ollama:**
 ```haskell
-let mbParams = Just $ defaultOllamaParams
-      { tools = Just [inputTool1, inputTool2, ...]
+let mbParams = Just $ O.defaultChatOps
+      { O.tools = Just [inputTool1, inputTool2, ...]
       }
 ```
 

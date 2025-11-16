@@ -14,7 +14,7 @@ import qualified Data.Text.Encoding as T
 
 import Data.Aeson
 import qualified Data.ByteString.Lazy.Char8 as BSL
-import qualified Data.Ollama.Common.Types as O
+import qualified Data.Ollama.Chat as O
 import Langchain.Callback (Callback, Event (..))
 import Langchain.LLM.Core
 import Langchain.LLM.Ollama
@@ -75,11 +75,7 @@ tests =
                 "What's the capital of France?"
                 defaultMessageData
                 :| []
-        result <-
-          chat
-            ollama
-            messages
-            (Just $ defaultOllamaParams {responseTimeOut = Just 1200})
+        result <- chat ollama messages Nothing
         case result of
           Left err -> assertFailure $ "Expected success, got error: " ++ show err
           Right response -> do
@@ -149,8 +145,7 @@ tests =
           (callback, getEvents) <- captureEvents
           let ollama = Ollama testModelName [callback]
           let prompt = "What is functional programming?"
-          let params = defaultOllamaParams { suffix = Just " [End]" }
-          result <- generate ollama prompt (Just params)
+          result <- generate ollama prompt Nothing
           case result of
             Left err -> assertFailure $ "Expected success, got error: " ++ err
             Right response -> do
@@ -164,9 +159,7 @@ tests =
         (callback, getEvents) <- captureEvents
         let ollama = Ollama testModelName [callback]
         let prompt = "What is 2 + 2?"
-        let systemMsg = "You are a Haskell expert."
-        let params = defaultOllamaParams {system = Just systemMsg}
-        result <- generate ollama prompt (Just params)
+        result <- generate ollama prompt Nothing
         case result of
           Left err -> assertFailure $ "Expected success, got error: " ++ show err
           Right response -> do
@@ -177,7 +170,7 @@ tests =
         (callback, getEvents) <- captureEvents
         let ollama = Ollama testModelName [callback]
         let prompt = "What is JSON?"
-        let params = defaultOllamaParams {format = Just O.JsonFormat}
+        let params = O.defaultChatOps {O.format = Just O.JsonFormat}
         result <- generate ollama prompt (Just params)
         case result of
           Left err -> assertFailure $ "Expected success, got error: " ++ show err
@@ -187,28 +180,11 @@ tests =
               Right _ -> return ()
             events <- getEvents
             assertBool "should contain all events" (events `shouldContainAll` [LLMStart, LLMEnd])
-    , {-
-      , testCase "generate uses temperature option" $ do
-          (callback, getEvents) <- captureEvents
-          let ollama = Ollama testModelName [callback]
-          let prompt = "Write a short story."
-          let temp = 0.7
-          let opts = object ["temperature" .= Number temp]
-          let params = defaultOllamaParams { options = Just opts }
-          result <- generate ollama prompt (Just params)
-          case result of
-            Left err -> assertFailure $ "Expected success, got error: " ++ err
-            Right response -> do
-              assertBool "Response should not be empty" (T.length response > 0)
-              events <- getEvents
-              assertBool "should contain all events" (events `shouldContainAll` [LLMStart, LLMEnd])
-              -}
-
-      testCase "chat returns JSON response when format is set" $ do
+    , testCase "chat returns JSON response when format is set" $ do
         (callback, getEvents) <- captureEvents
         let ollama = Ollama testModelName [callback]
         let messages = Message User "What is JSON?" defaultMessageData :| []
-        let params = defaultOllamaParams {format = Just O.JsonFormat}
+        let params = O.defaultChatOps {O.format = Just O.JsonFormat}
         result <- chat ollama messages (Just params)
         case result of
           Left err -> assertFailure $ "Expected success, got error: " ++ show err

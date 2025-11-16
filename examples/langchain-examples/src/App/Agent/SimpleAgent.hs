@@ -17,6 +17,7 @@ import Data.Ollama.Chat
   , FunctionParameters (..)
   , InputTool (..)
   )
+import qualified Data.Ollama.Chat as O
 import qualified Data.Text as T
 import Langchain.Agent.Core
 import Langchain.Agent.Executor
@@ -79,8 +80,8 @@ runApp = do
           }
   let mbOllamaParams =
         Just $
-          defaultOllamaParams
-            { tools = Just [inputTool]
+          O.defaultChatOps
+            { O.tools = Just [inputTool]
             }
   let agent = createReActAgent llm mbOllamaParams tools
   result <-

@@ -119,15 +119,12 @@ askQuestion conv question = do
   eRes <- chat
     (llm conv)
     newMessages
-    ( Just $
-        defaultOllamaParams
-          { options = Just (object [("num_ctx", Number 10000)])
-          }
-    )
+    Nothing
   case eRes of
     Left err -> pure (Left err, conv { messages = newMessages })
     Right answer -> do
-      let updatedMessages = newMessages <> NE.fromList [Message Assistant answer defaultMessageData]
+      let updatedMessages = newMessages 
+                    <> NE.fromList [Message Assistant answer defaultMessageData]
       pure (Right answer, conv { messages = updatedMessages })
 
 runApp :: IO ()
