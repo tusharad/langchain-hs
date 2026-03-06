@@ -87,12 +87,14 @@ instance ToJSON EmbeddingsInput where
 
 instance ToJSON OpenAIEmbeddingsRequest where
   toJSON OpenAIEmbeddingsRequest {..} =
-    object
+    object $
       [ "input" .= inputReq
       , "model" .= modelReq
-      , "dimensions" .= dimensionsReq
-      , "encoding_format" .= encodingFormatReq
       ]
+        ++ catMaybes
+          [ ("dimensions" .=) <$> dimensionsReq
+          , ("encoding_format" .=) <$> encodingFormatReq
+          ]
 
 -- Response
 data EmbeddingsUsage = EmbeddingsUsage
