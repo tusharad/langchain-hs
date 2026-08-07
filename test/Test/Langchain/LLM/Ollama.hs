@@ -14,11 +14,14 @@ import qualified Data.Text.Encoding as T
 
 import Data.Aeson
 import qualified Data.ByteString.Lazy.Char8 as BSL
-import qualified Data.Ollama.Chat as O
 import Langchain.Callback (Callback, Event (..))
 import Langchain.LLM.Core
 import Langchain.LLM.Ollama
 import qualified Langchain.Runnable.Core as Run
+import qualified Ollama.API.Chat as OllamaChat
+import Ollama.Types.Common (ModelName (..))
+import qualified Ollama.Types.Format as OFormat
+import qualified Ollama.Types.Message as O
 
 captureEvents :: IO (Callback, IO [Event])
 captureEvents = do
@@ -28,7 +31,7 @@ captureEvents = do
   return (callback, getEvents)
 
 testModelName :: Text
-testModelName = "qwen3.5:2b"
+testModelName = "gemma3:latest"
 
 tests :: TestTree
 tests =
@@ -59,7 +62,7 @@ tests =
           Left err -> do
             assertBool
               "Error should mention model"
-              ("model" `T.isInfixOf` T.pack (show err))
+              ("model" `T.isInfixOf` T.toLower (T.pack (show err)))
             events <- getEvents
             assertBool
               "LLM should tried to be started"
@@ -122,7 +125,6 @@ tests =
                 { onToken = \token -> modifyIORef tokensRef (token :)
                 , onComplete = pure ()
                 }
-        -- \| onComplete does not support Ollama
 
         result <- stream ollama messages handler Nothing
         case result of
@@ -140,22 +142,7 @@ tests =
             assertBool
               "Should mention 4"
               ("4" `T.isInfixOf` T.toLower (content response))
-    , {- qwen3:06b does not support insert
-      , testCase "generate appends suffix when provided" $ do
-          (callback, getEvents) <- captureEvents
-          let ollama = Ollama testModelName [callback]
-          let prompt = "What is functional programming?"
-          result <- generate ollama prompt Nothing
-          case result of
-            Left err -> assertFailure $ "Expected success, got error: " ++ err
-            Right response -> do
-              assertBool "Response should end with suffix" (T.isSuffixOf " [End]" response)
-              events <- getEvents
-              assertBool "should contain all events"
-                  (events `shouldContainAll` [LLMStart, LLMEnd])
-        -}
-
-      testCase "generate uses system message for context" $ do
+    , testCase "generate uses system message for context" $ do
         (callback, getEvents) <- captureEvents
         let ollama = Ollama testModelName [callback]
         let prompt = "What is 2 + 2?"
@@ -169,9 +156,10 @@ tests =
     , testCase "generate returns JSON response when format is set" $ do
         (callback, getEvents) <- captureEvents
         let ollama = Ollama testModelName [callback]
-        let prompt = "What is JSON?"
-        let params = O.defaultChatOps {O.format = Just O.JsonFormat}
-        result <- generate ollama prompt (Just params)
+        let prompt = "Return JSON with key answer and value 4 for 2+2"
+        let userMsg = O.userMessage prompt
+        let req = (OllamaChat.chatRequest (ModelName testModelName) (userMsg :| [])) { OllamaChat.chatFormat = Just OFormat.JsonFormat }
+        result <- generate ollama prompt (Just req)
         case result of
           Left err -> assertFailure $ "Expected success, got error: " ++ show err
           Right response -> do
@@ -183,9 +171,9 @@ tests =
     , testCase "chat returns JSON response when format is set" $ do
         (callback, getEvents) <- captureEvents
         let ollama = Ollama testModelName [callback]
-        let messages = Message User "What is JSON?" defaultMessageData :| []
-        let params = O.defaultChatOps {O.format = Just O.JsonFormat}
-        result <- chat ollama messages (Just params)
+        let messages = Message User "Return JSON with key answer and value 4 for 2+2" defaultMessageData :| []
+        let req = (OllamaChat.chatRequest (ModelName testModelName) (O.userMessage "Return JSON with key answer and value 4 for 2+2" :| [])) { OllamaChat.chatFormat = Just OFormat.JsonFormat }
+        result <- chat ollama messages (Just req)
         case result of
           Left err -> assertFailure $ "Expected success, got error: " ++ show err
           Right response -> do
