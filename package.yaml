@@ -34,6 +34,7 @@ dependencies:
 - http-conduit >= 2 && < 3
 - http-types >= 0.11 && < 0.13
 - langchain-hs-core
+- langchain-hs-graph
 - mtl >= 2.2 && < 2.4
 - ollama-haskell >= 0.3.0.0
 - openai >= 2.2.1
@@ -60,6 +61,20 @@ ghc-options:
 library:
   source-dirs: src
 
+executables:
+  big-showcase:
+    main:                BigGraphShowcase.hs
+    source-dirs:         examples
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - langchain-hs
+    - langchain-hs-core
+    - langchain-hs-graph
+    - temporary
+
 tests:
   langchain-hs-test:
     main:                Spec.hs
@@ -70,6 +85,8 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - langchain-hs
+    - langchain-hs-core
+    - langchain-hs-graph
     - text
     - tasty
     - tasty-hunit

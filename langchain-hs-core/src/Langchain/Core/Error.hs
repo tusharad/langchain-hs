@@ -15,6 +15,7 @@ Structured error handling without String-based error dropping.
 module Langchain.Core.Error
   ( LangchainError (..)
   , ErrorContext (..)
+  , errorMessage
   , mkContext
   , mkContextIO
   , llmError
@@ -77,6 +78,22 @@ data LangchainError
   | ValidationError Text (Maybe ErrorContext)
   | InternalError Text (Maybe ErrorContext)
   deriving (Show, Eq, Generic, ToJSON, FromJSON)
+
+-- | Extract human-readable error message text from a LangchainError
+errorMessage :: LangchainError -> Text
+errorMessage (LLMError msg _) = msg
+errorMessage (AgentError msg _) = msg
+errorMessage (MemoryError msg _) = msg
+errorMessage (ToolError msg _) = msg
+errorMessage (VectorStoreError msg _) = msg
+errorMessage (DocumentLoaderError msg _) = msg
+errorMessage (EmbeddingError msg _) = msg
+errorMessage (RunnableError msg _) = msg
+errorMessage (ParsingError msg _) = msg
+errorMessage (NetworkError msg _) = msg
+errorMessage (ConfigurationError msg _) = msg
+errorMessage (ValidationError msg _) = msg
+errorMessage (InternalError msg _) = msg
 
 instance Exception LangchainError where
   displayException err = case err of
