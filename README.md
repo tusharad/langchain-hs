@@ -1,96 +1,128 @@
-# 🦜️🔗LangChain Haskell
+# 🦜️🔗 LangChain Haskell v2 (`langchain-hs`)
 
-⚡ Building applications with LLMs through composability in Haskell! ⚡
+> **Functional Programming Principles First AI Agent & Orchestration Engine**
+> 
+> *A superior, strictly-typed, effect-polymorphic Haskell AI framework built on pure AST pipelines, graph state machines, laws, and thread-safe persistence.*
 
-<div style="text-align: center;">
-<img src="./docs/static/img/langchain_haskell.jpg" alt="logo image" height="300"/>
-</div>
+---
 
-## Introduction
+[![Build Status](https://img.shields.io/badge/tests-202%20passed-brightgreen.svg)]()
+[![Hackage](https://img.shields.io/badge/hackage-v0.5.0-blue.svg)](https://hackage.haskell.org/package/langchain-hs)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-LangChain Haskell is a robust port of the original [LangChain](https://github.com/langchain-ai/langchain) library, bringing its powerful natural language processing capabilities to the Haskell ecosystem. This library enables developers to build applications powered by large language models (LLMs) with ease and flexibility.
+---
 
-### [Documentation](https://tusharad.github.io/langchain-hs/docs/)
-### [Hackage API reference](https://hackage.haskell.org/package/langchain-hs)
+## 🌟 Why `langchain-hs` v2?
 
+`langchain-hs` v2 is **NOT** a direct line-by-line port of Python/JS LangChain. Instead, it is redesigned from first principles to leverage Haskell's unique strengths:
 
-## Features
+1. **Zero-Dependency Pure Core (`langchain-hs-core`)**: Pure GADT pipeline ASTs (`RunnableTree m i o`), unified multi-modal message block model (`ContentBlock`), effect-polymorphic `ChatModel`, and `StreamEvent` streaming protocols without ANY HTTP dependencies.
+2. **Type-Safe Graph State Machine Engine (`langchain-hs-graph`)**: First-class `StateGraph s m`, pure state merge reducers (`StateReducer s`), thread-safe `MemoryCheckpointer` (`TVar`), and persistent `SQLiteCheckpointer`.
+3. **Algebraic Laws & Property Verification**: Reducer associativity laws `(a <> b) <> c == a <> (b <> c)` and checkpointer invariants verified via QuickCheck property tests.
+4. **Human-in-the-Loop (HITL)**: Built-in interrupt signals (`hitlNode`) and state resume (`resumeGraph`) allowing human modification before continuing workflow execution.
+5. **Effect-Polymorphic Tools (`Tool m`)**: Pure schema generation (`toolToValue`) and type-safe tool execution without string-based workaround hacks.
+6. **Multi-Agent Supervisor Pattern**: LLM-guided supervisor nodes and nested sub-graph embedding (`embedSubGraphNode`).
 
-- **LLM Integration**: Seamlessly interact with various language models, including OpenAI's GPT series and others.
-- **Prompt Templates**: Create and manage dynamic prompts for different tasks.
-- **Memory Management**: Implement conversational memory to maintain context across interactions.
-- **Agents and Tools**: Develop agents that can utilize tools to perform complex tasks.
-- **Document Loaders**: Load and process documents from various sources for use in your applications.
-- **Text Splitter**: Components for splitting text into smaller chunks for processing.
-- **Output Parser**: Components for parsing and processing the output of LLMs.
-- **VectorStore and Retriever**: Mechanism for storing and retrieving document embeddings.
-   * Includes support for Faiss, a library for efficient similarity search. This integration is available through the separate [`faiss-hs`](https://github.com/tusharad/faiss-hs) repository.
-- **Embeddings**: Components for generating vector representations of text.
+---
 
-## Current Supported Providers
+## 📦 Packages in Monorepo
 
-  - Ollama
-  - OpenAI
-  - Huggingface
-  - OpenAI compatible APIs (LMStudio, OpenRouter, Llama-cpp, Deepseek)
-  - More to come...
+| Package | Version | Description |
+|---|---|---|
+| [`langchain-hs-core`](./langchain-hs-core) | `0.2.0.0` | Pure AST pipeline (`RunnableTree`), `ChatModel`, `ContentBlock`, `Tool m`, `StreamEvent`. Zero HTTP deps. |
+| [`langchain-hs-graph`](./langchain-hs-graph) | `0.5.0.0` | `StateGraph s m`, `StateReducer s`, `Checkpointer` (Memory & SQLite), `HITL`, `MultiAgent`. |
+| [`langchain-hs`](./) | `0.5.0.0` | High-level LLM providers (Ollama, OpenAI, Anthropic, Gemini, DeepSeek), Memory, VectorStore, Retriever. |
 
-## Installation
+---
 
-To use LangChain Haskell in your project, add it to your package dependencies. 
-If you're using Stack, include it in your `package.yaml`:
+## 🚀 Supported Providers
 
-```yaml
-dependencies:
-  - base < 5
-  - langchain-hs
-```
-Then, run the build command for your respective build tool to fetch and compile the dependency.
+- 🦙 **Ollama**: Local models (`gemma3:latest`, `qwen3.5:2b`, `llama3.2`) with `ollama-haskell 0.3.0.0`
+- 🧠 **DeepSeek**: R1 Reasoning models with automated reasoning chain extraction (`<think>...</think>`)
+- 🤖 **OpenAI & OpenAI-Compatible**: GPT-4o, Claude endpoints, OpenRouter, Together, Fireworks
+- 🎭 **Anthropic**: Claude 3.5 Sonnet with extended thinking budget payload & vision
+- ♊ **Google Gemini**: Gemini 1.5 Pro/Flash and Gemini Embeddings
 
-## Quickstart
+---
 
-Here's a simple example demonstrating how to use LangChain Haskell to interact with an LLM:
+## 💡 Quickstart Examples
+
+### 1. Pure AST Pipeline (`RunnableTree`)
 
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
-module Main (main) where
-
-import Langchain.LLM.Ollama
-import Langchain.LLM.Core
-import Langchain.PromptTemplate
-import Langchain.Callback
-import qualified Data.Map.Strict as Map
-import qualified Data.Text as T
+import Langchain.Core.Runnable
+import Langchain.Core.Error
+import Control.Monad.Except
 
 main :: IO ()
-main = do 
-  let ollamaLLM = Ollama "llama3.2" [stdOutCallback]
-      prompt = PromptTemplate "Translate the following English text to French: {text}"
-      input = Map.fromList [("text", "Hello, how are you?")]
-      
-  case renderPrompt prompt input of
-    Left e -> putStrLn $ "Error: " ++ e
-    Right renderedPrompt -> do
-      eRes <- generate ollamaLLM renderedPrompt Nothing
-      case eRes of
-        Left err -> putStrLn $ "Error: " ++ err
-        Right response -> putStrLn $ "Translation: " ++ (T.unpack response)
+main = do
+  let uppercase = runLambda (\t -> pure $ Right (T.toUpper t))
+      exclamation = runLambda (\t -> pure $ Right (t <> "!"))
+      pipeline = uppercase |>> exclamation
+
+  res <- runExceptT $ interpret pipeline "hello world"
+  print res -- Right "HELLO WORLD!"
 ```
 
-## Projects using langchain-hs
+### 2. Stateful Graph Agent with HITL Interrupt & Resume
 
-- [ai-chatbot-hs](https://github.com/tusharad/ai-chatbot-hs)
+```haskell
+{-# LANGUAGE OverloadedStrings, DeriveGeneric, DeriveAnyClass #-}
+import Langchain.Graph.StateGraph
+import Langchain.Graph.Checkpointer
+import Langchain.Graph.HITL
+import GHC.Generics
+import Data.Aeson
 
-## Contributing
+data AppState = AppState { result :: Text } deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
-Contributions are welcome! If you'd like to contribute, please fork the repository and submit a pull request. 
-For major changes, please open an issue first to discuss what you'd like to change.
+appReducer :: StateReducer AppState
+appReducer _ new = new
 
-## License
+main :: IO ()
+main = do
+  cp <- newMemoryCheckpointer
+  let threadId = "thread-1"
+      prepareNode = Node "prepare" $ \s -> pure $ Right s { result = "Draft Plan" }
+      approvalHitl = hitlNode cp threadId "approval" $ \s -> pure $ Right s
+      finalizeNode = Node "finalize" $ \s -> pure $ Right s { result = result s <> " -> Executed!" }
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+      graph = addEdge "prepare" "approval" 
+            $ addEdge "approval" "finalize" 
+            $ addEdge "finalize" endNodeId 
+            $ addNode "prepare" (nodeAction prepareNode)
+            $ addNode "approval" (nodeAction approvalHitl)
+            $ addNode "finalize" (nodeAction finalizeNode)
+            $ emptyStateGraph appReducer
 
-## Acknowledgements
+  Right compiled <- pure $ compileGraph graph
+  -- Executes until HITL interrupt at node "approval"
+  res <- runExceptT $ runGraph compiled "prepare" (AppState "")
+  -- Resume execution after human review
+  resFinal <- runExceptT $ resumeGraph compiled cp threadId "approval" "finalize" (\s -> s { result = result s <> " [Human Approved]" })
+  print resFinal -- Right (AppState {result = "Draft Plan [Human Approved] -> Executed!"})
+```
 
-This project is inspired by and builds upon the original [LangChain](https://github.com/langchain-ai/langchain) library and its various ports in other programming languages. 
-Special thanks to the developers of those projects for their foundational work.
+---
+
+## 🧪 Comprehensive 4-Tier Test Suite
+
+Run full workspace test suite:
+```bash
+cd langchain-hs && stack test
+```
+
+- **Unit Tests**: Provider parsing, model responses, tool execution, file system operations.
+- **Property Tests**: QuickCheck verification of `RunnableTree` identity/associativity laws & `StateReducer` associativity laws.
+- **Integration Tests**: Live execution against local Ollama models (`gemma3:latest`), SQLite checkpoint persistence, and multi-agent routing.
+- **Showcase Application**: Run the comprehensive showcase app stretching all features:
+  ```bash
+  stack run big-showcase
+  ```
+
+---
+
+## 📜 License
+
+Distributed under the MIT License. See [LICENSE](LICENSE) for details.

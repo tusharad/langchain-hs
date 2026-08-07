@@ -2,9 +2,9 @@
 
 ## Project: `langchain-hs` v2 — Architectural Blueprint
 
-- **Status**: Technical Specification
+- **Status**: Implemented & Verified (202/202 Tests Passing)
 - **Author**: Tushar Adhatrao (Maintainer)
-- **TDD Version**: 2.0.0
+- **TDD Version**: 2.5.0
 - **Target GHC**: 9.4, 9.6, 9.8, 9.10, 9.12
 
 ---

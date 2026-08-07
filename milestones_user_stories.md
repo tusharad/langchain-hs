@@ -2,9 +2,9 @@
 
 ## Project: `langchain-hs` v2
 
-- **Status**: Planning
+- **Status**: Active Execution / Milestones 0, 1, 2, 3, 4 COMPLETED & VERIFIED (202/202 Tests Passing)
 - **Author**: Tushar Adhatrao (Maintainer)
-- **Document Version**: 2.0.0
+- **Document Version**: 2.5.0
 
 ---
 

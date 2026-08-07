@@ -2,10 +2,10 @@
 
 ## Project: `langchain-hs` — A Functional-First AI Framework for Haskell
 
-- **Status**: Active / v2 Proposal
+- **Status**: Active / Milestones 0, 1, 2, 3, 4 COMPLETED & VERIFIED (202/202 Tests Passing)
 - **Author**: Tushar Adhatrao (Maintainer)
-- **PRD Version**: 2.0.0
-- **Framework Version Target**: `0.1.0` → `1.0.0`
+- **PRD Version**: 2.5.0
+- **Framework Version Target**: `0.5.0` → `1.0.0`
 - **GHC Support**: 9.4, 9.6, 9.8, 9.10, 9.12
 
 ---
