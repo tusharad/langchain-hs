@@ -7,7 +7,7 @@ import Data.Either (isRight)
 import qualified Data.List.NonEmpty as NE
 import Data.Text (Text)
 import qualified Data.Text as T
-import Langchain.Error (llmError)
+import Langchain.Error (LangchainError (errorMessage), llmError)
 import Langchain.LLM.Core
 import Langchain.Memory.Core (BaseMemory (..))
 import qualified Langchain.Memory.TokenBufferMemory as TB
@@ -90,6 +90,36 @@ addMessageTests =
           "New message is exceeding limit"
           (Left (llmError "New message is exceeding limit" Nothing Nothing))
           result
+    , testCase "Preserves System message when trimming non-system messages" $ do
+        -- maxTokens: 4 tokens (16 chars max)
+        -- system: "sys!" (4 chars = 1 token)
+        -- user1: "12345678" (8 chars = 2 tokens)
+        -- user2: "12345678" (8 chars = 2 tokens)
+        -- Total system + user1 + user2 = 5 tokens > 4 tokens
+        -- Trimming user1 leaves system + user2 (3 tokens <= 4 tokens)
+        let sysMsg = mkMsg System "sys!"
+            user1 = mkMsg User "12345678"
+            user2 = mkMsg User "12345678"
+            initial = TB.TokenBufferMemory 4 (NE.fromList [sysMsg, user1])
+        res <- addMessage initial user2
+        case res of
+          Left err -> assertFailure $ "Expected Right but got Left: " ++ show err
+          Right mem ->
+            NE.toList (TB.tokenBufferMessages mem) @?= [sysMsg, user2]
+    , testCase "Error when system message and new message exceed limit" $ do
+        let sysMsg = mkMsg System "12345678" -- 2 tokens
+            userMsg = mkMsg User "12345678" -- 2 tokens
+            initial = TB.TokenBufferMemory 3 (NE.fromList [sysMsg]) -- max 3 tokens
+        res <- addMessage initial userMsg
+        case res of
+          Left err ->
+            errorMessage err
+              @?= "Cannot add new message since system message and new message exceeds limit"
+          Right _ -> assertFailure "Expected Left due to overflow"
+    , testCase "BaseMemory messages retrieves history" $ do
+        let initial = TB.TokenBufferMemory 10 (NE.fromList [mkMsg System "init"])
+        res <- messages initial
+        res @?= Right (NE.fromList [mkMsg System "init"])
     ]
 
 addUserAndAiMessageTests :: TestTree

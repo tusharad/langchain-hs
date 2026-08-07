@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE ViewPatterns #-}
 
 {- |
 Module      : Langchain.Memory.Core
@@ -32,12 +34,16 @@ messages <- messages newMemory
 -}
 module Langchain.Memory.Core
   ( BaseMemory (..)
-  , WindowBufferMemory (..)
+  , WindowBufferMemory (WindowBufferMemory)
+  , maxWindowSize
+  , windowBufferMessages
+  , newWindowBufferMemory
   , trimChatMessage
   , addAndTrim
   , initialChatMessage
   ) where
 
+import Control.Concurrent.STM (TVar, atomically, modifyTVar', newTVarIO, readTVarIO, writeTVar)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Data.List.NonEmpty as NE
 import Data.Text (Text)
@@ -49,6 +55,7 @@ import Langchain.LLM.Core
   , defaultMessageData
   )
 import Langchain.Runnable.Core
+import System.IO.Unsafe (unsafePerformIO)
 
 {- | Base typeclass for memory implementations
 Defines standard operations for chat history management.
@@ -92,58 +99,69 @@ class BaseMemory mem where
   clearM :: MonadIO m => mem -> m (LangchainResult mem)
   clearM mem = liftIO $ clear mem
 
-{- | Sliding window memory implementation.
-Stores chat history with maximum size limit.
-
-Note: This implementation will not trim system messages.
-
-Example:
-
->>> let mem = WindowBufferMemory 2 (NE.singleton (Message System "Sys" defaultMessageData))
->>> addMessage mem (Message User "Hello" defaultMessageData)
-Right (WindowBufferMemory {maxWindowSize = 2, ...})
+{- | Internal representation of sliding window memory backed by 'TVar' for thread safety.
 -}
-data WindowBufferMemory = WindowBufferMemory
-  { maxWindowSize :: Int
-  {- ^ Maximum number of messages to retain
-  ^ It is user's responsibility to make sure the number is > 0.
-  -}
-  , windowBufferMessages :: ChatHistory
-  -- ^ Current message buffer
-  }
-  deriving (Show, Eq)
+data WindowBufferMemory = WindowBufferMemoryInternal !Int !(TVar ChatHistory)
+
+-- | Retrieve the current message buffer from a 'WindowBufferMemory'.
+windowBufferMessages :: WindowBufferMemory -> ChatHistory
+windowBufferMessages (WindowBufferMemoryInternal _ tv) = unsafePerformIO (readTVarIO tv)
+
+-- | Extract max window size.
+maxWindowSize :: WindowBufferMemory -> Int
+maxWindowSize (WindowBufferMemoryInternal sz _) = sz
+
+-- | Pattern synonym providing backward compatibility for 'WindowBufferMemory' positional
+-- construction and pattern matching, backed internally by an STM 'TVar'.
+pattern WindowBufferMemory :: Int -> ChatHistory -> WindowBufferMemory
+pattern WindowBufferMemory sz msgs <- (getWindowBufferMemoryPair -> (sz, msgs))
+  where
+    WindowBufferMemory sz msgs = unsafePerformIO $ do
+      tv <- newTVarIO msgs
+      pure $ WindowBufferMemoryInternal sz tv
+
+getWindowBufferMemoryPair :: WindowBufferMemory -> (Int, ChatHistory)
+getWindowBufferMemoryPair (WindowBufferMemoryInternal sz tv) =
+  (sz, unsafePerformIO (readTVarIO tv))
+
+{-# COMPLETE WindowBufferMemory #-}
+
+instance Show WindowBufferMemory where
+  showsPrec d (WindowBufferMemory sz msgs) =
+    showParen (d > 10) $
+      showString "WindowBufferMemory {maxWindowSize = "
+        . shows sz
+        . showString ", windowBufferMessages = "
+        . shows msgs
+        . showString "}"
+
+instance Eq WindowBufferMemory where
+  WindowBufferMemory sz1 msgs1 == WindowBufferMemory sz2 msgs2 =
+    sz1 == sz2 && msgs1 == msgs2
+
+-- | Construct a thread-safe 'WindowBufferMemory' explicitly in 'MonadIO'.
+newWindowBufferMemory :: MonadIO m => Int -> ChatHistory -> m WindowBufferMemory
+newWindowBufferMemory sz msgs = liftIO $ do
+  tv <- newTVarIO msgs
+  pure $ WindowBufferMemoryInternal sz tv
 
 instance BaseMemory WindowBufferMemory where
-  -- \| Get current messages
-  --
-  --  Example:
-  --
-  --  >>> messages (WindowBufferMemory 5 initialMessages)
-  --  Right initialMessages
-  messages WindowBufferMemory {..} = pure $ Right windowBufferMessages
+  -- | Get current messages from TVar
+  messages (WindowBufferMemoryInternal _ tv) = do
+    msgs <- readTVarIO tv
+    pure $ Right msgs
 
-  -- \| Add message with window trimming
-  --
-  --  Example:
-  --
-  --  >>> let mem = WindowBufferMemory 2 (NE.fromList [msg1])
-  --  >>> addMessage mem msg2
-  --  Right (WindowBufferMemory {windowBufferMessages = [msg1, msg2]})
-  --
-  --  >>> addMessage mem msg3
-  --  Right (WindowBufferMemory {windowBufferMessages = [msg2, msg3]})
-  addMessage winBuffMem@WindowBufferMemory {..} newMsg = do
-    let currentMsgs = NE.toList windowBufferMessages
-        newMsgs = currentMsgs ++ [newMsg]
-
-    if length newMsgs > maxWindowSize
-      then do
-        let trimmedMsgs = removeOldestNonSystem newMsgs
-        pure $
-          Right $
-            winBuffMem {windowBufferMessages = NE.fromList trimmedMsgs}
-      else
-        pure $ Right $ winBuffMem {windowBufferMessages = NE.fromList newMsgs}
+  -- | Add message with STM atomic window trimming
+  addMessage winBuffMem@(WindowBufferMemoryInternal maxSz tv) newMsg = do
+    atomically $ modifyTVar' tv $ \currentHistory ->
+      let currentMsgs = NE.toList currentHistory
+          newMsgs = currentMsgs ++ [newMsg]
+          trimmedMsgs =
+            if length newMsgs > maxSz
+              then removeOldestNonSystem newMsgs
+              else newMsgs
+       in NE.fromList trimmedMsgs
+    pure $ Right winBuffMem
     where
       isSystem (Message role _ _) = role == System
 
@@ -154,38 +172,21 @@ instance BaseMemory WindowBufferMemory where
             | isSystem m = m : go ms
             | otherwise = ms
 
-  -- \| Add user message
-  --
-  --  Example:
-  --
-  --  >>> addUserMessage mem "Hello"
-  --  Right (WindowBufferMemory { ... })
+  -- | Add user message
   addUserMessage winBuffMem uMsg =
     addMessage winBuffMem (Message User uMsg defaultMessageData)
 
-  -- \| Add AI message
-  --
-  --  Example:
-  --
-  --  >>> addAiMessage mem "Response"
-  --  Right (WindowBufferMemory { ... })
+  -- | Add AI message
   addAiMessage winBuffMem uMsg =
     addMessage winBuffMem (Message Assistant uMsg defaultMessageData)
 
-  -- \| Reset to initial system message
-  --
-  --  Example:
-  --
-  --  >>> clear mem
-  --  Right (WindowBufferMemory { windowBufferMessages = [systemMsg] })
-  clear winBuffMem =
-    pure $
-      Right $
-        winBuffMem
-          { windowBufferMessages =
-              NE.singleton $
-                Message System "You are an AI model" defaultMessageData
-          }
+  -- | Reset to initial system message atomically
+  clear winBuffMem@(WindowBufferMemoryInternal _ tv) = do
+    let sysMsg =
+          NE.singleton $
+            Message System "You are an AI model" defaultMessageData
+    atomically $ writeTVar tv sysMsg
+    pure $ Right winBuffMem
 
 {- | Trim chat history to last n messages
 Example:

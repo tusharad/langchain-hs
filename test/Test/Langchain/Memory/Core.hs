@@ -2,16 +2,16 @@
 
 module Test.Langchain.Memory.Core (tests) where
 
-import Test.Tasty
-import Test.Tasty.HUnit
-
+import Control.Concurrent.Async (forConcurrently_)
+import qualified Data.List.NonEmpty as NE
+import Data.Text (Text)
+import qualified Data.Text as T
+import Langchain.Error (toString)
 import Langchain.LLM.Core (Message (..), Role (..), defaultMessageData)
 import Langchain.Memory.Core
 import Langchain.Runnable.Core
-
-import qualified Data.List.NonEmpty as NE
-import Data.Text (Text)
-import Langchain.Error (toString)
+import Test.Tasty
+import Test.Tasty.HUnit
 
 systemMsg :: Text -> Message
 systemMsg text = Message System text defaultMessageData
@@ -183,6 +183,25 @@ runnableTests =
                 NE.toList msgs @?= [systemMsg "System", userMsg "Test input"]
     ]
 
+concurrencyTests :: TestTree
+concurrencyTests =
+  testGroup
+    "Concurrency Tests"
+    [ testCase "100 concurrent writes produce consistent window size" $ do
+        let initialMsgs = NE.fromList [systemMsg "System"]
+            maxSize = 200
+            memory = WindowBufferMemory maxSize initialMsgs
+        forConcurrently_ [1 .. 100 :: Int] $ \i -> do
+          _ <- addMessage memory (userMsg $ "Msg " <> T.pack (show i))
+          pure ()
+        result <- messages memory
+        case result of
+          Left err -> assertFailure $ "Expected Right but got Left: " ++ toString err
+          Right msgs -> do
+            -- Initial system message + 100 user messages = 101 messages
+            NE.length msgs @?= 101
+    ]
+
 tests :: TestTree
 tests =
   testGroup
@@ -190,4 +209,5 @@ tests =
     [ utilityTests
     , windowBufferMemoryTests
     , runnableTests
+    , concurrencyTests
     ]

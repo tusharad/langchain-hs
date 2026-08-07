@@ -35,6 +35,7 @@ module Langchain.PromptTemplate
     -- * Rendering Functions
   , renderPrompt
   , renderFewShotPrompt
+  , renderFewShotPromptWithVars
   ) where
 
 import qualified Data.Map.Strict as HM
@@ -152,16 +153,21 @@ interpolate vars = go
                       return $ before <> val <> rest
                     Nothing -> Left $ validationError ("Missing variable: " <> key') (Just key') Nothing
 
+{- | Render a few-shot prompt template and interpolate additional variables.
+-}
+renderFewShotPromptWithVars :: FewShotPromptTemplate -> HM.Map Text Text -> LangchainResult Text
+renderFewShotPromptWithVars template vars = do
+  renderedBase <- renderFewShotPrompt template
+  interpolate vars renderedBase
+
 instance Runnable PromptTemplate where
   type RunnableInput PromptTemplate = HM.Map Text Text
   type RunnableOutput PromptTemplate = Text
 
   invoke template variables = pure $ renderPrompt template variables
 
-{-
 instance Runnable FewShotPromptTemplate where
-  type RunnableInput FewShotPromptTemplate = Maybe [Text]
+  type RunnableInput FewShotPromptTemplate = HM.Map Text Text
   type RunnableOutput FewShotPromptTemplate = Text
 
-  invoke t m = pure $ renderFewShotPrompt t m
--}
+  invoke template variables = pure $ renderFewShotPromptWithVars template variables

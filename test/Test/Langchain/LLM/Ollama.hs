@@ -28,7 +28,7 @@ captureEvents = do
   return (callback, getEvents)
 
 testModelName :: Text
-testModelName = "qwen3:0.6b"
+testModelName = "qwen3.5:2b"
 
 tests :: TestTree
 tests =

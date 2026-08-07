@@ -18,6 +18,12 @@ that can be used with Large Language Models (LLMs) in Haskell applications.
 The design mirrors LangChain's Python tooling system while maintaining
 Haskell's type safety and functional programming principles.
 
+@NOTE@: The current 'Tool' typeclass is a temporary v1 abstraction. In v2 (see M3-US-1),
+this will be replaced by 'IsTool' and 'DynamicTool' which support automatic JSON Schema
+derivation and type-safe tool input parsing.
+
+-- TODO (M3-US-1): Replace raw 'Tool' with 'IsTool' and 'DynamicTool' auto-schema derivation.
+
 Example use case:
 
 > data Calculator = Calculator

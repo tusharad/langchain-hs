@@ -51,6 +51,8 @@ module Langchain.Error
   , ErrorContext (..)
 
     -- * Error Construction
+  , mkContext
+  , mkContextIO
   , llmError
   , llmErrorWithContext
   , agentError
@@ -109,10 +111,11 @@ module Langchain.Error
 import Control.Exception (Exception, SomeException, displayException, try)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Aeson (FromJSON, ToJSON)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time (UTCTime, getCurrentTime)
+import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import GHC.Generics (Generic)
 import System.IO (hPutStrLn, stderr)
 
@@ -226,14 +229,54 @@ type LangchainResult a = Either LangchainError a
 -- | Type alias for IO operations that can fail with LangchainError
 type LangchainIO a = IO (LangchainResult a)
 
--- | Create an LLM-related error
+-- | Build an 'ErrorContext' when at least one parameter is provided.
+-- Returns 'Nothing' when all parameters are 'Nothing', preserving backward
+-- compatibility with existing code that checks error equality.
+--
+-- Uses epoch (1970-01-01 00:00:00 UTC) as timestamp for pure constructors.
+-- For IO-aware timestamping, use 'mkContextIO' or the @*WithContext@ variants.
+mkContext :: Maybe Text -> Maybe Text -> Maybe Text -> Maybe ErrorContext
+mkContext component operation input_
+  | isJust component || isJust operation || isJust input_ =
+      Just
+        ErrorContext
+          { contextComponent = component
+          , contextOperation = operation
+          , contextInput = input_
+          , contextMetadata = []
+          , contextTimestamp = epoch
+          }
+  | otherwise = Nothing
+  where
+    epoch = posixSecondsToUTCTime 0
+
+-- | Build an 'ErrorContext' with the current wall-clock timestamp.
+-- Suitable for IO-based error construction.
+mkContextIO :: MonadIO m => Maybe Text -> Maybe Text -> Maybe Text -> m (Maybe ErrorContext)
+mkContextIO component operation input_
+  | isJust component || isJust operation || isJust input_ = do
+      now <- liftIO getCurrentTime
+      pure $
+        Just
+          ErrorContext
+            { contextComponent = component
+            , contextOperation = operation
+            , contextInput = input_
+            , contextMetadata = []
+            , contextTimestamp = now
+            }
+  | otherwise = pure Nothing
+
+-- | Create an LLM-related error.
+-- When model or operation is provided, an 'ErrorContext' is automatically
+-- constructed so callers can trace which component failed.
 llmError :: Text -> Maybe Text -> Maybe Text -> LangchainError
-llmError msg _model _operation =
+llmError msg model operation =
   LangchainError
     { errorMessage = msg
     , errorSeverity = High
     , errorCategory = LLMError
-    , errorContext = Nothing
+    , errorContext = mkContext model operation Nothing
     , errorCause = Nothing
     , errorCode = Nothing
     }
@@ -251,14 +294,16 @@ llmErrorWithContext msg model operation ctx =
         Just ctx {contextComponent = model, contextOperation = operation}
     }
 
--- | Create an agent-related error
+-- | Create an agent-related error.
+-- When agent type or operation is provided, an 'ErrorContext' is automatically
+-- constructed.
 agentError :: Text -> Maybe Text -> Maybe Text -> LangchainError
-agentError msg _agentType _operation =
+agentError msg agentType operation =
   LangchainError
     { errorMessage = msg
     , errorSeverity = High
     , errorCategory = AgentError
-    , errorContext = Nothing
+    , errorContext = mkContext agentType operation Nothing
     , errorCause = Nothing
     , errorCode = Nothing
     }
@@ -270,14 +315,16 @@ agentErrorWithContext msg agentType operation ctx =
     { errorContext = Just ctx {contextComponent = agentType, contextOperation = operation}
     }
 
--- | Create a memory-related error
+-- | Create a memory-related error.
+-- When memory type or operation is provided, an 'ErrorContext' is automatically
+-- constructed.
 memoryError :: Text -> Maybe Text -> Maybe Text -> LangchainError
-memoryError msg _memoryType _operation =
+memoryError msg memoryType operation =
   LangchainError
     { errorMessage = msg
     , errorSeverity = Medium
     , errorCategory = MemoryError
-    , errorContext = Nothing
+    , errorContext = mkContext memoryType operation Nothing
     , errorCause = Nothing
     , errorCode = Nothing
     }
@@ -289,14 +336,16 @@ memoryErrorWithContext msg memoryType operation ctx =
     { errorContext = Just ctx {contextComponent = memoryType, contextOperation = operation}
     }
 
--- | Create a tool-related error
+-- | Create a tool-related error.
+-- When tool name or operation is provided, an 'ErrorContext' is automatically
+-- constructed.
 toolError :: Text -> Maybe Text -> Maybe Text -> LangchainError
-toolError msg _toolName _operation =
+toolError msg toolName_ operation =
   LangchainError
     { errorMessage = msg
     , errorSeverity = High
     , errorCategory = ToolError
-    , errorContext = Nothing
+    , errorContext = mkContext toolName_ operation Nothing
     , errorCause = Nothing
     , errorCode = Nothing
     }
@@ -308,14 +357,14 @@ toolErrorWithContext msg toolName operation ctx =
     { errorContext = Just ctx {contextComponent = toolName, contextOperation = operation}
     }
 
--- | Create a vector store error
+-- | Create a vector store error.
 vectorStoreError :: Text -> Maybe Text -> Maybe Text -> LangchainError
-vectorStoreError msg _storeType _operation =
+vectorStoreError msg storeType operation =
   LangchainError
     { errorMessage = msg
     , errorSeverity = High
     , errorCategory = VectorStoreError
-    , errorContext = Nothing
+    , errorContext = mkContext storeType operation Nothing
     , errorCause = Nothing
     , errorCode = Nothing
     }
@@ -327,14 +376,14 @@ vectorStoreErrorWithContext msg storeType operation ctx =
     { errorContext = Just ctx {contextComponent = storeType, contextOperation = operation}
     }
 
--- | Create a document loader error
+-- | Create a document loader error.
 documentLoaderError :: Text -> Maybe Text -> Maybe Text -> LangchainError
-documentLoaderError msg _loaderType _operation =
+documentLoaderError msg loaderType operation =
   LangchainError
     { errorMessage = msg
     , errorSeverity = Medium
     , errorCategory = DocumentLoaderError
-    , errorContext = Nothing
+    , errorContext = mkContext loaderType operation Nothing
     , errorCause = Nothing
     , errorCode = Nothing
     }
@@ -346,14 +395,14 @@ documentLoaderErrorWithContext msg loaderType operation ctx =
     { errorContext = Just ctx {contextComponent = loaderType, contextOperation = operation}
     }
 
--- | Create an embedding error
+-- | Create an embedding error.
 embeddingError :: Text -> Maybe Text -> Maybe Text -> LangchainError
-embeddingError msg _embeddingType _operation =
+embeddingError msg embeddingType operation =
   LangchainError
     { errorMessage = msg
     , errorSeverity = High
     , errorCategory = EmbeddingError
-    , errorContext = Nothing
+    , errorContext = mkContext embeddingType operation Nothing
     , errorCause = Nothing
     , errorCode = Nothing
     }
@@ -365,14 +414,14 @@ embeddingErrorWithContext msg embeddingType operation ctx =
     { errorContext = Just ctx {contextComponent = embeddingType, contextOperation = operation}
     }
 
--- | Create a runnable error
+-- | Create a runnable error.
 runnableError :: Text -> Maybe Text -> Maybe Text -> LangchainError
-runnableError msg _runnableType _operation =
+runnableError msg runnableType operation =
   LangchainError
     { errorMessage = msg
     , errorSeverity = High
     , errorCategory = RunnableError
-    , errorContext = Nothing
+    , errorContext = mkContext runnableType operation Nothing
     , errorCause = Nothing
     , errorCode = Nothing
     }
@@ -384,16 +433,18 @@ runnableErrorWithContext msg runnableType operation ctx =
     { errorContext = Just ctx {contextComponent = runnableType, contextOperation = operation}
     }
 
--- | Create a parsing error
+-- | Create a parsing error.
+-- The parser type is appended to the message (legacy behavior) and also
+-- stored in the 'ErrorContext' component field.
 parsingError :: Text -> Maybe Text -> Maybe Text -> LangchainError
-parsingError msg _parserType _input =
+parsingError msg parserType input_ =
   LangchainError
-    { errorMessage = msg <> fromMaybe "" _parserType
+    { errorMessage = msg <> fromMaybe "" parserType
     , errorSeverity = Medium
     , errorCategory = ParsingError
-    , errorContext = Nothing
+    , errorContext = mkContext parserType Nothing input_
     , errorCause = Nothing
-    , errorCode = _input
+    , errorCode = input_
     }
 
 -- | Create a parsing error with context
@@ -403,14 +454,14 @@ parsingErrorWithContext msg parserType input ctx =
     { errorContext = Just ctx {contextComponent = parserType, contextInput = input}
     }
 
--- | Create a network error
+-- | Create a network error.
 networkError :: Text -> Maybe Text -> Maybe Text -> LangchainError
-networkError msg _endpoint _operation =
+networkError msg endpoint operation =
   LangchainError
     { errorMessage = msg
     , errorSeverity = High
     , errorCategory = NetworkError
-    , errorContext = Nothing
+    , errorContext = mkContext endpoint operation Nothing
     , errorCause = Nothing
     , errorCode = Nothing
     }
@@ -422,14 +473,14 @@ networkErrorWithContext msg endpoint operation ctx =
     { errorContext = Just ctx {contextComponent = endpoint, contextOperation = operation}
     }
 
--- | Create a configuration error
+-- | Create a configuration error.
 configurationError :: Text -> Maybe Text -> Maybe Text -> LangchainError
-configurationError msg _configKey _operation =
+configurationError msg configKey operation =
   LangchainError
     { errorMessage = msg
     , errorSeverity = Critical
     , errorCategory = ConfigurationError
-    , errorContext = Nothing
+    , errorContext = mkContext configKey operation Nothing
     , errorCause = Nothing
     , errorCode = Nothing
     }
@@ -441,14 +492,14 @@ configurationErrorWithContext msg configKey operation ctx =
     { errorContext = Just ctx {contextComponent = configKey, contextOperation = operation}
     }
 
--- | Create a validation error
+-- | Create a validation error.
 validationError :: Text -> Maybe Text -> Maybe Text -> LangchainError
-validationError msg _field _input =
+validationError msg field_ input_ =
   LangchainError
     { errorMessage = msg
     , errorSeverity = Medium
     , errorCategory = ValidationError
-    , errorContext = Nothing
+    , errorContext = mkContext field_ Nothing input_
     , errorCause = Nothing
     , errorCode = Nothing
     }
@@ -460,14 +511,14 @@ validationErrorWithContext msg field input ctx =
     { errorContext = Just ctx {contextComponent = field, contextInput = input}
     }
 
--- | Create an internal error
+-- | Create an internal error.
 internalError :: Text -> Maybe Text -> Maybe Text -> LangchainError
-internalError msg _component _operation =
+internalError msg component operation =
   LangchainError
     { errorMessage = msg
     , errorSeverity = Critical
     , errorCategory = InternalError
-    , errorContext = Nothing
+    , errorContext = mkContext component operation Nothing
     , errorCause = Nothing
     , errorCode = Nothing
     }

@@ -165,11 +165,14 @@ data AgentCallbacks = AgentCallbacks
   }
 
 {- |
-A ToolAcceptingToolCall is a special type of tool that
-can be used by an agent to execute a tool call.
+A ToolAcceptingToolCall is a temporary bridge wrapper that allows
+an agent to execute a tool call from an LLM.
 
-It is a wrapper around a tool type whose input is a ToolCall and output is a Text.
-It is user's responsibility wrap your existing tool into this type.
+@LIMITATION@: It requires a tool type whose input is fixed to 'ToolCall' and output to 'Text'.
+It is the user's responsibility to wrap existing tools into this type.
+This temporary bridge will be replaced in v2 by 'DynamicTool' and auto-derived JSON Schema (see M3-US-1).
+
+-- TODO (M3-US-1): Replace ToolAcceptingToolCall with DynamicTool and O(1) ToolRegistry lookup.
 
 Example:
 
@@ -231,7 +234,11 @@ class Agent a where
   -- | Get the tools available to this agent.
   getTools :: a -> [ToolAcceptingToolCall]
 
-  -- | Execute a tool.
+  {- | Execute a tool call.
+
+  @NOTE@: Requires tools wrapped via 'ToolAcceptingToolCall' where 'Input t ~ ToolCall'.
+  -- TODO (M3-US-1): Migrate to type-safe schema-validated tool execution.
+  -}
   executeTool :: a -> ToolCall -> IO (LangchainResult Text)
 
   {- | Prepare the agent for execution.

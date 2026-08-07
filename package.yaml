@@ -37,6 +37,7 @@ dependencies:
 - openai >= 2.2.1
 - parsec < 4
 - pdf-toolbox-document == 0.1.4
+- stm >= 2.5 && < 2.6
 - tagsoup < 0.15
 - text >= 1.2 && < 3
 - time >= 1.9 && < 1.15

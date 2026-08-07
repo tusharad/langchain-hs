@@ -4,6 +4,7 @@ import qualified Test.Langchain.Agent.ReAct as ReActTest
 import qualified Test.Langchain.DocumentLoader.Core as DocumentLoaderTest
 import qualified Test.Langchain.DocumentLoader.DirectoryLoader as DirectoryLoaderTest
 import qualified Test.Langchain.Embeddings.Core as EmbeddingsTest
+import qualified Test.Langchain.Error as ErrorTest
 import qualified Test.Langchain.LLM.Core as LLMCoreTest
 import qualified Test.Langchain.LLM.Ollama as OllamaLLMTest
 import qualified Test.Langchain.Memory.Core as MemoryTest
@@ -25,7 +26,8 @@ main =
   defaultMain $
     testGroup
       "Langchain"
-      [ LLMCoreTest.tests
+      [ ErrorTest.tests
+      , LLMCoreTest.tests
       , OllamaLLMTest.tests
       , PromptTemplateTest.tests
       , OutputParserTest.tests

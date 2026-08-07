@@ -81,10 +81,7 @@ createInitialState mbSomeMemory input =
     }
   where
     defaultMemory =
-      WindowBufferMemory
-        { maxWindowSize = 100
-        , windowBufferMessages = initialChatMessage "You are a helpful AI assistant."
-        }
+      WindowBufferMemory 100 (initialChatMessage "You are a helpful AI assistant.")
 
 {-
 Returns False if:
