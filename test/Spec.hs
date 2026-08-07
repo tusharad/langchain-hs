@@ -19,6 +19,13 @@ import qualified Test.Langchain.Runnable.Utils as RunnableUtilsTest
 import qualified Test.Langchain.TextSplitter.Character as TextSplitterTest
 import qualified Test.Langchain.Tool.Core as ToolTest
 import qualified Test.Langchain.VectorStore.Core as VectorStoreTest
+import qualified Test.Langchain.Provider.Anthropic as AnthropicProviderTest
+import qualified Test.Langchain.Provider.DeepSeek as DeepSeekProviderTest
+import qualified Test.Langchain.Provider.Gemini as GeminiProviderTest
+import qualified Test.Langchain.Provider.Ollama as OllamaProviderTest
+import qualified Test.Langchain.Provider.OpenAI as OpenAIProviderTest
+import qualified Test.Langchain.Tool.Calculator as CalculatorToolTest
+import qualified Test.Langchain.Tool.FileSystem as FileSystemToolTest
 import Test.Tasty
 
 main :: IO ()
@@ -45,4 +52,11 @@ main =
       , RunnableChainsTest.tests
       , ConverationChainsTest.tests
       , TokenBufferMemoryTest.tests
+      , OllamaProviderTest.tests
+      , DeepSeekProviderTest.tests
+      , OpenAIProviderTest.tests
+      , AnthropicProviderTest.tests
+      , GeminiProviderTest.tests
+      , CalculatorToolTest.tests
+      , FileSystemToolTest.tests
       ]

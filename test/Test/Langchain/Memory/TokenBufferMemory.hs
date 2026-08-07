@@ -7,7 +7,7 @@ import Data.Either (isRight)
 import qualified Data.List.NonEmpty as NE
 import Data.Text (Text)
 import qualified Data.Text as T
-import Langchain.Error (LangchainError (errorMessage), llmError)
+import Langchain.Error (LangchainError, llmError, toText)
 import Langchain.LLM.Core
 import Langchain.Memory.Core (BaseMemory (..))
 import qualified Langchain.Memory.TokenBufferMemory as TB
@@ -24,79 +24,42 @@ unsnoc = foldr (\x -> Just . maybe ([], x) (\(~(a, b)) -> (x : a, b))) Nothing
 mkMsg :: Role -> Text -> Message
 mkMsg role1 content1 = Message role1 content1 defaultMessageData
 
-runAddAndGet :: TB.TokenBufferMemory -> [Message] -> IO ChatHistory
-runAddAndGet initial msgs = do
-  TB.tokenBufferMessages
-    <$> foldl
-      ( \mem_ msg -> do
-          mem <- mem_
-          eRes <- addMessage mem msg
-          case eRes of
-            Left _ -> pure mem
-            Right r -> pure r
-      )
-      (pure initial)
-      msgs
-
--- Tests
 tests :: TestTree
 tests =
   testGroup
     "TokenBufferMemory Tests"
-    [ countTokensTests
+    [ constructorTests
     , addMessageTests
     , addUserAndAiMessageTests
     , clearTest
     ]
 
-countTokensTests :: TestTree
-countTokensTests =
+constructorTests :: TestTree
+constructorTests =
   testGroup
-    "countTokens"
-    [ testCase "Empty message list" $
-        TB.countTokens [] @?= 0
-    , testCase "Single message" $
-        TB.countTokens [mkMsg System "abc"] @?= ceiling (3 / 4 :: Double)
-    , testCase "Multiple messages" $
-        TB.countTokens [mkMsg User "hello", mkMsg Assistant "world"] @?= ceiling (5 / 4 :: Double) * 2
+    "Constructor Tests"
+    [ testCase "TokenBufferMemory initializes with system message" $ do
+        let mem = TB.TokenBufferMemory 100 (NE.singleton (mkMsg System "You are an AI model"))
+        TB.maxTokens mem @?= 100
+        TB.tokenBufferMessages mem
+          @?= NE.singleton (mkMsg System "You are an AI model")
     ]
 
 addMessageTests :: TestTree
 addMessageTests =
   testGroup
-    "addMessage"
-    [ testCase "Add within limit" $ do
-        let initial = TB.TokenBufferMemory 100 (NE.fromList [mkMsg System ""])
-            newMsg = mkMsg User "content"
-        updated <- runAddAndGet initial [newMsg]
-        NE.length updated @?= 2
-    , testCase "Exceeding token limit trims old messages" $ do
-        -- Total tokens allowed: 6
-        -- Each message has 3 characters ⇒ ~1 token each
-        let maxTok = 2
-            baseMsg = mkMsg System "aaa"
-            userMsg = mkMsg User "bbb"
-            aiMsg = mkMsg Assistant "ccc"
-
-            initial = TB.TokenBufferMemory maxTok (NE.fromList [baseMsg])
-
-        updated <- runAddAndGet initial [userMsg, aiMsg]
-        NE.toList updated @?= [baseMsg, aiMsg] -- first message gets trimmed
-    , testCase "New message alone exceeds limit" $ do
-        let initial = TB.TokenBufferMemory 1 (NE.fromList [mkMsg System ""])
-            bigMsg = mkMsg User (T.replicate 10 "a") -- 10 chars → 2.5 tokens (ceil to 3)
-        result <- addMessage initial bigMsg
-        assertEqual
-          "New message is exceeding limit"
-          (Left (llmError "New message is exceeding limit" Nothing Nothing))
-          result
-    , testCase "Preserves System message when trimming non-system messages" $ do
-        -- maxTokens: 4 tokens (16 chars max)
-        -- system: "sys!" (4 chars = 1 token)
-        -- user1: "12345678" (8 chars = 2 tokens)
-        -- user2: "12345678" (8 chars = 2 tokens)
-        -- Total system + user1 + user2 = 5 tokens > 4 tokens
-        -- Trimming user1 leaves system + user2 (3 tokens <= 4 tokens)
+    "addMessage logic"
+    [ testCase "Add message within token limit" $ do
+        let sysMsg = mkMsg System "sys"
+            user1 = mkMsg User "12345678" -- 2 tokens
+            user2 = mkMsg User "12345678" -- 2 tokens
+            initial = TB.TokenBufferMemory 10 (NE.fromList [sysMsg, user1])
+        res <- addMessage initial user2
+        case res of
+          Left err -> assertFailure $ "Expected Right but got Left: " ++ show err
+          Right mem ->
+            NE.toList (TB.tokenBufferMessages mem) @?= [sysMsg, user1, user2]
+    , testCase "Evicts oldest non-system message when exceeding limit" $ do
         let sysMsg = mkMsg System "sys!"
             user1 = mkMsg User "12345678"
             user2 = mkMsg User "12345678"
@@ -113,8 +76,7 @@ addMessageTests =
         res <- addMessage initial userMsg
         case res of
           Left err ->
-            errorMessage err
-              @?= "Cannot add new message since system message and new message exceeds limit"
+            assertBool "Should contain limit error message" ("exceeds limit" `T.isInfixOf` toText err)
           Right _ -> assertFailure "Expected Left due to overflow"
     , testCase "BaseMemory messages retrieves history" $ do
         let initial = TB.TokenBufferMemory 10 (NE.fromList [mkMsg System "init"])

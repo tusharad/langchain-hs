@@ -61,6 +61,11 @@ library
       Langchain.Memory.TokenBufferMemory
       Langchain.OutputParser.Core
       Langchain.PromptTemplate
+      Langchain.Provider.Anthropic
+      Langchain.Provider.DeepSeek
+      Langchain.Provider.Gemini
+      Langchain.Provider.Ollama
+      Langchain.Provider.OpenAI
       Langchain.Retriever.Core
       Langchain.Retriever.MultiQueryRetriever
       Langchain.Runnable.Chain
@@ -71,6 +76,7 @@ library
       Langchain.Tool.Calculator
       Langchain.Tool.Core
       Langchain.Tool.DuckDuckGo
+      Langchain.Tool.FileSystem
       Langchain.Tool.Utils
       Langchain.Tool.WebScraper
       Langchain.Tool.WikipediaTool
@@ -95,6 +101,7 @@ library
     , http-conduit ==2.*
     , http-types >=0.11 && <0.13
     , langchain-hs-core
+    , mtl >=2.2 && <2.4
     , ollama-haskell >=0.3.0.0
     , openai >=2.2.1
     , parsec <4
@@ -122,13 +129,20 @@ test-suite langchain-hs-test
       Test.Langchain.Memory.TokenBufferMemory
       Test.Langchain.OutputParser.Core
       Test.Langchain.PromptTemplate
+      Test.Langchain.Provider.Anthropic
+      Test.Langchain.Provider.DeepSeek
+      Test.Langchain.Provider.Gemini
+      Test.Langchain.Provider.Ollama
+      Test.Langchain.Provider.OpenAI
       Test.Langchain.Retriever.Core
       Test.Langchain.Runnable.Chains
       Test.Langchain.Runnable.ConversationChains
       Test.Langchain.Runnable.Core
       Test.Langchain.Runnable.Utils
       Test.Langchain.TextSplitter.Character
+      Test.Langchain.Tool.Calculator
       Test.Langchain.Tool.Core
+      Test.Langchain.Tool.FileSystem
       Test.Langchain.VectorStore.Core
       Paths_langchain_hs
   hs-source-dirs:
@@ -148,6 +162,7 @@ test-suite langchain-hs-test
     , http-types >=0.11 && <0.13
     , langchain-hs
     , langchain-hs-core
+    , mtl >=2.2 && <2.4
     , ollama-haskell >=0.3.0.0
     , openai >=2.2.1
     , parsec <4

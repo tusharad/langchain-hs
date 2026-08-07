@@ -5,6 +5,7 @@ import Test.Tasty
 import qualified Test.Langchain.Core.Model as ModelTest
 import qualified Test.Langchain.Core.Runnable as RunnableTest
 import qualified Test.Langchain.Core.Stream as StreamTest
+import qualified Test.Langchain.Core.Tool as ToolTest
 
 main :: IO ()
 main = defaultMain tests
@@ -16,4 +17,5 @@ tests =
     [ RunnableTest.tests
     , ModelTest.tests
     , StreamTest.tests
+    , ToolTest.tests
     ]

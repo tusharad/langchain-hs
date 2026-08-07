@@ -7,6 +7,21 @@ import Langchain.Error
 import Test.Tasty
 import Test.Tasty.HUnit
 
+getErrorContext :: LangchainError -> Maybe ErrorContext
+getErrorContext (LLMError _ ctx) = ctx
+getErrorContext (AgentError _ ctx) = ctx
+getErrorContext (MemoryError _ ctx) = ctx
+getErrorContext (ToolError _ ctx) = ctx
+getErrorContext (VectorStoreError _ ctx) = ctx
+getErrorContext (DocumentLoaderError _ ctx) = ctx
+getErrorContext (EmbeddingError _ ctx) = ctx
+getErrorContext (RunnableError _ ctx) = ctx
+getErrorContext (ParsingError _ ctx) = ctx
+getErrorContext (NetworkError _ ctx) = ctx
+getErrorContext (ConfigurationError _ ctx) = ctx
+getErrorContext (ValidationError _ ctx) = ctx
+getErrorContext (InternalError _ ctx) = ctx
+
 tests :: TestTree
 tests =
   testGroup
@@ -15,28 +30,28 @@ tests =
         "Context Generation in Error Constructors"
         [ testCase "llmError without params has no context" $ do
             let err = llmError "Error msg" Nothing Nothing
-            errorContext err @?= Nothing
+            getErrorContext err @?= Nothing
         , testCase "llmError with model constructs context" $ do
             let err = llmError "Error msg" (Just "gpt-4") (Just "generate")
-            case errorContext err of
+            case getErrorContext err of
               Nothing -> assertFailure "Expected ErrorContext to be present"
               Just ctx -> do
-                contextComponent ctx @?= Just "gpt-4"
-                contextOperation ctx @?= Just "generate"
+                component ctx @?= "gpt-4"
+                operation ctx @?= "generate"
         , testCase "agentError with agentType constructs context" $ do
             let err = agentError "Agent failed" (Just "ReAct") (Just "execute")
-            case errorContext err of
+            case getErrorContext err of
               Nothing -> assertFailure "Expected ErrorContext to be present"
               Just ctx -> do
-                contextComponent ctx @?= Just "ReAct"
-                contextOperation ctx @?= Just "execute"
+                component ctx @?= "ReAct"
+                operation ctx @?= "execute"
         , testCase "toolError with toolName constructs context" $ do
             let err = toolError "Tool failed" (Just "Calculator") (Just "run")
-            case errorContext err of
+            case getErrorContext err of
               Nothing -> assertFailure "Expected ErrorContext to be present"
               Just ctx -> do
-                contextComponent ctx @?= Just "Calculator"
-                contextOperation ctx @?= Just "run"
+                component ctx @?= "Calculator"
+                operation ctx @?= "run"
         ]
     , testGroup
         "displayException Formatting"

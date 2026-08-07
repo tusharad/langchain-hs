@@ -44,6 +44,7 @@ library:
     - Langchain.Core.Model.Types
     - Langchain.Core.Stream
     - Langchain.Core.Runnable
+    - Langchain.Core.Tool
 
 tests:
   langchain-hs-core-test:
