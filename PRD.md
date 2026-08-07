@@ -1,187 +1,518 @@
 # Product Requirements Document (PRD)
 
-## Project: `langchain-hs` 2.0 – Production-Grade Haskell LLM Application Framework
+## Project: `langchain-hs` — A Functional-First AI Framework for Haskell
 
-- **Status**: Draft / Proposed
-- **Author**: Maintainer & AI Architect
-- **Version**: 2.0.0-PRD
-- **Target GHC Versions**: GHC 9.4.8, 9.6.6, 9.8.4, 9.10.1
-
----
-
-## 1. Vision & Executive Summary
-
-`langchain-hs` 2.0 aims to be the standard-setting, production-ready, type-safe framework for building LLM-powered applications, multi-agent state machines, and RAG pipelines in Haskell. 
-
-While existing libraries in Python and JavaScript offer rich ecosystems, they suffer from runtime dynamic typing failures, unhandled async race conditions, and heavy memory overhead. `langchain-hs` 2.0 leverages Haskell's advanced type system (GADTs, Type Families, Effect Systems, Generics) to provide **Correctness by Construction**, **Zero-Cost Streaming Composition**, and **Deterministic Multi-Agent Orchestration**.
+- **Status**: Active / v2 Proposal
+- **Author**: Tushar Adhatrao (Maintainer)
+- **PRD Version**: 2.0.0
+- **Framework Version Target**: `0.1.0` → `1.0.0`
+- **GHC Support**: 9.4, 9.6, 9.8, 9.10, 9.12
 
 ---
 
-## 2. Comprehensive Cross-Implementation Feature Comparison Matrix
+## 1. Vision & North Star
 
-The table below presents an empirical feature audit comparing the 6 implementations available in the workspace:
-1. `langchain-python` (Python core / LangChain ecosystem)
-2. `langchain` (Elixir core)
-3. `langchain-rust` (Rust crate)
-4. `langchain4j` (Java framework)
-5. `langchaingo` (Go module)
-6. `langchain-hs` 1.0 (Current legacy Haskell package)
-7. **`langchain-hs` 2.0** (Proposed rewritten Haskell framework)
+`langchain-hs` exists to answer a single, uncompromising question:
+
+> **What does an AI application framework look like when the language refuses to let you write bugs?**
+
+Every other AI framework—Python's LangChain, Elixir's LangChain, Rust's langchain-rs, Java's LangChain4j, Go's LangChainGo—was built to mirror Python's LangChain API in another language. They carry the original sin: they are **LLM wrappers dressed as frameworks**. Their abstractions leak, their types lie, their pipelines fail at runtime, and their streaming is bolted on as callbacks.
+
+`langchain-hs` v2 is **not a port**. It is a rethink. It is what a functional-programming-first AI framework looks like — built on Haskell's type system, not against it. It will be **demonstrably superior** across the following axes:
+
+1. **Correctness**: Pipeline type errors are compile errors.
+2. **Composability**: Pipelines are algebraic values, not executable side-effects.
+3. **Observability**: Streaming is a first-class Conduit stream, not a callback soup.
+4. **Safety**: No unhandled exceptions, no leaked handles, no race conditions.
+5. **Power**: State-graph agents with checkpointing, time-travel, and HITL — as a pure library.
+
+---
+
+## 2. Empirical State-of-the-Art Audit
+
+The following table is derived from **direct source code inspection** of all 6 competing implementations residing in this workspace.
 
 ### Status Legend
-- **FULL**: Native, production-grade first-class feature with full capabilities.
-- **PARTIAL**: Basic or incomplete implementation; lacks key abstractions, safety guarantees, or edge-case handling.
-- **MISSING**: Feature is completely absent from the implementation.
+
+| Symbol | Meaning |
+|--------|---------|
+| FULL | Native, production-grade. Complete abstractions, safety guarantees, edge-case coverage. |
+| PARTIAL | Present but incomplete; missing key safety, generality, or composability. |
+| MISSING | Entirely absent from the implementation. |
 
 ---
 
-### Feature Matrix
+### Cross-Implementation Feature Matrix
 
-| Feature Dimension | Python (`langchain-python`) | Elixir (`langchain`) | Rust (`langchain-rust`) | Java (`langchain4j`) | Go (`langchaingo`) | Haskell 1.0 (`langchain-hs` v1) | **Haskell 2.0 (`langchain-hs` v2)** |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **1. Monadic Effect / Context Agnostic** | **MISSING** (Tied to Python `asyncio` / sync thread loops) | **PARTIAL** (Tied to OTP processes / GenServer) | **PARTIAL** (Tied to Tokio async runtime) | **PARTIAL** (Tied to imperative JVM threads / RxJava) | **PARTIAL** (Tied to `context.Context`) | **MISSING** (Hardcoded concrete `IO` calls) | **FULL** (Monad-polymorphic `m`, `effectful` / `mtl` effect stack) |
-| **2. Declarative Chain Algebra (LCEL)** | **FULL** (`RunnableSequence`, `Parallel`, `Branch`, `Lambda`, `Fallback`) | **MISSING** (No pipeline expression language; manual function piping) | **PARTIAL** (Basic `Chain` trait; no parallel / branch GADTs) | **PARTIAL** (Fluent builders & AiServices proxies; no LCEL AST) | **PARTIAL** (Simple `Chain` interface; no parallel composition) | **PARTIAL** (Basic `RunnableSequence` GADT; `(|>>)` executes immediately in `IO`) | **FULL** (Pure GADT pipeline AST with `Seq`, `Par`, `Branch`, `Fallback`, `Lambda`) |
-| **3. Compile-Time Type Safety across Chains** | **MISSING** (Runtime Pydantic dynamic duck typing) | **MISSING** (Dynamic runtime struct specs / Dialyzer) | **PARTIAL** (Static trait bounds, but dynamic graph payloads) | **PARTIAL** (Java generics, but dynamic reflection heavy) | **MISSING** (Interface `{}` dynamic assertions) | **PARTIAL** (Associated type families on concrete `IO`) | **FULL** (Compile-time verified input/output type matching via GADTs) |
-| **4. Standardized Event Stream Protocol** | **FULL** (`astream_events` v1/v2 standard JSON protocol) | **PARTIAL** (Delta process messages to client process) | **PARTIAL** (Raw string chunk stream via `futures::Stream`) | **PARTIAL** (`TokenStream` callback handler) | **PARTIAL** (`StreamingFunc` chunk callback) | **MISSING** (Imperative `token -> IO ()` callbacks) | **FULL** (Standard `Conduit`-backed `StreamEvent` pipeline with lifecycle events) |
-| **5. Multi-Modal Message Payloads** | **FULL** (`ContentBlock` text, image, audio, video arrays) | **PARTIAL** (Text & base64 image support) | **PARTIAL** (Text & image URL support) | **FULL** (`TextContent`, `ImageContent`, `AudioContent`) | **PARTIAL** (Text & image URL support) | **MISSING** (Text-only content string field) | **FULL** (Typed `ContentBlock` sum types: text, image, audio, byte payloads) |
-| **6. Automated Tool Schema Compiler** | **FULL** (Pydantic models / function docstring parser) | **PARTIAL** (Manual map definitions / Elixir struct specs) | **PARTIAL** (`AsyncFn` macros with manual JSON Schema) | **FULL** (`@Tool` annotation parser & reflection schema compiler) | **MISSING** (Manual `jsonschema.Definition` struct construction) | **MISSING** (String-in / string-out functions without schema) | **FULL** (Automatic JSON Schema compilation via `GHC.Generics` + `Aeson`) |
-| **7. Structured Output Parsing** | **FULL** (`with_structured_output` using Pydantic / JsonSchema) | **PARTIAL** (JSON parsing helpers) | **PARTIAL** (Basic JSON output parser) | **FULL** (`AiServices` structured return interfaces) | **PARTIAL** (Basic parser interface) | **PARTIAL** (String JSON parsing functions) | **FULL** (Type-safe parsing via `FromJSON` + generic tool execution) |
-| **8. Cyclic State-Graph Engine (LangGraph)** | **FULL** (LangGraph `StateGraph`, `Node`, `Edge`, `Command`, `Send`) | **MISSING** (No graph state machine engine) | **MISSING** (No graph state machine engine) | **MISSING** (Only linear/agentic loop proxies) | **MISSING** (Only basic tool execution loop) | **MISSING** (Imperative `while` loop with max steps counter) | **FULL** (Native `LangGraph-hs` directed cyclic `StateGraph` engine) |
-| **9. Pure Graph State Reducers** | **FULL** (`Annotated` reducer functions per state key) | **MISSING** | **MISSING** | **MISSING** | **MISSING** | **MISSING** | **FULL** (Pure functional state reducer functions `s -> s -> s`) |
-| **10. Persistent Checkpointers & Time Travel** | **FULL** (`MemorySaver`, `SqliteSaver`, `PostgresSaver`) | **MISSING** | **MISSING** | **MISSING** | **MISSING** | **MISSING** | **FULL** (Durable checkpointer interfaces: `STMCheckpointer`, `SQLiteCheckpointer`) |
-| **11. Human-In-The-Loop (HITL) Interrupt / Resume** | **FULL** (`interrupt()` primitive, state patch & resume) | **MISSING** | **MISSING** | **MISSING** | **MISSING** | **MISSING** | **FULL** (Native interrupt state nodes & checkpoint resume signals) |
-| **12. RAG & Vector Store Ecosystem** | **FULL** (100+ loaders, splitters, hybrid search, re-rankers) | **PARTIAL** (Basic text splitters & memory vector store) | **PARTIAL** (Basic token splitters, fastembed, vector memory) | **FULL** (Comprehensive embedding store integrations) | **PARTIAL** (Basic splitters, pgvector, pinecone, chroma) | **PARTIAL** (Basic PDF/File loader, character splitter, in-memory store) | **FULL** (Comprehensive RAG package: `RecursiveCharacterSplitter`, `HNSW` vector store, `Conduit` document loaders) |
-| **13. Telemetry & Observability Tracing** | **FULL** (LangSmith, OpenTelemetry, `RunManager` callbacks) | **PARTIAL** (Telemetry events via Elixir `:telemetry`) | **MISSING** (No built-in tracing middleware) | **FULL** (Micrometer metrics, OpenTelemetry spans) | **MISSING** (No tracing middleware) | **MISSING** (No tracing context or span propagation) | **FULL** (Built-in OpenTelemetry span tracing & LangSmith exporter) |
-| **14. Concurrency Safety & Resource Cleanup** | **PARTIAL** (GIL bottlenecks, dynamic async leaks) | **FULL** (BEAM actor fault tolerance & process isolation) | **FULL** (Ownership model, zero runtime leaks) | **PARTIAL** (JVM thread pools, dynamic resource cleanup) | **FULL** (Goroutines, `context.Context` cancellation) | **PARTIAL** (Basic `Async` library calls; handle leak risk) | **FULL** (Resource-safe streaming via `ResourceT`, STM thread-safe state) |
-
----
-
-## 3. Deep Dive into Missing Functionality Across Implementations
-
-### 3.1 Gaps in Python (`langchain-python`)
-- **Compile-Time Safety**: Pipelines fail at runtime if a step output type does not match the next step input type.
-- **Resource Leaks in Async Streams**: Exception handling inside complex `astream_events` generators can swallow teardown logic.
-
-### 3.2 Gaps in Elixir (`langchain`)
-- **No LCEL Chain Algebra**: Lacks a formal composable pipeline language (like `RunnableSequence` or `RunnableBranch`); users must manually pipe data through Elixir functions.
-- **No Graph Agent Engine**: Lacks graph state machines, persistent checkpointers, state reducers, or time-travel debugging.
-
-### 3.3 Gaps in Rust (`langchain-rust`)
-- **Missing LCEL AST**: `Chain` trait is non-compositional for complex parallel, branching, or fallback topologies.
-- **No Agent State-Graph System**: Lacks a LangGraph equivalent for state-machine agents and persistent checkpointers.
-- **No Structured Streaming Events**: Streaming emits raw string tokens without event lifecycle metadata (`on_tool_start`, `on_chain_end`).
-
-### 3.4 Gaps in Java (`langchain4j`)
-- **No Declarative Expression Language**: Uses imperative class method calls and dynamic proxy annotations (`@AiService`) rather than pure functional pipeline algebra.
-- **No Graph State-Graph Engine**: Lacks native state-machine graphs, conditional edge routers, or persistent checkpointers.
-
-### 3.5 Gaps in Go (`langchaingo`)
-- **Weak Type Algebra**: Relies on `interface{}` dynamic payload casting for complex chains.
-- **No Graph State Machine or Event Protocol**: Lacks state graph execution, checkpointing, and fine-grained event streaming.
-
-### 3.6 Gaps in Legacy Haskell 1.0 (`langchain-hs`)
-- **Hardcoded Concrete `IO`**: All typeclasses mandate `IO`, rendering effect handlers or pure unit tests impossible.
-- **Imperative Side-Effecting Streaming**: Uses `token -> IO ()` callback functions rather than resource-safe streaming pipelines (`Conduit`).
-- **No Tool Schema Derivation**: Tools require manual string input/output handling.
-- **No Agent Graph Engine & Telemetry**: Agent loop is a simple `while` loop with no state persistence or observability.
-
----
-
-## 4. Product Principles for `langchain-hs` 2.0
-
-1. **Type-Safe by Construction**: Inconsistent pipeline inputs/outputs, invalid tool schemas, or malformed state transitions MUST trigger compile-time errors, not runtime exceptions.
-2. **Monad-Agnostic / Effect-Friendly**: Components must NOT be locked into concrete `IO`. They must operate over arbitrary monadic stacks (`MonadIO m`, `MonadUnliftIO m`, or algebraic effect handlers like `effectful`).
-3. **First-Class Streaming & Observability**: Streaming is not an afterthought or imperative callback; it is a primary data protocol (`Conduit` stream emitting `StreamEvent`s).
-4. **Deterministic Agentic State Machines**: Abandon rigid `while` loops for agent execution in favor of a directed cyclic state graph engine (LangGraph paradigm) with persistent checkpointers and human-in-the-loop (HITL) capabilities.
-5. **Zero Modesty in Ergonomics**: Simple tasks must take 3 lines of code; complex multi-agent workflows must remain readable and modular.
-
----
-
-## 5. Target Personas & Use Cases
-
-- **Haskell Backend Engineers**: Building enterprise LLM microservices, customer support bots, automated code synthesis, or semantic search APIs requiring high throughput and zero crashes.
-- **AI Systems Engineers & Researchers**: Designing deterministic agentic workflows with strict safety bounds, structured output validation, and complete audit tracing.
-- **Data & Fintech Architects**: Requiring auditability, exact type guarantees on financial/regulatory outputs, and local privacy-preserving LLM execution via Ollama/Llama.cpp.
-
----
-
-## 6. Functional Requirements
-
-### FR-1: Type-Safe LangChain Expression Language (LCEL)
-- **FR-1.1**: The framework MUST provide a composable `Runnable` abstraction capable of sequential composition (`RunnableSequence`), parallel composition (`RunnableParallel`), conditional branching (`RunnableBranch`), fallbacks (`RunnableWithFallback`), and lambda transformations (`RunnableLambda`).
-- **FR-1.2**: Sequential composition (`|>>`) MUST ensure at compile-time that `Output(Runnable A) == Input(Runnable B)`.
-- **FR-1.3**: Parallel composition (`&>&`) MUST accept inputs and yield strongly-typed records or tuples of outputs concurrently using async execution.
-
-### FR-2: Standardized Model & Provider Layer
-- **FR-2.1**: Unified typeclass `ChatModel` supporting synchronous invocation (`invoke`), asynchronous batching (`batch`), and streaming (`stream`).
-- **FR-2.2**: First-class support for major providers: OpenAI (GPT-4o), Anthropic (Claude 3.5 Sonnet), Google Gemini (Gemini 1.5/2.0), Ollama (Local LLMs), and DeepSeek.
-- **FR-2.3**: Built-in support for provider configuration (Temperature, TopP, MaxTokens, StopSequences, Reasonable Default parameters).
-
-### FR-3: Type-Safe Dynamic Tool System & Schema Derivation
-- **FR-3.1**: Haskell functions and data types MUST automatically derive tool definitions (JSON Schema format) via `GHC.Generics` and `Aeson`.
-- **FR-3.2**: Tool invocation MUST validate parameters against expected types and return strongly typed structured errors on parsing failures.
-- **FR-3.3**: Support for multimodal tool inputs (text, image, raw byte payloads).
-
-### FR-4: Standardized Event Streaming Protocol (`astream_events`)
-- **FR-4.1**: Components MUST support streaming via `Conduit` streams yielding structured `StreamEvent` tokens.
-- **FR-4.2**: `StreamEvent` MUST capture fine-grained lifecycle events:
-  - `EventLLMStart`, `EventLLMChunk`, `EventLLMFinish`
-  - `EventToolStart`, `EventToolEnd`, `EventToolError`
-  - `EventChainStart`, `EventChainEnd`
-- **FR-4.3**: Stream processing MUST support cancellation, timeout bounds, and backpressure.
-
-### FR-5: LangGraph-hs State-Graph Agent Framework
-- **FR-5.1**: Provide a state-graph engine where agents are defined as directed graphs with typed state `s`, nodes `Node s m`, and conditional edges `Edge s m`.
-- **FR-5.2**: State reducers MUST be pure functions updating graph state transactionally.
-- **FR-5.3**: Support for durable checkpointers (`MemoryCheckpointer`, `SQLiteCheckpointer`, `STMCheckpointer`) enabling state restoration, time-travel debugging, and Human-in-the-Loop (HITL) interrupt/resume signals.
-
-### FR-6: Memory & Context Engineering
-- **FR-6.1**: Support standard memory implementations: `ChatMessageHistory`, `WindowedBufferMemory`, `VectorStoreRetrieverMemory`, and `SummaryMemory`.
-- **FR-6.2**: Thread-safe memory operations supporting concurrent chat sessions via `TVar` / STM.
-
-### FR-7: RAG & Document Processing Subsystem
-- **FR-7.1**: Document loaders for PlainText, Markdown, JSON, PDF, and HTML.
-- **FR-7.2**: Text splitters including `RecursiveCharacterTextSplitter`, `TokenTextSplitter`, and Code-Aware Splitters (Haskell, Python, JS).
-- **FR-7.3**: In-Memory Vector Store (`HNSW` / Cosine similarity) and interfaces for external vector databases (pgvector, Qdrant, Pinecone).
-
-### FR-8: Telemetry, Observability & Tracing
-- **FR-8.1**: Integrated tracer emitting OpenTelemetry-compliant spans (`TraceId`, `SpanId`, timing, token usage, metadata).
-- **FR-8.2**: Built-in HTTP middleware to export traces to LangSmith, Datadog, or OpenTelemetry collectors.
+| Feature | Python | Elixir | Rust | Java | Go | **Haskell v1** | **Haskell v2 (target)** |
+|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **Core Architecture** | | | | | | | |
+| Monad/Effect-polymorphic API | MISSING | PARTIAL | PARTIAL | PARTIAL | PARTIAL | MISSING | **FULL** |
+| Pure pipeline AST (compose without executing) | MISSING | MISSING | MISSING | MISSING | MISSING | MISSING | **FULL** |
+| Compile-time I/O type safety across pipelines | MISSING | MISSING | PARTIAL | PARTIAL | MISSING | PARTIAL | **FULL** |
+| Structured error hierarchy (not `String`/exceptions) | PARTIAL | MISSING | PARTIAL | PARTIAL | MISSING | FULL | **FULL** |
+| **Chat Model Layer** | | | | | | | |
+| Unified `ChatModel` typeclass | FULL | PARTIAL | FULL | FULL | FULL | FULL | **FULL** |
+| Multi-modal content blocks (text, image, audio) | FULL | PARTIAL | PARTIAL | FULL | PARTIAL | MISSING | **FULL** |
+| Tool/function calling with JSON Schema | FULL | PARTIAL | PARTIAL | FULL | PARTIAL | PARTIAL | **FULL** |
+| Reasoning / thinking tokens | FULL | MISSING | MISSING | PARTIAL | MISSING | PARTIAL | **FULL** |
+| OpenAI / Anthropic / Gemini / Ollama / DeepSeek | FULL | PARTIAL | PARTIAL | FULL | FULL | FULL | **FULL** |
+| **Pipeline Composition (LCEL)** | | | | | | | |
+| Sequential composition | FULL | MISSING | PARTIAL | PARTIAL | PARTIAL | PARTIAL | **FULL** |
+| Parallel composition | FULL | MISSING | MISSING | MISSING | MISSING | MISSING | **FULL** |
+| Conditional branching | FULL | MISSING | MISSING | MISSING | MISSING | PARTIAL | **FULL** |
+| Fallback chains | FULL | MISSING | MISSING | MISSING | MISSING | MISSING | **FULL** |
+| Lambda/pure transforms in pipelines | FULL | MISSING | MISSING | MISSING | MISSING | MISSING | **FULL** |
+| Pipeline as inspectable pure value (not IO) | FULL | MISSING | MISSING | MISSING | MISSING | MISSING | **FULL** |
+| **Streaming** | | | | | | | |
+| Structured event protocol (astream_events) | FULL | MISSING | MISSING | PARTIAL | MISSING | MISSING | **FULL** |
+| Resource-safe (backpressure, cancellation) | PARTIAL | FULL | FULL | PARTIAL | FULL | MISSING | **FULL** |
+| Token streaming | FULL | PARTIAL | FULL | FULL | FULL | FULL | **FULL** |
+| Tool call streaming deltas | FULL | MISSING | MISSING | PARTIAL | MISSING | MISSING | **FULL** |
+| **Tool System** | | | | | | | |
+| Auto JSON Schema derivation from types | FULL | MISSING | MISSING | FULL | MISSING | MISSING | **FULL** |
+| Type-safe tool input parsing | FULL | MISSING | MISSING | FULL | MISSING | MISSING | **FULL** |
+| Dynamic tool dispatch (heterogeneous list) | FULL | PARTIAL | PARTIAL | FULL | PARTIAL | PARTIAL | **FULL** |
+| Built-in tools (search, calculator, scraper) | FULL | MISSING | PARTIAL | FULL | PARTIAL | FULL | **FULL** |
+| **Memory** | | | | | | | |
+| Window buffer memory | FULL | FULL | PARTIAL | FULL | FULL | FULL | **FULL** |
+| Token-bounded memory | FULL | MISSING | MISSING | FULL | MISSING | FULL | **FULL** |
+| Summary memory | FULL | MISSING | MISSING | FULL | MISSING | MISSING | **FULL** |
+| STM-safe concurrent memory | MISSING | FULL | FULL | PARTIAL | FULL | MISSING | **FULL** |
+| **Agent Framework** | | | | | | | |
+| ReAct agent pattern | FULL | MISSING | PARTIAL | FULL | FULL | FULL | **FULL** |
+| Plan-and-Execute agent | FULL | MISSING | MISSING | PARTIAL | MISSING | MISSING | **FULL** |
+| State-graph engine (LangGraph-style) | FULL | MISSING | MISSING | MISSING | MISSING | MISSING | **FULL** |
+| Durable checkpointing | FULL | MISSING | MISSING | MISSING | MISSING | MISSING | **FULL** |
+| Human-in-the-loop (HITL) interrupt/resume | FULL | MISSING | MISSING | MISSING | MISSING | MISSING | **FULL** |
+| Agent middleware/hooks | FULL | MISSING | MISSING | FULL | PARTIAL | FULL | **FULL** |
+| **RAG Pipeline** | | | | | | | |
+| Document loaders (text, PDF, HTML, MD, JSON) | FULL | PARTIAL | PARTIAL | FULL | PARTIAL | FULL | **FULL** |
+| Recursive character splitter | FULL | MISSING | PARTIAL | FULL | PARTIAL | MISSING | **FULL** |
+| Token-aware splitter | FULL | MISSING | FULL | FULL | MISSING | MISSING | **FULL** |
+| In-memory vector store | FULL | PARTIAL | PARTIAL | FULL | PARTIAL | PARTIAL | **FULL** |
+| External vector DBs (pgvector, Qdrant, Pinecone) | FULL | MISSING | PARTIAL | FULL | FULL | MISSING | **FULL** |
+| Hybrid search (dense + sparse) | FULL | MISSING | MISSING | FULL | MISSING | MISSING | **FULL** |
+| Multi-query retriever | FULL | MISSING | MISSING | FULL | MISSING | FULL | **FULL** |
+| Contextual compression retriever | FULL | MISSING | MISSING | FULL | MISSING | MISSING | **FULL** |
+| **Output Parsing** | | | | | | | |
+| JSON structured output | FULL | PARTIAL | PARTIAL | FULL | PARTIAL | PARTIAL | **FULL** |
+| Auto-retry on parse failure | FULL | MISSING | MISSING | FULL | MISSING | MISSING | **FULL** |
+| Schema-validated structured output | FULL | MISSING | MISSING | FULL | MISSING | MISSING | **FULL** |
+| **Prompt Engineering** | | | | | | | |
+| Prompt templates (variable substitution) | FULL | FULL | FULL | FULL | FULL | FULL | **FULL** |
+| Few-shot prompt templates | FULL | MISSING | MISSING | FULL | MISSING | PARTIAL | **FULL** |
+| Chat prompt templates (multi-role) | FULL | PARTIAL | PARTIAL | FULL | PARTIAL | MISSING | **FULL** |
+| Prompt composition operators | FULL | MISSING | MISSING | MISSING | MISSING | MISSING | **FULL** |
+| **Observability** | | | | | | | |
+| OpenTelemetry tracing | FULL | PARTIAL | MISSING | FULL | MISSING | MISSING | **FULL** |
+| Token usage metrics | FULL | MISSING | MISSING | FULL | MISSING | MISSING | **FULL** |
+| LangSmith integration | FULL | MISSING | MISSING | MISSING | MISSING | MISSING | **FULL** |
+| Structured event system | FULL | PARTIAL | MISSING | FULL | MISSING | PARTIAL | **FULL** |
+| **Package Architecture** | | | | | | | |
+| Modular split packages | FULL | MISSING | MISSING | FULL | MISSING | MISSING | **FULL** |
+| Core / providers / graph / RAG separation | FULL | MISSING | MISSING | FULL | MISSING | MISSING | **FULL** |
 
 ---
 
-## 7. Non-Functional Requirements (NFR)
+## 3. Critical Deficiencies in `langchain-hs` v1
 
-- **NFR-1: Reliability & Error Handling**: Zero runtime crashes due to unhandled exceptions. All errors MUST be captured in structured `LangchainError` hierarchy or monad error effects (`MonadError LangchainError m`).
-- **NFR-2: Performance & Memory Overhead**: Minimal memory footprint during high-concurrency streaming. Zero leak of HTTP connections or system handles (enforced via `ResourceT`).
-- **NFR-3: Modular Package Architecture**: Split into lightweight fine-grained packages:
-  - `langchain-hs-core`: Base typeclasses, LCEL algebra, schemas, events.
-  - `langchain-hs-providers`: Provider implementations (OpenAI, Anthropic, Gemini, Ollama).
-  - `langchain-hs-graph`: State machine agent engine (LangGraph-hs).
-  - `langchain-hs-rag`: Document loaders, splitters, vector stores.
-  - `langchain-hs`: Meta package exposing top-level API.
-- **NFR-4: Tooling & Documentation**: Complete Haddock documentation with runnable doctests and code examples for every public function.
+This section documents **concrete, code-level** deficiencies found in the current codebase.
 
----
+### 3.1 Hardcoded `IO` — The Root Problem
 
-## 8. Release Roadmap
+Every typeclass method in v1 is pinned to concrete `IO`:
 
-```mermaid
-timeline
-    title langchain-hs 2.0 Release Roadmap
-    section Core Infrastructure (v0.1.0)
-        LCEL GADT Architecture : Core Runnable typeclasses & operators
-        Standard Error System : Structured hierarchy & Effect integration
-        Stream Protocol : Conduit-based StreamEvent pipeline
-    section Providers & Tools (v0.2.0)
-        Model Providers : OpenAI, Anthropic, Gemini, Ollama
-        Tool System : Generic JSON Schema derivation & execution
-    section State Graph Agent (v0.3.0)
-        LangGraph Engine : State graphs, reducers, conditional edges
-        Checkpointers : STM & SQLite persistent state
-    section RAG & Observability (v0.4.0)
-        RAG Subsystem : Vector stores, text splitters, retrievers
-        Telemetry : OpenTelemetry & LangSmith tracer
-    section Production Release (v1.0.0)
-        Battle-Tested API : Finalized stable API, full docs & benchmarks
+```haskell
+-- v1: forces IO everywhere — no effect polymorphism
+class LLM llm where
+  generate :: llm -> Text -> Maybe (LLMParams llm) -> IO (LangchainResult Text)
+  chat :: llm -> ChatHistory -> Maybe (LLMParams llm) -> IO (LangchainResult Message)
 ```
+
+This makes the library **untestable without real I/O**, impossible to use in `MonadIO`-polymorphic stacks, and resistant to effect systems (`effectful`, `polysemy`, `mtl`).
+
+```haskell
+-- v2: monad-polymorphic
+class ChatModel model where
+  type ModelConfig model :: *
+  invoke :: (MonadIO m, MonadError LangchainError m)
+         => model -> [Message] -> Maybe (ModelConfig model) -> m Message
+```
+
+### 3.2 `Runnable` Executes Eagerly — No Pipeline AST
+
+The current `(|>>)` operator **runs IO immediately** when composing — it is not algebraic:
+
+```haskell
+-- v1: executes immediately — pipeline cannot be inspected or serialized
+chain :: (...) => r1 -> r2 -> RunnableInput r1 -> IO (Either LangchainError (RunnableOutput r2))
+(|>>) = chain  -- NOT a pipeline builder; an executor
+```
+
+Python's LangChain builds a `RunnableSequence` AST and executes later. `langchain-hs` v2 must do the same.
+
+### 3.3 `Callback` System Has Only 3 Events — Grossly Inadequate
+
+```haskell
+-- v1: 3 events, String errors, no tool/chain events, no metadata
+data Event = LLMStart | LLMEnd | LLMError String
+type Callback = Event -> IO ()
+```
+
+Python's `astream_events` protocol has 10+ event types with rich metadata (`runId`, `modelName`, `tokenUsage`, `toolArgs`). v2 must implement a full `StreamEvent` ADT backed by `Conduit`.
+
+### 3.4 `Tool` Has No JSON Schema — Tool Calling Fundamentally Broken
+
+```haskell
+-- v1: no schema derivation — LLM cannot know how to call the tool
+class Tool a where
+  type Input a
+  type Output a
+  runTool :: a -> Input a -> IO (Output a)  -- raw Haskell types, no JSON
+```
+
+The `ToolAcceptingToolCall` wrapper requiring `Input t ~ ToolCall` in `Agent.Core` is a workaround — it forces the tool to accept the raw LLM output instead of typed arguments. This is the wrong abstraction.
+
+### 3.5 `Memory` is Not Thread-Safe
+
+`WindowBufferMemory` stores state in a plain Haskell record. State updates return a new value requiring manual threading. Concurrent sessions on the same memory object have no consistency guarantees. No `TVar`, no `STM`, no `IORef`.
+
+### 3.6 `Agent` Loop is an Unstructured Recursive `IO` Function
+
+`AgentExecutor` is a recursive `IO` function with a manual counter. There is no:
+- State graph with named typed nodes and edges
+- Persistent checkpointing between turns
+- Human-in-the-loop interrupt/resume
+- Sub-graph delegation or parallel sub-agents
+
+### 3.7 `Message.content` is `Text` — No Multimodal Support
+
+Despite Claude, GPT-4o, and Gemini supporting multimodal content, messages in v1 use `content :: Text`. The `messageImages :: Maybe [Text]` workaround in `MessageData` does not compose with content blocks.
+
+### 3.8 Error Construction Silently Ignores Parameters
+
+All error constructors drop their `_model` and `_operation` parameters:
+
+```haskell
+-- v1: arguments named with _ prefix — silently ignored
+llmError :: Text -> Maybe Text -> Maybe Text -> LangchainError
+llmError msg _model _operation =
+  LangchainError { errorMessage = msg, errorContext = Nothing, ... }
+```
+
+This defeats the purpose of having those parameters in the API.
+
+### 3.9 Full Missing Features List
+
+- No `RunnableParallel` (n-ary parallel composition)
+- No `FewShotPromptTemplate` as `Runnable` (commented out)
+- No `SummaryMemory`
+- No `ContextualCompressionRetriever`
+- No external vector stores (only in-memory)
+- No `RecursiveCharacterTextSplitter`
+- No `TokenTextSplitter`
+- No OpenTelemetry tracing
+- No `with_structured_output` pattern
+- No `ChatPromptTemplate` (multi-role)
+- No `Plan-and-Execute` agent
+- No `EnsembleRetriever`
+- No `ParentDocumentRetriever`
+- No `PgvectorStore` / `QdrantStore`
+- No `MonadTracer`
+- No LangSmith exporter
+
+---
+
+## 4. Design Principles for `langchain-hs` v2
+
+These are **non-negotiable** principles that guide every architectural decision.
+
+### P1. Functional-First, Not LangChain-First
+
+`langchain-hs` is not a port of Python's LangChain. It is a Haskell framework for the same problem domain. When Python's API conflicts with Haskell idioms, the Haskell way wins every time.
+
+### P2. Types Are Documentation
+
+Every public function's type must be self-documenting. No `IO (Either String a)`. No `Dynamic`. No `Any`. The type checker is the first line of documentation.
+
+### P3. Algebras Before Side Effects
+
+Pipelines, agents, and graphs are **pure algebraic values** until explicitly executed. Composition operators build data structures; execution functions interpret them.
+
+### P4. Effect Polymorphism
+
+No concrete `IO` in typeclasses. All typeclasses are parameterized over `m` with appropriate constraints (`MonadIO m`, `MonadError LangchainError m`, `MonadUnliftIO m`).
+
+### P5. Resource Safety Is Non-Negotiable
+
+All HTTP connections, file handles, and streaming contexts MUST be managed with `ResourceT` and `bracket` patterns. No resource leaks under any error path.
+
+### P6. Streaming Is a First-Class Citizen
+
+Streaming responses are `Conduit` streams of typed `StreamEvent` values with full lifecycle events, backpressure, and cancellation. Not callbacks. Not token-by-token `IO ()` functions.
+
+### P7. Zero Implicit Global State
+
+The framework works with zero environment variables or global mutable state. All configuration is explicit, passed as values.
+
+---
+
+## 5. Functional Requirements
+
+### FR-CORE: Core Module (`langchain-hs-core`)
+
+#### FR-CORE-1: Effect-Polymorphic `ChatModel` Typeclass
+- `ChatModel` MUST be parameterized over `m` with `(MonadIO m, MonadError LangchainError m)`
+- Methods: `invoke`, `batch`, `stream`
+- `ModelConfig` associated type for per-provider configuration
+- `generate` convenience wrapper for single-turn text completion
+
+#### FR-CORE-2: Multi-Modal Message Model
+- `ContentBlock` sum type: `TextBlock Text`, `ImageBlock MimeType Base64`, `AudioBlock MimeType Base64`, `DataBlock ByteString`
+- `Message` replaces `content :: Text` with `contents :: NonEmpty ContentBlock`
+- `Role` includes `System | User | Assistant | Tool | Developer | Function`
+- `ToolCall` arguments as `Value` (not `Map Text Value`)
+- All types derive `ToJSON`, `FromJSON`, `Generic`, `Eq`, `Show`
+
+#### FR-CORE-3: Pure Pipeline GADT (`RunnableTree`)
+- `RunnableTree m i o` is a **pure GADT**: `Id | Prim | Lambda | Seq | Par | Branch | Fallback`
+- `(|>>)` builds a `Seq` node — pure, no IO
+- `(&>&)` builds a `Par` node — parallel composition
+- `interpret :: RunnableTree m i o -> i -> m (Either LangchainError o)` — sole execution point
+- Pipeline AST is inspectable (foldable for visualization/serialization)
+- `withFallback` wraps two trees, tries first, falls to second on any error
+
+#### FR-CORE-4: Standardized Streaming Event Protocol
+- `StreamEvent` ADT: `LLMStart | LLMChunk | LLMEnd | ToolStart | ToolEnd | ToolError | ChainStart | ChainEnd | NodeStart | NodeEnd`
+- Each event carries `runId :: Text` for correlation
+- `LLMEnd` carries `TokenUsage { promptTokens, completionTokens, totalTokens }`
+- `EventStream m = ConduitT () StreamEvent m ()` — canonical stream type
+- All streaming models emit `LLMStart`, one or more `LLMChunk`, then `LLMEnd`
+- Backpressure and cancellation via `Conduit` resource management
+
+#### FR-CORE-5: Structured Error Hierarchy
+- Retain and enhance `LangchainError` with `errorCategory`, `errorSeverity`, `errorContext`, `errorCause`
+- Fix: error construction helpers MUST NOT ignore `_model` and `_operation` parameters
+- Add `MonadError LangchainError m` constraint to all fallible typeclasses
+- `isRetryable :: LangchainError -> Bool` properly implemented
+
+#### FR-CORE-6: Type-Safe Tool System with Auto Schema
+- `IsTool` typeclass: `ToolInput t`, `ToolOutput t`, `toolName`, `toolDescription`, `toolSchema :: Value`, `executeTool`
+- `toolSchema` automatically derivable for any type with `Generic + ToJSON + SchemaGen`
+- `DynamicTool m` wrapper for runtime heterogeneous tool dispatch
+- `mkTool :: IsTool t => t -> DynamicTool m` smart constructor
+- `ToolRegistry m` — named registry with O(log n) lookup by name
+- Tool execution returns `Either LangchainError Value` for LLM integration
+
+#### FR-CORE-7: Memory with STM Safety
+- `BaseMemory mem m` typeclass parameterized over `m`
+- `WindowBufferMemory` backed by `TVar` — thread-safe
+- `SummaryMemory` — LLM-compressed history when window exceeds threshold
+- `VectorRetrieverMemory` — semantic similarity-based context retrieval
+- `clear`, `addMessage`, `getMessages` — all polymorphic over `m`
+
+#### FR-CORE-8: Prompt Engineering
+- `PromptTemplate` — retain current implementation
+- `ChatPromptTemplate` — multi-role templates producing `[Message]`
+- `FewShotPromptTemplate` — complete `Runnable` instance (fix commented-out code)
+- `MessagePlaceholder` — variable substitution within message sequences
+- Prompt composition: `(<>) :: PromptTemplate -> PromptTemplate -> PromptTemplate`
+
+---
+
+### FR-PROVIDERS: Provider Module (`langchain-hs-providers`)
+
+#### FR-PROV-1: OpenAI
+- Chat completions with tool calling, streaming, structured output
+- Embeddings API (`text-embedding-3-small`, `text-embedding-3-large`)
+- Reasoning models (`o1`, `o3`) with thinking token support
+- `OpenAICompatible` reuse for OpenRouter, Together AI, Fireworks
+
+#### FR-PROV-2: Anthropic
+- Messages API with extended thinking support
+- Tool use (function calling), vision (base64 image blocks)
+- Streaming with tool call deltas
+
+#### FR-PROV-3: Google Gemini
+- Chat + Generate Content APIs, multimodal (text, image, audio, video)
+- Function calling, embeddings (`text-embedding-004`)
+
+#### FR-PROV-4: Ollama
+- Full integration via `ollama-haskell` library
+- Local model management (list, pull, delete)
+- Streaming with proper `Conduit` adapter, embeddings
+
+#### FR-PROV-5: DeepSeek
+- Chat completions with R1 reasoning model, thinking chain extraction
+
+#### FR-PROV-6: HuggingFace
+- Text generation and embeddings via Inference API
+
+---
+
+### FR-GRAPH: State-Graph Agent Engine (`langchain-hs-graph`)
+
+#### FR-GRAPH-1: Core `StateGraph` Engine
+- `StateGraph s m` — directed cyclic graph with typed state `s` and monad `m`
+- `NodeId` — opaque identifier for graph nodes
+- `Node s m` — `runNode :: s -> m (Either LangchainError s)`
+- `Edge s m` — `StaticEdge NodeId | ConditionalEdge (s -> m (Either LangchainError NodeId))`
+- `compileGraph` validates at construction time (no dangling edges, valid entry/exit)
+- `runGraph :: CompiledGraph s m -> s -> m (Either LangchainError s)`
+
+#### FR-GRAPH-2: State Reducers
+- `StateReducer s = s -> s -> s` — pure function merging partial state updates
+- Default reducers: `appendMessages`, `replaceField`, `mergeMaps`
+
+#### FR-GRAPH-3: Checkpointing
+- `Checkpointer cp m` typeclass: `saveCheckpoint`, `loadCheckpoint`, `listCheckpoints`
+- `MemoryCheckpointer` — in-memory with `TVar`
+- `SQLiteCheckpointer` — persistent using `sqlite-simple`
+- Thread-safe, checkpoint-per-thread-id
+
+#### FR-GRAPH-4: Human-in-the-Loop (HITL)
+- `interrupt :: m ()` — suspends graph at current node, persists state
+- `resumeGraph` — restores from checkpoint and continues execution
+- `HITLNode NodeId` — marks a node as an interrupt point
+
+#### FR-GRAPH-5: Multi-Agent Patterns
+- `Supervisor` node — routes to sub-agents based on task type
+- `SubGraph` node — embed one `StateGraph` inside another
+- `Send` command — dynamic fan-out to parallel sub-agents
+
+---
+
+### FR-RAG: RAG & Document Processing (`langchain-hs-rag`)
+
+#### FR-RAG-1: Document Loaders
+- `DocumentLoader` typeclass: `loadDocuments :: loader -> m (Either LangchainError [Document])`
+- Implementations: `FileLoader`, `DirectoryLoader`, `PDFLoader`, `HTMLLoader`, `MarkdownLoader`, `JSONLoader`, `CSVLoader`
+- `Document` with `pageContent :: Text` and `metadata :: Map Text Value`
+
+#### FR-RAG-2: Text Splitters
+- `TextSplitter` typeclass
+- `CharacterTextSplitter` — retain current
+- `RecursiveCharacterTextSplitter` — language-specific separator priority list
+- `TokenTextSplitter` — split by token count
+- `MarkdownHeaderSplitter` — split by header hierarchy
+
+#### FR-RAG-3: Embeddings
+- `Embeddings` typeclass: `embedDocuments`, `embedQuery`
+- Implementations: `OpenAIEmbeddings`, `GeminiEmbeddings`, `OllamaEmbeddings`, `HuggingFaceEmbeddings`
+
+#### FR-RAG-4: Vector Stores
+- `VectorStore vs` typeclass: `addDocuments`, `similaritySearch`, `similaritySearchByVector`, `maxMarginalRelevanceSearch`, `delete`
+- `InMemoryVectorStore` — enhanced with HNSW
+- `PgvectorStore` — PostgreSQL pgvector
+- `QdrantStore` — Qdrant vector database
+
+#### FR-RAG-5: Retrievers
+- `Retriever r` typeclass: `getRelevantDocuments :: r -> Text -> m [Document]`
+- `VectorStoreRetriever`, `MultiQueryRetriever`, `ContextualCompressionRetriever`
+- `EnsembleRetriever` — weighted multi-retriever combination
+- `ParentDocumentRetriever` — small chunk retrieval, parent doc return
+
+---
+
+### FR-OBS: Observability
+
+- `MonadTracer m` typeclass: `withSpan`, `addAttribute`, `recordException`
+- `Span` with `traceId`, `spanId`, `parentSpanId`, `startTime`, `endTime`, `attributes`
+- `NoOpTracer` — zero-cost default
+- `OpenTelemetryTracer` — exports to OTLP collectors
+- `LangSmithTracer` — exports run trees to LangSmith
+
+---
+
+## 6. Non-Functional Requirements
+
+| ID | Category | Requirement |
+|----|----------|-------------|
+| NFR-1 | Reliability | Zero runtime panics. All errors in `LangchainError` or `MonadError`. |
+| NFR-2 | Performance | HTTP connections reused via `Manager`. No per-call connection setup. |
+| NFR-3 | Memory | `ResourceT` for all streaming contexts. No handle leaks. |
+| NFR-4 | Concurrency | `STM` for shared state. `async` for parallel invocations. |
+| NFR-5 | Documentation | Every public function has Haddock with example and type explanation. |
+| NFR-6 | Testing | 80%+ unit test coverage. Integration tests gated behind env flag. |
+| NFR-7 | Compatibility | GHC 9.4, 9.6, 9.8, 9.10, 9.12. Stack LTS-21 through LTS-24. |
+| NFR-8 | Package size | Core package MUST NOT depend on HTTP or provider SDKs. |
+| NFR-9 | Ergonomics | 3-line hello world. Complex pipelines readable without documentation. |
+| NFR-10 | Hackage | All packages publishable to Hackage with correct bounds. |
+
+---
+
+## 7. Package Architecture
+
+```
+langchain-hs (meta / re-export)
+├── langchain-hs-core
+│   ├── Langchain.Core.Model          -- ChatModel typeclass, Message, ContentBlock
+│   ├── Langchain.Core.Runnable       -- RunnableTree GADT, operators
+│   ├── Langchain.Core.Tool           -- IsTool, DynamicTool, ToolRegistry
+│   ├── Langchain.Core.Memory         -- BaseMemory typeclass
+│   ├── Langchain.Core.Stream         -- StreamEvent, EventStream, Conduit types
+│   ├── Langchain.Core.Error          -- LangchainError hierarchy
+│   ├── Langchain.Core.Prompt         -- PromptTemplate, ChatPromptTemplate
+│   ├── Langchain.Core.Retriever      -- Retriever typeclass
+│   ├── Langchain.Core.Embeddings     -- Embeddings typeclass
+│   └── Langchain.Core.Telemetry      -- MonadTracer, Span, TokenUsage
+│
+├── langchain-hs-providers
+│   ├── Langchain.Provider.OpenAI
+│   ├── Langchain.Provider.Anthropic
+│   ├── Langchain.Provider.Gemini
+│   ├── Langchain.Provider.Ollama
+│   ├── Langchain.Provider.DeepSeek
+│   └── Langchain.Provider.HuggingFace
+│
+├── langchain-hs-graph
+│   ├── Langchain.Graph.StateGraph
+│   ├── Langchain.Graph.Node
+│   ├── Langchain.Graph.Edge
+│   ├── Langchain.Graph.Checkpointer
+│   ├── Langchain.Graph.HITL
+│   └── Langchain.Graph.MultiAgent
+│
+└── langchain-hs-rag
+    ├── Langchain.RAG.Loader
+    ├── Langchain.RAG.Splitter
+    ├── Langchain.RAG.VectorStore
+    ├── Langchain.RAG.Retriever
+    └── Langchain.RAG.Embeddings
+```
+
+---
+
+## 8. Success Metrics
+
+| Metric | v1 Baseline | v2 Target |
+|--------|------------|-----------|
+| Feature parity vs Python LangChain | ~35% | >90% |
+| Compile-time pipeline safety | Partial | Full |
+| Concurrent session safety | None | Full (STM) |
+| Streaming event types | 3 | 10+ |
+| LLM providers | 5 | 7+ |
+| Vector store integrations | 1 | 4+ |
+| Test coverage | ~40% | >80% |
+| Hackage packages | 1 | 5 |
+| Public documentation examples | ~30 | >150 |
+
+---
+
+## 9. Out of Scope (v2)
+
+- Browser / WASM compilation target
+- GraphQL API server
+- Model fine-tuning APIs
+- Native code generation (LLVM)
+- GUI / visual pipeline editor
+- Proprietary model hosting
+
+---
+
+## 10. Guiding Philosophy
+
+> "Make illegal states unrepresentable. Make correct programs easy to write. Make incorrect programs impossible to compile."
+
+`langchain-hs` v2 is the AI framework that Haskell deserves — not a faithful port of Python's design mistakes, but a ground-up implementation that uses the language's full power. When a Haskell developer builds an LLM application with `langchain-hs`, the type checker is their co-pilot, not their adversary.
