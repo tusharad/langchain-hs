@@ -1,6 +1,7 @@
 resolver: nightly-2025-10-31
 packages:
 - .
+- ./langchain-hs-core
 extra-deps:
   - ../ollama-haskell
 

@@ -94,6 +94,7 @@ library
     , filepath <2
     , http-conduit ==2.*
     , http-types >=0.11 && <0.13
+    , langchain-hs-core
     , ollama-haskell >=0.3.0.0
     , openai >=2.2.1
     , parsec <4
@@ -146,6 +147,7 @@ test-suite langchain-hs-test
     , http-conduit ==2.*
     , http-types >=0.11 && <0.13
     , langchain-hs
+    , langchain-hs-core
     , ollama-haskell >=0.3.0.0
     , openai >=2.2.1
     , parsec <4
