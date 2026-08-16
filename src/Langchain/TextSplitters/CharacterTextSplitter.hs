@@ -96,6 +96,11 @@ instance Core.TextSplitter CharacterSplitterOps where
 
 splitTextCharacter :: CharacterSplitterOps -> Text -> [Text]
 splitTextCharacter CharacterSplitterOps {..} txt =
+  -- Keep the legacy hard-cut behavior instead of delegating to Core.mergeSplits.
+  -- Using the shared merge logic would be closer to Python's CharacterTextSplitter,
+  -- but it would change existing behavior: long segments without separators are
+  -- currently split by chunkSize, while Python-style merging would keep them as
+  -- oversized chunks.
   mconcat $
     map
       (T.chunksOf chunkSize . T.strip)

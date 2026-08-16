@@ -185,8 +185,13 @@ chunkSize16 = 16
 assertLanguageSplit :: String -> Language -> Text -> [Text] -> TestTree
 assertLanguageSplit name language code expected =
   testCase name $ do
-    let ops = fromLanguage language defaultRecursiveCharacterSplitterOps {chunkSize = chunkSize16, chunkOverlap = 0}
+    let ops = fromLanguage language defaultRecursiveCharacterSplitterOps {chunkSize = languageCaseChunkSize language, chunkOverlap = 0}
     splitText ops code @?= expected
+
+languageCaseChunkSize :: Language -> Int64
+languageCaseChunkSize HTML = 60
+languageCaseChunkSize POWERSHELL = 60
+languageCaseChunkSize _ = chunkSize16
 
 uncurry4 :: (a -> b -> c -> d -> e) -> (a, b, c, d) -> e
 uncurry4 f (a, b, c, d) = f a b c d

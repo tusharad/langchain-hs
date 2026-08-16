@@ -40,6 +40,19 @@ tests =
               , Document "bar" source1
               , Document "baz" source2
               ]
+    , testCase "createDocuments pads missing metadata" $ do
+        let source1 = Map.fromList [("source", String "1")]
+            docs =
+              createDocuments
+                defaultCreateDocumentsOps
+                wordSplitterOps
+                ["foo bar", "baz"]
+                [source1]
+        docs
+          @?= [ Document "foo" source1
+              , Document "bar" source1
+              , Document "baz" mempty
+              ]
     , testCase "createDocuments can add start index" $ do
         let docs =
               createDocuments
@@ -53,6 +66,18 @@ tests =
               , Document "w1 w1" (Map.fromList [("start_index", String "12")])
               , Document "w1 w1" (Map.fromList [("start_index", String "18")])
               , Document "w1" (Map.fromList [("start_index", String "24")])
+              ]
+    , testCase "createDocuments start index respects overlap" $ do
+        let docs =
+              createDocuments
+                defaultCreateDocumentsOps {addStartIndex = True}
+                overlapSplitterOps
+                ["foo bar baz 123"]
+                [mempty]
+        docs
+          @?= [ Document "foo bar" (Map.fromList [("start_index", String "0")])
+              , Document "bar baz" (Map.fromList [("start_index", String "4")])
+              , Document "baz 123" (Map.fromList [("start_index", String "8")])
               ]
     , testCase "splitDocuments preserves document metadata" $ do
         let source1 = Map.fromList [("source", String "1")]
@@ -76,6 +101,9 @@ tests =
               , Document "a" source1
               , Document "z" source1
               ]
+    , testCase "mergeSplits merges splits with separator" $
+        mergeSplits 9 2 " " ["foo", "bar", "baz"]
+          @?= ["foo bar", "baz"]
     ]
 
 wordSplitterOps :: RecursiveCharacterSplitterOps
@@ -90,6 +118,15 @@ wordSplitterOps =
 overlappingWordSplitterOps :: RecursiveCharacterSplitterOps
 overlappingWordSplitterOps =
   wordSplitterOps {chunkSize = 5}
+
+overlapSplitterOps :: RecursiveCharacterSplitterOps
+overlapSplitterOps =
+  defaultRecursiveCharacterSplitterOps
+    { chunkSize = 7
+    , chunkOverlap = 3
+    , separators = [" ", ""]
+    , keepSeparator = KeepSeparatorNone
+    }
 
 characterSplitterOps :: RecursiveCharacterSplitterOps
 characterSplitterOps =
