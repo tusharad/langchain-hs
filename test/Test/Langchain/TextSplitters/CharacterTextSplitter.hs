@@ -1,16 +1,16 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Test.Langchain.TextSplitter.Character (tests) where
+module Test.Langchain.TextSplitters.CharacterTextSplitter (tests) where
 
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import Langchain.TextSplitter.Character
+import Langchain.TextSplitters.CharacterTextSplitter
 
 tests :: TestTree
 tests =
   testGroup
-    "Langchain.TextSplitter.Character Tests"
+    "Langchain.TextSplitters.CharacterTextSplitter Tests"
     [ testCase "defaultCharacterSplitterOps should have correct values" $ do
         chunkSize defaultCharacterSplitterOps @?= 100
         separator defaultCharacterSplitterOps @?= "\n\n"

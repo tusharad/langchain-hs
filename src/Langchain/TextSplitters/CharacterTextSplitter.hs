@@ -2,7 +2,7 @@
 {-# LANGUAGE RecordWildCards #-}
 
 {- |
-Module      : Langchain.TextSplitter.Character
+Module      : Langchain.TextSplitters.CharacterTextSplitter
 Description : Character-based text splitting for LLM processing [[10]]
 Copyright   : (c) 2025 Tushar Adhatrao
 License     : MIT
@@ -26,7 +26,7 @@ splitText defaultCharacterSplitterOps "Long document text..."
 customSplit = splitText (CharacterSplitterOps 500 "\n\\s*\n")
 @
 -}
-module Langchain.TextSplitter.Character
+module Langchain.TextSplitters.CharacterTextSplitter
   ( -- * Configuration
     CharacterSplitterOps (..)
   , defaultCharacterSplitterOps
@@ -38,6 +38,7 @@ module Langchain.TextSplitter.Character
 import Data.Int (Int64)
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as T
+import qualified Langchain.TextSplitters.TextSplitter as Core
 
 {- | Configuration for character-based text splitting
 Contains:
@@ -88,7 +89,13 @@ Examples:
 ["Very long text ex", "ceeding chunk size..."]
 -}
 splitText :: CharacterSplitterOps -> Text -> [Text]
-splitText CharacterSplitterOps {..} txt =
+splitText = splitTextCharacter
+
+instance Core.TextSplitter CharacterSplitterOps where
+  splitText = splitTextCharacter
+
+splitTextCharacter :: CharacterSplitterOps -> Text -> [Text]
+splitTextCharacter CharacterSplitterOps {..} txt =
   mconcat $
     map
       (T.chunksOf chunkSize . T.strip)

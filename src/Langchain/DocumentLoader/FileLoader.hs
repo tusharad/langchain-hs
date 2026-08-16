@@ -34,7 +34,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import Langchain.DocumentLoader.Core
 import Langchain.Error (SomeException, llmError, try)
-import Langchain.TextSplitter.Character
+import Langchain.TextSplitters.CharacterTextSplitter
 import System.Directory (doesFileExist)
 
 {- | File loader configuration

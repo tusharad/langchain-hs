@@ -15,7 +15,9 @@ import qualified Test.Langchain.Runnable.Chains as RunnableChainsTest
 import qualified Test.Langchain.Runnable.ConversationChains as ConverationChainsTest
 import qualified Test.Langchain.Runnable.Core as RunnableTest
 import qualified Test.Langchain.Runnable.Utils as RunnableUtilsTest
-import qualified Test.Langchain.TextSplitter.Character as TextSplitterTest
+import qualified Test.Langchain.TextSplitters.CharacterTextSplitter as TextSplitterTest
+import qualified Test.Langchain.TextSplitters.RecursiveCharacterTextSplitter as RecursiveTextSplitterTest
+import qualified Test.Langchain.TextSplitters.TextSplitter as TextSplitterCoreTest
 import qualified Test.Langchain.Tool.Core as ToolTest
 import qualified Test.Langchain.VectorStore.Core as VectorStoreTest
 import Test.Tasty
@@ -30,6 +32,8 @@ main =
       , PromptTemplateTest.tests
       , OutputParserTest.tests
       , TextSplitterTest.tests
+      , TextSplitterCoreTest.tests
+      , RecursiveTextSplitterTest.tests
       , DocumentLoaderTest.tests
       , DirectoryLoaderTest.tests
       , MemoryTest.tests

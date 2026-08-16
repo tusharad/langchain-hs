@@ -19,7 +19,7 @@ import Data.Map (fromList)
 import qualified Data.Text.Lazy as TL
 import Langchain.DocumentLoader.Core
 import Langchain.Error (llmError)
-import Langchain.TextSplitter.Character
+import Langchain.TextSplitters.CharacterTextSplitter
 import Langchain.Utils (showText)
 import Pdf.Document hiding (Document)
 import System.Directory (doesFileExist)
