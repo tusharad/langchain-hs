@@ -34,6 +34,7 @@ source-repository head
 
 library
   exposed-modules:
+      Langchain.Accounting.Cost
       Langchain.Agent.Core
       Langchain.Agent.Executor
       Langchain.Agent.Functions
@@ -43,6 +44,7 @@ library
       Langchain.Agent.Supervisor
       Langchain.Cache.Core
       Langchain.Callback
+      Langchain.Callback.Manager
       Langchain.Chain.Conversational
       Langchain.Chain.ConversationalRetrievalQA
       Langchain.Chain.MapReduce
@@ -50,6 +52,8 @@ library
       Langchain.Chain.Sequential
       Langchain.Chain.SqlDatabase
       Langchain.Chain.StuffDocuments
+      Langchain.Config.Validation
+      Langchain.Diagnostics.HealthCheck
       Langchain.DocumentLoader.Core
       Langchain.DocumentLoader.Csv
       Langchain.DocumentLoader.DirectoryLoader
@@ -67,11 +71,14 @@ library
       Langchain.Graph.Debate
       Langchain.Graph.Voting
       Langchain.Guardrail.Core
+      Langchain.HTTP.ConnectionPool
+      Langchain.Logging.Structured
       Langchain.MCP.Client
       Langchain.Memory.Core
       Langchain.Memory.Entity
       Langchain.Memory.Summary
       Langchain.Memory.TokenBufferMemory
+      Langchain.Observability.OpenTelemetry
       Langchain.OutputParser.Core
       Langchain.OutputParser.Enum
       Langchain.OutputParser.Structured
@@ -83,6 +90,7 @@ library
       Langchain.Provider.Gemini
       Langchain.Provider.Ollama
       Langchain.Provider.OpenAI
+      Langchain.Resilience.CircuitBreaker
       Langchain.Resilience.Retry
       Langchain.Retriever.ContextualCompression
       Langchain.Retriever.Core
@@ -191,13 +199,17 @@ test-suite langchain-hs-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      Test.Langchain.Accounting.CostSpec
       Test.Langchain.Agent.AdvancedAgentsSpec
       Test.Langchain.Agent.MiddlewareSpec
       Test.Langchain.Agent.ReAct
       Test.Langchain.Cache.CacheSpec
+      Test.Langchain.Callback.CallbackManagerSpec
       Test.Langchain.Chain.AdvancedChainsSpec
       Test.Langchain.Chain.ChainsSpec
       Test.Langchain.Chain.RetrievalQASpec
+      Test.Langchain.Config.ValidationSpec
+      Test.Langchain.Diagnostics.HealthCheckSpec
       Test.Langchain.DocumentLoader.Core
       Test.Langchain.DocumentLoader.CsvSpec
       Test.Langchain.DocumentLoader.DirectoryLoader
@@ -210,17 +222,20 @@ test-suite langchain-hs-test
       Test.Langchain.Graph.CompilationSpec
       Test.Langchain.Graph.MultiAgentPatternsSpec
       Test.Langchain.Guardrail.GuardrailSpec
+      Test.Langchain.HTTP.ConnectionPoolSpec
       Test.Langchain.Integration.OllamaChatSpec
       Test.Langchain.Integration.OllamaEmbeddingSpec
       Test.Langchain.Integration.OllamaStreamSpec
       Test.Langchain.Integration.OllamaToolSpec
       Test.Langchain.Integration.ReActAgentE2ESpec
       Test.Langchain.Integration.StateGraphE2ESpec
+      Test.Langchain.Logging.StructuredLoggingSpec
       Test.Langchain.MCP.McpSpec
       Test.Langchain.Memory.Core
       Test.Langchain.Memory.EntitySpec
       Test.Langchain.Memory.SummarySpec
       Test.Langchain.Memory.TokenBufferMemory
+      Test.Langchain.Observability.OpenTelemetrySpec
       Test.Langchain.OutputParser.AdvancedParsersSpec
       Test.Langchain.OutputParser.Core
       Test.Langchain.PreludeSpec
@@ -241,6 +256,7 @@ test-suite langchain-hs-test
       Test.Langchain.Provider.OllamaConversionSpec
       Test.Langchain.Provider.OpenAI
       Test.Langchain.RegressionSpec
+      Test.Langchain.Resilience.CircuitBreakerSpec
       Test.Langchain.Resilience.RetrySpec
       Test.Langchain.Retriever.AdvancedRetrieversSpec
       Test.Langchain.Retriever.Core

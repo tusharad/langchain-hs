@@ -12,7 +12,7 @@ Stability   : experimental
 
 Exports all core data types, typeclasses, models, vector stores, memory stores,
 graph orchestration primitives, advanced multi-agent patterns, guardrails, MCP client,
-and runtime execution monads.
+observability, structured logging, circuit breakers, and runtime execution monads.
 -}
 module Langchain.Prelude
   ( -- * Core Monad & Errors
@@ -166,7 +166,7 @@ module Langchain.Prelude
   , callMcpTool
   , mcpToolToLangchainTool
 
-    -- * Telemetry & Tracing
+    -- * Telemetry, Logging & OpenTelemetry
   , ActionType (..)
   , TraceStep (..)
   , AgentTrace (..)
@@ -176,6 +176,66 @@ module Langchain.Prelude
   , getTrace
   , findSlowestStep
   , filterByActionType
+  , LogLevel (..)
+  , LogEvent (..)
+  , Logger (..)
+  , InMemoryLogger (..)
+  , newInMemoryLogger
+  , getInMemoryLogs
+  , stderrLogger
+  , logEvent
+  , logDebug
+  , logInfo
+  , logWarn
+  , logError
+  , SpanKind (..)
+  , SpanStatus (..)
+  , Span (..)
+  , OTelTracer (..)
+  , newOTelTracer
+  , getSpans
+  , withSpan
+  , exportSpansJson
+
+    -- * Callbacks & Diagnostics
+  , CallbackEvent (..)
+  , CallbackHandler (..)
+  , CallbackManager (..)
+  , newCallbackManager
+  , registerHandler
+  , dispatchEvent
+  , dispatchEventAsync
+  , newLoggingCallbackHandler
+  , HealthStatus (..)
+  , ComponentHealth (..)
+  , HealthReport (..)
+  , checkOllamaHealth
+  , checkSqliteHealth
+  , runFullHealthCheck
+
+    -- * Config Validation & Cost Accounting
+  , ConfigIssue (..)
+  , ValidationResult (..)
+  , validateLangchainConfig
+  , assertValidConfig
+  , ModelPricing (..)
+  , CostEstimate (..)
+  , estimateTokenCount
+  , getStandardPricing
+  , calculateCost
+
+    -- * HTTP Pooling & Resilience
+  , ConnectionPoolConfig (..)
+  , defaultPoolConfig
+  , PooledHttpManager (..)
+  , newPooledHttpManager
+  , CircuitState (..)
+  , CircuitBreakerConfig (..)
+  , defaultCircuitConfig
+  , CircuitBreaker (..)
+  , newCircuitBreaker
+  , getCircuitState
+  , withCircuitBreaker
 
     -- * Memory Systems
   , BaseMemory (..)
@@ -330,12 +390,14 @@ module Langchain.Prelude
   , newDeepSeek
   ) where
 
+import Langchain.Accounting.Cost
 import Langchain.Agent.Core
 import Langchain.Agent.Functions
 import Langchain.Agent.Middleware
 import Langchain.Agent.PlanAndExecute
 import Langchain.Agent.Supervisor
 import Langchain.Cache.Core
+import Langchain.Callback.Manager
 import Langchain.Chain.Conversational
 import Langchain.Chain.ConversationalRetrievalQA
 import Langchain.Chain.MapReduce
@@ -343,6 +405,7 @@ import Langchain.Chain.RetrievalQA
 import Langchain.Chain.Sequential
 import Langchain.Chain.SqlDatabase
 import Langchain.Chain.StuffDocuments
+import Langchain.Config.Validation
 import Langchain.Core.Error
 import Langchain.Core.Model
 import qualified Langchain.Core.Monad as CoreMonad
@@ -350,6 +413,7 @@ import Langchain.Core.Monad
 import Langchain.Core.Runnable
 import Langchain.Core.Stream
 import Langchain.Core.Tool
+import Langchain.Diagnostics.HealthCheck
 import Langchain.DocumentLoader.Core
 import Langchain.DocumentLoader.Csv
 import Langchain.DocumentLoader.DirectoryLoader
@@ -372,10 +436,13 @@ import Langchain.Graph.TimeTravel
 import Langchain.Graph.Visualization
 import Langchain.Graph.Voting
 import Langchain.Guardrail.Core
+import Langchain.HTTP.ConnectionPool
+import Langchain.Logging.Structured
 import Langchain.MCP.Client
 import Langchain.Memory.Core
 import Langchain.Memory.Entity
 import Langchain.Memory.Summary
+import Langchain.Observability.OpenTelemetry
 import Langchain.OutputParser.Enum
 import Langchain.OutputParser.Structured
 import Langchain.OutputParser.Xml
@@ -385,6 +452,7 @@ import Langchain.Provider.DeepSeek (DeepSeek, newDeepSeek)
 import Langchain.Provider.Gemini (Gemini, newGemini)
 import Langchain.Provider.Ollama (Ollama, newOllama)
 import Langchain.Provider.OpenAI (OpenAI, newOpenAI)
+import Langchain.Resilience.CircuitBreaker
 import Langchain.Resilience.Retry
 import Langchain.Retriever.ContextualCompression
 import Langchain.Retriever.Core

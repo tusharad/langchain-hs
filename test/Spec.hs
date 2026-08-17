@@ -3,13 +3,17 @@ module Main (main) where
 import Test.Tasty
 
 -- Unit Test Modules
+import qualified Test.Langchain.Accounting.CostSpec as CostTest
 import qualified Test.Langchain.Agent.AdvancedAgentsSpec as AdvancedAgentsTest
 import qualified Test.Langchain.Agent.MiddlewareSpec as MiddlewareTest
 import qualified Test.Langchain.Agent.ReAct as ReActTest
 import qualified Test.Langchain.Cache.CacheSpec as CacheTest
+import qualified Test.Langchain.Callback.CallbackManagerSpec as CallbackTest
 import qualified Test.Langchain.Chain.AdvancedChainsSpec as AdvancedChainsTest
 import qualified Test.Langchain.Chain.ChainsSpec as ChainsTest
 import qualified Test.Langchain.Chain.RetrievalQASpec as RetrievalQATest
+import qualified Test.Langchain.Config.ValidationSpec as ConfigValidationTest
+import qualified Test.Langchain.Diagnostics.HealthCheckSpec as HealthCheckTest
 import qualified Test.Langchain.DocumentLoader.Core as DocumentLoaderTest
 import qualified Test.Langchain.DocumentLoader.CsvSpec as CsvLoaderTest
 import qualified Test.Langchain.DocumentLoader.DirectoryLoader as DirectoryLoaderTest
@@ -22,11 +26,14 @@ import qualified Test.Langchain.Graph.AdvancedGraphSpec as AdvancedGraphTest
 import qualified Test.Langchain.Graph.CompilationSpec as GraphCompilationTest
 import qualified Test.Langchain.Graph.MultiAgentPatternsSpec as MultiAgentPatternsTest
 import qualified Test.Langchain.Guardrail.GuardrailSpec as GuardrailTest
+import qualified Test.Langchain.HTTP.ConnectionPoolSpec as ConnectionPoolTest
+import qualified Test.Langchain.Logging.StructuredLoggingSpec as StructuredLoggingTest
 import qualified Test.Langchain.MCP.McpSpec as McpTest
 import qualified Test.Langchain.Memory.Core as MemoryTest
 import qualified Test.Langchain.Memory.EntitySpec as EntityMemoryTest
 import qualified Test.Langchain.Memory.SummarySpec as SummaryMemoryTest
 import qualified Test.Langchain.Memory.TokenBufferMemory as TokenBufferMemoryTest
+import qualified Test.Langchain.Observability.OpenTelemetrySpec as OTelTest
 import qualified Test.Langchain.OutputParser.AdvancedParsersSpec as AdvancedParsersTest
 import qualified Test.Langchain.OutputParser.Core as OutputParserTest
 import qualified Test.Langchain.PreludeSpec as PreludeTest
@@ -38,6 +45,7 @@ import qualified Test.Langchain.Provider.Gemini as GeminiProviderTest
 import qualified Test.Langchain.Provider.Ollama as OllamaProviderTest
 import qualified Test.Langchain.Provider.OllamaConversionSpec as OllamaConversionTest
 import qualified Test.Langchain.Provider.OpenAI as OpenAIProviderTest
+import qualified Test.Langchain.Resilience.CircuitBreakerSpec as CircuitBreakerTest
 import qualified Test.Langchain.Resilience.RetrySpec as RetryTest
 import qualified Test.Langchain.Retriever.AdvancedRetrieversSpec as AdvancedRetrieversTest
 import qualified Test.Langchain.Retriever.Core as RetrieverTest
@@ -110,6 +118,7 @@ main =
           , AdvancedChainsTest.tests
           , CacheTest.tests
           , RetryTest.tests
+          , CircuitBreakerTest.tests
           , ToolTest.tests
           , AdvancedToolsTest.tests
           , ReActTest.tests
@@ -118,6 +127,13 @@ main =
           , GuardrailTest.tests
           , McpTest.tests
           , TraceTest.tests
+          , StructuredLoggingTest.tests
+          , OTelTest.tests
+          , CallbackTest.tests
+          , HealthCheckTest.tests
+          , ConfigValidationTest.tests
+          , CostTest.tests
+          , ConnectionPoolTest.tests
           , TokenBufferMemoryTest.tests
           , OllamaProviderTest.tests
           , OllamaConversionTest.tests
