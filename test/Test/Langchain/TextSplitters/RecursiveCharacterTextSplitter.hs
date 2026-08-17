@@ -95,70 +95,6 @@ tests =
                   , "Bye!"
                   , "-H."
                   ]
-        , testCase "fromLanguage uses Python separators" $ do
-            let ops =
-                  fromLanguage
-                    PYTHON
-                    defaultRecursiveCharacterSplitterOps
-                      { chunkSize = chunkSize16
-                      , chunkOverlap = 0
-                      }
-                code =
-                  "\n\
-                  \def hello_world():\n\
-                  \    print(\"Hello, World!\")\n\n\
-                  \# Call the function\n\
-                  \hello_world()\n\
-                  \    "
-
-            splitText ops code
-              @?= [ "def"
-                  , "hello_world():"
-                  , "print(\"Hello,"
-                  , "World!\")"
-                  , "# Call the"
-                  , "function"
-                  , "hello_world()"
-                  ]
-        , testCase "fromLanguage uses Go separators" $ do
-            let ops = fromLanguage GO defaultRecursiveCharacterSplitterOps {chunkSize = chunkSize16, chunkOverlap = 0}
-                code =
-                  "\n\
-                  \package main\n\n\
-                  \import \"fmt\"\n\n\
-                  \func helloWorld() {\n\
-                  \    fmt.Println(\"Hello, World!\")\n\
-                  \}\n\n\
-                  \func main() {\n\
-                  \    helloWorld()\n\
-                  \}\n\
-                  \    "
-
-            splitText ops code
-              @?= [ "package main"
-                  , "import \"fmt\""
-                  , "func"
-                  , "helloWorld() {"
-                  , "fmt.Println(\"He"
-                  , "llo,"
-                  , "World!\")"
-                  , "}"
-                  , "func main() {"
-                  , "helloWorld()"
-                  , "}"
-                  ]
-        , testCase "fromLanguage uses Markdown separators" $ do
-            let ops = fromLanguage MARKDOWN defaultRecursiveCharacterSplitterOps {chunkSize = chunkSize16, chunkOverlap = 0}
-                code = "# Sample Document\n\n## Section\n\nThis is the content of the section."
-
-            splitText ops code
-              @?= [ "# Sample"
-                  , "Document"
-                  , "## Section"
-                  , "This is the"
-                  , "content of the"
-                  , "section."
-                  ]
         , testGroup
             "fromLanguage language splitters"
             (uncurry4 assertLanguageSplit <$> languageCases)
@@ -218,6 +154,59 @@ languageCases =
       , "Not a comment"
       , ".. This is a"
       , "comment"
+      ]
+    )
+  , ( "Python"
+    , PYTHON
+    , "\n\
+      \def hello_world():\n\
+      \    print(\"Hello, World!\")\n\n\
+      \# Call the function\n\
+      \hello_world()\n\
+      \    "
+    , [ "def"
+      , "hello_world():"
+      , "print(\"Hello,"
+      , "World!\")"
+      , "# Call the"
+      , "function"
+      , "hello_world()"
+      ]
+    )
+  , ( "Go"
+    , GO
+    , "\n\
+      \package main\n\n\
+      \import \"fmt\"\n\n\
+      \func helloWorld() {\n\
+      \    fmt.Println(\"Hello, World!\")\n\
+      \}\n\n\
+      \func main() {\n\
+      \    helloWorld()\n\
+      \}\n\
+      \    "
+    , [ "package main"
+      , "import \"fmt\""
+      , "func"
+      , "helloWorld() {"
+      , "fmt.Println(\"He"
+      , "llo,"
+      , "World!\")"
+      , "}"
+      , "func main() {"
+      , "helloWorld()"
+      , "}"
+      ]
+    )
+  , ( "Markdown"
+    , MARKDOWN
+    , "# Sample Document\n\n## Section\n\nThis is the content of the section."
+    , [ "# Sample"
+      , "Document"
+      , "## Section"
+      , "This is the"
+      , "content of the"
+      , "section."
       ]
     )
   , ( "PROTO"
