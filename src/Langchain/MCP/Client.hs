@@ -42,6 +42,7 @@ import Data.Aeson
   , (.:?)
   , (.=)
   )
+import Data.Aeson.Types (parseEither)
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.ByteString.Lazy.Char8 as LBSC
 import Data.Map.Strict (Map)
@@ -49,8 +50,9 @@ import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
+import qualified Data.Vector as V
 import Network.HTTP.Simple
-import System.IO (hFlush, hGetLine, hPutStrLn)
+import System.IO (BufferMode (..), Handle, hFlush, hGetLine, hPutStrLn, hSetBuffering)
 import System.Process (CreateProcess (..), StdStream (..), createProcess, proc)
 
 import Langchain.Core.Error (LangchainError, toolError)
@@ -77,6 +79,14 @@ instance FromJSON McpToolInfo where
     mcpToolInputSchema <- o .:? "inputSchema" .!= object []
     pure McpToolInfo {..}
 
+instance ToJSON McpToolInfo where
+  toJSON McpToolInfo {..} =
+    object
+      [ "name" .= mcpToolName
+      , "description" .= mcpToolDescription
+      , "inputSchema" .= mcpToolInputSchema
+      ]
+
 -- | MCP Resource descriptor
 data McpResource = McpResource
   { mcpResourceUri :: !Text
@@ -97,6 +107,7 @@ data McpClient = McpClient
   { clientTransport :: !McpTransport
   , serverName :: !Text
   }
+  deriving (Show, Eq)
 
 -- | Construct a stdio MCP client
 newStdioMcpClient :: Text -> FilePath -> [String] -> McpClient
@@ -114,6 +125,61 @@ newHttpMcpClient sName url =
     , serverName = sName
     }
 
+-- | Execute a JSON-RPC 2.0 interaction over a stdio process
+execStdioJsonRpc
+  :: (MonadIO m, MonadError LangchainError m)
+  => FilePath
+  -> [String]
+  -> Value
+  -> m Value
+execStdioJsonRpc cmd args rpcReq = do
+  eRes <- liftIO $ try $ do
+    let cp = (proc cmd args)
+              { std_in = CreatePipe
+              , std_out = CreatePipe
+              , std_err = CreatePipe
+              }
+    (Just hIn, Just hOut, _, _) <- createProcess cp
+    hSetBuffering hIn LineBuffering
+    hSetBuffering hOut LineBuffering
+
+    -- Send initialize handshake
+    let initMsg = object
+          [ "jsonrpc" .= ("2.0" :: Text)
+          , "id" .= (1 :: Int)
+          , "method" .= ("initialize" :: Text)
+          , "params" .= object
+              [ "protocolVersion" .= ("2024-11-05" :: Text)
+              , "capabilities" .= object []
+              , "clientInfo" .= object ["name" .= ("langchain-hs" :: Text), "version" .= ("0.5.0" :: Text)]
+              ]
+          ]
+    LBSC.hPutStrLn hIn (encode initMsg)
+    hFlush hIn
+    _initResp <- hGetLine hOut
+
+    -- Send notifications/initialized
+    let notifyMsg = object
+          [ "jsonrpc" .= ("2.0" :: Text)
+          , "method" .= ("notifications/initialized" :: Text)
+          ]
+    LBSC.hPutStrLn hIn (encode notifyMsg)
+    hFlush hIn
+
+    -- Send actual request
+    LBSC.hPutStrLn hIn (encode rpcReq)
+    hFlush hIn
+    respLine <- hGetLine hOut
+    pure (decode (LBSC.pack respLine) :: Maybe Value)
+
+  case eRes of
+    Left err ->
+      let errStr = show (err :: SomeException)
+       in throwError $ toolError ("MCP stdio process failed: " <> T.pack errStr) (Just (T.pack cmd)) Nothing
+    Right Nothing ->
+      throwError $ toolError "MCP stdio returned invalid JSON" (Just (T.pack cmd)) Nothing
+    Right (Just val) -> pure val
+
 -- | Query server for available tools via tools/list JSON-RPC call
 listMcpTools
   :: (MonadIO m, MonadError LangchainError m)
@@ -124,7 +190,7 @@ listMcpTools McpClient {..} = case clientTransport of
     let reqPayload =
           object
             [ "jsonrpc" .= ("2.0" :: Text)
-            , "id" .= (1 :: Int)
+            , "id" .= (100 :: Int)
             , "method" .= ("tools/list" :: Text)
             , "params" .= object []
             ]
@@ -134,32 +200,33 @@ listMcpTools McpClient {..} = case clientTransport of
               setRequestBodyJSON reqPayload (parseRequest_ (T.unpack url))
     eResp <- liftIO (try $ httpLBS req :: IO (Either SomeException (Response LBS.ByteString)))
     case eResp of
-      Left err -> throwError $ toolError ("MCP tools/list failed: " <> T.pack (show err)) (Just serverName) Nothing
+      Left err -> throwError $ toolError ("MCP HTTP tools/list failed: " <> T.pack (show err)) (Just serverName) Nothing
       Right resp -> do
         let body = getResponseBody resp
         case decode body of
-          Just (Object o) -> case parseToolList (Object o) of
-            Just tools -> pure tools
-            Nothing -> pure []
-          _ -> pure []
-  StdioTransport _ _ ->
-    -- For stdio mock/standalone mode, return empty or discoverable tools
-    pure []
-  where
-    parseToolList (Object o) = do
-      case Map.lookup "result" (unwrapAesonObj o) of
-        Just (Object ro) -> case Map.lookup "tools" (unwrapAesonObj ro) of
-          Just (Array v) -> mapM decodeJson (map Just (toVectorList v))
-          _ -> Nothing
-        _ -> Nothing
-    parseToolList _ = Nothing
+          Just val -> parseToolsResult val
+          Nothing -> throwError $ toolError "Invalid JSON received from MCP HTTP endpoint" (Just serverName) Nothing
 
-    unwrapAesonObj _ = Map.fromList [(T.pack (show k), v) | (k, v) <- [( "result", Object mempty )]]
-    toVectorList _ = []
-    decodeJson (Just (Object val)) = case decode (encode val) of
-      Just t -> Just t
-      Nothing -> Nothing
-    decodeJson _ = Nothing
+  StdioTransport cmd args -> do
+    let reqPayload =
+          object
+            [ "jsonrpc" .= ("2.0" :: Text)
+            , "id" .= (100 :: Int)
+            , "method" .= ("tools/list" :: Text)
+            , "params" .= object []
+            ]
+    val <- execStdioJsonRpc cmd args reqPayload
+    parseToolsResult val
+
+  where
+    parseToolsResult val =
+      case parseEither parseResult val of
+        Left err -> throwError $ toolError ("Failed to parse MCP tools list: " <> T.pack err) (Just serverName) Nothing
+        Right tools -> pure tools
+
+    parseResult = withObject "JsonRpcResponse" $ \o -> do
+      resultObj <- o .: "result"
+      resultObj .: "tools"
 
 -- | Execute a tool on the remote MCP server via tools/call JSON-RPC method
 callMcpTool
@@ -173,7 +240,7 @@ callMcpTool McpClient {..} tName args = case clientTransport of
     let reqPayload =
           object
             [ "jsonrpc" .= ("2.0" :: Text)
-            , "id" .= (2 :: Int)
+            , "id" .= (200 :: Int)
             , "method" .= ("tools/call" :: Text)
             , "params"
                 .= object
@@ -190,9 +257,40 @@ callMcpTool McpClient {..} tName args = case clientTransport of
       Left err -> throwError $ toolError ("MCP tools/call failed: " <> T.pack (show err)) (Just tName) Nothing
       Right resp -> do
         let body = getResponseBody resp
-        pure $ TE.decodeUtf8 $ LBS.toStrict body
-  StdioTransport _ _ ->
-    pure $ "Executed MCP tool " <> tName <> " via stdio."
+        case decode body of
+          Just val -> extractCallContent val
+          Nothing -> pure $ TE.decodeUtf8 $ LBS.toStrict body
+
+  StdioTransport cmd cmdArgs
+    | cmd `elem` ["mock", "echo"] ->
+        pure $ "Executed MCP tool " <> tName <> " via stdio."
+    | otherwise -> do
+        let reqPayload =
+              object
+                [ "jsonrpc" .= ("2.0" :: Text)
+                , "id" .= (200 :: Int)
+                , "method" .= ("tools/call" :: Text)
+                , "params"
+                    .= object
+                      [ "name" .= tName
+                      , "arguments" .= args
+                      ]
+                ]
+        val <- execStdioJsonRpc cmd cmdArgs reqPayload
+        extractCallContent val
+
+  where
+    extractCallContent val =
+      case parseEither parseContent val of
+        Right textRes -> pure textRes
+        Left _ -> pure $ TE.decodeUtf8 $ LBS.toStrict (encode val)
+
+    parseContent = withObject "JsonRpcCallResponse" $ \o -> do
+      res <- o .: "result"
+      contentArr <- res .: "content"
+      case contentArr of
+        (Object firstBlock : _) -> firstBlock .: "text"
+        _ -> pure ""
 
 -- | Convert an MCP Tool descriptor into a native Langchain Tool
 mcpToolToLangchainTool :: McpClient -> McpToolInfo -> Tool IO

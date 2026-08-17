@@ -400,6 +400,51 @@ module Langchain.Prelude
   , chainMiddlewares
   , loggingMiddleware
 
+    -- * Hybrid Retrieval, BM25 & Rerankers
+  , BM25Index (..)
+  , newBM25Index
+  , newBM25IndexWithParams
+  , addDocumentsBM25
+  , bm25Search
+  , bm25SearchWithScores
+  , HybridRetriever (..)
+  , newHybridRetriever
+  , newHybridRetrieverWithWeights
+  , searchHybrid
+  , searchHybridWithScores
+  , reciprocalRankFusion
+  , Reranker (..)
+  , IdempotentReranker (..)
+  , LLMReranker (..)
+  , newLLMReranker
+
+    -- * Vector Store Metadata Filtering & Header Injection
+  , FilterPredicate (..)
+  , evalFilter
+  , filterDocuments
+  , eqFilter
+  , inFilter
+  , andFilter
+  , orFilter
+  , HeaderInjector (..)
+  , newHeaderInjector
+  , injectChunkHeader
+  , injectChunkHeaders
+
+    -- * Dynamic Flows & Event Streaming Protocol
+  , FlowNode (..)
+  , FlowEdge (..)
+  , DynamicFlow (..)
+  , FlowExecutionResult (..)
+  , NodeExecutor
+  , ComponentRegistry
+  , topologicalSortFlow
+  , executeDynamicFlow
+  , newDynamicFlow
+  , AgentStreamEvent (..)
+  , formatSSE
+  , formatNdJson
+
     -- * Providers
   , Ollama
   , newOllama
@@ -446,6 +491,7 @@ import Langchain.DocumentLoader.Html
 import Langchain.DocumentLoader.Json
 import Langchain.DocumentLoader.PdfLoader
 import Langchain.DocumentLoader.WebPage
+import Langchain.DocumentTransformer.HeaderInjector
 import Langchain.DocumentTransformer.MetadataEnricher
 import Langchain.Embeddings.Core
 import Langchain.Error (LangchainResult)
@@ -453,6 +499,7 @@ import Langchain.ExampleSelector.Similarity
 import Langchain.Graph.Blackboard
 import Langchain.Graph.Checkpointer
 import Langchain.Graph.Debate
+import Langchain.Graph.DynamicFlow
 import Langchain.Graph.HITL
 import Langchain.Graph.MultiAgent
 import Langchain.Graph.Parallel
@@ -470,6 +517,7 @@ import Langchain.Memory.Core
 import Langchain.Memory.Entity
 import Langchain.Memory.Summary
 import Langchain.Observability.OpenTelemetry
+import Langchain.Observability.StreamProtocol
 import Langchain.OutputParser.Enum
 import Langchain.OutputParser.Structured
 import Langchain.OutputParser.Xml
@@ -482,10 +530,13 @@ import Langchain.Provider.Ollama (Ollama, newOllama)
 import Langchain.Provider.OpenAI (OpenAI, newOpenAI)
 import Langchain.Resilience.CircuitBreaker
 import Langchain.Resilience.Retry
+import Langchain.Retriever.BM25
 import Langchain.Retriever.ContextualCompression
 import Langchain.Retriever.Core
+import Langchain.Retriever.Hybrid
 import Langchain.Retriever.MultiQueryRetriever
 import Langchain.Retriever.ParentDocument
+import Langchain.Retriever.Reranker
 import Langchain.Router.Semantic
 import Langchain.TextSplitter.Character
 import Langchain.TextSplitter.Code
@@ -493,6 +544,7 @@ import Langchain.TextSplitter.Markdown
 import Langchain.TextSplitter.RecursiveCharacter
 import Langchain.TextSplitter.Token
 import Langchain.Tool.Async
+import Langchain.VectorStore.Filter
 import Langchain.Tool.GenericSchema
 import Langchain.Trace.Core
 import Langchain.VectorStore.Core

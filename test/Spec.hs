@@ -65,7 +65,13 @@ import qualified Test.Langchain.Tool.Core as ToolTest
 import qualified Test.Langchain.Tool.FileSystem as FileSystemToolTest
 import qualified Test.Langchain.Trace.TraceSpec as TraceTest
 import qualified Test.Langchain.VectorStore.Core as VectorStoreTest
+import qualified Test.Langchain.VectorStore.FilterSpec as VectorFilterTest
 import qualified Test.Langchain.VectorStore.SqliteVecSpec as SqliteVecStoreTest
+import qualified Test.Langchain.Retriever.BM25Spec as BM25Test
+import qualified Test.Langchain.Retriever.HybridSpec as HybridRetrieverTest
+import qualified Test.Langchain.DocumentTransformer.HeaderInjectorSpec as HeaderInjectorTest
+import qualified Test.Langchain.Graph.DynamicFlowSpec as DynamicFlowTest
+import qualified Test.Langchain.Observability.StreamProtocolSpec as StreamProtocolTest
 
 -- Property Test Modules (QuickCheck Laws & Invariants)
 import qualified Test.Langchain.Property.CheckpointerSpec as CheckpointerPropTest
@@ -119,15 +125,21 @@ main =
           , SummaryMemoryTest.tests
           , EntityMemoryTest.tests
           , VectorStoreTest.tests
+          , VectorFilterTest.tests
           , SqliteVecStoreTest.tests
           , EmbeddingsTest.tests
           , RetrieverTest.tests
           , AdvancedRetrieversTest.tests
+          , BM25Test.tests
+          , HybridRetrieverTest.tests
+          , HeaderInjectorTest.tests
           , RetrievalQATest.tests
           , ChainsTest.tests
           , AdvancedChainsTest.tests
           , SummarizationChainTest.tests
           , PipelineDSLTest.tests
+          , DynamicFlowTest.tests
+          , StreamProtocolTest.tests
           , CacheTest.tests
           , RetryTest.tests
           , CircuitBreakerTest.tests

@@ -63,6 +63,7 @@ library
       Langchain.DocumentLoader.Json
       Langchain.DocumentLoader.PdfLoader
       Langchain.DocumentLoader.WebPage
+      Langchain.DocumentTransformer.HeaderInjector
       Langchain.DocumentTransformer.MetadataEnricher
       Langchain.Embeddings.Core
       Langchain.Embeddings.Gemini
@@ -72,6 +73,7 @@ library
       Langchain.ExampleSelector.Similarity
       Langchain.Graph.Blackboard
       Langchain.Graph.Debate
+      Langchain.Graph.DynamicFlow
       Langchain.Graph.Voting
       Langchain.Guardrail.Core
       Langchain.HTTP.ConnectionPool
@@ -83,6 +85,7 @@ library
       Langchain.Memory.Summary
       Langchain.Memory.TokenBufferMemory
       Langchain.Observability.OpenTelemetry
+      Langchain.Observability.StreamProtocol
       Langchain.OutputParser.Core
       Langchain.OutputParser.Enum
       Langchain.OutputParser.Structured
@@ -97,10 +100,13 @@ library
       Langchain.Provider.OpenAI
       Langchain.Resilience.CircuitBreaker
       Langchain.Resilience.Retry
+      Langchain.Retriever.BM25
       Langchain.Retriever.ContextualCompression
       Langchain.Retriever.Core
+      Langchain.Retriever.Hybrid
       Langchain.Retriever.MultiQueryRetriever
       Langchain.Retriever.ParentDocument
+      Langchain.Retriever.Reranker
       Langchain.Router.Semantic
       Langchain.Runnable
       Langchain.TextSplitter.Character
@@ -120,6 +126,7 @@ library
       Langchain.Trace.Core
       Langchain.Utils
       Langchain.VectorStore.Core
+      Langchain.VectorStore.Filter
       Langchain.VectorStore.InMemory
       Langchain.VectorStore.PgVector
       Langchain.VectorStore.Qdrant
@@ -152,6 +159,7 @@ library
     , pdf-toolbox-document ==0.1.4
     , process ==1.6.*
     , random >=1.2
+    , scientific
     , sqlite-simple >=0.4.18 && <0.5
     , stm ==2.5.*
     , tagsoup <0.15
@@ -192,6 +200,7 @@ executable big-showcase
     , pdf-toolbox-document ==0.1.4
     , process ==1.6.*
     , random >=1.2
+    , scientific
     , sqlite-simple >=0.4.18 && <0.5
     , stm ==2.5.*
     , tagsoup <0.15
@@ -224,12 +233,14 @@ test-suite langchain-hs-test
       Test.Langchain.DocumentLoader.HtmlSpec
       Test.Langchain.DocumentLoader.JsonSpec
       Test.Langchain.DocumentLoader.WebPageSpec
+      Test.Langchain.DocumentTransformer.HeaderInjectorSpec
       Test.Langchain.DocumentTransformer.MetadataEnricherSpec
       Test.Langchain.Embeddings.Core
       Test.Langchain.Error
       Test.Langchain.ExampleSelector.ExampleSelectorSpec
       Test.Langchain.Graph.AdvancedGraphSpec
       Test.Langchain.Graph.CompilationSpec
+      Test.Langchain.Graph.DynamicFlowSpec
       Test.Langchain.Graph.MultiAgentPatternsSpec
       Test.Langchain.Guardrail.GuardrailSpec
       Test.Langchain.HTTP.ConnectionPoolSpec
@@ -249,6 +260,7 @@ test-suite langchain-hs-test
       Test.Langchain.Memory.SummarySpec
       Test.Langchain.Memory.TokenBufferMemory
       Test.Langchain.Observability.OpenTelemetrySpec
+      Test.Langchain.Observability.StreamProtocolSpec
       Test.Langchain.OutputParser.AdvancedParsersSpec
       Test.Langchain.OutputParser.Core
       Test.Langchain.Pipeline.PipelineDSLSpec
@@ -274,7 +286,9 @@ test-suite langchain-hs-test
       Test.Langchain.Resilience.CircuitBreakerSpec
       Test.Langchain.Resilience.RetrySpec
       Test.Langchain.Retriever.AdvancedRetrieversSpec
+      Test.Langchain.Retriever.BM25Spec
       Test.Langchain.Retriever.Core
+      Test.Langchain.Retriever.HybridSpec
       Test.Langchain.TestHelpers
       Test.Langchain.TextSplitter.Character
       Test.Langchain.TextSplitter.CodeSpec
@@ -287,6 +301,7 @@ test-suite langchain-hs-test
       Test.Langchain.Tool.FileSystem
       Test.Langchain.Trace.TraceSpec
       Test.Langchain.VectorStore.Core
+      Test.Langchain.VectorStore.FilterSpec
       Test.Langchain.VectorStore.SqliteVecSpec
       Paths_langchain_hs
   hs-source-dirs:
@@ -316,6 +331,7 @@ test-suite langchain-hs-test
     , pdf-toolbox-document ==0.1.4
     , process ==1.6.*
     , random >=1.2
+    , scientific
     , sqlite-simple >=0.4.18 && <0.5
     , stm ==2.5.*
     , tagsoup <0.15
@@ -361,6 +377,7 @@ benchmark langchain-hs-bench
     , pdf-toolbox-document ==0.1.4
     , process ==1.6.*
     , random >=1.2
+    , scientific
     , sqlite-simple >=0.4.18 && <0.5
     , stm ==2.5.*
     , tagsoup <0.15
