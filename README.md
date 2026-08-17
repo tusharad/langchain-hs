@@ -1,27 +1,46 @@
-# 🦜️🔗 LangChain Haskell v2 (`langchain-hs`)
+# 🦜️🔗 LangChain Haskell (`langchain-hs`)
 
-> **Functional Programming Principles First AI Agent & Orchestration Engine**
+> **Functional Programming First AI Agent, Multi-Agent Graph & Production Orchestration Engine**
 > 
-> *A superior, strictly-typed, effect-polymorphic Haskell AI framework built on pure AST pipelines, graph state machines, laws, and thread-safe persistence.*
+> *A strictly typed, effect-polymorphic, zero-`unsafePerformIO` Haskell AI ecosystem built on pure AST pipelines, state graphs, algebraic laws, Model Context Protocol (MCP), and production observability.*
 
 ---
 
-[![Build Status](https://img.shields.io/badge/tests-202%20passed-brightgreen.svg)]()
+[![Build Status](https://img.shields.io/badge/tests-329%20passed-brightgreen.svg)]()
+[![Law Verified](https://img.shields.io/badge/algebraic%20laws-verified-blue.svg)]()
 [![Hackage](https://img.shields.io/badge/hackage-v0.5.0-blue.svg)](https://hackage.haskell.org/package/langchain-hs)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ---
 
-## 🌟 Why `langchain-hs` v2?
+## 🌟 Why `langchain-hs`?
 
-`langchain-hs` v2 is **NOT** a direct line-by-line port of Python/JS LangChain. Instead, it is redesigned from first principles to leverage Haskell's unique strengths:
+`langchain-hs` is designed from first principles to leverage Haskell's unique strengths:
 
-1. **Zero-Dependency Pure Core (`langchain-hs-core`)**: Pure GADT pipeline ASTs (`RunnableTree m i o`), unified multi-modal message block model (`ContentBlock`), effect-polymorphic `ChatModel`, and `StreamEvent` streaming protocols without ANY HTTP dependencies.
-2. **Type-Safe Graph State Machine Engine (`langchain-hs-graph`)**: First-class `StateGraph s m`, pure state merge reducers (`StateReducer s`), thread-safe `MemoryCheckpointer` (`TVar`), and persistent `SQLiteCheckpointer`.
-3. **Algebraic Laws & Property Verification**: Reducer associativity laws `(a <> b) <> c == a <> (b <> c)` and checkpointer invariants verified via QuickCheck property tests.
-4. **Human-in-the-Loop (HITL)**: Built-in interrupt signals (`hitlNode`) and state resume (`resumeGraph`) allowing human modification before continuing workflow execution.
-5. **Effect-Polymorphic Tools (`Tool m`)**: Pure schema generation (`toolToValue`) and type-safe tool execution without string-based workaround hacks.
-6. **Multi-Agent Supervisor Pattern**: LLM-guided supervisor nodes and nested sub-graph embedding (`embedSubGraphNode`).
+1. **Zero-Dependency Pure Core (`langchain-hs-core`)**: Pure GADT pipeline ASTs (`RunnableTree m i o`), unified multi-modal message model (`ContentBlock`), effect-polymorphic `ChatModel`, and `StreamEvent` streaming protocols without ANY HTTP dependencies.
+2. **Type-Safe Graph Engine (`langchain-hs-graph`)**: First-class `StateGraph s m`, pure state merge reducers (`StateReducer s`), thread-safe `MemoryCheckpointer` (`TVar`), persistent `SQLiteCheckpointer`, Time-Travel state replay, Graphviz DOT export, and concurrent parallel node execution via `async`.
+3. **Algebraic Laws & Property Verification**: Reducer monoid associativity `(a <> b) <> c == a <> (b <> c)`, runnable left/right identity, and checkpointer invariants verified via QuickCheck properties.
+4. **Model Context Protocol (MCP)**: Full JSON-RPC 2.0 client supporting stdio and HTTP transports with automatic discovery and conversion to native `Tool m` definitions.
+5. **Advanced Multi-Agent Architectures**: Supervisor teams with capabilities-based delegation, multi-agent debate with convergence checking, majority voting classifiers, and STM shared blackboards.
+6. **Production Observability & Resilience**: OpenTelemetry-compatible tracing (`withSpan`), structured contextual logging, three-state Circuit Breaker, event-driven async callbacks, runtime diagnostics, and token cost accounting.
+
+---
+
+## 📊 Feature Matrix: LangChain Ecosystem Comparison
+
+| Feature Area | Python (`langchain`) | Java (`langchain4j`) | Rust (`langchain-rust`) | **Haskell (`langchain-hs`)** |
+|:---|:---:|:---:|:---:|:---:|
+| **Paradigm & Purity** | Imperative / Dynamic | OOP / Static | Imperative / Static | **Pure Functional & Effect-Polymorphic** |
+| **Purity Guarantees** | None | None | None | **Zero `unsafePerformIO`, Law-Verified** |
+| **Pipeline Composition** | LCEL (`\|`) | Fluent Builders | Async Chains | **Pure GADT AST (`\|>>`, `&>&`) + DSL (`>>>#`)** |
+| **Graph Orchestration** | LangGraph (Python) | External / Basic | None | **`StateGraph`, Parallel Nodes, Time-Travel, DOT** |
+| **Multi-Agent Patterns** | CrewAI / AutoGen | Basic Agents | Simple ReAct | **Plan-and-Execute, Supervisor, Debate, Blackboard** |
+| **Model Context Protocol (MCP)** | Python Client | Custom SDK | Basic | **Built-in stdio + HTTP JSON-RPC Client** |
+| **Human-in-the-Loop (HITL)** | Supported | Partial | Unsupported | **First-class `hitlNode` & `resumeGraph`** |
+| **Thread Safety** | GIL / AsyncIO | Locks / Atomicals | Arc / Mutex | **Software Transactional Memory (STM `TVar`)** |
+| **Streaming Protocol** | Async Generators | Reactive Streams | Futures Stream | **Conduit Streaming (`StreamEvent` Lifecycle)** |
+| **Observability** | LangSmith (SaaS) | OpenTelemetry | Tracing Crate | **OpenTelemetry Spans + Structured Logging** |
+| **Resilience** | Tenacity | Resilience4j | Custom | **Circuit Breaker, Exponential Backoff & Jitter** |
 
 ---
 
@@ -30,99 +49,113 @@
 | Package | Version | Description |
 |---|---|---|
 | [`langchain-hs-core`](./langchain-hs-core) | `0.2.0.0` | Pure AST pipeline (`RunnableTree`), `ChatModel`, `ContentBlock`, `Tool m`, `StreamEvent`. Zero HTTP deps. |
-| [`langchain-hs-graph`](./langchain-hs-graph) | `0.5.0.0` | `StateGraph s m`, `StateReducer s`, `Checkpointer` (Memory & SQLite), `HITL`, `MultiAgent`. |
-| [`langchain-hs`](./) | `0.5.0.0` | High-level LLM providers (Ollama, OpenAI, Anthropic, Gemini, DeepSeek), Memory, VectorStore, Retriever. |
+| [`langchain-hs-graph`](./langchain-hs-graph) | `0.5.0.0` | `StateGraph s m`, `StateReducer s`, Checkpointers, HITL, TimeTravel, Parallel execution, DOT export. |
+| [`langchain-hs`](./) | `0.5.0.0` | Providers (Ollama, OpenAI, Anthropic, Gemini, DeepSeek), Memory, Vector Stores, Chains, MCP, Observability. |
 
 ---
 
-## 🚀 Supported Providers
+## 🏗️ Architecture
 
-- 🦙 **Ollama**: Local models (`gemma3:latest`, `qwen3.5:2b`, `llama3.2`) with `ollama-haskell 0.3.0.0`
-- 🧠 **DeepSeek**: R1 Reasoning models with automated reasoning chain extraction (`<think>...</think>`)
-- 🤖 **OpenAI & OpenAI-Compatible**: GPT-4o, Claude endpoints, OpenRouter, Together, Fireworks
-- 🎭 **Anthropic**: Claude 3.5 Sonnet with extended thinking budget payload & vision
-- ♊ **Google Gemini**: Gemini 1.5 Pro/Flash and Gemini Embeddings
+```mermaid
+flowchart TB
+    subgraph Core ["langchain-hs-core (Zero HTTP Dependencies)"]
+        RT["RunnableTree (Pure GADT AST)"]
+        CM["ChatModel (Effect-Polymorphic)"]
+        CB["ContentBlock (Multi-Modal)"]
+        TL["Tool m (Typed Schema & Exec)"]
+        SE["StreamEvent (Conduit Streaming)"]
+    end
+
+    subgraph Graph ["langchain-hs-graph (Workflow & Multi-Agent)"]
+        SG["StateGraph s m"]
+        SR["StateReducer (Pure Monoid)"]
+        CP["Checkpointer (STM TVar & SQLite)"]
+        HT["HITL Interrupt & Resume"]
+        TT["TimeTravel History & Replay"]
+        DOT["Graphviz DOT Visualization"]
+        PN["Parallel Concurrent Nodes"]
+    end
+
+    subgraph HighLevel ["langchain-hs (Ecosystem & Production)"]
+        PR["Providers: Ollama, OpenAI, Claude, Gemini, DeepSeek"]
+        AG["Agents: ReAct, Plan-and-Execute, Supervisor, Debate, Blackboard"]
+        MCP["MCP Client (Stdio & HTTP JSON-RPC 2.0)"]
+        VS["Vector Stores: SQLite-vec, InMemory, PgVector, Qdrant"]
+        CH["Chains: Conversational RAG, MapReduce, SQL Database"]
+        OB["Observability: OpenTelemetry, Structured Logging, Tracer"]
+        RES["Resilience: Circuit Breaker, Retries, Connection Pool"]
+    end
+
+    HighLevel --> Graph
+    HighLevel --> Core
+    Graph --> Core
+```
 
 ---
 
-## 💡 Quickstart Examples
+## 🚀 Quickstart Examples
 
-### 1. Pure AST Pipeline (`RunnableTree`)
+### 1. Plan-and-Execute Agent
 
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
-import Langchain.Core.Runnable
-import Langchain.Core.Error
-import Control.Monad.Except
+import Control.Monad.Except (runExceptT)
+import Langchain.Prelude
 
 main :: IO ()
 main = do
-  let uppercase = runLambda (\t -> pure $ Right (T.toUpper t))
-      exclamation = runLambda (\t -> pure $ Right (t <> "!"))
-      pipeline = uppercase |>> exclamation
+  let model = newOllama "qwen2.5:7b" "http://localhost:11434"
+      agent = newPlanAndExecuteAgent model model Nothing
 
-  res <- runExceptT $ interpret pipeline "hello world"
-  print res -- Right "HELLO WORLD!"
+  res <- runExceptT $ runPlanAndExecute agent "Write a Haskell CLI that counts words in text files"
+  case res of
+    Left err  -> putStrLn ("Error: " ++ show err)
+    Right ans -> putStrLn ("Answer:\n" ++ show ans)
 ```
 
-### 2. Stateful Graph Agent with HITL Interrupt & Resume
+### 2. Model Context Protocol (MCP) Integration
 
 ```haskell
-{-# LANGUAGE OverloadedStrings, DeriveGeneric, DeriveAnyClass #-}
-import Langchain.Graph.StateGraph
-import Langchain.Graph.Checkpointer
-import Langchain.Graph.HITL
-import GHC.Generics
-import Data.Aeson
+import Langchain.Prelude
 
-data AppState = AppState { result :: Text } deriving (Eq, Show, Generic, ToJSON, FromJSON)
+mcpExample :: IO ()
+mcpExample = do
+  -- Connect to MCP server over stdio
+  client <- newStdioMcpClient "npx" ["-y", "@modelcontextprotocol/server-everything"]
+  
+  -- Discover available tools
+  mcpTools <- listMcpTools client
+  
+  -- Convert to standard Langchain Tool instances
+  let localTools = map mcpToolToLangchainTool mcpTools
+```
 
-appReducer :: StateReducer AppState
-appReducer _ new = new
+### 3. OpenTelemetry Distributed Tracing
 
-main :: IO ()
-main = do
-  cp <- newMemoryCheckpointer
-  let threadId = "thread-1"
-      prepareNode = Node "prepare" $ \s -> pure $ Right s { result = "Draft Plan" }
-      approvalHitl = hitlNode cp threadId "approval" $ \s -> pure $ Right s
-      finalizeNode = Node "finalize" $ \s -> pure $ Right s { result = result s <> " -> Executed!" }
+```haskell
+import Langchain.Prelude
+import qualified Data.Map.Strict as Map
 
-      graph = addEdge "prepare" "approval" 
-            $ addEdge "approval" "finalize" 
-            $ addEdge "finalize" endNodeId 
-            $ addNode "prepare" (nodeAction prepareNode)
-            $ addNode "approval" (nodeAction approvalHitl)
-            $ addNode "finalize" (nodeAction finalizeNode)
-            $ emptyStateGraph appReducer
-
-  Right compiled <- pure $ compileGraph graph
-  -- Executes until HITL interrupt at node "approval"
-  res <- runExceptT $ runGraph compiled "prepare" (AppState "")
-  -- Resume execution after human review
-  resFinal <- runExceptT $ resumeGraph compiled cp threadId "approval" "finalize" (\s -> s { result = result s <> " [Human Approved]" })
-  print resFinal -- Right (AppState {result = "Draft Plan [Human Approved] -> Executed!"})
+otelExample :: IO ()
+otelExample = do
+  tracer <- newOTelTracer Nothing
+  res <- runExceptT $ withSpan tracer "agent_turn" Nothing ClientSpan (Map.singleton "agent" "supervisor") $ do
+    -- Execute agent or LLM call
+    pure ()
+  
+  jsonTrace <- exportSpansJson tracer
 ```
 
 ---
 
-## 🧪 Comprehensive 4-Tier Test Suite
+## 🧪 Comprehensive Test Suite (329 Automated Tests)
 
-Run full workspace test suite:
+Run all unit, property, regression, and live integration tests:
+
 ```bash
-cd langchain-hs && stack test
+# Run all test suites across all packages
+stack test
+
+# Run micro-benchmarks with sub-microsecond latency verification
+stack bench
 ```
-
-- **Unit Tests**: Provider parsing, model responses, tool execution, file system operations.
-- **Property Tests**: QuickCheck verification of `RunnableTree` identity/associativity laws & `StateReducer` associativity laws.
-- **Integration Tests**: Live execution against local Ollama models (`gemma3:latest`), SQLite checkpoint persistence, and multi-agent routing.
-- **Showcase Application**: Run the comprehensive showcase app stretching all features:
-  ```bash
-  stack run big-showcase
-  ```
-
----
-
-## 📜 License
-
-Distributed under the MIT License. See [LICENSE](LICENSE) for details.

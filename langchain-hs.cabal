@@ -52,6 +52,7 @@ library
       Langchain.Chain.Sequential
       Langchain.Chain.SqlDatabase
       Langchain.Chain.StuffDocuments
+      Langchain.Chain.Summarization
       Langchain.Config.Validation
       Langchain.Diagnostics.HealthCheck
       Langchain.DocumentLoader.Core
@@ -62,16 +63,19 @@ library
       Langchain.DocumentLoader.Json
       Langchain.DocumentLoader.PdfLoader
       Langchain.DocumentLoader.WebPage
+      Langchain.DocumentTransformer.MetadataEnricher
       Langchain.Embeddings.Core
       Langchain.Embeddings.Gemini
       Langchain.Embeddings.Ollama
       Langchain.Embeddings.OpenAI
       Langchain.Error
+      Langchain.ExampleSelector.Similarity
       Langchain.Graph.Blackboard
       Langchain.Graph.Debate
       Langchain.Graph.Voting
       Langchain.Guardrail.Core
       Langchain.HTTP.ConnectionPool
+      Langchain.Laws
       Langchain.Logging.Structured
       Langchain.MCP.Client
       Langchain.Memory.Core
@@ -83,6 +87,7 @@ library
       Langchain.OutputParser.Enum
       Langchain.OutputParser.Structured
       Langchain.OutputParser.Xml
+      Langchain.Pipeline.DSL
       Langchain.Prelude
       Langchain.PromptTemplate
       Langchain.Provider.Anthropic
@@ -125,7 +130,8 @@ library
       src
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
-      aeson ==2.*
+      QuickCheck >=2.14
+    , aeson ==2.*
     , async <3
     , base >=4.7 && <5
     , base64-bytestring ==1.2.*
@@ -163,7 +169,8 @@ executable big-showcase
       examples
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      aeson ==2.*
+      QuickCheck >=2.14
+    , aeson ==2.*
     , async <3
     , base >=4.7 && <5
     , base64-bytestring ==1.2.*
@@ -208,6 +215,7 @@ test-suite langchain-hs-test
       Test.Langchain.Chain.AdvancedChainsSpec
       Test.Langchain.Chain.ChainsSpec
       Test.Langchain.Chain.RetrievalQASpec
+      Test.Langchain.Chain.SummarizationSpec
       Test.Langchain.Config.ValidationSpec
       Test.Langchain.Diagnostics.HealthCheckSpec
       Test.Langchain.DocumentLoader.Core
@@ -216,19 +224,24 @@ test-suite langchain-hs-test
       Test.Langchain.DocumentLoader.HtmlSpec
       Test.Langchain.DocumentLoader.JsonSpec
       Test.Langchain.DocumentLoader.WebPageSpec
+      Test.Langchain.DocumentTransformer.MetadataEnricherSpec
       Test.Langchain.Embeddings.Core
       Test.Langchain.Error
+      Test.Langchain.ExampleSelector.ExampleSelectorSpec
       Test.Langchain.Graph.AdvancedGraphSpec
       Test.Langchain.Graph.CompilationSpec
       Test.Langchain.Graph.MultiAgentPatternsSpec
       Test.Langchain.Guardrail.GuardrailSpec
       Test.Langchain.HTTP.ConnectionPoolSpec
+      Test.Langchain.Integration.FullRagE2ESpec
+      Test.Langchain.Integration.MultiAgentGraphE2ESpec
       Test.Langchain.Integration.OllamaChatSpec
       Test.Langchain.Integration.OllamaEmbeddingSpec
       Test.Langchain.Integration.OllamaStreamSpec
       Test.Langchain.Integration.OllamaToolSpec
       Test.Langchain.Integration.ReActAgentE2ESpec
       Test.Langchain.Integration.StateGraphE2ESpec
+      Test.Langchain.Integration.StreamingCachingRetryE2ESpec
       Test.Langchain.Logging.StructuredLoggingSpec
       Test.Langchain.MCP.McpSpec
       Test.Langchain.Memory.Core
@@ -238,6 +251,7 @@ test-suite langchain-hs-test
       Test.Langchain.Observability.OpenTelemetrySpec
       Test.Langchain.OutputParser.AdvancedParsersSpec
       Test.Langchain.OutputParser.Core
+      Test.Langchain.Pipeline.PipelineDSLSpec
       Test.Langchain.PreludeSpec
       Test.Langchain.PromptTemplate
       Test.Langchain.Property.CheckpointerSpec
@@ -255,6 +269,7 @@ test-suite langchain-hs-test
       Test.Langchain.Provider.Ollama
       Test.Langchain.Provider.OllamaConversionSpec
       Test.Langchain.Provider.OpenAI
+      Test.Langchain.Pure.PurePipelineSpec
       Test.Langchain.RegressionSpec
       Test.Langchain.Resilience.CircuitBreakerSpec
       Test.Langchain.Resilience.RetrySpec
@@ -323,7 +338,8 @@ benchmark langchain-hs-bench
       bench
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N -Wall
   build-depends:
-      aeson
+      QuickCheck >=2.14
+    , aeson
     , async <3
     , base >=4.7 && <5
     , base64-bytestring ==1.2.*

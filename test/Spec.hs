@@ -12,6 +12,7 @@ import qualified Test.Langchain.Callback.CallbackManagerSpec as CallbackTest
 import qualified Test.Langchain.Chain.AdvancedChainsSpec as AdvancedChainsTest
 import qualified Test.Langchain.Chain.ChainsSpec as ChainsTest
 import qualified Test.Langchain.Chain.RetrievalQASpec as RetrievalQATest
+import qualified Test.Langchain.Chain.SummarizationSpec as SummarizationChainTest
 import qualified Test.Langchain.Config.ValidationSpec as ConfigValidationTest
 import qualified Test.Langchain.Diagnostics.HealthCheckSpec as HealthCheckTest
 import qualified Test.Langchain.DocumentLoader.Core as DocumentLoaderTest
@@ -20,8 +21,10 @@ import qualified Test.Langchain.DocumentLoader.DirectoryLoader as DirectoryLoade
 import qualified Test.Langchain.DocumentLoader.HtmlSpec as HtmlLoaderTest
 import qualified Test.Langchain.DocumentLoader.JsonSpec as JsonLoaderTest
 import qualified Test.Langchain.DocumentLoader.WebPageSpec as WebPageLoaderTest
+import qualified Test.Langchain.DocumentTransformer.MetadataEnricherSpec as MetadataEnricherTest
 import qualified Test.Langchain.Embeddings.Core as EmbeddingsTest
 import qualified Test.Langchain.Error as ErrorTest
+import qualified Test.Langchain.ExampleSelector.ExampleSelectorSpec as ExampleSelectorTest
 import qualified Test.Langchain.Graph.AdvancedGraphSpec as AdvancedGraphTest
 import qualified Test.Langchain.Graph.CompilationSpec as GraphCompilationTest
 import qualified Test.Langchain.Graph.MultiAgentPatternsSpec as MultiAgentPatternsTest
@@ -36,6 +39,7 @@ import qualified Test.Langchain.Memory.TokenBufferMemory as TokenBufferMemoryTes
 import qualified Test.Langchain.Observability.OpenTelemetrySpec as OTelTest
 import qualified Test.Langchain.OutputParser.AdvancedParsersSpec as AdvancedParsersTest
 import qualified Test.Langchain.OutputParser.Core as OutputParserTest
+import qualified Test.Langchain.Pipeline.PipelineDSLSpec as PipelineDSLTest
 import qualified Test.Langchain.PreludeSpec as PreludeTest
 import qualified Test.Langchain.PromptTemplate as PromptTemplateTest
 import qualified Test.Langchain.Provider.Anthropic as AnthropicProviderTest
@@ -45,6 +49,7 @@ import qualified Test.Langchain.Provider.Gemini as GeminiProviderTest
 import qualified Test.Langchain.Provider.Ollama as OllamaProviderTest
 import qualified Test.Langchain.Provider.OllamaConversionSpec as OllamaConversionTest
 import qualified Test.Langchain.Provider.OpenAI as OpenAIProviderTest
+import qualified Test.Langchain.Pure.PurePipelineSpec as PurePipelineTest
 import qualified Test.Langchain.Resilience.CircuitBreakerSpec as CircuitBreakerTest
 import qualified Test.Langchain.Resilience.RetrySpec as RetryTest
 import qualified Test.Langchain.Retriever.AdvancedRetrieversSpec as AdvancedRetrieversTest
@@ -76,12 +81,15 @@ import qualified Test.Langchain.Property.TextSplitterSpec as TextSplitterPropTes
 import qualified Test.Langchain.RegressionSpec as RegressionTest
 
 -- Live Integration & E2E Test Modules (Ollama)
+import qualified Test.Langchain.Integration.FullRagE2ESpec as FullRagE2ETest
+import qualified Test.Langchain.Integration.MultiAgentGraphE2ESpec as MultiAgentGraphE2ETest
 import qualified Test.Langchain.Integration.OllamaChatSpec as OllamaChatE2ETest
 import qualified Test.Langchain.Integration.OllamaEmbeddingSpec as OllamaEmbedE2ETest
 import qualified Test.Langchain.Integration.OllamaStreamSpec as OllamaStreamE2ETest
 import qualified Test.Langchain.Integration.OllamaToolSpec as OllamaToolE2ETest
 import qualified Test.Langchain.Integration.ReActAgentE2ESpec as ReActE2ETest
 import qualified Test.Langchain.Integration.StateGraphE2ESpec as StateGraphE2ETest
+import qualified Test.Langchain.Integration.StreamingCachingRetryE2ESpec as StreamingCachingRetryE2ETest
 
 main :: IO ()
 main =
@@ -105,6 +113,8 @@ main =
           , JsonLoaderTest.tests
           , HtmlLoaderTest.tests
           , WebPageLoaderTest.tests
+          , MetadataEnricherTest.tests
+          , ExampleSelectorTest.tests
           , MemoryTest.tests
           , SummaryMemoryTest.tests
           , EntityMemoryTest.tests
@@ -116,6 +126,8 @@ main =
           , RetrievalQATest.tests
           , ChainsTest.tests
           , AdvancedChainsTest.tests
+          , SummarizationChainTest.tests
+          , PipelineDSLTest.tests
           , CacheTest.tests
           , RetryTest.tests
           , CircuitBreakerTest.tests
@@ -147,6 +159,7 @@ main =
           , GraphCompilationTest.tests
           , AdvancedGraphTest.tests
           , MiddlewareTest.tests
+          , PurePipelineTest.tests
           , PreludeTest.tests
           ]
       , testGroup
@@ -172,5 +185,8 @@ main =
           , ReActE2ETest.tests
           , OllamaEmbedE2ETest.tests
           , StateGraphE2ETest.tests
+          , FullRagE2ETest.tests
+          , MultiAgentGraphE2ETest.tests
+          , StreamingCachingRetryE2ETest.tests
           ]
       ]

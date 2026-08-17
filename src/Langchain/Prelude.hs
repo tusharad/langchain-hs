@@ -12,7 +12,7 @@ Stability   : experimental
 
 Exports all core data types, typeclasses, models, vector stores, memory stores,
 graph orchestration primitives, advanced multi-agent patterns, guardrails, MCP client,
-observability, structured logging, circuit breakers, and runtime execution monads.
+observability, structured logging, circuit breakers, pipeline DSLs, and runtime execution monads.
 -}
 module Langchain.Prelude
   ( -- * Core Monad & Errors
@@ -65,13 +65,19 @@ module Langchain.Prelude
   , collectEvents
   , printEvents
 
-    -- * Pure AST Pipelines (RunnableTree)
+    -- * Pure AST Pipelines (RunnableTree) & Pipeline DSL
   , RunnableTree (..)
   , (|>>)
   , (&>&)
   , interpret
   , runLambda
   , runPrim
+  , pipe
+  , (>>>#)
+  , pipeParallel
+  , PipelineStep (..)
+  , mkStep
+  , runPipeline
 
     -- * Effect-Polymorphic Tools
   , Tool (..)
@@ -272,7 +278,7 @@ module Langchain.Prelude
     -- * Embeddings
   , Embeddings (..)
 
-    -- * Document Loaders
+    -- * Document Loaders & Transformers
   , Document (..)
   , BaseLoader (..)
   , FileLoader (..)
@@ -288,12 +294,22 @@ module Langchain.Prelude
   , defaultHtmlLoader
   , WebPageLoader (..)
   , defaultWebPageLoader
+  , DocumentTransformer (..)
+  , enrichDocumentMetadata
+  , enrichDocuments
+  , MetadataEnricher (..)
+  , newMetadataEnricher
 
-    -- * Prompt Templates
+    -- * Prompt Templates & Example Selectors
   , PromptTemplate (..)
   , FewShotPromptTemplate (..)
   , renderPrompt
   , renderFewShotPrompt
+  , Example
+  , ExampleSelector (..)
+  , LengthBasedSelector (..)
+  , newLengthBasedSelector
+  , selectByLength
 
     -- * Text Splitters
   , CharacterSplitterOps (..)
@@ -351,6 +367,10 @@ module Langchain.Prelude
   , ConversationalRetrievalQA (..)
   , newConversationalRetrievalQA
   , runConversationalRetrievalQA
+  , SummarizationStrategy (..)
+  , SummarizationChain (..)
+  , newSummarizationChain
+  , runSummarizationChain
 
     -- * Structured Output, Routers, and Advanced Parsers
   , StructuredOutput (..)
@@ -365,6 +385,9 @@ module Langchain.Prelude
   , EnumParser (..)
   , newEnumParser
   , parseEnum
+
+    -- * Algebraic Laws Verification
+  , verifyAllLaws
 
     -- * Agents & Execution
   , ReActAgent (..)
@@ -405,6 +428,7 @@ import Langchain.Chain.RetrievalQA
 import Langchain.Chain.Sequential
 import Langchain.Chain.SqlDatabase
 import Langchain.Chain.StuffDocuments
+import Langchain.Chain.Summarization
 import Langchain.Config.Validation
 import Langchain.Core.Error
 import Langchain.Core.Model
@@ -422,8 +446,10 @@ import Langchain.DocumentLoader.Html
 import Langchain.DocumentLoader.Json
 import Langchain.DocumentLoader.PdfLoader
 import Langchain.DocumentLoader.WebPage
+import Langchain.DocumentTransformer.MetadataEnricher
 import Langchain.Embeddings.Core
 import Langchain.Error (LangchainResult)
+import Langchain.ExampleSelector.Similarity
 import Langchain.Graph.Blackboard
 import Langchain.Graph.Checkpointer
 import Langchain.Graph.Debate
@@ -437,6 +463,7 @@ import Langchain.Graph.Visualization
 import Langchain.Graph.Voting
 import Langchain.Guardrail.Core
 import Langchain.HTTP.ConnectionPool
+import Langchain.Laws
 import Langchain.Logging.Structured
 import Langchain.MCP.Client
 import Langchain.Memory.Core
@@ -446,6 +473,7 @@ import Langchain.Observability.OpenTelemetry
 import Langchain.OutputParser.Enum
 import Langchain.OutputParser.Structured
 import Langchain.OutputParser.Xml
+import Langchain.Pipeline.DSL
 import Langchain.PromptTemplate
 import Langchain.Provider.Anthropic (Anthropic, newAnthropic)
 import Langchain.Provider.DeepSeek (DeepSeek, newDeepSeek)
