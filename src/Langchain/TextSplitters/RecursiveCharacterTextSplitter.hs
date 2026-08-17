@@ -121,57 +121,47 @@ instance Core.TextSplitter RecursiveCharacterSplitterOps where
     splitTextRecursive ops text (separators ops)
   chunkOverlapFor = chunkOverlap
 
+unusedMarker :: Text -> Text
+unusedMarker text =
+  until isUnused (<> "\xE000") "\xE000"
+  where
+    isUnused marker = not (marker `T.isInfixOf` text)
+
+selectSeparator :: (Text -> Bool) -> [Text] -> (Text, [Text])
+selectSeparator _ [] = ("", [])
+selectSeparator separatorMatches (sep : rest)
+  | T.null sep || separatorMatches sep = (sep, rest)
+  | otherwise = selectSeparator separatorMatches rest
+
 splitTextRecursive :: RecursiveCharacterSplitterOps -> Text -> [Text] -> [Text]
 splitTextRecursive ops text availableSeparators = mergeChunks [] [] splits
   where
-    marker =
-      until
-        (not . T.isInfixOf text)
-        (<> "\xE000")
-        "\xE000"
-
     keepSep = keepSeparator ops
+    marker = unusedMarker text
 
-    splitLiteralText =
-      T.replace separator replacement
-      where
-        replacement =
-          case keepSep of
-            KeepSeparatorNone -> marker
-            KeepSeparatorStart -> marker <> separator
-            KeepSeparatorEnd -> separator <> marker
+    replacement s = case keepSep of
+      KeepSeparatorNone -> marker
+      KeepSeparatorStart -> marker <> s
+      KeepSeparatorEnd -> s <> marker
+
+    splitLiteralText = T.replace separator (replacement separator)
 
     splitRegexText =
       T.fromStrict $
         Pcre.gsub
           (T.toStrict separator)
-          (T.toStrict replacement)
+          (T.toStrict (replacement "$0"))
           (T.toStrict text)
-      where
-        replacement =
-          case keepSep of
-            KeepSeparatorNone -> marker
-            KeepSeparatorStart -> marker <> "$0"
-            KeepSeparatorEnd -> "$0" <> marker
 
-    separatorMatchesRegex sep =
-      Pcre.matches (T.toStrict sep) (T.toStrict text)
-
-    separatorMatchesLiteral sep =
-      sep `T.isInfixOf` text
+    separatorMatchesRegex sep = Pcre.matches (T.toStrict sep) (T.toStrict text)
+    separatorMatchesLiteral sep = sep `T.isInfixOf` text
 
     (markedText, separatorMatches) =
       if isSeparatorRegex ops
         then (splitRegexText, separatorMatchesRegex)
         else (splitLiteralText text, separatorMatchesLiteral)
 
-    (separator, nextSeparators) =
-      case dropWhile (not . isSelectable) availableSeparators of
-        [] -> ("", [])
-        candidate : remaining -> (candidate, remaining)
-      where
-        isSelectable candidate =
-          T.null candidate || separatorMatches candidate
+    (separator, nextSeparators) = selectSeparator separatorMatches availableSeparators
 
     splits
       | T.null separator = T.singleton <$> T.unpack text
@@ -179,28 +169,29 @@ splitTextRecursive ops text availableSeparators = mergeChunks [] [] splits
           filter (not . T.null) $
             T.splitOn marker markedText
 
-    merge finalChunks goodSplits = finalChunks <> ss
-      where
-        ss =
-          if null goodSplits
-            then []
-            else Core.mergeSplits (chunkSize ops) (chunkOverlap ops) mergeSeparator goodSplits
-        mergeSeparator =
-          case keepSep of
-            KeepSeparatorNone -> separator
-            _ -> ""
+    mergeSeparator =
+      case keepSep of
+        KeepSeparatorNone -> separator
+        _ -> ""
 
-    mergeChunks finalChunks goodSplits [] = merge finalChunks goodSplits
-    mergeChunks finalChunks goodSplits (split : rest)
-      | T.length split < chunkSize ops =
-          mergeChunks finalChunks (goodSplits <> [split]) rest
-      | otherwise =
-          let finalChunks' = merge finalChunks goodSplits
-              nextChunks =
-                if null nextSeparators
-                  then [split]
-                  else splitTextRecursive ops split nextSeparators
-           in mergeChunks (finalChunks' <> nextChunks) [] rest
+    mergeChunks finalChunks goodSplits remainingSplits =
+      case remainingSplits of
+        [] -> flushedChunks
+        split : rest
+          | T.length split < chunkSize ops ->
+              mergeChunks finalChunks (goodSplits <> [split]) rest
+          | otherwise ->
+              let nextChunks =
+                    if null nextSeparators
+                      then [split]
+                      else splitTextRecursive ops split nextSeparators
+               in mergeChunks (flushedChunks <> nextChunks) [] rest
+      where
+        flushedChunks =
+          finalChunks
+            <> if null goodSplits
+              then []
+              else Core.mergeSplits (chunkSize ops) (chunkOverlap ops) mergeSeparator goodSplits
 
 -- | Configure a recursive splitter with separators appropriate for a language.
 fromLanguage :: Language -> RecursiveCharacterSplitterOps -> RecursiveCharacterSplitterOps
