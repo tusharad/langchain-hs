@@ -94,6 +94,8 @@ library
       Langchain.Prelude
       Langchain.PromptTemplate
       Langchain.PromptTemplate.Chat
+      Langchain.PromptTemplate.Chat.ChatMessagePromptTemplate
+      Langchain.PromptTemplate.Chat.MessagesPlaceholder
       Langchain.Provider.Anthropic
       Langchain.Provider.DeepSeek
       Langchain.Provider.Gemini
