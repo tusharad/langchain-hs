@@ -267,6 +267,7 @@ test-suite langchain-hs-test
       Test.Langchain.Pipeline.PipelineDSLSpec
       Test.Langchain.PreludeSpec
       Test.Langchain.PromptTemplate
+      Test.Langchain.PromptTemplate.Chat.ChatMessagePromptTemplateSpec
       Test.Langchain.PromptTemplate.Chat.MessagesPlaceholderSpec
       Test.Langchain.Property.CheckpointerSpec
       Test.Langchain.Property.ErrorSpec

@@ -42,6 +42,7 @@ import qualified Test.Langchain.OutputParser.Core as OutputParserTest
 import qualified Test.Langchain.Pipeline.PipelineDSLSpec as PipelineDSLTest
 import qualified Test.Langchain.PreludeSpec as PreludeTest
 import qualified Test.Langchain.PromptTemplate as PromptTemplateTest
+import qualified Test.Langchain.PromptTemplate.Chat.ChatMessagePromptTemplateSpec as ChatMessagePromptTemplateTest
 import qualified Test.Langchain.PromptTemplate.Chat.MessagesPlaceholderSpec as MessagesPlaceholderTest
 import qualified Test.Langchain.Provider.Anthropic as AnthropicProviderTest
 import qualified Test.Langchain.Provider.DeepSeek as DeepSeekProviderTest
@@ -107,6 +108,7 @@ main =
           "Unit Tests"
           [ ErrorTest.tests
           , PromptTemplateTest.tests
+          , ChatMessagePromptTemplateTest.tests
           , MessagesPlaceholderTest.tests
           , OutputParserTest.tests
           , AdvancedParsersTest.tests
