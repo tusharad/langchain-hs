@@ -21,6 +21,7 @@ module Langchain.Provider.OpenAI
   , defaultConfig
   , newOpenAI
   , openAICompatible
+  , parseOpenAIResponse
   ) where
 
 import Control.Monad.Except (MonadError, throwError)
@@ -176,11 +177,29 @@ safeHttpRequest req = do
 parseOpenAIResponse :: Value -> Either String (Message, Maybe TokenUsage)
 parseOpenAIResponse = parseEither $ withObject "OpenAIResponse" $ \o -> do
   choices <- o .: "choices"
+  usageVal <- o .:? "usage"
+  mbUsage <- case usageVal of
+    Nothing -> pure Nothing
+    Just u -> flip (withObject "Usage") u $ \uo -> do
+      pTok <- uo .:? "prompt_tokens" .!= 0
+      cTok <- uo .:? "completion_tokens" .!= 0
+      tTok <- uo .:? "total_tokens" .!= 0
+      pure $ Just $ TokenUsage pTok cTok tTok
   case choices of
     [] -> fail "Empty choices array in OpenAI response"
     (c : _) -> flip (withObject "Choice") c $ \ch -> do
       msgObj <- ch .: "message"
       contentTxt <- msgObj .:? "content" .!= ""
-      let msg = assistantMessage contentTxt
-          usage = Nothing
-      pure (msg, usage)
+      mbToolCalls <- msgObj .:? "tool_calls"
+      cToolCalls <- case mbToolCalls of
+        Nothing -> pure Nothing
+        Just tcs -> do
+          calls <- flip mapM (tcs :: [Value]) $ withObject "ToolCall" $ \tcObj -> do
+            tcId <- tcObj .:? "id" .!= ""
+            fnObj <- tcObj .: "function"
+            fnName <- fnObj .: "name"
+            fnArgs <- fnObj .:? "arguments" .!= object []
+            pure $ ToolCall tcId "function" fnName fnArgs
+          pure (Just calls)
+      let msg = (assistantMessage contentTxt) {messageToolCalls = cToolCalls}
+      pure (msg, mbUsage)

@@ -88,10 +88,18 @@ tests:
     - langchain-hs-core
     - langchain-hs-graph
     - text
-    - tasty
-    - tasty-hunit
+    - bytestring
+    - aeson
+    - containers
+    - directory
     - filepath
     - temporary
+    - tasty
+    - tasty-hunit
+    - tasty-quickcheck
+    - QuickCheck
+    - async
+    - http-conduit
 
 benchmarks:
   langchain-hs-bench:

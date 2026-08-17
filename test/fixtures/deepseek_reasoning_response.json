@@ -1,0 +1,19 @@
+{
+  "id": "deepseek-chat-999",
+  "object": "chat.completion",
+  "created": 1677652300,
+  "model": "deepseek-reasoner",
+  "choices": [{
+    "index": 0,
+    "message": {
+      "role": "assistant",
+      "content": "<think>\nThinking through the mathematical proof step-by-step...\n</think>\nTherefore, the answer is 42."
+    },
+    "finish_reason": "stop"
+  }],
+  "usage": {
+    "prompt_tokens": 20,
+    "completion_tokens": 30,
+    "total_tokens": 50
+  }
+}

@@ -20,6 +20,7 @@ module Langchain.Provider.Anthropic
   , AnthropicConfig (..)
   , defaultConfig
   , newAnthropic
+  , parseAnthropicResponse
   ) where
 
 import Control.Monad.Except (throwError)
@@ -185,6 +186,13 @@ parseAnthropicResponse = parseEither $ withObject "AnthropicResponse" $ \o -> do
     if (t :: Text) == "text"
       then c .: "text"
       else pure ""
-  let fullTxt = T.unlines txts
+  usageVal <- o .:? "usage"
+  mbUsage <- case usageVal of
+    Nothing -> pure Nothing
+    Just u -> flip (withObject "Usage") u $ \uo -> do
+      inTok <- uo .:? "input_tokens" .!= 0
+      outTok <- uo .:? "output_tokens" .!= 0
+      pure $ Just $ TokenUsage inTok outTok (inTok + outTok)
+  let fullTxt = T.intercalate "\n" txts
       msg = assistantMessage fullTxt
-  pure (msg, Nothing)
+  pure (msg, mbUsage)

@@ -20,6 +20,10 @@ module Langchain.Provider.Ollama
   , OllamaConfig (..)
   , defaultConfig
   , OllamaEmbeddings (..)
+  , toOllamaRole
+  , fromOllamaRole
+  , toOllamaMessage
+  , fromOllamaMessage
   ) where
 
 import Control.Monad.Except (throwError)

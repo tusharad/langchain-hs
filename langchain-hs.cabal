@@ -145,23 +145,43 @@ test-suite langchain-hs-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      Test.Langchain.Agent.MiddlewareSpec
       Test.Langchain.Agent.ReAct
       Test.Langchain.Chain.RetrievalQASpec
       Test.Langchain.DocumentLoader.Core
       Test.Langchain.DocumentLoader.DirectoryLoader
       Test.Langchain.Embeddings.Core
       Test.Langchain.Error
+      Test.Langchain.Graph.CompilationSpec
+      Test.Langchain.Integration.OllamaChatSpec
+      Test.Langchain.Integration.OllamaEmbeddingSpec
+      Test.Langchain.Integration.OllamaStreamSpec
+      Test.Langchain.Integration.OllamaToolSpec
+      Test.Langchain.Integration.ReActAgentE2ESpec
+      Test.Langchain.Integration.StateGraphE2ESpec
       Test.Langchain.Memory.Core
       Test.Langchain.Memory.TokenBufferMemory
       Test.Langchain.OutputParser.Core
       Test.Langchain.PreludeSpec
       Test.Langchain.PromptTemplate
+      Test.Langchain.Property.CheckpointerSpec
+      Test.Langchain.Property.ErrorSpec
+      Test.Langchain.Property.MessageSpec
+      Test.Langchain.Property.OutputParserSpec
+      Test.Langchain.Property.PromptTemplateSpec
+      Test.Langchain.Property.RunnableSpec
+      Test.Langchain.Property.StateReducerSpec
+      Test.Langchain.Property.TextSplitterSpec
       Test.Langchain.Provider.Anthropic
       Test.Langchain.Provider.DeepSeek
+      Test.Langchain.Provider.FixturesSpec
       Test.Langchain.Provider.Gemini
       Test.Langchain.Provider.Ollama
+      Test.Langchain.Provider.OllamaConversionSpec
       Test.Langchain.Provider.OpenAI
+      Test.Langchain.RegressionSpec
       Test.Langchain.Retriever.Core
+      Test.Langchain.TestHelpers
       Test.Langchain.TextSplitter.Character
       Test.Langchain.Tool.Calculator
       Test.Langchain.Tool.Core
@@ -172,16 +192,17 @@ test-suite langchain-hs-test
       test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      aeson ==2.*
-    , async <3
+      QuickCheck
+    , aeson
+    , async
     , base >=4.7 && <5
     , base64-bytestring ==1.2.*
-    , bytestring >=0.10
+    , bytestring
     , conduit >=1.2 && <1.4
-    , containers >=0.6 && <0.9
-    , directory >=1.3.6 && <1.4
+    , containers
+    , directory
     , filepath
-    , http-conduit ==2.*
+    , http-conduit
     , http-types >=0.11 && <0.13
     , langchain-hs
     , langchain-hs-core
@@ -195,6 +216,7 @@ test-suite langchain-hs-test
     , tagsoup <0.15
     , tasty
     , tasty-hunit
+    , tasty-quickcheck
     , temporary
     , text
     , time >=1.9 && <1.15

@@ -21,6 +21,9 @@ module Langchain.Provider.Gemini
   , defaultConfig
   , newGemini
   , GeminiEmbeddings (..)
+  , parseGeminiResponse
+  , parseGeminiEmbedResponse
+  , parseGeminiBatchEmbedResponse
   ) where
 
 import Control.Monad.Except (throwError)
@@ -195,7 +198,7 @@ parseGeminiResponse = parseEither $ withObject "GeminiResponse" $ \o -> do
       contentObj <- cand .: "content"
       parts <- contentObj .: "parts"
       txts <- flip mapM parts $ withObject "Part" $ \p -> p .:? "text" .!= ""
-      pure $ assistantMessage (T.unlines txts)
+      pure $ assistantMessage (T.intercalate "\n" txts)
 
 parseGeminiEmbedResponse :: Value -> Either String [Float]
 parseGeminiEmbedResponse = parseEither $ withObject "GeminiEmbedResponse" $ \o -> do
