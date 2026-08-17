@@ -1,50 +1,54 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 {- |
 Module      : Langchain.Prelude
-Description : Canonical batteries-included prelude for langchain-hs
+Description : Canonical umbrella re-export module for langchain-hs
 Copyright   : (c) 2025-2026 Tushar Adhatrao
 License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
 
-Re-exports all essential types, typeclasses, and combinators for building LLM applications,
-agent graphs, and semantic pipelines in Haskell.
+Exports all core data types, typeclasses, models, vector stores, memory stores,
+graph orchestration primitives, advanced multi-agent patterns, guardrails, MCP client,
+and runtime execution monads.
 -}
 module Langchain.Prelude
-  ( -- * Core Errors
-    LangchainError (..)
-  , LangchainResult
-  , errorMessage
-  , llmError
-  , agentError
-  , memoryError
-  , toolError
-  , vectorStoreError
-  , documentLoaderError
-  , embeddingError
-  , runnableError
-  , parsingError
-  , validationError
-  , internalError
-
-    -- * Monad Transformer Stack
-  , LangchainT
+  ( -- * Core Monad & Errors
+    LangchainT
   , LangchainConfig (..)
   , defaultLangchainConfig
   , runLangchainT
   , runLangchainTIO
   , askConfig
   , withConfig
-  , throwLangchainError
+  , LangchainError (..)
+  , ErrorContext (..)
+  , errorMessage
+  , mkContext
+  , mkContextIO
+  , LangchainResult
+  , llmError
+  , parsingError
+  , vectorStoreError
+  , documentLoaderError
+  , embeddingError
+  , runnableError
+  , toolError
+  , agentError
+  , memoryError
+  , networkError
+  , configurationError
+  , validationError
+  , internalError
 
-    -- * Multi-Modal Messages & Models
+    -- * Multi-Modal Models & Messages
   , ChatModel (..)
   , MockModel (..)
   , newMockModel
   , Message (..)
-  , Role (System, User, Assistant, Developer, Function)
+  , Role
   , ContentBlock (..)
   , ToolCall (..)
   , textMessage
@@ -73,6 +77,11 @@ module Langchain.Prelude
   , Tool (..)
   , createTool
   , toolToValue
+  , DeriveToolSchema (..)
+  , deriveToolParametersSchema
+  , executeToolAsync
+  , executeToolWithTimeout
+  , executeToolBatchConcurrently
 
     -- * State Graphs & Multi-Agent
   , StateGraph (..)
@@ -100,6 +109,73 @@ module Langchain.Prelude
   , resumeGraph
   , supervisorNode
   , embedSubGraphNode
+  , toDot
+  , StateSnapshot (..)
+  , TimeTravelHistory (..)
+  , newTimeTravelHistory
+  , recordSnapshot
+  , getSnapshots
+  , resumeFromSnapshot
+  , parallelNode
+  , addParallelNodes
+  , SubGraphOptions (..)
+  , defaultSubGraphOptions
+  , embedSubGraphWithOptions
+
+    -- * Advanced Agent Patterns
+  , PlanAndExecuteAgent (..)
+  , newPlanAndExecuteAgent
+  , runPlanAndExecute
+  , FunctionsAgent (..)
+  , newFunctionsAgent
+  , runFunctionsAgent
+  , SpecialistAgent (..)
+  , SupervisorTeam (..)
+  , newSupervisorTeam
+  , runSupervisorTeam
+  , Debater (..)
+  , DebateConfig (..)
+  , defaultDebateConfig
+  , runDebate
+  , VotingClassifier (..)
+  , newVotingClassifier
+  , runVotingClassification
+  , Blackboard (..)
+  , KnowledgeSource (..)
+  , BlackboardConfig (..)
+  , newBlackboard
+  , runBlackboard
+
+    -- * Guardrails & Safety
+  , GuardrailResult (..)
+  , Guardrail (..)
+  , contentSafetyGuardrail
+  , topicGuardrail
+  , outputLengthGuardrail
+  , composeGuardrails
+  , withGuardrails
+
+    -- * Model Context Protocol (MCP) Client
+  , McpTransport (..)
+  , McpToolInfo (..)
+  , McpResource (..)
+  , McpClient (..)
+  , newStdioMcpClient
+  , newHttpMcpClient
+  , listMcpTools
+  , callMcpTool
+  , mcpToolToLangchainTool
+
+    -- * Telemetry & Tracing
+  , ActionType (..)
+  , TraceStep (..)
+  , AgentTrace (..)
+  , Tracer (..)
+  , newTracer
+  , recordStep
+  , getTrace
+  , findSlowestStep
+  , filterByActionType
 
     -- * Memory Systems
   , BaseMemory (..)
@@ -169,12 +245,12 @@ module Langchain.Prelude
   , MarkdownSplitterOps (..)
   , defaultMarkdownSplitterOps
   , splitMarkdown
+  , splitMarkdownToChunks
   , TokenSplitterOps (..)
   , defaultTokenSplitterOps
   , splitByTokens
-  , CodeSplitterOps (..)
-  , defaultCodeSplitterOps
   , Language (..)
+  , CodeSplitterOps (..)
   , splitCode
 
     -- * Caching & Resilience
@@ -197,6 +273,7 @@ module Langchain.Prelude
   , newRetrievalQA
   , runRetrievalQA
   , SequentialChain (..)
+  , ChainStep (..)
   , newSequentialChain
   , runSequentialChain
   , ConversationalChain (..)
@@ -208,6 +285,12 @@ module Langchain.Prelude
   , MapReduceChain (..)
   , newMapReduceChain
   , runMapReduceChain
+  , SqlDatabaseChain (..)
+  , newSqlDatabaseChain
+  , runSqlDatabaseChain
+  , ConversationalRetrievalQA (..)
+  , newConversationalRetrievalQA
+  , runConversationalRetrievalQA
 
     -- * Structured Output, Routers, and Advanced Parsers
   , StructuredOutput (..)
@@ -248,12 +331,17 @@ module Langchain.Prelude
   ) where
 
 import Langchain.Agent.Core
+import Langchain.Agent.Functions
 import Langchain.Agent.Middleware
+import Langchain.Agent.PlanAndExecute
+import Langchain.Agent.Supervisor
 import Langchain.Cache.Core
 import Langchain.Chain.Conversational
+import Langchain.Chain.ConversationalRetrievalQA
 import Langchain.Chain.MapReduce
 import Langchain.Chain.RetrievalQA
 import Langchain.Chain.Sequential
+import Langchain.Chain.SqlDatabase
 import Langchain.Chain.StuffDocuments
 import Langchain.Core.Error
 import Langchain.Core.Model
@@ -272,10 +360,19 @@ import Langchain.DocumentLoader.PdfLoader
 import Langchain.DocumentLoader.WebPage
 import Langchain.Embeddings.Core
 import Langchain.Error (LangchainResult)
+import Langchain.Graph.Blackboard
 import Langchain.Graph.Checkpointer
+import Langchain.Graph.Debate
 import Langchain.Graph.HITL
 import Langchain.Graph.MultiAgent
+import Langchain.Graph.Parallel
 import Langchain.Graph.StateGraph
+import Langchain.Graph.SubGraph
+import Langchain.Graph.TimeTravel
+import Langchain.Graph.Visualization
+import Langchain.Graph.Voting
+import Langchain.Guardrail.Core
+import Langchain.MCP.Client
 import Langchain.Memory.Core
 import Langchain.Memory.Entity
 import Langchain.Memory.Summary
@@ -299,6 +396,9 @@ import Langchain.TextSplitter.Code
 import Langchain.TextSplitter.Markdown
 import Langchain.TextSplitter.RecursiveCharacter
 import Langchain.TextSplitter.Token
+import Langchain.Tool.Async
+import Langchain.Tool.GenericSchema
+import Langchain.Trace.Core
 import Langchain.VectorStore.Core
 import Langchain.VectorStore.InMemory
 import Langchain.VectorStore.PgVector

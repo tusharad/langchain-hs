@@ -36,14 +36,19 @@ library
   exposed-modules:
       Langchain.Agent.Core
       Langchain.Agent.Executor
+      Langchain.Agent.Functions
       Langchain.Agent.Middleware
+      Langchain.Agent.PlanAndExecute
       Langchain.Agent.ReAct
+      Langchain.Agent.Supervisor
       Langchain.Cache.Core
       Langchain.Callback
       Langchain.Chain.Conversational
+      Langchain.Chain.ConversationalRetrievalQA
       Langchain.Chain.MapReduce
       Langchain.Chain.RetrievalQA
       Langchain.Chain.Sequential
+      Langchain.Chain.SqlDatabase
       Langchain.Chain.StuffDocuments
       Langchain.DocumentLoader.Core
       Langchain.DocumentLoader.Csv
@@ -58,6 +63,11 @@ library
       Langchain.Embeddings.Ollama
       Langchain.Embeddings.OpenAI
       Langchain.Error
+      Langchain.Graph.Blackboard
+      Langchain.Graph.Debate
+      Langchain.Graph.Voting
+      Langchain.Guardrail.Core
+      Langchain.MCP.Client
       Langchain.Memory.Core
       Langchain.Memory.Entity
       Langchain.Memory.Summary
@@ -85,13 +95,16 @@ library
       Langchain.TextSplitter.Markdown
       Langchain.TextSplitter.RecursiveCharacter
       Langchain.TextSplitter.Token
+      Langchain.Tool.Async
       Langchain.Tool.Calculator
       Langchain.Tool.Core
       Langchain.Tool.DuckDuckGo
       Langchain.Tool.FileSystem
+      Langchain.Tool.GenericSchema
       Langchain.Tool.Utils
       Langchain.Tool.WebScraper
       Langchain.Tool.WikipediaTool
+      Langchain.Trace.Core
       Langchain.Utils
       Langchain.VectorStore.Core
       Langchain.VectorStore.InMemory
@@ -123,6 +136,7 @@ library
     , openai >=2.2.1
     , parsec <4
     , pdf-toolbox-document ==0.1.4
+    , process ==1.6.*
     , random >=1.2
     , sqlite-simple >=0.4.18 && <0.5
     , stm ==2.5.*
@@ -161,6 +175,7 @@ executable big-showcase
     , openai >=2.2.1
     , parsec <4
     , pdf-toolbox-document ==0.1.4
+    , process ==1.6.*
     , random >=1.2
     , sqlite-simple >=0.4.18 && <0.5
     , stm ==2.5.*
@@ -176,9 +191,11 @@ test-suite langchain-hs-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      Test.Langchain.Agent.AdvancedAgentsSpec
       Test.Langchain.Agent.MiddlewareSpec
       Test.Langchain.Agent.ReAct
       Test.Langchain.Cache.CacheSpec
+      Test.Langchain.Chain.AdvancedChainsSpec
       Test.Langchain.Chain.ChainsSpec
       Test.Langchain.Chain.RetrievalQASpec
       Test.Langchain.DocumentLoader.Core
@@ -189,13 +206,17 @@ test-suite langchain-hs-test
       Test.Langchain.DocumentLoader.WebPageSpec
       Test.Langchain.Embeddings.Core
       Test.Langchain.Error
+      Test.Langchain.Graph.AdvancedGraphSpec
       Test.Langchain.Graph.CompilationSpec
+      Test.Langchain.Graph.MultiAgentPatternsSpec
+      Test.Langchain.Guardrail.GuardrailSpec
       Test.Langchain.Integration.OllamaChatSpec
       Test.Langchain.Integration.OllamaEmbeddingSpec
       Test.Langchain.Integration.OllamaStreamSpec
       Test.Langchain.Integration.OllamaToolSpec
       Test.Langchain.Integration.ReActAgentE2ESpec
       Test.Langchain.Integration.StateGraphE2ESpec
+      Test.Langchain.MCP.McpSpec
       Test.Langchain.Memory.Core
       Test.Langchain.Memory.EntitySpec
       Test.Langchain.Memory.SummarySpec
@@ -229,9 +250,11 @@ test-suite langchain-hs-test
       Test.Langchain.TextSplitter.MarkdownSpec
       Test.Langchain.TextSplitter.RecursiveCharacterSpec
       Test.Langchain.TextSplitter.TokenSpec
+      Test.Langchain.Tool.AdvancedToolsSpec
       Test.Langchain.Tool.Calculator
       Test.Langchain.Tool.Core
       Test.Langchain.Tool.FileSystem
+      Test.Langchain.Trace.TraceSpec
       Test.Langchain.VectorStore.Core
       Test.Langchain.VectorStore.SqliteVecSpec
       Paths_langchain_hs
@@ -260,6 +283,7 @@ test-suite langchain-hs-test
     , openai >=2.2.1
     , parsec <4
     , pdf-toolbox-document ==0.1.4
+    , process ==1.6.*
     , random >=1.2
     , sqlite-simple >=0.4.18 && <0.5
     , stm ==2.5.*
@@ -303,6 +327,7 @@ benchmark langchain-hs-bench
     , openai >=2.2.1
     , parsec <4
     , pdf-toolbox-document ==0.1.4
+    , process ==1.6.*
     , random >=1.2
     , sqlite-simple >=0.4.18 && <0.5
     , stm ==2.5.*

@@ -44,6 +44,10 @@ library:
     - Langchain.Graph.Checkpointer
     - Langchain.Graph.HITL
     - Langchain.Graph.MultiAgent
+    - Langchain.Graph.Visualization
+    - Langchain.Graph.TimeTravel
+    - Langchain.Graph.Parallel
+    - Langchain.Graph.SubGraph
 
 tests:
   langchain-hs-graph-test:
