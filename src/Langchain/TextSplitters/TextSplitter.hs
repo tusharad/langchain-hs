@@ -39,7 +39,7 @@ class TextSplitter splitter where
   chunkOverlapFor _ = 0
 
 -- | Options for converting text inputs into split 'Document' values.
-data CreateDocumentsOps = CreateDocumentsOps
+newtype CreateDocumentsOps = CreateDocumentsOps
   { -- | Whether to include each chunk's start index in document metadata.
     addStartIndex :: Bool
   }
@@ -105,9 +105,12 @@ mergeSplits chunkSize chunkOverlap separator splits =
           let doc = T.strip (T.intercalate separator docs')
            in if T.null doc then Nothing else Just doc
 
+    addedLen :: Text -> [Text] -> Int64
+    addedLen chunk doc = T.length chunk + if null doc then 0 else T.length separator
+
     totalAfterAdding :: Int64 -> Text -> [Text] -> Int64
     totalAfterAdding total split currentDoc =
-      total + T.length split + if null currentDoc then 0 else T.length separator
+      total + addedLen split currentDoc
 
     dropForOverlap :: Int64 -> [Text] -> Text -> (Int64, [Text])
     dropForOverlap total [] _ = (total, [])
@@ -120,24 +123,24 @@ mergeSplits chunkSize chunkOverlap separator splits =
             && total > 0
         shouldDropFirstSplit =
           total > chunkOverlap || overlapWithNextSplitTooLarge
-        totalAfterDroppingFirst = total - T.length firstSplit - if null rest then 0 else T.length separator
+        totalAfterDroppingFirst = total - addedLen firstSplit rest
 
     step :: ([Text], Int64, [Text]) -> Text -> ([Text], Int64, [Text])
     step (docs, total, currentDoc) split =
-        ( docs',
-            totalAfterAdding total' split currentDoc',
-            currentDoc' <> [split]
-          )
+      ( docs',
+        totalAfterAdding total' split currentDoc',
+        currentDoc' <> [split]
+      )
       where
         canAddSplit =
           null currentDoc
             || totalAfterAdding total split currentDoc <= chunkSize
         (docs', total', currentDoc') =
-            if canAddSplit
-              then (docs, total, currentDoc)
-              else
-                let (overlapTotal, overlapDoc) = dropForOverlap total currentDoc split
-                 in (flush (docs, total, currentDoc), overlapTotal, overlapDoc)
+          if canAddSplit
+            then (docs, total, currentDoc)
+            else
+              let (overlapTotal, overlapDoc) = dropForOverlap total currentDoc split
+               in (flush (docs, total, currentDoc), overlapTotal, overlapDoc)
 
 -- | Split existing documents while preserving document metadata on each chunk.
 splitDocuments ::
