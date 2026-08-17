@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.38.1.
+-- This file has been generated from package.yaml by hpack version 0.39.6.
 --
 -- see: https://github.com/sol/hpack
 
@@ -93,6 +93,7 @@ library
       Langchain.Pipeline.DSL
       Langchain.Prelude
       Langchain.PromptTemplate
+      Langchain.PromptTemplate.Chat
       Langchain.Provider.Anthropic
       Langchain.Provider.DeepSeek
       Langchain.Provider.Gemini
@@ -266,6 +267,7 @@ test-suite langchain-hs-test
       Test.Langchain.Pipeline.PipelineDSLSpec
       Test.Langchain.PreludeSpec
       Test.Langchain.PromptTemplate
+      Test.Langchain.PromptTemplate.Chat.MessagesPlaceholderSpec
       Test.Langchain.Property.CheckpointerSpec
       Test.Langchain.Property.ErrorSpec
       Test.Langchain.Property.MessageSpec
