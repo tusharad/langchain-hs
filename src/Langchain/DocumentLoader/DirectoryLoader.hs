@@ -28,7 +28,7 @@ import Langchain.DocumentLoader.Core
 import Langchain.DocumentLoader.FileLoader (FileLoader (FileLoader))
 import Langchain.DocumentLoader.PdfLoader (PdfLoader (PdfLoader))
 import Langchain.Error (LangchainError, llmError)
-import Langchain.TextSplitter.Character
+import Langchain.TextSplitters.CharacterTextSplitter
 import System.Directory (doesDirectoryExist, doesFileExist, listDirectory)
 import System.FilePath (takeExtension, takeFileName, (</>))
 

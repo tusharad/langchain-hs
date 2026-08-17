@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.38.1.
+-- This file has been generated from package.yaml by hpack version 0.39.6.
 --
 -- see: https://github.com/sol/hpack
 
@@ -67,7 +67,9 @@ library
       Langchain.Runnable.ConversationChain
       Langchain.Runnable.Core
       Langchain.Runnable.Utils
-      Langchain.TextSplitter.Character
+      Langchain.TextSplitters.CharacterTextSplitter
+      Langchain.TextSplitters.RecursiveCharacterTextSplitter
+      Langchain.TextSplitters.TextSplitter
       Langchain.Tool.Calculator
       Langchain.Tool.Core
       Langchain.Tool.DuckDuckGo
@@ -97,6 +99,7 @@ library
     , ollama-haskell >=0.2.1
     , openai >=2.2.1
     , parsec <4
+    , pcre2 >=2.2 && <2.4
     , pdf-toolbox-document ==0.1.4
     , tagsoup <0.15
     , text >=1.2 && <3
@@ -124,7 +127,9 @@ test-suite langchain-hs-test
       Test.Langchain.Runnable.ConversationChains
       Test.Langchain.Runnable.Core
       Test.Langchain.Runnable.Utils
-      Test.Langchain.TextSplitter.Character
+      Test.Langchain.TextSplitters.CharacterTextSplitter
+      Test.Langchain.TextSplitters.RecursiveCharacterTextSplitter
+      Test.Langchain.TextSplitters.TextSplitter
       Test.Langchain.Tool.Core
       Test.Langchain.VectorStore.Core
       Paths_langchain_hs
@@ -147,6 +152,7 @@ test-suite langchain-hs-test
     , ollama-haskell >=0.2.1
     , openai >=2.2.1
     , parsec <4
+    , pcre2 >=2.2 && <2.4
     , pdf-toolbox-document ==0.1.4
     , tagsoup <0.15
     , tasty
