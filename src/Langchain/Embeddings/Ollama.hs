@@ -1,10 +1,11 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
 {- |
 Module      : Langchain.Embeddings.Ollama
 Description : Ollama integration for text embeddings in LangChain Haskell
-Copyright   : (c) 2025 Tushar Adhatrao
+Copyright   : (c) 2025-2026 Tushar Adhatrao
 License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
@@ -16,12 +17,13 @@ module Langchain.Embeddings.Ollama
   , module Langchain.DocumentLoader.Core
   ) where
 
-import Data.Maybe
+import Control.Monad.Except (throwError)
+import Control.Monad.IO.Class (liftIO)
 import Data.Text (Text)
 import qualified Data.Text.Lazy as T
+import Langchain.Core.Error (llmError)
 import Langchain.DocumentLoader.Core
 import Langchain.Embeddings.Core
-import Langchain.Error (llmError)
 import Langchain.Utils (showText)
 
 import Ollama.API.Embed (EmbedRequest (..), EmbedResponse (..), embed)
@@ -39,34 +41,36 @@ data OllamaEmbeddings = OllamaEmbeddings
 
 instance Embeddings OllamaEmbeddings where
   embedDocuments (OllamaEmbeddings {..}) docs = do
-    client <- defaultClient
+    client <- liftIO defaultClient
     let inputs = map (T.toStrict . pageContent) docs
-        req = EmbedRequest
-          { embModel = ModelName model
-          , embInput = Right inputs
-          , embTruncate = defaultTruncate
-          , embOptions = modelOptions
-          , embKeepAlive = defaultKeepAlive
-          , embDimensions = Nothing
-          }
-    eRes <- embed client req
+        req =
+          EmbedRequest
+            { embModel = ModelName model
+            , embInput = Right inputs
+            , embTruncate = defaultTruncate
+            , embOptions = modelOptions
+            , embKeepAlive = defaultKeepAlive
+            , embDimensions = Nothing
+            }
+    eRes <- liftIO $ embed client req
     case eRes of
-      Left ollamaErr -> return $ Left $ llmError (showText ollamaErr) Nothing Nothing
-      Right resp -> return $ Right $ map (map realToFrac) (erEmbeddings resp)
+      Left ollamaErr -> throwError $ llmError (showText ollamaErr) (Just "OllamaEmbeddings") Nothing
+      Right resp -> pure $ map (map realToFrac) (erEmbeddings resp)
 
   embedQuery (OllamaEmbeddings {..}) query = do
-    client <- defaultClient
-    let req = EmbedRequest
-          { embModel = ModelName model
-          , embInput = Left query
-          , embTruncate = defaultTruncate
-          , embOptions = modelOptions
-          , embKeepAlive = defaultKeepAlive
-          , embDimensions = Nothing
-          }
-    eRes <- embed client req
+    client <- liftIO defaultClient
+    let req =
+          EmbedRequest
+            { embModel = ModelName model
+            , embInput = Left query
+            , embTruncate = defaultTruncate
+            , embOptions = modelOptions
+            , embKeepAlive = defaultKeepAlive
+            , embDimensions = Nothing
+            }
+    eRes <- liftIO $ embed client req
     case eRes of
-      Left err -> pure $ Left (llmError (showText err) Nothing Nothing)
+      Left err -> throwError $ llmError (showText err) (Just "OllamaEmbeddings") Nothing
       Right resp -> case erEmbeddings resp of
-        (vec : _) -> pure $ Right $ map realToFrac vec
-        [] -> pure $ Left (llmError "Embeddings are empty" Nothing Nothing)
+        (vec : _) -> pure $ map realToFrac vec
+        [] -> throwError $ llmError "Embeddings are empty" (Just "OllamaEmbeddings") Nothing

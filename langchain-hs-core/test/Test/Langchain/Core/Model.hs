@@ -7,10 +7,7 @@ import Test.Tasty.HUnit
 
 import Control.Monad.Except (runExceptT)
 import Data.List.NonEmpty (NonEmpty (..))
-import Data.Text (Text)
-import qualified Data.Text as T
 
-import Langchain.Core.Error
 import Langchain.Core.Model
 
 tests :: TestTree
@@ -22,11 +19,11 @@ tests =
         [ testCase "textMessage creates User message with TextBlock" $ do
             let msg = userMessage "Hello AI"
             messageRole msg @?= User
-            extractMessageText msg @?= "Hello AI\n"
+            extractMessageText msg @?= "Hello AI"
         , testCase "systemMessage creates System message" $ do
             let msg = systemMessage "You are a assistant"
             messageRole msg @?= System
-            extractMessageText msg @?= "You are a assistant\n"
+            extractMessageText msg @?= "You are a assistant"
         , testCase "imageMessage creates ImageBlock message" $ do
             let msg = imageMessage User "image/png" "base64data=="
             messageRole msg @?= User
@@ -46,7 +43,7 @@ tests =
               Left err -> assertFailure $ "Unexpected error: " ++ show err
               Right msg -> do
                 messageRole msg @?= Assistant
-                extractMessageText msg @?= "Hello human\n"
+                extractMessageText msg @?= "Hello human"
         , testCase "batch processes multiple inputs sequentially" $ do
             let model = MockModel "Pong" "mock-gpt"
                 inputs = [[userMessage "Ping 1"], [userMessage "Ping 2"]]
@@ -55,6 +52,6 @@ tests =
               Left err -> assertFailure $ "Unexpected error: " ++ show err
               Right msgs -> do
                 length msgs @?= 2
-                map extractMessageText msgs @?= ["Pong\n", "Pong\n"]
+                map extractMessageText msgs @?= ["Pong", "Pong"]
         ]
     ]

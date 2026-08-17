@@ -25,6 +25,7 @@ module Langchain.Core.Model.Types
   , extractMessageText
   ) where
 
+import Control.DeepSeq (NFData)
 import Data.Aeson (FromJSON (..), ToJSON (..), Value (..), object, withObject, (.:), (.=))
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64 as Base64
@@ -41,7 +42,7 @@ data ContentBlock
   | ImageBlock {blockMimeType :: Text, blockBase64 :: Text}
   | AudioBlock {blockMimeType :: Text, blockBase64 :: Text}
   | DataBlock {blockBytes :: ByteString}
-  deriving (Eq, Show, Generic)
+  deriving (Eq, Show, Generic, NFData)
 
 instance ToJSON ContentBlock where
   toJSON (TextBlock t) = object ["type" .= ("text" :: Text), "text" .= t]
@@ -71,7 +72,7 @@ data Role
   | Tool
   | Developer
   | Function
-  deriving (Eq, Ord, Show, Bounded, Enum, Generic, ToJSON, FromJSON)
+  deriving (Eq, Ord, Show, Bounded, Enum, Generic, ToJSON, FromJSON, NFData)
 
 -- | Structured tool call from an LLM response.
 data ToolCall = ToolCall
@@ -80,7 +81,7 @@ data ToolCall = ToolCall
   , toolCallName :: Text
   , toolCallArguments :: Value -- ^ Parsed JSON Value arguments
   }
-  deriving (Eq, Show, Generic, ToJSON, FromJSON)
+  deriving (Eq, Show, Generic, ToJSON, FromJSON, NFData)
 
 -- | Structured chat message supporting multi-modal content blocks.
 data Message = Message
@@ -90,7 +91,7 @@ data Message = Message
   , messageToolCalls :: Maybe [ToolCall]
   , messageToolId :: Maybe Text -- ^ Associated tool call ID for Tool role
   }
-  deriving (Eq, Show, Generic, ToJSON, FromJSON)
+  deriving (Eq, Show, Generic, ToJSON, FromJSON, NFData)
 
 -- | Create a message with a single text content block.
 textMessage :: Role -> Text -> Message
@@ -114,4 +115,4 @@ imageMessage r mime b64 = Message r (ImageBlock mime b64 :| []) Nothing Nothing 
 
 -- | Extract all text content blocks concatenated into a single Text string.
 extractMessageText :: Message -> Text
-extractMessageText msg = T.unlines [t | TextBlock t <- NonEmpty.toList (messageContents msg)]
+extractMessageText msg = T.intercalate "\n" [t | TextBlock t <- NonEmpty.toList (messageContents msg)]

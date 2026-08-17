@@ -3,6 +3,7 @@
 module Test.Langchain.DocumentLoader.DirectoryLoader (tests) where
 
 import Control.Monad (forM_)
+import Control.Monad.Except (runExceptT)
 import Data.Aeson
 import Data.List (sort)
 import qualified Data.Map as Map
@@ -18,26 +19,19 @@ import Langchain.DocumentLoader.Core
 import Langchain.DocumentLoader.DirectoryLoader
 import Langchain.Error (toString)
 
--- Helper Functions
-
--- | Creates a single file with the specified content.
 createTestFile :: FilePath -> String -> IO ()
 createTestFile = writeFile
 
--- | Creates multiple files in a directory with specified relative paths and contents.
 createTestFiles :: FilePath -> [(FilePath, String)] -> IO ()
 createTestFiles dir files = forM_ files $ \(relPath, content) -> do
   let fullPath = dir </> relPath
   createDirectoryIfMissing True (takeDirectory fullPath)
   createTestFile fullPath content
 
--- | Extracts the "source" metadata from a Document as a FilePath.
 getSource :: Document -> Maybe FilePath
 getSource doc = case Map.lookup "source" (metadata doc) of
   Just (String s) -> Just (T.unpack s)
   _ -> Nothing
-
--- Test Suite
 
 tests :: TestTree
 tests =
@@ -49,12 +43,8 @@ tests =
     , testHiddenFilesExclusion
     , testMultithreading
     , testErrorHandling
-    -- , testLoadAndSplit
     ]
 
--- Test Cases
-
--- | Tests basic loading of files from a directory.
 testBasicLoading :: TestTree
 testBasicLoading = testCase "Basic loading" $
   withSystemTempDirectory "test-dir-loader" $ \dir -> do
@@ -63,7 +53,7 @@ testBasicLoading = testCase "Basic loading" $
     createTestFile file1 "Content of file1"
     createTestFile file2 "Content of file2"
     let loader = DirectoryLoader dir defaultDirectoryLoaderOptions
-    result <- load loader
+    result <- runExceptT $ load loader
     case result of
       Left err -> assertFailure $ "Expected Right but got Left: " ++ toString err
       Right docs -> do
@@ -81,7 +71,6 @@ testBasicLoading = testCase "Basic loading" $
                 ]
         docMap @?= expectedMap
 
--- | Tests recursive loading with different depth limits.
 testRecursiveLoading :: TestTree
 testRecursiveLoading = testCase "Recursive loading" $
   withSystemTempDirectory "test-dir-loader" $ \dir -> do
@@ -98,44 +87,43 @@ testRecursiveLoading = testCase "Recursive loading" $
           ]
         level0Files = [dir </> "file1.txt"]
         level1Files = [dir </> "file1.txt", dir </> "subdir1/file2.txt"]
-    -- Unlimited recursion
+
     let opts = defaultDirectoryLoaderOptions {recursiveDepth = Nothing}
         loader = DirectoryLoader dir opts
-    result <- load loader
+    result <- runExceptT $ load loader
     case result of
       Left err -> assertFailure $ "Expected Right but got Left: " ++ toString err
       Right docs -> do
         let sources = mapMaybe getSource docs
         sort sources @?= sort allFiles
-    -- No recursion (depth 0)
+
     let opts0 = defaultDirectoryLoaderOptions {recursiveDepth = Just 0}
         loader0 = DirectoryLoader dir opts0
-    result0 <- load loader0
+    result0 <- runExceptT $ load loader0
     case result0 of
       Left err -> assertFailure $ "Expected Right but got Left: " ++ toString err
       Right docs -> do
         let sources = mapMaybe getSource docs
         sort sources @?= sort level0Files
-    -- Depth 1
+
     let opts1 = defaultDirectoryLoaderOptions {recursiveDepth = Just 1}
         loader1 = DirectoryLoader dir opts1
-    result1 <- load loader1
+    result1 <- runExceptT $ load loader1
     case result1 of
       Left err -> assertFailure $ "Expected Right but got Left: " ++ toString err
       Right docs -> do
         let sources = mapMaybe getSource docs
         sort sources @?= sort level1Files
-    -- Depth 2
+
     let opts2 = defaultDirectoryLoaderOptions {recursiveDepth = Just 2}
         loader2 = DirectoryLoader dir opts2
-    result2 <- load loader2
+    result2 <- runExceptT $ load loader2
     case result2 of
       Left err -> assertFailure $ "Expected Right but got Left: " ++ toString err
       Right docs -> do
         let sources = mapMaybe getSource docs
         sort sources @?= sort allFiles
 
--- | Tests filtering files by extensions.
 testExtensionFiltering :: TestTree
 testExtensionFiltering = testCase "Extension filtering" $
   withSystemTempDirectory "test-dir-loader" $ \dir -> do
@@ -148,35 +136,34 @@ testExtensionFiltering = testCase "Extension filtering" $
     let allFiles = [dir </> "file.txt", dir </> "file.md", dir </> "file.hs"]
         txtFiles = [dir </> "file.txt"]
         txtMdFiles = [dir </> "file.txt", dir </> "file.md"]
-    -- Only .txt files
+
     let opts = defaultDirectoryLoaderOptions {extensions = [".txt"]}
         loader = DirectoryLoader dir opts
-    result <- load loader
+    result <- runExceptT $ load loader
     case result of
       Left err -> assertFailure $ "Expected Right but got Left: " ++ toString err
       Right docs -> do
         let sources = mapMaybe getSource docs
         sort sources @?= sort txtFiles
-    -- .txt and .md files
+
     let opts2 = defaultDirectoryLoaderOptions {extensions = [".txt", ".md"]}
         loader2 = DirectoryLoader dir opts2
-    result2 <- load loader2
+    result2 <- runExceptT $ load loader2
     case result2 of
       Left err -> assertFailure $ "Expected Right but got Left: " ++ toString err
       Right docs -> do
         let sources = mapMaybe getSource docs
         sort sources @?= sort txtMdFiles
-    -- All files (empty extensions list)
-    let opts3 = defaultDirectoryLoaderOptions -- { extensions = [] }
+
+    let opts3 = defaultDirectoryLoaderOptions
         loader3 = DirectoryLoader dir opts3
-    result3 <- load loader3
+    result3 <- runExceptT $ load loader3
     case result3 of
       Left err -> assertFailure $ "Expected Right but got Left: " ++ toString err
       Right docs -> do
         let sources = mapMaybe getSource docs
         sort sources @?= sort allFiles
 
--- | Tests exclusion of hidden files.
 testHiddenFilesExclusion :: TestTree
 testHiddenFilesExclusion = testCase "Hidden files exclusion" $
   withSystemTempDirectory "test-dir-loader" $ \dir -> do
@@ -187,26 +174,25 @@ testHiddenFilesExclusion = testCase "Hidden files exclusion" $
       ]
     let visibleFiles = [dir </> "file.txt"]
         allFiles = [dir </> "file.txt", dir </> ".hidden.txt"]
-    -- Exclude hidden files
+
     let opts = defaultDirectoryLoaderOptions {excludeHidden = True}
         loader = DirectoryLoader dir opts
-    result <- load loader
+    result <- runExceptT $ load loader
     case result of
       Left err -> assertFailure $ "Expected Right but got Left: " ++ toString err
       Right docs -> do
         let sources = mapMaybe getSource docs
         sort sources @?= sort visibleFiles
-    -- Include hidden files
+
     let opts2 = defaultDirectoryLoaderOptions {excludeHidden = False}
         loader2 = DirectoryLoader dir opts2
-    result2 <- load loader2
+    result2 <- runExceptT $ load loader2
     case result2 of
       Left err -> assertFailure $ "Expected Right but got Left: " ++ toString err
       Right docs -> do
         let sources = mapMaybe getSource docs
         sort sources @?= sort allFiles
 
--- | Tests loading with multithreading enabled.
 testMultithreading :: TestTree
 testMultithreading = testCase "Multithreading" $
   withSystemTempDirectory "test-dir-loader" $ \dir -> do
@@ -218,14 +204,13 @@ testMultithreading = testCase "Multithreading" $
     let files = [dir </> "file1.txt", dir </> "file2.txt"]
     let opts = defaultDirectoryLoaderOptions {useMultithreading = True}
         loader = DirectoryLoader dir opts
-    result <- load loader
+    result <- runExceptT $ load loader
     case result of
       Left err -> assertFailure $ "Expected Right but got Left: " ++ toString err
       Right docs -> do
         let sources = mapMaybe getSource docs
         sort sources @?= sort files
 
--- | Tests error handling for invalid directory paths.
 testErrorHandling :: TestTree
 testErrorHandling =
   testGroup
@@ -235,7 +220,7 @@ testErrorHandling =
               DirectoryLoader
                 "non-existent-dir"
                 defaultDirectoryLoaderOptions
-        result <- load loader
+        result <- runExceptT $ load loader
         case result of
           Left _ -> pure ()
           Right _ -> assertFailure "Expected Left but got Right"
@@ -244,27 +229,8 @@ testErrorHandling =
           let filePath = dir </> "testfile.txt"
           createTestFile filePath "Content"
           let loader = DirectoryLoader filePath defaultDirectoryLoaderOptions
-          result <- load loader
+          result <- runExceptT $ load loader
           case result of
             Left _ -> pure ()
             Right _ -> assertFailure "Expected Left but got Right"
     ]
-
--- | Tests the loadAndSplit function.
-
-{-
-testLoadAndSplit :: TestTree
-testLoadAndSplit = testCase "loadAndSplit" $
-  withSystemTempDirectory "test-dir-loader" $ \dir -> do
-    createTestFiles
-      dir
-      [ ("file1.txt", "Paragraph 1\n\nParagraph 2")
-      , ("file2.txt", "Paragraph 3\n\nParagraph 4")
-      ]
-    let loader = DirectoryLoader dir defaultDirectoryLoaderOptions
-    result <- loadAndSplit loader
-    case result of
-      Left err -> assertFailure $ "Expected Right but got Left: " ++ err
-      Right chunks -> do
-        chunks @?= ["Paragraph 1","Paragraph 2Paragraph 3","Paragraph 4"]
-        -}

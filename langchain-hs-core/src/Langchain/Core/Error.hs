@@ -33,6 +33,7 @@ module Langchain.Core.Error
   , internalError
   ) where
 
+import Control.DeepSeq (NFData)
 import Control.Exception (Exception (..))
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Aeson (FromJSON, ToJSON)
@@ -50,7 +51,7 @@ data ErrorContext = ErrorContext
   , timestamp :: UTCTime
   , details :: Map Text Text
   }
-  deriving (Show, Eq, Generic, ToJSON, FromJSON)
+  deriving (Show, Eq, Generic, ToJSON, FromJSON, NFData)
 
 -- | Pure context constructor.
 mkContext :: Text -> Text -> Map Text Text -> ErrorContext
@@ -77,7 +78,7 @@ data LangchainError
   | ConfigurationError Text (Maybe ErrorContext)
   | ValidationError Text (Maybe ErrorContext)
   | InternalError Text (Maybe ErrorContext)
-  deriving (Show, Eq, Generic, ToJSON, FromJSON)
+  deriving (Show, Eq, Generic, ToJSON, FromJSON, NFData)
 
 -- | Extract human-readable error message text from a LangchainError
 errorMessage :: LangchainError -> Text

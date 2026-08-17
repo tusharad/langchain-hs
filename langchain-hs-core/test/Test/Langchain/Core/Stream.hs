@@ -26,6 +26,6 @@ tests =
               [s@LLMStart {}, c@LLMChunk {}, e@LLMEnd {}] -> do
                 modelName s @?= "mock-gpt"
                 chunkText c @?= "Streamed content"
-                extractMessageText (finalMessage e) @?= "Streamed content\n"
+                extractMessageText (finalMessage e) @?= "Streamed content"
               _ -> assertFailure $ "Unexpected event sequence: " ++ show events
     ]

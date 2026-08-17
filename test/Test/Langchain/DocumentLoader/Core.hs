@@ -2,6 +2,7 @@
 
 module Test.Langchain.DocumentLoader.Core (tests) where
 
+import Control.Monad.Except (runExceptT)
 import Data.Aeson (Value (..))
 import Data.Map (empty, fromList)
 import qualified Data.Map as Map
@@ -39,7 +40,6 @@ documentTests =
     , testCase "Document Monoid instance should have identity element" $ do
         let doc = Document "Content" (fromList [("key", String "value")])
         doc <> mempty @?= doc
-        doc @?= doc
         pageContent mempty @?= ""
         metadata mempty @?= empty
     ]
@@ -50,7 +50,7 @@ fileLoaderTests =
     "FileLoader Tests"
     [ testCase "load should return document with file content and metadata" $
         withTestFile "Test content for the file." $ \filePath -> do
-          result <- load (FileLoader filePath)
+          result <- runExceptT $ load (FileLoader filePath)
           case result of
             Left err -> assertFailure $ "Expected Right but got Left: " ++ show err
             Right docs@(doc : _) -> do
@@ -59,7 +59,7 @@ fileLoaderTests =
               Map.lookup "source" (metadata doc) @?= Just (String $ T.pack filePath)
             Right _ -> assertFailure "Document list is empty"
     , testCase "load should return error for non-existent file" $ do
-        result <- load (FileLoader "non-existent-file.txt")
+        result <- runExceptT $ load (FileLoader "non-existent-file.txt")
         case result of
           Left err ->
             assertBool
@@ -68,13 +68,13 @@ fileLoaderTests =
           Right _ -> assertFailure "Expected Left for non-existent file but got Right"
     , testCase "loadAndSplit should split content using defaultCharacterSplitterOps" $
         withTestFile "Paragraph 1\n\nParagraph 2\n\nParagraph 3" $ \filePath -> do
-          result <- loadAndSplit (FileLoader filePath)
+          result <- runExceptT $ loadAndSplit (FileLoader filePath)
           case result of
             Left err -> assertFailure $ "Expected Right but got Left: " ++ show err
             Right chunks -> do
               chunks @?= ["Paragraph 1", "Paragraph 2", "Paragraph 3"]
     , testCase "loadAndSplit should return error for non-existent file" $ do
-        result <- loadAndSplit (FileLoader "non-existent-file.txt")
+        result <- runExceptT $ loadAndSplit (FileLoader "non-existent-file.txt")
         case result of
           Left err ->
             assertBool
@@ -83,7 +83,7 @@ fileLoaderTests =
           Right _ -> assertFailure "Expected Left for non-existent file but got Right"
     , testCase "load should handle empty files" $
         withTestFile "" $ \filePath -> do
-          result <- load (FileLoader filePath)
+          result <- runExceptT $ load (FileLoader filePath)
           case result of
             Left err -> assertFailure $ "Expected Right but got Left: " ++ show err
             Right docs@(doc : _) -> do
@@ -92,12 +92,12 @@ fileLoaderTests =
             Right _ -> assertFailure "Document list is empty"
     , testCase "load should handle large files" $
         withTestFile (concat $ replicate 1000 "Line of test content\n") $ \filePath -> do
-          result <- load (FileLoader filePath)
+          result <- runExceptT $ load (FileLoader filePath)
           case result of
             Left err -> assertFailure $ "Expected Right but got Left: " ++ show err
             Right docs@(doc : _) -> do
               length docs @?= 1
-              T.length (TL.toStrict $ pageContent doc) @?= 21000 -- 21 chars * 1000
+              T.length (TL.toStrict $ pageContent doc) @?= 21000
             Right _ -> assertFailure "Document list is empty"
     ]
 

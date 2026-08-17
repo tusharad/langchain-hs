@@ -1,24 +1,20 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
 {- |
 Module      : Langchain.Embeddings.OpenAI
 Description : OpenAI integration for text embeddings in LangChain Haskell
-Copyright   : (c) 2025 Tushar Adhatrao
+Copyright   : (c) 2025-2026 Tushar Adhatrao
 License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
 
-OpenAI implementation of LangChain's embedding interface. Supports document and query
-embedding generation through OpenAI's API.
-Checkout docs here: https://platform.openai.com/docs/guides/embeddings
+OpenAI implementation of LangChain's embedding interface.
 -}
 module Langchain.Embeddings.OpenAI
-  ( -- * Types
-    OpenAIEmbeddings (..)
-
-    -- * Helper model name functions
+  ( OpenAIEmbeddings (..)
   , defaultOpenAIEmbeddings
   , textEmbedding3Small
   , textEmbedding3Large
@@ -26,19 +22,8 @@ module Langchain.Embeddings.OpenAI
   , EncodingFormat (..)
   ) where
 
-{-
-  No need to expose these, but can be expose later for direct use
-  -- * Request Types
-  OpenAIEmbeddingsRequest (..)
-, EmbeddingsInput (..)
-, EncodingFormat (..)
-
-  -- * ResponseTypes
-, OpenAIEmbeddingsResponse (..)
-, EmbeddingsObject (..)
-, EmbeddingsUsage (..)
--}
-
+import Control.Monad.Except (throwError)
+import Control.Monad.IO.Class (liftIO)
 import Data.Aeson
 import Data.Maybe
 import Data.Text (Text, unpack)
@@ -47,9 +32,10 @@ import Data.Text.Encoding (encodeUtf8)
 import qualified Data.Text.Lazy as TL
 import qualified Data.Vector as V
 import GHC.Generics
+
+import Langchain.Core.Error (llmError)
 import Langchain.DocumentLoader.Core
 import Langchain.Embeddings.Core
-import Langchain.Error (llmError)
 import Network.HTTP.Conduit
 import Network.HTTP.Simple
   ( getResponseBody
@@ -72,7 +58,6 @@ data OpenAIEmbeddingsRequest = OpenAIEmbeddingsRequest
   { inputReq :: EmbeddingsInput
   , modelReq :: Text
   , dimensionsReq :: Maybe Int
-  -- ^ Only supported in text-embedding-3 or later
   , encodingFormatReq :: Maybe EncodingFormat
   }
   deriving (Show, Eq, Generic)
@@ -119,47 +104,34 @@ data OpenAIEmbeddingsResponse = OpenAIEmbeddingsResponse
   deriving (Eq, Show, Generic)
 
 instance FromJSON EmbeddingsUsage where
-  parseJSON (Object v) =
+  parseJSON = withObject "EmbeddingsUsage" $ \v ->
     EmbeddingsUsage
       <$> v .: "prompt_tokens"
       <*> v .: "total_tokens"
-  parseJSON _ = error "Parse error, expecting object"
 
 instance FromJSON EmbeddingsObject where
-  parseJSON (Object v) =
+  parseJSON = withObject "EmbeddingsObject" $ \v ->
     EmbeddingsObject
       <$> v .: "embedding"
       <*> v .:? "index"
       <*> v .: "object"
-  parseJSON _ = error "Parse error, expecting object"
 
 instance FromJSON OpenAIEmbeddingsResponse where
-  parseJSON (Object v) =
+  parseJSON = withObject "OpenAIEmbeddingsResponse" $ \v ->
     OpenAIEmbeddingsResponse
       <$> v .: "object"
       <*> v .: "data"
       <*> v .: "model"
       <*> v .:? "usage"
-  parseJSON _ = error "Parse error, expecting object"
 
--- | Embeddings type for OpenAI, can be used for embed documents with OpenAI.
+-- | Embeddings type for OpenAI
 data OpenAIEmbeddings = OpenAIEmbeddings
   { apiKey :: Text
-  -- ^ OpenAI API Key
   , baseUrl :: Maybe String
-  -- ^ base url; default "https://api.openai.com/v1"
   , model :: Text
-  -- ^ Model name for embeddings
   , dimensions :: Maybe Int
-  {- ^ The number of dimensions the resulting output embeddings should have.
-  ^ Only supported in text-embedding-3 or later
-  -}
   , encodingFormat :: Maybe EncodingFormat
-  {- ^ The format to return the embeddings in.
-  ^ For now, only float is supported
-  -}
   , timeout :: Maybe Int
-  -- ^ Override default responsetime out. unit = seconds.
   }
   deriving (Eq, Generic)
 
@@ -209,36 +181,29 @@ openAIEmbeddingsRequest OpenAIEmbeddings {..} txts = do
 
 instance Embeddings OpenAIEmbeddings where
   embedDocuments openAIEmbeddings docs = do
-    eRes <- openAIEmbeddingsRequest openAIEmbeddings (map (TL.toStrict . pageContent) docs)
+    eRes <- liftIO $ openAIEmbeddingsRequest openAIEmbeddings (map (TL.toStrict . pageContent) docs)
     case eRes of
-      Left err -> pure $ Left (llmError (T.pack err) Nothing Nothing)
-      Right (OpenAIEmbeddingsResponse {..}) -> do
-        pure $ Right $ map embeddings dataList
+      Left err -> throwError $ llmError (T.pack err) (Just "OpenAIEmbeddings") Nothing
+      Right (OpenAIEmbeddingsResponse {..}) -> pure $ map embeddings dataList
 
   embedQuery openAIEmbeddings query = do
-    eRes <- openAIEmbeddingsRequest openAIEmbeddings [query]
+    eRes <- liftIO $ openAIEmbeddingsRequest openAIEmbeddings [query]
     case eRes of
-      Left err -> pure $ Left (llmError (T.pack err) Nothing Nothing)
-      Right (OpenAIEmbeddingsResponse {..}) -> do
+      Left err -> throwError $ llmError (T.pack err) (Just "OpenAIEmbeddings") Nothing
+      Right (OpenAIEmbeddingsResponse {..}) ->
         case listToMaybe dataList of
-          Nothing -> pure $ Left (llmError "Embeddings are empty" Nothing Nothing)
-          Just x -> pure $ Right $ embeddings x
+          Nothing -> throwError $ llmError "Embeddings are empty" (Just "OpenAIEmbeddings") Nothing
+          Just x -> pure $ embeddings x
 
--- Helper functions, model name functions
-
--- | Small embedding model
 textEmbedding3Small :: Text
 textEmbedding3Small = "text-embedding-3-small"
 
--- | Most capable embedding model
 textEmbedding3Large :: Text
 textEmbedding3Large = "text-embedding-3-large"
 
--- | Older embedding model
 textEmbeddingAda :: Text
 textEmbeddingAda = "text-embedding-ada-002"
 
--- | Default values OpenAIEmbeddings, api-key is empty
 defaultOpenAIEmbeddings :: OpenAIEmbeddings
 defaultOpenAIEmbeddings =
   OpenAIEmbeddings

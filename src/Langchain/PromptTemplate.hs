@@ -1,31 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TypeFamilies #-}
 
 {- |
-Module:      Langchain.PromptTemplate
-Copyright:   (c) 2025 Tushar Adhatrao
-License:     MIT
-Maintainer:  Tushar Adhatrao <tusharadhatrao@gmail.com>
-Stability:   experimental
+Module      : Langchain.PromptTemplate
+Description : Prompt templates and variable interpolation for LangChain Haskell
+Copyright   : (c) 2025-2026 Tushar Adhatrao
+License     : MIT
+Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
+Stability   : experimental
 
-This module provides types and functions for working with prompt templates in Langchain.
-Prompt templates are used to structure inputs for language models, allowing for dynamic
-insertion of variables into predefined text formats. They are essential for creating
-flexible and reusable prompts that can be customized based on input data.
-
-The main types are:
-
-* 'PromptTemplate': A simple template with placeholders for variables.
-* 'FewShotPromptTemplate': A template that includes few-shot examples for better context,
-  useful in scenarios like few-shot learning.
-
-These types are designed to be compatible with the Langchain Python library's prompt template
-functionality: [Langchain PromptTemplate](https://python.langchain.com/docs/concepts/prompt_templates/).
-
-== Examples
-
-See the documentation for 'renderPrompt' and 'renderFewShotPrompt' for usage examples.
+Pure prompt templates and few-shot prompt templates with variable interpolation.
 -}
 module Langchain.PromptTemplate
   ( -- * Core Types
@@ -41,133 +25,60 @@ module Langchain.PromptTemplate
 import qualified Data.Map.Strict as HM
 import Data.Text (Text)
 import qualified Data.Text as T
-import Langchain.Error (LangchainResult, validationError)
-import Langchain.Runnable.Core (Runnable (..))
 
--- TODO: Add Mechanism for custom example selector
+import Langchain.Core.Error (LangchainError, validationError)
 
-{- | Represents a prompt template with a template string.
-The template string can contain placeholders of the form {key},
-where key is a sequence of alphanumeric characters and underscores.
--}
+-- | Prompt template container with template string containing {var} placeholders
 newtype PromptTemplate = PromptTemplate
   { templateString :: Text
   }
   deriving (Show, Eq)
 
-{- | Render a prompt template with the given variables.
-Returns either an error message if a variable is missing or the rendered template.
-
-=== Using 'renderPrompt'
-
-To render a prompt template with variables:
-
-@
-let template = PromptTemplate "Hello, {name}! Welcome to {place}."
-vars = HM.fromList [("name", "Alice"), ("place", "Wonderland")]
-result <- renderPrompt template vars
--- Result: Right "Hello, Alice! Welcome to Wonderland."
-@
-
-If a variable is missing:
-
-@
-let vars = HM.fromList [("name", "Alice")]
-result <- renderPrompt template vars
--- Result: Left "Missing variable: place"
-@
--}
-renderPrompt :: PromptTemplate -> HM.Map Text Text -> LangchainResult Text
+-- | Render a prompt template with the given variable map
+renderPrompt :: PromptTemplate -> HM.Map Text Text -> Either LangchainError Text
 renderPrompt (PromptTemplate template) vars = interpolate vars template
 
-{- | Represents a few-shot prompt template with examples.
-This type allows for creating prompts that include example inputs and outputs,
-which can be useful for few-shot learning scenarios.
--}
+-- | Represents a few-shot prompt template with examples
 data FewShotPromptTemplate = FewShotPromptTemplate
   { fsPrefix :: Text
-  -- ^ Text before the examples
   , fsExamples :: [HM.Map Text Text]
-  -- ^ List of example variable maps
   , fsExampleTemplate :: Text
-  -- ^ Template for formatting each example
   , fsExampleSeparator :: Text
-  -- ^ Separator between formatted examples
   , fsSuffix :: Text
-  -- ^ Text after the examples, with placeholders
   }
   deriving (Show, Eq)
 
-{- | Render a few-shot prompt template with the given input variables.
-Returns either an error message if interpolation fails or the fully rendered prompt.
-
-=== Using 'renderFewShotPrompt'
-
-To render a few-shot prompt template:
-
-@
-let fewShotTemplate = FewShotPromptTemplate
-      { fsPrefix = "Examples of {type}:\n"
-      , fsExamples =
-          [ HM.fromList [("input", "Hello"), ("output", "Bonjour")]
-          , HM.fromList [("input", "Goodbye"), ("output", "Au revoir")]
-          ]
-      , fsExampleTemplate = "Input: {input}\nOutput: {output}\n"
-      , fsExampleSeparator = "\n"
-      , fsSuffix = "Now translate: {query}"
-      }
-result <- renderFewShotPrompt fewShotTemplate
--- Result: Right "Examples of {type}:\nInput: Hello\nOutput: Bonjour\n\nInput: Goodbye\nOutput: Au revoir\nNow translate: {query}"
-@
--}
-renderFewShotPrompt :: FewShotPromptTemplate -> LangchainResult Text
+-- | Render a few-shot prompt template
+renderFewShotPrompt :: FewShotPromptTemplate -> Either LangchainError Text
 renderFewShotPrompt FewShotPromptTemplate {..} = do
-  -- Format each example using the example template
   formattedExamples <-
     mapM
       (`interpolate` fsExampleTemplate)
       fsExamples
-  -- Join the formatted examples with the separator
   let examplesText = T.intercalate fsExampleSeparator formattedExamples
-  -- Combine prefix, examples, and suffix
-  return $ fsPrefix <> examplesText <> fsSuffix
+  pure $ fsPrefix <> examplesText <> fsSuffix
 
-{- | Interpolate variables into a template string.
-Placeholders are of the form {key}, where key is a sequence of alphanumeric characters and underscores.
--}
-interpolate :: HM.Map Text Text -> Text -> LangchainResult Text
+-- | Interpolate variables into a template string
+interpolate :: HM.Map Text Text -> Text -> Either LangchainError Text
 interpolate vars = go
   where
-    go :: Text -> LangchainResult Text
+    go :: Text -> Either LangchainError Text
     go t =
       case T.breakOn "{" t of
         (before, after) | T.null after -> Right before
         (before, after') ->
           case T.breakOn "}" (T.drop 1 after') of
-            (_, after'') | T.null after'' -> Left $ validationError "Unclosed brace" Nothing Nothing
+            (_, after'') | T.null after'' -> Left $ validationError "Unclosed brace in template" (Just "PromptTemplate") Nothing
             (key, after''') ->
               let key' = T.strip key
                in case HM.lookup key' vars of
                     Just val -> do
                       rest <- go (T.drop 1 after''')
-                      return $ before <> val <> rest
+                      pure $ before <> val <> rest
                     Nothing -> Left $ validationError ("Missing variable: " <> key') (Just key') Nothing
 
-{- | Render a few-shot prompt template and interpolate additional variables.
--}
-renderFewShotPromptWithVars :: FewShotPromptTemplate -> HM.Map Text Text -> LangchainResult Text
+-- | Render few-shot template with additional variables
+renderFewShotPromptWithVars :: FewShotPromptTemplate -> HM.Map Text Text -> Either LangchainError Text
 renderFewShotPromptWithVars template vars = do
   renderedBase <- renderFewShotPrompt template
   interpolate vars renderedBase
-
-instance Runnable PromptTemplate where
-  type RunnableInput PromptTemplate = HM.Map Text Text
-  type RunnableOutput PromptTemplate = Text
-
-  invoke template variables = pure $ renderPrompt template variables
-
-instance Runnable FewShotPromptTemplate where
-  type RunnableInput FewShotPromptTemplate = HM.Map Text Text
-  type RunnableOutput FewShotPromptTemplate = Text
-
-  invoke template variables = pure $ renderFewShotPromptWithVars template variables

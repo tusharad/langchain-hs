@@ -1,100 +1,38 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 {- |
 Module      : Langchain.Embeddings.Core
-Description : Embedding model interface for LangChain Haskell
-Copyright   : (c) 2025 Tushar Adhatrao
+Description : Effect-polymorphic embedding model interface
+Copyright   : (c) 2025-2026 Tushar Adhatrao
 License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
 
-Haskell implementation of LangChain's embedding model abstraction, providing:
-
-- Document vectorization for semantic search
-- Query embedding for similarity comparisons
-- Integration with document loading pipelines
-
-Example usage:
-
-@
-  let oEmbed = defaultOpenAIEmbeddings { apiKey = "api-key" }
-  let p = PdfLoader "/home/user/Documents/TS/langchain/SOP.pdf"
-  eDocs <- load p
-  case eDocs of
-    Left err -> error err
-    Right docs -> do
-      eRes <- embedQuery oEmbed "Hello"
-      print eRes
-@
+Effect-polymorphic Embeddings typeclass.
 -}
 module Langchain.Embeddings.Core
-  ( -- * Embedding Interface
-    Embeddings (..)
+  ( Embeddings (..)
   ) where
 
-import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.Except (MonadError)
+import Control.Monad.IO.Class (MonadIO)
 import Data.Text (Text)
-import Langchain.DocumentLoader.Core
-import Langchain.Error (LangchainResult)
 
-{- | Typeclass for embedding models following LangChain's pattern.
-Converts text/documents into numerical vectors for machine learning tasks.
+import Langchain.Core.Error (LangchainError)
+import Langchain.DocumentLoader.Core (Document)
 
-Implementations should handle:
-
-- Text preprocessing
-- API calls to embedding services
-- Error handling for failed requests
-- Consistent vector dimensionality
-
-Example instance for a test model:
-
-@
-data TestEmbeddings = TestEmbeddings
-
-instance Embeddings TestEmbeddings where
-  embedDocuments _ _ = return $ Right [[0.1, 0.2, 0.3]]
-  embedQuery _ _ = return $ Right [0.4, 0.5, 0.6]
-@
--}
+-- | Effect-polymorphic Embeddings typeclass
 class Embeddings embed where
-  {- | Convert documents to embedding vectors
+  -- | Convert documents to embedding vectors
+  embedDocuments
+    :: (MonadIO m, MonadError LangchainError m)
+    => embed
+    -> [Document]
+    -> m [[Float]]
 
-  Example:
-
-  >>> let doc = Document "Hello world" mempty
-  >>> embedDocuments TestEmbeddings [doc]
-  Right [[0.1, 0.2, 0.3]]
-  -}
-  embedDocuments :: embed -> [Document] -> IO (LangchainResult [[Float]])
-
-  embedDocumentsM :: MonadIO m => embed -> [Document] -> m (LangchainResult [[Float]])
-  embedDocumentsM embeddings docs = liftIO $ embedDocuments embeddings docs
-
-  {- | Convert query text to embedding vector
-
-  Example:
-
-  >>> embedQuery TestEmbeddings "Search query"
-  Right [0.4, 0.5, 0.6]
-  -}
-  embedQuery :: embed -> Text -> IO (LangchainResult [Float])
-
-  embedQueryM :: MonadIO m => embed -> Text -> m (LangchainResult [Float])
-  embedQueryM embeddings query = liftIO $ embedQuery embeddings query
-
-{- $examples
-Test case patterns:
-
-1. Document embedding
-   >>> let docs = [Document "Test content" mempty]
-   >>> embedDocuments TestEmbeddings docs
-   Right [[0.1, 0.2, 0.3]]
-
-2. Query embedding
-   >>> embedQuery TestEmbeddings "Test query"
-   Right [0.4, 0.5, 0.6]
-
-3. Error handling
-   >>> -- Simulate failed API call
-   >>> embedQuery FaultyEmbeddings "Bad request"
-   Left "API request failed"
--}
+  -- | Convert query text to embedding vector
+  embedQuery
+    :: (MonadIO m, MonadError LangchainError m)
+    => embed
+    -> Text
+    -> m [Float]

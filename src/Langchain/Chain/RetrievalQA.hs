@@ -1,79 +1,75 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TypeFamilies #-}
 
 {- |
 Module      : Langchain.Chain.RetrievalQA
-Description : Chain for question-answering against an index.
-Copyright   : (c) 2025 Tushar Adhatrao
+Description : Effect-polymorphic RetrievalQA chain
+Copyright   : (c) 2025-2026 Tushar Adhatrao
 License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
+Stability   : experimental
 
-Haskell implementation of RetrievalQA.
+RetrievalQA chain combining retriever search, context assembly, prompt rendering,
+and ChatModel question answering.
 -}
 module Langchain.Chain.RetrievalQA
   ( RetrievalQA (..)
+  , newRetrievalQA
   , defaultQAPrompt
+  , runRetrievalQA
   ) where
 
-import qualified Data.List.NonEmpty as NE
+import Control.Monad.Except (MonadError, throwError)
+import Control.Monad.IO.Class (MonadIO)
 import Data.Map.Strict (fromList)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
-import Langchain.DocumentLoader.Core (Document (..))
-import Langchain.LLM.Core
-import Langchain.PromptTemplate (PromptTemplate (..), renderPrompt)
-import Langchain.Retriever.Core (Retriever (_get_relevant_documents))
-import Langchain.Runnable.Core (Runnable (..))
 
--- | QA Chain that combines retrieval and LLM response generation.
-data RetrievalQA llm retriever = RetrievalQA
-  { llm :: llm
-  , llmParams :: Maybe (LLMParams llm)
+import Langchain.Core.Error (LangchainError)
+import Langchain.Core.Model
+  ( ChatModel (..)
+  , Message
+  , systemMessage
+  , userMessage
+  )
+import Langchain.DocumentLoader.Core (Document (..))
+import Langchain.PromptTemplate (PromptTemplate (..), renderPrompt)
+import Langchain.Retriever.Core (Retriever (..))
+
+-- | QA Chain configuration combining retrieval and LLM response generation.
+data RetrievalQA model retriever = RetrievalQA
+  { model :: model
   , retriever :: retriever
   , prompt :: PromptTemplate
   }
 
--- | Creates a default QA prompt with context and question placeholders.
+-- | Construct a new RetrievalQA chain with default prompt
+newRetrievalQA :: model -> retriever -> RetrievalQA model retriever
+newRetrievalQA m r = RetrievalQA m r defaultQAPrompt
+
+-- | Default QA prompt template
 defaultQAPrompt :: PromptTemplate
 defaultQAPrompt =
   PromptTemplate
-    ( "Use the given context to answer the question. "
-        <> "If you don't know the answer, say you don't know. "
-        <> "Use three sentence maximum and keep the answer concise. "
-        <> "Context: {context}"
+    ( "Use the following pieces of context to answer the question at the end.\n"
+        <> "If you don't know the answer, just say that you don't know, don't try to make up an answer.\n\n"
+        <> "Context:\n{context}"
     )
 
--- | Make RetrievalQA an instance of Runnable to allow composition.
-instance (LLM llm, Retriever retriever) => Runnable (RetrievalQA llm retriever) where
-  type RunnableInput (RetrievalQA llm retriever) = Text
-  type RunnableOutput (RetrievalQA llm retriever) = Message
-
-  invoke RetrievalQA {..} question = do
-    -- Retrieve relevant documents
-    docResult <- _get_relevant_documents retriever question
-    case docResult of
-      Left err -> return $ Left err
-      Right docs -> do
-        let context = T.intercalate "\n\n" $ map (\(Document c _) -> TL.toStrict c) docs
-        let vars = [("context", context)]
-
-        -- Render prompt with context and question
-        renderedPrompt <- case renderPrompt prompt (fromList vars) of
-          Left e -> return $ Left e
-          Right r -> return $ Right r
-
-        case renderedPrompt of
-          Left e -> return $ Left e
-          Right finalPrompt -> do
-            let chatConvo =
-                  NE.fromList
-                    [ Message System finalPrompt defaultMessageData
-                    , Message User question defaultMessageData
-                    ]
-            -- Get LLM response
-            llmResponse <- chat llm chatConvo llmParams
-            case llmResponse of
-              Left e -> return $ Left e
-              Right answer -> return $ Right answer
+-- | Execute RetrievalQA chain on a user question
+runRetrievalQA
+  :: (ChatModel model, Retriever retriever, MonadIO m, MonadError LangchainError m)
+  => RetrievalQA model retriever
+  -> Text
+  -> m Message
+runRetrievalQA RetrievalQA {..} question = do
+  docs <- getRelevantDocuments retriever question
+  let contextText = T.intercalate "\n\n" $ map (TL.toStrict . pageContent) docs
+      vars = fromList [("context", contextText)]
+  renderedPrompt <- case renderPrompt prompt vars of
+    Left err -> throwError err
+    Right p -> pure p
+  let conversation = [systemMessage renderedPrompt, userMessage question]
+  invoke model conversation Nothing

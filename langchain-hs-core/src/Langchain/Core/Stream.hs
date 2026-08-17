@@ -70,10 +70,10 @@ data StreamEvent
       , toolOutput :: Value
       }
   -- | Tool execution failure
-  | ToolError
+  | ToolErrorEvent
       { runId :: Text
       , toolName :: Text
-      , toolError :: LangchainError
+      , toolErrorPayload :: LangchainError
       }
   -- | Chain execution start
   | ChainStart

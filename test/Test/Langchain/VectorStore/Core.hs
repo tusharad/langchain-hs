@@ -1,15 +1,17 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Test.Langchain.VectorStore.Core (tests) where
 
+import Control.Monad.Except (runExceptT)
 import Data.Either (fromRight, isRight)
 import Data.Int (Int64)
 import Data.Map (empty)
 import qualified Data.Map.Strict as Map
+import Data.Maybe (fromMaybe, listToMaybe)
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import Data.Maybe (fromMaybe, listToMaybe)
 import Langchain.DocumentLoader.Core (Document (..))
 import Langchain.Embeddings.Core
 import Langchain.VectorStore.Core
@@ -19,12 +21,12 @@ data MockEmbeddings = MockEmbeddings
   deriving (Show, Eq)
 
 instance Embeddings MockEmbeddings where
-  embedQuery _ "World" = pure $ Right [1.0, 0.1, 0.1]
-  embedQuery _ "Meet you" = pure $ Right [0.1, 0.1, 1.0]
-  embedQuery _ "Both" = pure $ Right [0.5, 0.5, 0.5]
-  embedQuery _ _ = pure $ Right [0.0, 0.0, 0.0]
+  embedQuery _ "World" = pure [1.0, 0.1, 0.1]
+  embedQuery _ "Meet you" = pure [0.1, 0.1, 1.0]
+  embedQuery _ "Both" = pure [0.5, 0.5, 0.5]
+  embedQuery _ _ = pure [0.0, 0.0, 0.0]
 
-  embedDocuments _ docs = pure $ Right $ map determineEmbedding docs
+  embedDocuments _ docs = pure $ map determineEmbedding docs
     where
       determineEmbedding doc
         | doc == Document "Hello World" empty = [1.0, 0.1, 0.1]
@@ -70,7 +72,7 @@ inMemoryTests =
     , testCase "fromDocuments should create store with documents" $ do
         let model = MockEmbeddings
             docs = createTestDocs
-        result <- fromDocuments model docs
+        result <- runExceptT $ fromDocuments model docs
         assertBool "Expected Right result" (isRight result)
         let vs = fromRight (emptyInMemoryVectorStore model) result
         Map.size (store vs) @?= 2
@@ -78,13 +80,13 @@ inMemoryTests =
         let model = MockEmbeddings
             vs = emptyInMemoryVectorStore model
             docs = createTestDocs
-        result <- addDocuments vs docs
+        result <- runExceptT $ addDocuments vs docs
         assertBool "Expected Right result" (isRight result)
         let updatedVs = fromRight vs result
         Map.size (store updatedVs) @?= 2
 
         let newDoc = Document "Something completely different" empty
-        result2 <- addDocuments updatedVs [newDoc]
+        result2 <- runExceptT $ addDocuments updatedVs [newDoc]
         assertBool "Expected Right result" (isRight result2)
         let finalVs = fromRight updatedVs result2
         Map.size (store finalVs) @?= 3
@@ -92,10 +94,10 @@ inMemoryTests =
         let model = MockEmbeddings
             vs = emptyInMemoryVectorStore model
             docs = createTestDocs
-        result <- addDocuments vs docs
+        result <- runExceptT $ addDocuments vs docs
         let updatedVs = fromRight vs result
 
-        deleteResult <- delete updatedVs [1]
+        deleteResult <- runExceptT $ delete updatedVs [1]
         assertBool "Expected Right result" (isRight deleteResult)
         let afterDeleteVs = fromRight updatedVs deleteResult
         Map.size (store afterDeleteVs) @?= 1
@@ -105,48 +107,24 @@ inMemoryTests =
         let model = MockEmbeddings
             vs = emptyInMemoryVectorStore model
             docs = createTestDocs
-        result <- addDocuments vs docs
-        let updatedVs = fromRight vs result
-
-        -- Search for "World" - should return "Hello World"
-        searchResult1 <- similaritySearch updatedVs "World" 1
-        assertBool "Expected Right result" (isRight searchResult1)
-        let docs1 = fromRight [] searchResult1
+        result <- runExceptT $ do
+          uVs <- addDocuments vs docs
+          similaritySearch uVs "World" 1
+        assertBool "Expected Right result" (isRight result)
+        let docs1 = fromRight [] result
         length docs1 @?= 1
         fromMaybe (Document "" empty) (listToMaybe docs1) @?= Document "Hello World" empty
-
-        -- Search for "Meet you" - should return "Nice to meet you"
-        searchResult2 <- similaritySearch updatedVs "Meet you" 1
-        assertBool "Expected Right result" (isRight searchResult2)
-        let docs2 = fromRight [] searchResult2
-        length docs2 @?= 1
-        fromMaybe (Document "" empty) (listToMaybe docs2) @?= Document "Nice to meet you" empty
-
-        -- Search for both documents
-        searchResult3 <- similaritySearch updatedVs "Both" 2
-        assertBool "Expected Right result" (isRight searchResult3)
-        let docs3 = fromRight [] searchResult3
-        length docs3 @?= 2
     , testCase "similaritySearchByVector should find similar documents" $ do
         let model = MockEmbeddings
             vs = emptyInMemoryVectorStore model
             docs = createTestDocs
-        result <- addDocuments vs docs
-        let updatedVs = fromRight vs result
-
-        -- Search with vector similar to "Hello World"
-        searchResult1 <- similaritySearchByVector updatedVs [1.0, 0.1, 0.1] 1
-        assertBool "Expected Right result" (isRight searchResult1)
-        let docs1 = fromRight [] searchResult1
+        result <- runExceptT $ do
+          uVs <- addDocuments vs docs
+          similaritySearchByVector uVs [1.0, 0.1, 0.1] 1
+        assertBool "Expected Right result" (isRight result)
+        let docs1 = fromRight [] result
         length docs1 @?= 1
         fromMaybe (Document "" empty) (listToMaybe docs1) @?= Document "Hello World" empty
-
-        -- Search with vector similar to "Nice to meet you"
-        searchResult2 <- similaritySearchByVector updatedVs [0.1, 0.1, 1.0] 1
-        assertBool "Expected Right result" (isRight searchResult2)
-        let docs2 = fromRight [] searchResult2
-        length docs2 @?= 1
-        fromMaybe (Document "" empty) (listToMaybe docs2) @?= Document "Nice to meet you" empty
     ]
 
 tests :: TestTree

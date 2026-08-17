@@ -49,17 +49,10 @@ library
       Langchain.Embeddings.Ollama
       Langchain.Embeddings.OpenAI
       Langchain.Error
-      Langchain.LLM.Core
-      Langchain.LLM.Deepseek
-      Langchain.LLM.Gemini
-      Langchain.LLM.Huggingface
-      Langchain.LLM.Internal.Huggingface
-      Langchain.LLM.Ollama
-      Langchain.LLM.OpenAI
-      Langchain.LLM.OpenAICompatible
       Langchain.Memory.Core
       Langchain.Memory.TokenBufferMemory
       Langchain.OutputParser.Core
+      Langchain.Prelude
       Langchain.PromptTemplate
       Langchain.Provider.Anthropic
       Langchain.Provider.DeepSeek
@@ -68,10 +61,7 @@ library
       Langchain.Provider.OpenAI
       Langchain.Retriever.Core
       Langchain.Retriever.MultiQueryRetriever
-      Langchain.Runnable.Chain
-      Langchain.Runnable.ConversationChain
-      Langchain.Runnable.Core
-      Langchain.Runnable.Utils
+      Langchain.Runnable
       Langchain.TextSplitter.Character
       Langchain.Tool.Calculator
       Langchain.Tool.Core
@@ -156,15 +146,15 @@ test-suite langchain-hs-test
   main-is: Spec.hs
   other-modules:
       Test.Langchain.Agent.ReAct
+      Test.Langchain.Chain.RetrievalQASpec
       Test.Langchain.DocumentLoader.Core
       Test.Langchain.DocumentLoader.DirectoryLoader
       Test.Langchain.Embeddings.Core
       Test.Langchain.Error
-      Test.Langchain.LLM.Core
-      Test.Langchain.LLM.Ollama
       Test.Langchain.Memory.Core
       Test.Langchain.Memory.TokenBufferMemory
       Test.Langchain.OutputParser.Core
+      Test.Langchain.PreludeSpec
       Test.Langchain.PromptTemplate
       Test.Langchain.Provider.Anthropic
       Test.Langchain.Provider.DeepSeek
@@ -172,10 +162,6 @@ test-suite langchain-hs-test
       Test.Langchain.Provider.Ollama
       Test.Langchain.Provider.OpenAI
       Test.Langchain.Retriever.Core
-      Test.Langchain.Runnable.Chains
-      Test.Langchain.Runnable.ConversationChains
-      Test.Langchain.Runnable.Core
-      Test.Langchain.Runnable.Utils
       Test.Langchain.TextSplitter.Character
       Test.Langchain.Tool.Calculator
       Test.Langchain.Tool.Core
@@ -210,6 +196,43 @@ test-suite langchain-hs-test
     , tasty
     , tasty-hunit
     , temporary
+    , text
+    , time >=1.9 && <1.15
+    , transformers
+    , vector <0.14
+  default-language: Haskell2010
+
+benchmark langchain-hs-bench
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      Paths_langchain_hs
+  hs-source-dirs:
+      bench
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N -Wall
+  build-depends:
+      aeson
+    , async <3
+    , base >=4.7 && <5
+    , base64-bytestring ==1.2.*
+    , bytestring >=0.10
+    , conduit >=1.2 && <1.4
+    , containers >=0.6 && <0.9
+    , directory >=1.3.6 && <1.4
+    , filepath <2
+    , http-conduit ==2.*
+    , http-types >=0.11 && <0.13
+    , langchain-hs
+    , langchain-hs-core
+    , langchain-hs-graph
+    , mtl >=2.2 && <2.4
+    , ollama-haskell >=0.3.0.0
+    , openai >=2.2.1
+    , parsec <4
+    , pdf-toolbox-document ==0.1.4
+    , stm ==2.5.*
+    , tagsoup <0.15
+    , tasty-bench
     , text
     , time >=1.9 && <1.15
     , transformers

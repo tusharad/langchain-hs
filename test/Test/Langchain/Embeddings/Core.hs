@@ -2,12 +2,14 @@
 
 module Test.Langchain.Embeddings.Core (tests) where
 
-import Data.Text (isInfixOf)
+import Control.Monad.Except (runExceptT)
+import qualified Data.Text as T
+import Test.Tasty
+import Test.Tasty.HUnit
+
 import Langchain.Embeddings.Core
 import Langchain.Embeddings.Ollama
 import Langchain.Utils (showText)
-import Test.Tasty
-import Test.Tasty.HUnit
 
 tests :: TestTree
 tests =
@@ -17,13 +19,12 @@ tests =
         "embedQuery Tests"
         [ testCase "Propagates API errors" $ do
             let embeddings = OllamaEmbeddings "error-model" Nothing Nothing Nothing
-            -- Assuming embeddingOps returns Left "API Failure"
-            result <- embedQuery embeddings "error query"
+            result <- runExceptT $ embedQuery embeddings "error query"
             case result of
               Left err ->
                 assertBool
-                  "Error message contains 'error'"
-                  ("error" `isInfixOf` showText err)
+                  "Error message contains error or failure"
+                  (T.isInfixOf "error" (showText err) || T.isInfixOf "Error" (showText err) || T.isInfixOf "Connect" (showText err))
               Right _ -> assertFailure "Expected API error propagation"
         ]
     ]

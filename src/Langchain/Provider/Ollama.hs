@@ -194,8 +194,8 @@ instance Embeddings OllamaEmbeddings where
             }
     eRes <- liftIO $ embed embedClient req
     case eRes of
-      Left err -> pure $ Left $ llmError (showText err) Nothing Nothing
-      Right resp -> pure $ Right $ map (map realToFrac) (erEmbeddings resp)
+      Left err -> throwError $ llmError (showText err) (Just "OllamaEmbeddings") Nothing
+      Right resp -> pure $ map (map realToFrac) (erEmbeddings resp)
 
   embedQuery OllamaEmbeddings {..} query = do
     let req =
@@ -209,7 +209,7 @@ instance Embeddings OllamaEmbeddings where
             }
     eRes <- liftIO $ embed embedClient req
     case eRes of
-      Left err -> pure $ Left $ llmError (showText err) Nothing Nothing
+      Left err -> throwError $ llmError (showText err) (Just "OllamaEmbeddings") Nothing
       Right resp -> case erEmbeddings resp of
-        (vec : _) -> pure $ Right $ map realToFrac vec
-        [] -> pure $ Left $ llmError "Empty embeddings vector" Nothing Nothing
+        (vec : _) -> pure $ map realToFrac vec
+        [] -> throwError $ llmError "Empty embeddings vector" (Just "OllamaEmbeddings") Nothing

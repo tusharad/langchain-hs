@@ -17,10 +17,9 @@ module Langchain.Error
   , fromString
   , toString
   , toText
-  , module Control.Exception
   ) where
 
-import Control.Exception (Exception, SomeException, displayException, try)
+import Control.Exception (displayException)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Langchain.Core.Error

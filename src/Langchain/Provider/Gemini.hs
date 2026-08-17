@@ -157,10 +157,10 @@ instance Embeddings GeminiEmbeddings where
               setRequestBodyJSON payload initReq
     eRes <- liftIO $ safeHttpRequest req
     case eRes of
-      Left err -> pure $ Left $ llmError err Nothing Nothing
+      Left err -> throwError $ llmError err (Just "GeminiEmbeddings") Nothing
       Right bodyVal -> case parseGeminiBatchEmbedResponse bodyVal of
-        Left parseErr -> pure $ Left $ llmError (T.pack parseErr) Nothing Nothing
-        Right vecs -> pure $ Right vecs
+        Left parseErr -> throwError $ llmError (T.pack parseErr) (Just "GeminiEmbeddings") Nothing
+        Right vecs -> pure vecs
 
   embedQuery GeminiEmbeddings {..} query = do
     let payload = object ["model" .= ("models/" <> geminiEmbedModel), "content" .= object ["parts" .= [object ["text" .= query]]]]
@@ -172,10 +172,10 @@ instance Embeddings GeminiEmbeddings where
               setRequestBodyJSON payload initReq
     eRes <- liftIO $ safeHttpRequest req
     case eRes of
-      Left err -> pure $ Left $ llmError err Nothing Nothing
+      Left err -> throwError $ llmError err (Just "GeminiEmbeddings") Nothing
       Right bodyVal -> case parseGeminiEmbedResponse bodyVal of
-        Left parseErr -> pure $ Left $ llmError (T.pack parseErr) Nothing Nothing
-        Right vec -> pure $ Right vec
+        Left parseErr -> throwError $ llmError (T.pack parseErr) (Just "GeminiEmbeddings") Nothing
+        Right vec -> pure vec
 
 -- Helper for HTTP requests
 safeHttpRequest :: Request -> IO (Either Text Value)

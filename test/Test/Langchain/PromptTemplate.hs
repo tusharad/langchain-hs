@@ -4,10 +4,10 @@ module Test.Langchain.PromptTemplate (tests) where
 
 import qualified Data.Map.Strict as HM
 import qualified Data.Text as T
-import Langchain.PromptTemplate
-import Langchain.Runnable.Core (invoke)
 import Test.Tasty
 import Test.Tasty.HUnit
+
+import Langchain.PromptTemplate
 
 tests :: TestTree
 tests =
@@ -29,22 +29,7 @@ tests =
              in case renderPrompt template missingVars of
                   Left err -> "place" `T.isInfixOf` T.pack (show err) @? "Expected error to contain 'place'"
                   Right _ -> assertFailure "Expected an error for missing variable"
-                  {- TODO: Need to take care of incomplete brace cases
-                  , testCase "handles unclosed braces" $
-                      let invalidTemplate = PromptTemplate "Hello, {name! Welcome to {place}."
-                       in case renderPrompt invalidTemplate vars of
-                            Left err -> err @?= "Unclosed brace"
-                            Right _ -> assertFailure "Expected an error for unclosed brace"
-                  , testCase "handles complex nesting of placeholders" $
-                      let complexTemplate = PromptTemplate "{{name}} is not a placeholder but {name} is."
-                       in renderPrompt complexTemplate vars @?= Right "{Alice} is not a placeholder but Alice is."
-                       -}
         ]
-    , testCase "Runnable instance for PromptTemplate - invoke with variables" $ do
-        let template1 = PromptTemplate "Hello, {name}!"
-            vars1 = HM.fromList [("name", "Dave")]
-        result <- invoke template1 vars1
-        result @?= Right "Hello, Dave!"
     , testGroup
         "FewShotPromptTemplate"
         [ testCase "correctly formats a few-shot prompt" $
@@ -76,11 +61,10 @@ tests =
              in renderFewShotPrompt customSep
                   @?= Right
                     "Examples of {type}:\nInput: Hello\nOutput: Bonjour ### Input: Goodbye\nOutput: Au revoir\nNow translate: {query}"
-        , testCase "Runnable instance for FewShotPromptTemplate - invoke with variables" $ do
+        , testCase "renderFewShotPromptWithVars interpolates full template" $ do
             let inputVars = HM.fromList [("type", "Spanish"), ("query", "Thank you")]
                 expected = "Examples of Spanish:\nInput: Hello\nOutput: Bonjour\n\nInput: Goodbye\nOutput: Au revoir\nNow translate: Thank you"
-            result <- invoke fewShotTemplate inputVars
-            result @?= Right expected
+            renderFewShotPromptWithVars fewShotTemplate inputVars @?= Right expected
         ]
     ]
   where
