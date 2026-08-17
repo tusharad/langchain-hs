@@ -1,0 +1,157 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.38.1.
+--
+-- see: https://github.com/sol/hpack
+
+name:           cortex-agent
+version:        0.1.0.0
+synopsis:       Cognitive Multi-Agent Deep Research & Enterprise Second-Brain Engine
+description:    Production-grade multi-agent autonomous deep research, enterprise second-brain RAG, and dynamic flow execution engine in pure Haskell.
+category:       AI, Machine Learning, Agents
+homepage:       https://github.com/tusharadhatrao/cortex-agent#readme
+bug-reports:    https://github.com/tusharadhatrao/cortex-agent/issues
+author:         Tushar Adhatrao
+maintainer:     tusharadhatrao@gmail.com
+license:        MIT
+build-type:     Simple
+extra-source-files:
+    README.md
+
+source-repository head
+  type: git
+  location: https://github.com/tusharadhatrao/cortex-agent
+
+library
+  exposed-modules:
+      Cortex.Brain
+      Cortex.Cognitive.Decomposer
+      Cortex.Cognitive.Evaluator
+      Cortex.Cognitive.Synthesizer
+      Cortex.Flow.Components
+      Cortex.Knowledge.Ingestion
+      Cortex.Knowledge.Retriever
+      Cortex.Prelude
+      Cortex.Research.Conductor
+      Cortex.Research.MultiAgent
+      Cortex.Research.Orchestrator
+      Cortex.Research.Planner
+      Cortex.Research.Publisher
+      Cortex.Research.Scraper
+      Cortex.Server
+  other-modules:
+      Paths_cortex_agent
+  hs-source-dirs:
+      src
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
+  build-depends:
+      QuickCheck >=2.14
+    , aeson >=2.0
+    , async >=2.2
+    , base >=4.7 && <5
+    , bytestring >=0.10 && <0.13
+    , conduit >=1.2 && <1.4
+    , containers >=0.6 && <0.9
+    , directory >=1.3.6 && <1.4
+    , filepath <2
+    , http-client
+    , http-conduit ==2.*
+    , http-types >=0.11 && <0.13
+    , langchain-hs
+    , langchain-hs-core
+    , langchain-hs-graph
+    , mtl >=2.2 && <2.4
+    , ollama-haskell >=0.3.0.0
+    , random >=1.2
+    , scientific
+    , sqlite-simple >=0.4.18 && <0.5
+    , stm ==2.5.*
+    , tagsoup <0.15
+    , text >=1.2 && <3
+    , time >=1.9 && <1.15
+    , transformers
+    , vector <0.14
+  default-language: Haskell2010
+
+executable cortex-cli
+  main-is: Main.hs
+  other-modules:
+      Paths_cortex_agent
+  hs-source-dirs:
+      app
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      QuickCheck >=2.14
+    , aeson >=2.0
+    , async >=2.2
+    , base >=4.7 && <5
+    , bytestring >=0.10 && <0.13
+    , conduit >=1.2 && <1.4
+    , containers >=0.6 && <0.9
+    , cortex-agent
+    , directory >=1.3.6 && <1.4
+    , filepath <2
+    , http-client
+    , http-conduit ==2.*
+    , http-types >=0.11 && <0.13
+    , langchain-hs
+    , langchain-hs-core
+    , langchain-hs-graph
+    , mtl >=2.2 && <2.4
+    , ollama-haskell >=0.3.0.0
+    , random >=1.2
+    , scientific
+    , sqlite-simple >=0.4.18 && <0.5
+    , stm ==2.5.*
+    , tagsoup <0.15
+    , text >=1.2 && <3
+    , time >=1.9 && <1.15
+    , transformers
+    , vector <0.14
+  default-language: Haskell2010
+
+test-suite cortex-agent-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Test.Cortex.BattleTestSpec
+      Test.Cortex.BrainSpec
+      Test.Cortex.CognitiveSpec
+      Test.Cortex.FlowSpec
+      Test.Cortex.ResearchSpec
+      Paths_cortex_agent
+  hs-source-dirs:
+      test
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      QuickCheck >=2.14
+    , aeson >=2.0
+    , async >=2.2
+    , base >=4.7 && <5
+    , bytestring >=0.10 && <0.13
+    , conduit >=1.2 && <1.4
+    , containers >=0.6 && <0.9
+    , cortex-agent
+    , directory >=1.3.6 && <1.4
+    , filepath <2
+    , http-client
+    , http-conduit ==2.*
+    , http-types >=0.11 && <0.13
+    , langchain-hs
+    , langchain-hs-core
+    , langchain-hs-graph
+    , mtl >=2.2 && <2.4
+    , ollama-haskell >=0.3.0.0
+    , random >=1.2
+    , scientific
+    , sqlite-simple >=0.4.18 && <0.5
+    , stm ==2.5.*
+    , tagsoup <0.15
+    , tasty >=1.4 && <1.6
+    , tasty-hunit ==0.10.*
+    , tasty-quickcheck >=0.10 && <0.12
+    , text >=1.2 && <3
+    , time >=1.9 && <1.15
+    , transformers
+    , vector <0.14
+  default-language: Haskell2010

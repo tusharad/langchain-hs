@@ -3,6 +3,7 @@ packages:
 - .
 - ./langchain-hs-core
 - ./langchain-hs-graph
+- ./cortex-agent
 extra-deps:
   - ../ollama-haskell
 
