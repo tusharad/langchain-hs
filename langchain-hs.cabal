@@ -38,20 +38,34 @@ library
       Langchain.Agent.Executor
       Langchain.Agent.Middleware
       Langchain.Agent.ReAct
+      Langchain.Cache.Core
       Langchain.Callback
+      Langchain.Chain.Conversational
+      Langchain.Chain.MapReduce
       Langchain.Chain.RetrievalQA
+      Langchain.Chain.Sequential
+      Langchain.Chain.StuffDocuments
       Langchain.DocumentLoader.Core
+      Langchain.DocumentLoader.Csv
       Langchain.DocumentLoader.DirectoryLoader
       Langchain.DocumentLoader.FileLoader
+      Langchain.DocumentLoader.Html
+      Langchain.DocumentLoader.Json
       Langchain.DocumentLoader.PdfLoader
+      Langchain.DocumentLoader.WebPage
       Langchain.Embeddings.Core
       Langchain.Embeddings.Gemini
       Langchain.Embeddings.Ollama
       Langchain.Embeddings.OpenAI
       Langchain.Error
       Langchain.Memory.Core
+      Langchain.Memory.Entity
+      Langchain.Memory.Summary
       Langchain.Memory.TokenBufferMemory
       Langchain.OutputParser.Core
+      Langchain.OutputParser.Enum
+      Langchain.OutputParser.Structured
+      Langchain.OutputParser.Xml
       Langchain.Prelude
       Langchain.PromptTemplate
       Langchain.Provider.Anthropic
@@ -59,10 +73,18 @@ library
       Langchain.Provider.Gemini
       Langchain.Provider.Ollama
       Langchain.Provider.OpenAI
+      Langchain.Resilience.Retry
+      Langchain.Retriever.ContextualCompression
       Langchain.Retriever.Core
       Langchain.Retriever.MultiQueryRetriever
+      Langchain.Retriever.ParentDocument
+      Langchain.Router.Semantic
       Langchain.Runnable
       Langchain.TextSplitter.Character
+      Langchain.TextSplitter.Code
+      Langchain.TextSplitter.Markdown
+      Langchain.TextSplitter.RecursiveCharacter
+      Langchain.TextSplitter.Token
       Langchain.Tool.Calculator
       Langchain.Tool.Core
       Langchain.Tool.DuckDuckGo
@@ -73,6 +95,9 @@ library
       Langchain.Utils
       Langchain.VectorStore.Core
       Langchain.VectorStore.InMemory
+      Langchain.VectorStore.PgVector
+      Langchain.VectorStore.Qdrant
+      Langchain.VectorStore.SqliteVec
   other-modules:
       Paths_langchain_hs
   hs-source-dirs:
@@ -88,6 +113,7 @@ library
     , containers >=0.6 && <0.9
     , directory >=1.3.6 && <1.4
     , filepath <2
+    , http-client
     , http-conduit ==2.*
     , http-types >=0.11 && <0.13
     , langchain-hs-core
@@ -97,6 +123,8 @@ library
     , openai >=2.2.1
     , parsec <4
     , pdf-toolbox-document ==0.1.4
+    , random >=1.2
+    , sqlite-simple >=0.4.18 && <0.5
     , stm ==2.5.*
     , tagsoup <0.15
     , text >=1.2 && <3
@@ -122,6 +150,7 @@ executable big-showcase
     , containers >=0.6 && <0.9
     , directory >=1.3.6 && <1.4
     , filepath <2
+    , http-client
     , http-conduit ==2.*
     , http-types >=0.11 && <0.13
     , langchain-hs
@@ -132,6 +161,8 @@ executable big-showcase
     , openai >=2.2.1
     , parsec <4
     , pdf-toolbox-document ==0.1.4
+    , random >=1.2
+    , sqlite-simple >=0.4.18 && <0.5
     , stm ==2.5.*
     , tagsoup <0.15
     , temporary
@@ -147,9 +178,15 @@ test-suite langchain-hs-test
   other-modules:
       Test.Langchain.Agent.MiddlewareSpec
       Test.Langchain.Agent.ReAct
+      Test.Langchain.Cache.CacheSpec
+      Test.Langchain.Chain.ChainsSpec
       Test.Langchain.Chain.RetrievalQASpec
       Test.Langchain.DocumentLoader.Core
+      Test.Langchain.DocumentLoader.CsvSpec
       Test.Langchain.DocumentLoader.DirectoryLoader
+      Test.Langchain.DocumentLoader.HtmlSpec
+      Test.Langchain.DocumentLoader.JsonSpec
+      Test.Langchain.DocumentLoader.WebPageSpec
       Test.Langchain.Embeddings.Core
       Test.Langchain.Error
       Test.Langchain.Graph.CompilationSpec
@@ -160,7 +197,10 @@ test-suite langchain-hs-test
       Test.Langchain.Integration.ReActAgentE2ESpec
       Test.Langchain.Integration.StateGraphE2ESpec
       Test.Langchain.Memory.Core
+      Test.Langchain.Memory.EntitySpec
+      Test.Langchain.Memory.SummarySpec
       Test.Langchain.Memory.TokenBufferMemory
+      Test.Langchain.OutputParser.AdvancedParsersSpec
       Test.Langchain.OutputParser.Core
       Test.Langchain.PreludeSpec
       Test.Langchain.PromptTemplate
@@ -180,13 +220,20 @@ test-suite langchain-hs-test
       Test.Langchain.Provider.OllamaConversionSpec
       Test.Langchain.Provider.OpenAI
       Test.Langchain.RegressionSpec
+      Test.Langchain.Resilience.RetrySpec
+      Test.Langchain.Retriever.AdvancedRetrieversSpec
       Test.Langchain.Retriever.Core
       Test.Langchain.TestHelpers
       Test.Langchain.TextSplitter.Character
+      Test.Langchain.TextSplitter.CodeSpec
+      Test.Langchain.TextSplitter.MarkdownSpec
+      Test.Langchain.TextSplitter.RecursiveCharacterSpec
+      Test.Langchain.TextSplitter.TokenSpec
       Test.Langchain.Tool.Calculator
       Test.Langchain.Tool.Core
       Test.Langchain.Tool.FileSystem
       Test.Langchain.VectorStore.Core
+      Test.Langchain.VectorStore.SqliteVecSpec
       Paths_langchain_hs
   hs-source-dirs:
       test
@@ -202,6 +249,7 @@ test-suite langchain-hs-test
     , containers
     , directory
     , filepath
+    , http-client
     , http-conduit
     , http-types >=0.11 && <0.13
     , langchain-hs
@@ -212,6 +260,8 @@ test-suite langchain-hs-test
     , openai >=2.2.1
     , parsec <4
     , pdf-toolbox-document ==0.1.4
+    , random >=1.2
+    , sqlite-simple >=0.4.18 && <0.5
     , stm ==2.5.*
     , tagsoup <0.15
     , tasty
@@ -242,6 +292,7 @@ benchmark langchain-hs-bench
     , containers >=0.6 && <0.9
     , directory >=1.3.6 && <1.4
     , filepath <2
+    , http-client
     , http-conduit ==2.*
     , http-types >=0.11 && <0.13
     , langchain-hs
@@ -252,6 +303,8 @@ benchmark langchain-hs-bench
     , openai >=2.2.1
     , parsec <4
     , pdf-toolbox-document ==0.1.4
+    , random >=1.2
+    , sqlite-simple >=0.4.18 && <0.5
     , stm ==2.5.*
     , tagsoup <0.15
     , tasty-bench

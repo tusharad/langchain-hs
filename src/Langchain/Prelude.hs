@@ -101,10 +101,14 @@ module Langchain.Prelude
   , supervisorNode
   , embedSubGraphNode
 
-    -- * Memory
+    -- * Memory Systems
   , BaseMemory (..)
   , WindowBufferMemory (..)
   , newWindowBufferMemory
+  , SummaryMemory (..)
+  , newSummaryMemory
+  , EntityMemory (..)
+  , newEntityMemory
   , initialMessages
   , trimMessages
 
@@ -113,8 +117,21 @@ module Langchain.Prelude
   , InMemory (..)
   , emptyInMemoryVectorStore
   , fromDocuments
+  , SqliteVecStore (..)
+  , newSqliteVecStore
+  , PgVectorStore (..)
+  , defaultPgVectorStore
+  , QdrantStore (..)
+  , defaultQdrantStore
   , Retriever (..)
   , VectorStoreRetriever (..)
+  , MultiQueryRetriever (..)
+  , newMultiQueryRetriever
+  , ContextualCompressionRetriever (..)
+  , newContextualCompressionRetriever
+  , ParentDocumentRetriever (..)
+  , newParentDocumentRetriever
+  , addParentDocuments
 
     -- * Embeddings
   , Embeddings (..)
@@ -127,6 +144,14 @@ module Langchain.Prelude
   , DirectoryLoaderOptions (..)
   , defaultDirectoryLoaderOptions
   , PdfLoader (..)
+  , CsvLoader (..)
+  , defaultCsvLoader
+  , JsonLoader (..)
+  , defaultJsonLoader
+  , HtmlLoader (..)
+  , defaultHtmlLoader
+  , WebPageLoader (..)
+  , defaultWebPageLoader
 
     -- * Prompt Templates
   , PromptTemplate (..)
@@ -138,6 +163,65 @@ module Langchain.Prelude
   , CharacterSplitterOps (..)
   , defaultCharacterSplitterOps
   , splitText
+  , RecursiveCharacterSplitterOps (..)
+  , defaultRecursiveCharacterSplitterOps
+  , splitTextRecursive
+  , MarkdownSplitterOps (..)
+  , defaultMarkdownSplitterOps
+  , splitMarkdown
+  , TokenSplitterOps (..)
+  , defaultTokenSplitterOps
+  , splitByTokens
+  , CodeSplitterOps (..)
+  , defaultCodeSplitterOps
+  , Language (..)
+  , splitCode
+
+    -- * Caching & Resilience
+  , CacheBackend (..)
+  , InMemoryCache (..)
+  , newInMemoryCache
+  , SQLiteCache (..)
+  , newSQLiteCache
+  , CachedModel (..)
+  , withCaching
+  , RetryPolicy (..)
+  , defaultRetryPolicy
+  , withRetry
+  , RateLimiter (..)
+  , newRateLimiter
+  , withRateLimit
+
+    -- * Chains
+  , RetrievalQA (..)
+  , newRetrievalQA
+  , runRetrievalQA
+  , SequentialChain (..)
+  , newSequentialChain
+  , runSequentialChain
+  , ConversationalChain (..)
+  , newConversationalChain
+  , runConversationalChain
+  , StuffDocumentsChain (..)
+  , newStuffDocumentsChain
+  , runStuffDocumentsChain
+  , MapReduceChain (..)
+  , newMapReduceChain
+  , runMapReduceChain
+
+    -- * Structured Output, Routers, and Advanced Parsers
+  , StructuredOutput (..)
+  , structuredInvoke
+  , SemanticRouter (..)
+  , newSemanticRouter
+  , Route (..)
+  , routeQuery
+  , XmlOutputParser (..)
+  , newXmlOutputParser
+  , parseXmlOutput
+  , EnumParser (..)
+  , newEnumParser
+  , parseEnum
 
     -- * Agents & Execution
   , ReActAgent (..)
@@ -165,43 +249,27 @@ module Langchain.Prelude
 
 import Langchain.Agent.Core
 import Langchain.Agent.Middleware
-import qualified Langchain.Core.Error as CoreErr
+import Langchain.Cache.Core
+import Langchain.Chain.Conversational
+import Langchain.Chain.MapReduce
+import Langchain.Chain.RetrievalQA
+import Langchain.Chain.Sequential
+import Langchain.Chain.StuffDocuments
 import Langchain.Core.Error
-  ( ErrorContext (..)
-  , LangchainError (..)
-  , agentError
-  , configurationError
-  , documentLoaderError
-  , embeddingError
-  , errorMessage
-  , internalError
-  , llmError
-  , memoryError
-  , networkError
-  , parsingError
-  , runnableError
-  , toolError
-  , validationError
-  , vectorStoreError
-  )
 import Langchain.Core.Model
 import qualified Langchain.Core.Monad as CoreMonad
 import Langchain.Core.Monad
-  ( LangchainConfig (..)
-  , LangchainT
-  , askConfig
-  , runLangchainT
-  , runLangchainTIO
-  , throwLangchainError
-  , withConfig
-  )
 import Langchain.Core.Runnable
 import Langchain.Core.Stream
 import Langchain.Core.Tool
 import Langchain.DocumentLoader.Core
+import Langchain.DocumentLoader.Csv
 import Langchain.DocumentLoader.DirectoryLoader
 import Langchain.DocumentLoader.FileLoader
+import Langchain.DocumentLoader.Html
+import Langchain.DocumentLoader.Json
 import Langchain.DocumentLoader.PdfLoader
+import Langchain.DocumentLoader.WebPage
 import Langchain.Embeddings.Core
 import Langchain.Error (LangchainResult)
 import Langchain.Graph.Checkpointer
@@ -209,16 +277,33 @@ import Langchain.Graph.HITL
 import Langchain.Graph.MultiAgent
 import Langchain.Graph.StateGraph
 import Langchain.Memory.Core
+import Langchain.Memory.Entity
+import Langchain.Memory.Summary
+import Langchain.OutputParser.Enum
+import Langchain.OutputParser.Structured
+import Langchain.OutputParser.Xml
 import Langchain.PromptTemplate
 import Langchain.Provider.Anthropic (Anthropic, newAnthropic)
 import Langchain.Provider.DeepSeek (DeepSeek, newDeepSeek)
 import Langchain.Provider.Gemini (Gemini, newGemini)
 import Langchain.Provider.Ollama (Ollama, newOllama)
 import Langchain.Provider.OpenAI (OpenAI, newOpenAI)
+import Langchain.Resilience.Retry
+import Langchain.Retriever.ContextualCompression
 import Langchain.Retriever.Core
+import Langchain.Retriever.MultiQueryRetriever
+import Langchain.Retriever.ParentDocument
+import Langchain.Router.Semantic
 import Langchain.TextSplitter.Character
+import Langchain.TextSplitter.Code
+import Langchain.TextSplitter.Markdown
+import Langchain.TextSplitter.RecursiveCharacter
+import Langchain.TextSplitter.Token
 import Langchain.VectorStore.Core
 import Langchain.VectorStore.InMemory
+import Langchain.VectorStore.PgVector
+import Langchain.VectorStore.Qdrant
+import Langchain.VectorStore.SqliteVec
 
 -- | Default runtime configuration alias
 defaultLangchainConfig :: LangchainConfig
