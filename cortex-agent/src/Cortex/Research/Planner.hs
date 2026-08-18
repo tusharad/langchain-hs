@@ -99,11 +99,11 @@ parseResearchPlan topic rawText =
         }
   where
     splitIntoSubtopicBlocks [] = []
-    splitIntoSubtopicBlocks lns =
-      let (firstBlock, rest) = span (\l -> not (T.isPrefixOf "Subtopic:" (T.strip l)) || null firstBlock) (dropWhile (T.null . T.strip) lns)
-       in case rest of
-            [] -> [firstBlock]
-            (nextHeader : remaining) -> firstBlock : splitIntoSubtopicBlocks (nextHeader : remaining)
+    splitIntoSubtopicBlocks (l : ls)
+      | T.isPrefixOf "Subtopic:" (T.strip l) =
+          let (content, rest) = break (\x -> T.isPrefixOf "Subtopic:" (T.strip x)) ls
+           in (l : content) : splitIntoSubtopicBlocks rest
+      | otherwise = splitIntoSubtopicBlocks ls
 
     parseBlock blk =
       let lns = map T.strip blk

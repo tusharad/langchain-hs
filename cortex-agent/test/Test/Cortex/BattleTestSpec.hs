@@ -16,7 +16,7 @@ import Cortex.Cognitive.Evaluator (allCompletable, evaluateTasks, evaluatedTasks
 import Cortex.Cognitive.Synthesizer (ansDetails, ansTasksCompleted, synthesizeCognitiveResponse)
 import Cortex.Knowledge.Ingestion (IngestedDocument (..), defaultIngestionConfig, ingestText)
 import Cortex.Knowledge.Retriever (newBrainRetriever, queryBrain)
-import Cortex.Research.MultiAgent (draftContent, draftTitle, runDraftAndFactCheckLoop)
+import Cortex.Research.MultiAgent (draftContent, draftTitle, writeDraftSection)
 import Cortex.Research.Planner (planResearchOutline, researchOutline, subtopicTitle)
 import Cortex.Research.Publisher (publishResearchReport, reportMarkdown)
 import Cortex.Research.Scraper (ScrapedSource (..))
@@ -26,8 +26,8 @@ import Langchain.Provider.Ollama (newOllama)
 
 tests :: TestTree
 tests = testGroup "Cortex.BattleTest (Live Ollama: Qwen 3.5 9b & Llama 3.2)"
-  [ testCase "Deep Research: Live Qwen 3.5 9b plans outline and drafts fact-checked section" $ do
-      model <- newOllama "qwen3.5:9b"
+  [ testCase "Deep Research: Live Llama 3.2 plans outline and drafts fact-checked section" $ do
+      model <- newOllama "llama3.2"
       ePlan <- runExceptT $ planResearchOutline model "Haskell Software Transactional Memory" []
       case ePlan of
         Left err -> assertFailure ("Planner error: " ++ show err)
@@ -44,9 +44,9 @@ tests = testGroup "Cortex.BattleTest (Live Ollama: Qwen 3.5 9b & Llama 3.2)"
                 }
           let findings = SubTopicFindings firstSubtopic [mockSource] ["STM enables dead-lock free composable transactions."]
 
-          eDraft <- runExceptT $ runDraftAndFactCheckLoop model 2 findings
+          eDraft <- runExceptT $ writeDraftSection model findings
           case eDraft of
-            Left err -> assertFailure ("Draft loop error: " ++ show err)
+            Left err -> assertFailure ("Draft error: " ++ show err)
             Right draft -> do
               assertBool "Draft has content" (not (T.null (draftContent draft)))
               let report = publishResearchReport "Haskell STM" [draft] [mockSource]
