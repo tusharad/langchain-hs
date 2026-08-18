@@ -106,7 +106,9 @@ filterNoiseTags _ [] = []
 filterNoiseTags inNoise (t : ts)
   | TSoup.isTagOpenName "script" t || TSoup.isTagOpenName "style" t || TSoup.isTagOpenName "noscript" t =
       filterNoiseTags True ts
-  | TSoup.isTagCloseName "script" t || TSoup.isTagCloseName "style" t || TSoup.isTagCloseName "noscript" t =
+  | TSoup.isTagCloseName "script" t
+      || TSoup.isTagCloseName "style" t
+      || TSoup.isTagCloseName "noscript" t =
       filterNoiseTags False ts
   | inNoise = filterNoiseTags True ts
   | otherwise = t : filterNoiseTags False ts

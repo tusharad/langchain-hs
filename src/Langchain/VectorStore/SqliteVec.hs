@@ -47,12 +47,12 @@ data SqliteVecStore e = SqliteVecStore
   }
 
 -- | Construct a new SqliteVecStore and initialize schema
-newSqliteVecStore
-  :: (MonadIO m, MonadError LangchainError m, Embeddings e)
-  => FilePath
-  -> e
-  -> m (SqliteVecStore e)
-  {--}
+newSqliteVecStore ::
+  (MonadIO m, MonadError LangchainError m, Embeddings e) =>
+  FilePath ->
+  e ->
+  m (SqliteVecStore e)
+{--}
 newSqliteVecStore dbPath emb = do
   initSqliteVecSchema dbPath
   pure $ SqliteVecStore dbPath emb
@@ -84,14 +84,14 @@ instance (Embeddings e) => VectorStore (SqliteVecStore e) where
     eRes <- liftIO $ try $ withConnection (sqliteDbPath store) $ \conn -> do
       withTransaction conn $ do
         mapM_
-          (\(doc, vec) -> do
-            let cTxt = TL.unpack (pageContent doc)
-                mJson = TE.decodeUtf8 $ LBS.toStrict $ encode (metadata doc)
-                vBytes = LBS.toStrict $ encode (vec :: [Float])
-            execute
-              conn
-              "INSERT INTO langchain_vectors (content, metadata, vector) VALUES (?, ?, ?)"
-              (cTxt, TS.unpack mJson, vBytes)
+          ( \(doc, vec) -> do
+              let cTxt = TL.unpack (pageContent doc)
+                  mJson = TE.decodeUtf8 $ LBS.toStrict $ encode (metadata doc)
+                  vBytes = LBS.toStrict $ encode (vec :: [Float])
+              execute
+                conn
+                "INSERT INTO langchain_vectors (content, metadata, vector) VALUES (?, ?, ?)"
+                (cTxt, TS.unpack mJson, vBytes)
           )
           (zip docs vectors)
     case eRes of
@@ -124,7 +124,8 @@ instance (Embeddings e) => VectorStore (SqliteVecStore e) where
 
   similaritySearchByVector store qVec k = do
     rowsRes <- liftIO $ try $ withConnection (sqliteDbPath store) $ \conn -> do
-      query_ conn "SELECT id, content, metadata, vector FROM langchain_vectors" :: IO [(Int64, String, String, LBS.ByteString)]
+      query_ conn "SELECT id, content, metadata, vector FROM langchain_vectors" ::
+        IO [(Int64, String, String, LBS.ByteString)]
     rows <- case rowsRes of
       Left err ->
         throwError $

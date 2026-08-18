@@ -68,12 +68,12 @@ writeBlackboard Blackboard {..} updates =
   liftIO $ atomically $ modifyTVar' blackboardVar (\current -> Map.union updates current)
 
 -- | Run the blackboard agent loop until isComplete or maxIterations
-runBlackboard
-  :: (MonadIO m, MonadError LangchainError m)
-  => Blackboard
-  -> [KnowledgeSource m]
-  -> BlackboardConfig
-  -> m (Map Text Text)
+runBlackboard ::
+  (MonadIO m, MonadError LangchainError m) =>
+  Blackboard ->
+  [KnowledgeSource m] ->
+  BlackboardConfig ->
+  m (Map Text Text)
 runBlackboard bb sources BlackboardConfig {..} = loop 1
   where
     loop iter

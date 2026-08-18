@@ -49,29 +49,33 @@ data HybridRetriever = HybridRetriever
 
 instance Show HybridRetriever where
   show HybridRetriever {..} =
-    "HybridRetriever { hybridRrfK = " ++ show hybridRrfK
-      ++ ", hybridDenseWeight = " ++ show hybridDenseWeight
-      ++ ", hybridSparseWeight = " ++ show hybridSparseWeight ++ " }"
+    "HybridRetriever { hybridRrfK = "
+      ++ show hybridRrfK
+      ++ ", hybridDenseWeight = "
+      ++ show hybridDenseWeight
+      ++ ", hybridSparseWeight = "
+      ++ show hybridSparseWeight
+      ++ " }"
 
 instance Retriever HybridRetriever where
   getRelevantDocuments hr query = searchHybrid hr query 5
 
 -- | Construct a default Hybrid Retriever (rrfK = 60.0, equal weights = 1.0)
-newHybridRetriever
-  :: BM25Index
-  -> (Text -> Int -> IO [Document])
-  -> HybridRetriever
+newHybridRetriever ::
+  BM25Index ->
+  (Text -> Int -> IO [Document]) ->
+  HybridRetriever
 newHybridRetriever bm25 vecSearch =
   newHybridRetrieverWithWeights bm25 vecSearch 60.0 1.0 1.0
 
 -- | Construct a Hybrid Retriever with custom RRF smoothing and weights
-newHybridRetrieverWithWeights
-  :: BM25Index
-  -> (Text -> Int -> IO [Document])
-  -> Double
-  -> Double
-  -> Double
-  -> HybridRetriever
+newHybridRetrieverWithWeights ::
+  BM25Index ->
+  (Text -> Int -> IO [Document]) ->
+  Double ->
+  Double ->
+  Double ->
+  HybridRetriever
 newHybridRetrieverWithWeights bm25 vecSearch rrfK denseW sparseW =
   HybridRetriever
     { hybridBM25 = bm25
@@ -82,10 +86,10 @@ newHybridRetrieverWithWeights bm25 vecSearch rrfK denseW sparseW =
     }
 
 -- | Compute Reciprocal Rank Fusion score for documents across ranked lists
-reciprocalRankFusion
-  :: Double
-  -> [([Document], Double)] -- List of (ranked documents, weight)
-  -> [(Document, Double)]
+reciprocalRankFusion ::
+  Double ->
+  [([Document], Double)] -> -- List of (ranked documents, weight)
+  [(Document, Double)]
 reciprocalRankFusion rrfK rankedLists =
   let scoreMap = foldl' processList Map.empty rankedLists
       docLookup = foldl' buildLookup Map.empty [d | (docs, _) <- rankedLists, d <- docs]
@@ -108,21 +112,21 @@ reciprocalRankFusion rrfK rankedLists =
     buildLookup acc doc = Map.insert (pageContent doc) doc acc
 
 -- | Execute hybrid search returning top-k documents
-searchHybrid
-  :: (MonadIO m)
-  => HybridRetriever
-  -> Text
-  -> Int
-  -> m [Document]
+searchHybrid ::
+  (MonadIO m) =>
+  HybridRetriever ->
+  Text ->
+  Int ->
+  m [Document]
 searchHybrid hr query k = map fst <$> searchHybridWithScores hr query k
 
 -- | Execute hybrid search returning top-k documents with RRF scores
-searchHybridWithScores
-  :: (MonadIO m)
-  => HybridRetriever
-  -> Text
-  -> Int
-  -> m [(Document, Double)]
+searchHybridWithScores ::
+  (MonadIO m) =>
+  HybridRetriever ->
+  Text ->
+  Int ->
+  m [(Document, Double)]
 searchHybridWithScores HybridRetriever {..} query k = do
   -- 1. Run sparse BM25 search (fetch 2 * k candidates)
   let sparseDocs = bm25Search hybridBM25 query (k * 2)

@@ -27,7 +27,16 @@ import qualified Data.Text.Encoding as TE
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as TL
 import Network.HTTP.Client (responseTimeoutMicro)
-import Network.HTTP.Simple (Response, getResponseBody, getResponseStatus, httpLBS, parseRequest, setRequestMethod, setRequestHeader, setRequestResponseTimeout)
+import Network.HTTP.Simple
+  ( Response
+  , getResponseBody
+  , getResponseStatus
+  , httpLBS
+  , parseRequest
+  , setRequestHeader
+  , setRequestMethod
+  , setRequestResponseTimeout
+  )
 import Network.HTTP.Types.Status (statusCode)
 
 import Langchain.Core.Error (LangchainError, documentLoaderError)

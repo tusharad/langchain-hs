@@ -21,12 +21,14 @@ import qualified Test.Langchain.DocumentLoader.DirectoryLoader as DirectoryLoade
 import qualified Test.Langchain.DocumentLoader.HtmlSpec as HtmlLoaderTest
 import qualified Test.Langchain.DocumentLoader.JsonSpec as JsonLoaderTest
 import qualified Test.Langchain.DocumentLoader.WebPageSpec as WebPageLoaderTest
+import qualified Test.Langchain.DocumentTransformer.HeaderInjectorSpec as HeaderInjectorTest
 import qualified Test.Langchain.DocumentTransformer.MetadataEnricherSpec as MetadataEnricherTest
 import qualified Test.Langchain.Embeddings.Core as EmbeddingsTest
 import qualified Test.Langchain.Error as ErrorTest
 import qualified Test.Langchain.ExampleSelector.ExampleSelectorSpec as ExampleSelectorTest
 import qualified Test.Langchain.Graph.AdvancedGraphSpec as AdvancedGraphTest
 import qualified Test.Langchain.Graph.CompilationSpec as GraphCompilationTest
+import qualified Test.Langchain.Graph.DynamicFlowSpec as DynamicFlowTest
 import qualified Test.Langchain.Graph.MultiAgentPatternsSpec as MultiAgentPatternsTest
 import qualified Test.Langchain.Guardrail.GuardrailSpec as GuardrailTest
 import qualified Test.Langchain.HTTP.ConnectionPoolSpec as ConnectionPoolTest
@@ -37,6 +39,7 @@ import qualified Test.Langchain.Memory.EntitySpec as EntityMemoryTest
 import qualified Test.Langchain.Memory.SummarySpec as SummaryMemoryTest
 import qualified Test.Langchain.Memory.TokenBufferMemory as TokenBufferMemoryTest
 import qualified Test.Langchain.Observability.OpenTelemetrySpec as OTelTest
+import qualified Test.Langchain.Observability.StreamProtocolSpec as StreamProtocolTest
 import qualified Test.Langchain.OutputParser.AdvancedParsersSpec as AdvancedParsersTest
 import qualified Test.Langchain.OutputParser.Core as OutputParserTest
 import qualified Test.Langchain.Pipeline.PipelineDSLSpec as PipelineDSLTest
@@ -53,7 +56,9 @@ import qualified Test.Langchain.Pure.PurePipelineSpec as PurePipelineTest
 import qualified Test.Langchain.Resilience.CircuitBreakerSpec as CircuitBreakerTest
 import qualified Test.Langchain.Resilience.RetrySpec as RetryTest
 import qualified Test.Langchain.Retriever.AdvancedRetrieversSpec as AdvancedRetrieversTest
+import qualified Test.Langchain.Retriever.BM25Spec as BM25Test
 import qualified Test.Langchain.Retriever.Core as RetrieverTest
+import qualified Test.Langchain.Retriever.HybridSpec as HybridRetrieverTest
 import qualified Test.Langchain.TextSplitter.Character as TextSplitterTest
 import qualified Test.Langchain.TextSplitter.CodeSpec as CodeSplitterTest
 import qualified Test.Langchain.TextSplitter.MarkdownSpec as MarkdownSplitterTest
@@ -67,11 +72,6 @@ import qualified Test.Langchain.Trace.TraceSpec as TraceTest
 import qualified Test.Langchain.VectorStore.Core as VectorStoreTest
 import qualified Test.Langchain.VectorStore.FilterSpec as VectorFilterTest
 import qualified Test.Langchain.VectorStore.SqliteVecSpec as SqliteVecStoreTest
-import qualified Test.Langchain.Retriever.BM25Spec as BM25Test
-import qualified Test.Langchain.Retriever.HybridSpec as HybridRetrieverTest
-import qualified Test.Langchain.DocumentTransformer.HeaderInjectorSpec as HeaderInjectorTest
-import qualified Test.Langchain.Graph.DynamicFlowSpec as DynamicFlowTest
-import qualified Test.Langchain.Observability.StreamProtocolSpec as StreamProtocolTest
 
 -- Property Test Modules (QuickCheck Laws & Invariants)
 import qualified Test.Langchain.Property.CheckpointerSpec as CheckpointerPropTest

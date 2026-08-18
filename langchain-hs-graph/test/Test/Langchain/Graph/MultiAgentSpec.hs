@@ -18,7 +18,13 @@ tests =
     "Langchain.Graph.MultiAgentSpec"
     [ testCase "supervisorNode routes based on mock LLM response" $ do
         let mockModel = newMockModel "researcher"
-            node = supervisorNode mockModel "supervisor" [("researcher", "researchNode")] id (\target s -> s <> ":" <> target)
+            node =
+              supervisorNode
+                mockModel
+                "supervisor"
+                [("researcher", "researchNode")]
+                id
+                (\target s -> s <> ":" <> target)
         res <- runExceptT $ nodeAction node ("task-input" :: Text)
         res @?= Right (Right ("task-input:researchNode" :: Text))
     , testCase "embedSubGraphNode executes nested graph" $ do

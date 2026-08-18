@@ -32,7 +32,9 @@ tests =
             Left err -> assertFailure ("Tool test invocation failed: " ++ show err)
             Right msg -> do
               let txt = extractMessageText msg
-              calcRes <- toolExecute calculatorTool (object ["expression" .= ("15 * 4" :: Text)]) :: IO (Either LangchainError Text)
+              calcRes <-
+                toolExecute calculatorTool (object ["expression" .= ("15 * 4" :: Text)]) ::
+                  IO (Either LangchainError Text)
               case calcRes of
                 Left err -> assertFailure ("Calculator execution error: " ++ show err)
                 Right out -> out @?= "60.0"

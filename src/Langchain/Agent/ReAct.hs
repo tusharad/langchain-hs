@@ -56,12 +56,12 @@ createReActAgent model tools =
     }
 
 -- | Run a single step of ReAct reasoning using ChatModel
-reactStep
-  :: (ChatModel model, MonadIO m, MonadError LangchainError m)
-  => model
-  -> [Tool m]
-  -> [Message]
-  -> m AgentStep
+reactStep ::
+  (ChatModel model, MonadIO m, MonadError LangchainError m) =>
+  model ->
+  [Tool m] ->
+  [Message] ->
+  m AgentStep
 reactStep model tools history = do
   responseMsg <- invoke model history Nothing
   case messageToolCalls responseMsg of
@@ -69,11 +69,11 @@ reactStep model tools history = do
     _ -> pure $ AgentFinish responseMsg
 
 -- | Execute the full ReAct reasoning loop until AgentFinish or max iterations reached
-runReActAgent
-  :: (ChatModel model, MonadIO m, MonadError LangchainError m)
-  => ReActAgent model m
-  -> [Message]
-  -> m Message
+runReActAgent ::
+  (ChatModel model, MonadIO m, MonadError LangchainError m) =>
+  ReActAgent model m ->
+  [Message] ->
+  m Message
 runReActAgent agent initialHistory = go initialHistory (agentMaxIterations agent)
   where
     go history maxIter

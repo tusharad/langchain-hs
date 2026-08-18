@@ -57,16 +57,16 @@ defaultCompressionPrompt =
     )
 
 -- | Construct a new ContextualCompressionRetriever with default prompt
-newContextualCompressionRetriever
-  :: retriever
-  -> model
-  -> ContextualCompressionRetriever retriever model
+newContextualCompressionRetriever ::
+  retriever ->
+  model ->
+  ContextualCompressionRetriever retriever model
 newContextualCompressionRetriever r m =
   ContextualCompressionRetriever r m defaultCompressionPrompt
 
 instance
-  (Retriever retriever, ChatModel model)
-  => Retriever (ContextualCompressionRetriever retriever model)
+  (Retriever retriever, ChatModel model) =>
+  Retriever (ContextualCompressionRetriever retriever model)
   where
   getRelevantDocuments ContextualCompressionRetriever {..} query = do
     rawDocs <- getRelevantDocuments baseRetriever query

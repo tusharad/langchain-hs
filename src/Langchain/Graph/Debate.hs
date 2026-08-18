@@ -66,12 +66,12 @@ defaultDebateConfig topic =
     }
 
 -- | Run a multi-agent debate session to convergence or max rounds
-runDebate
-  :: (ChatModel model, ChatModel moderatorModel, MonadIO m, MonadError LangchainError m)
-  => DebateConfig
-  -> [Debater model]
-  -> moderatorModel
-  -> m (Text, [DebateRound])
+runDebate ::
+  (ChatModel model, ChatModel moderatorModel, MonadIO m, MonadError LangchainError m) =>
+  DebateConfig ->
+  [Debater model] ->
+  moderatorModel ->
+  m (Text, [DebateRound])
 runDebate DebateConfig {..} debaters moderator = do
   if null debaters
     then throwError $ agentError "Debate requires at least one debater" (Just "runDebate") Nothing

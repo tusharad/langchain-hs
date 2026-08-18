@@ -28,7 +28,12 @@ data TokenSplitterOps = TokenSplitterOps
   }
 
 instance Show TokenSplitterOps where
-  show ops = "TokenSplitterOps { maxTokens = " ++ show (maxTokens ops) ++ ", tokenOverlap = " ++ show (tokenOverlap ops) ++ " }"
+  show ops =
+    "TokenSplitterOps { maxTokens = "
+      ++ show (maxTokens ops)
+      ++ ", tokenOverlap = "
+      ++ show (tokenOverlap ops)
+      ++ " }"
 
 -- | Approximate token count (roughly 4 characters per token or word-based heuristic)
 countTokensApprox :: Text -> Int

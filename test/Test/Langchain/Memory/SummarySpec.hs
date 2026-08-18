@@ -30,5 +30,7 @@ tests =
           Left err -> assertFailure ("SummaryMemory failed: " ++ show err)
           Right (sTxt, msgs) -> do
             sTxt @?= "Summarized context of user questions"
-            assertBool "Messages contains summary in system message" (any (\m -> "Summary" `T.isInfixOf` extractMessageText m) msgs)
+            assertBool
+              "Messages contains summary in system message"
+              (any (\m -> "Summary" `T.isInfixOf` extractMessageText m) msgs)
     ]

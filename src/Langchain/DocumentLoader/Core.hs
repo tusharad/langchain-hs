@@ -45,13 +45,13 @@ instance Monoid Document where
 -- | Effect-polymorphic BaseLoader typeclass
 class BaseLoader loader where
   -- | Load all documents from the source
-  load
-    :: (MonadIO m, MonadError LangchainError m)
-    => loader
-    -> m [Document]
+  load ::
+    (MonadIO m, MonadError LangchainError m) =>
+    loader ->
+    m [Document]
 
   -- | Load all documents and split their content
-  loadAndSplit
-    :: (MonadIO m, MonadError LangchainError m)
-    => loader
-    -> m [Text]
+  loadAndSplit ::
+    (MonadIO m, MonadError LangchainError m) =>
+    loader ->
+    m [Text]

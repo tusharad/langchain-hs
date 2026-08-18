@@ -71,7 +71,7 @@ instance (ChatModel model) => BaseMemory (EntityMemory model) where
       else
         let entityCtx =
               "Known Entities & Context:\n"
-                <> T.unlines [ "- " <> k <> ": " <> v | (k, v) <- Map.toList entities ]
+                <> T.unlines ["- " <> k <> ": " <> v | (k, v) <- Map.toList entities]
          in pure (systemMessage entityCtx : msgs)
 
   addMessage mem@EntityMemory {..} newMsg = do

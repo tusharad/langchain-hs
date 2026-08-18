@@ -84,20 +84,27 @@ data SQLiteCache = SQLiteCache
 -- | Construct a new SQLiteCache and create cache table
 newSQLiteCache :: MonadIO m => FilePath -> m SQLiteCache
 newSQLiteCache dbPath = liftIO $ do
-  _ <- (try $ withConnection dbPath $ \conn -> do
-    execute_
-      conn
-      "CREATE TABLE IF NOT EXISTS langchain_cache (\
-      \ cache_key TEXT PRIMARY KEY,\
-      \ response_json TEXT NOT NULL,\
-      \ created_at DATETIME DEFAULT CURRENT_TIMESTAMP\
-      \);") :: IO (Either SomeException ())
+  _ <-
+    ( try $ withConnection dbPath $ \conn -> do
+        execute_
+          conn
+          "CREATE TABLE IF NOT EXISTS langchain_cache (\
+          \ cache_key TEXT PRIMARY KEY,\
+          \ response_json TEXT NOT NULL,\
+          \ created_at DATETIME DEFAULT CURRENT_TIMESTAMP\
+          \);"
+    ) ::
+      IO (Either SomeException ())
   pure $ SQLiteCache dbPath
 
 instance CacheBackend SQLiteCache where
   getCache SQLiteCache {..} key = liftIO $ do
-    rowsRes <- (try $ withConnection sqliteCacheDbPath $ \conn -> do
-      query conn "SELECT response_json FROM langchain_cache WHERE cache_key = ?" (Only (TS.unpack key)) :: IO [Only String]) :: IO (Either SomeException [Only String])
+    rowsRes <-
+      ( try $ withConnection sqliteCacheDbPath $ \conn -> do
+          query conn "SELECT response_json FROM langchain_cache WHERE cache_key = ?" (Only (TS.unpack key)) ::
+            IO [Only String]
+      ) ::
+        IO (Either SomeException [Only String])
     case rowsRes of
       Right [Only jsonStr] ->
         let bs = LBS.fromStrict (TE.encodeUtf8 (TS.pack jsonStr))
@@ -106,16 +113,22 @@ instance CacheBackend SQLiteCache where
 
   putCache SQLiteCache {..} key msg = liftIO $ do
     let jsonStr = TS.unpack $ TE.decodeUtf8 $ LBS.toStrict (encode msg)
-    _ <- (try $ withConnection sqliteCacheDbPath $ \conn -> do
-      execute
-        conn
-        "INSERT OR REPLACE INTO langchain_cache (cache_key, response_json) VALUES (?, ?)"
-        (TS.unpack key, jsonStr)) :: IO (Either SomeException ())
+    _ <-
+      ( try $ withConnection sqliteCacheDbPath $ \conn -> do
+          execute
+            conn
+            "INSERT OR REPLACE INTO langchain_cache (cache_key, response_json) VALUES (?, ?)"
+            (TS.unpack key, jsonStr)
+      ) ::
+        IO (Either SomeException ())
     pure ()
 
   clearCache SQLiteCache {..} = liftIO $ do
-    _ <- (try $ withConnection sqliteCacheDbPath $ \conn -> do
-      execute_ conn "DELETE FROM langchain_cache;") :: IO (Either SomeException ())
+    _ <-
+      ( try $ withConnection sqliteCacheDbPath $ \conn -> do
+          execute_ conn "DELETE FROM langchain_cache;"
+      ) ::
+        IO (Either SomeException ())
     pure ()
 
 -- | ChatModel wrapper that provides transparent response caching

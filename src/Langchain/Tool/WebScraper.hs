@@ -21,7 +21,7 @@ module Langchain.Tool.WebScraper
 
 import Control.Exception (SomeException, try)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.Aeson (FromJSON, ToJSON, object, (.:?), (.=), Value (..))
+import Data.Aeson (FromJSON, ToJSON, Value (..), object, (.:?), (.=))
 import Data.Aeson.Types (parseEither)
 import qualified Data.ByteString.Lazy as LBS
 import Data.Maybe (listToMaybe)

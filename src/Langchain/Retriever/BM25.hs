@@ -86,7 +86,10 @@ newBM25IndexWithParams k1 b docs =
     addDocToInvertedIndex acc (docIdx, doc) =
       let tokens = tokenize (TL.toStrict (pageContent doc))
           tfs = foldl' (\m t -> Map.insertWith (+) t 1 m) Map.empty tokens
-       in Map.foldlWithKey' (\accM t count -> Map.insertWith Map.union t (Map.singleton docIdx count) accM) acc tfs
+       in Map.foldlWithKey'
+            (\accM t count -> Map.insertWith Map.union t (Map.singleton docIdx count) accM)
+            acc
+            tfs
 
 -- | Add new documents to an existing BM25 index
 addDocumentsBM25 :: [Document] -> BM25Index -> BM25Index

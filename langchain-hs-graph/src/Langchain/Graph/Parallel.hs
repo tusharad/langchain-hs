@@ -28,12 +28,12 @@ import Langchain.Core.Error (LangchainError)
 import Langchain.Graph.StateGraph
 
 -- | Construct a parallel composite node that executes worker actions concurrently
-parallelNode
-  :: MonadIO m
-  => NodeId
-  -> [s -> IO (Either LangchainError s)]
-  -> (s -> [s] -> s)
-  -> Node s m
+parallelNode ::
+  MonadIO m =>
+  NodeId ->
+  [s -> IO (Either LangchainError s)] ->
+  (s -> [s] -> s) ->
+  Node s m
 parallelNode name workerActions mergeFn =
   Node
     { nodeId = name
@@ -45,13 +45,13 @@ parallelNode name workerActions mergeFn =
     }
 
 -- | Helper to register a parallel execution step into a StateGraph
-addParallelNodes
-  :: MonadIO m
-  => NodeId
-  -> [s -> IO (Either LangchainError s)]
-  -> (s -> [s] -> s)
-  -> StateGraph s m
-  -> StateGraph s m
+addParallelNodes ::
+  MonadIO m =>
+  NodeId ->
+  [s -> IO (Either LangchainError s)] ->
+  (s -> [s] -> s) ->
+  StateGraph s m ->
+  StateGraph s m
 addParallelNodes name workerActions mergeFn graph =
   let pNode = parallelNode name workerActions mergeFn
    in addNode name (nodeAction pNode) graph

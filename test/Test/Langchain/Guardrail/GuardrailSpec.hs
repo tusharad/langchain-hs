@@ -26,7 +26,9 @@ tests =
         let rail = outputLengthGuardrail 20
         resPass <- runExceptT $ withGuardrails rail (\_ -> pure "Short answer") "query"
         resPass @?= Right "Short answer"
-        resFail <- runExceptT $ withGuardrails rail (\_ -> pure "This answer is way too long to pass the length limit.") "query"
+        resFail <-
+          runExceptT $
+            withGuardrails rail (\_ -> pure "This answer is way too long to pass the length limit.") "query"
         case resFail of
           Left _ -> pure ()
           Right _ -> assertFailure "Expected guardrail failure for long output"

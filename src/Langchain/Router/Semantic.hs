@@ -54,11 +54,11 @@ newSemanticRouter :: e -> [Route] -> Float -> SemanticRouter e
 newSemanticRouter = SemanticRouter
 
 -- | Route a query to the best matching route name if above threshold
-routeQuery
-  :: (Embeddings e, MonadIO m, MonadError LangchainError m)
-  => SemanticRouter e
-  -> Text
-  -> m (Maybe Text)
+routeQuery ::
+  (Embeddings e, MonadIO m, MonadError LangchainError m) =>
+  SemanticRouter e ->
+  Text ->
+  m (Maybe Text)
 routeQuery router query = do
   res <- routeQueryWithScore router query
   case res of
@@ -66,11 +66,11 @@ routeQuery router query = do
     Nothing -> pure Nothing
 
 -- | Route a query and return the best matching route name and similarity score
-routeQueryWithScore
-  :: (Embeddings e, MonadIO m, MonadError LangchainError m)
-  => SemanticRouter e
-  -> Text
-  -> m (Maybe (Text, Float))
+routeQueryWithScore ::
+  (Embeddings e, MonadIO m, MonadError LangchainError m) =>
+  SemanticRouter e ->
+  Text ->
+  m (Maybe (Text, Float))
 routeQueryWithScore SemanticRouter {..} query
   | null routerRoutes = pure Nothing
   | otherwise = do

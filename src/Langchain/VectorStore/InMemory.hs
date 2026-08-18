@@ -62,11 +62,11 @@ emptyInMemoryVectorStore :: m -> InMemory m
 emptyInMemoryVectorStore model = InMemory model Map.empty
 
 -- | Initialize store from documents using embeddings
-fromDocuments
-  :: (Embeddings m, MonadIO monad, MonadError LangchainError monad)
-  => m
-  -> [Document]
-  -> monad (InMemory m)
+fromDocuments ::
+  (Embeddings m, MonadIO monad, MonadError LangchainError monad) =>
+  m ->
+  [Document] ->
+  monad (InMemory m)
 fromDocuments model docs = do
   let vs = emptyInMemoryVectorStore model
   addDocuments vs docs

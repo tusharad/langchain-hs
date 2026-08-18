@@ -62,7 +62,8 @@ instance MonadIO m => Checkpointer MemoryCheckpointer m where
     case Map.lookup (threadId, nodeId) store of
       Nothing -> pure $ Right Nothing
       Just bytes -> case decode bytes of
-        Nothing -> pure $ Left $ internalError "Failed to decode state checkpoint" (Just "MemoryCheckpointer") Nothing
+        Nothing ->
+          pure $ Left $ internalError "Failed to decode state checkpoint" (Just "MemoryCheckpointer") Nothing
         Just s -> pure $ Right (Just s)
 
 -- | SQLite persistent checkpointer using sqlite-simple
@@ -74,7 +75,9 @@ newtype SQLiteCheckpointer = SQLiteCheckpointer
 newSQLiteCheckpointer :: MonadIO m => FilePath -> m SQLiteCheckpointer
 newSQLiteCheckpointer path = liftIO $ do
   conn <- open path
-  execute_ conn "CREATE TABLE IF NOT EXISTS checkpoints (thread_id TEXT, node_id TEXT, state TEXT, PRIMARY KEY (thread_id, node_id))"
+  execute_
+    conn
+    "CREATE TABLE IF NOT EXISTS checkpoints (thread_id TEXT, node_id TEXT, state TEXT, PRIMARY KEY (thread_id, node_id))"
   close conn
   pure $ SQLiteCheckpointer path
 
@@ -83,21 +86,31 @@ instance MonadIO m => Checkpointer SQLiteCheckpointer m where
     let stateTxt = TE.decodeUtf8 (BL.toStrict $ encode state)
     eRes <- try $ do
       conn <- open (dbFilePath cp)
-      execute conn "INSERT OR REPLACE INTO checkpoints (thread_id, node_id, state) VALUES (?, ?, ?)" (threadId, nodeId, stateTxt)
+      execute
+        conn
+        "INSERT OR REPLACE INTO checkpoints (thread_id, node_id, state) VALUES (?, ?, ?)"
+        (threadId, nodeId, stateTxt)
       close conn
     case eRes of
-      Left err -> pure $ Left $ internalError (T.pack $ show (err :: SQLError)) (Just "SQLiteCheckpointer") Nothing
+      Left err ->
+        pure $ Left $ internalError (T.pack $ show (err :: SQLError)) (Just "SQLiteCheckpointer") Nothing
       Right () -> pure $ Right ()
 
   loadCheckpoint cp threadId nodeId = liftIO $ do
     eRes <- try $ do
       conn <- open (dbFilePath cp)
-      rows <- query conn "SELECT state FROM checkpoints WHERE thread_id = ? AND node_id = ?" (threadId, nodeId) :: IO [[Text]]
+      rows <-
+        query conn "SELECT state FROM checkpoints WHERE thread_id = ? AND node_id = ?" (threadId, nodeId) ::
+          IO [[Text]]
       close conn
       pure rows
     case eRes of
-      Left err -> pure $ Left $ internalError (T.pack $ show (err :: SQLError)) (Just "SQLiteCheckpointer") Nothing
+      Left err ->
+        pure $ Left $ internalError (T.pack $ show (err :: SQLError)) (Just "SQLiteCheckpointer") Nothing
       Right [[stateTxt]] -> case decode (BL.fromStrict $ TE.encodeUtf8 stateTxt) of
-        Nothing -> pure $ Left $ internalError "Failed to decode SQLite checkpoint JSON" (Just "SQLiteCheckpointer") Nothing
+        Nothing ->
+          pure $
+            Left $
+              internalError "Failed to decode SQLite checkpoint JSON" (Just "SQLiteCheckpointer") Nothing
         Just s -> pure $ Right (Just s)
       _ -> pure $ Right Nothing

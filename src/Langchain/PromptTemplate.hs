@@ -68,7 +68,9 @@ interpolate vars = go
         (before, after) | T.null after -> Right before
         (before, after') ->
           case T.breakOn "}" (T.drop 1 after') of
-            (_, after'') | T.null after'' -> Left $ validationError "Unclosed brace in template" (Just "PromptTemplate") Nothing
+            (_, after'')
+              | T.null after'' ->
+                  Left $ validationError "Unclosed brace in template" (Just "PromptTemplate") Nothing
             (key, after''') ->
               let key' = T.strip key
                in case HM.lookup key' vars of
@@ -78,7 +80,8 @@ interpolate vars = go
                     Nothing -> Left $ validationError ("Missing variable: " <> key') (Just key') Nothing
 
 -- | Render few-shot template with additional variables
-renderFewShotPromptWithVars :: FewShotPromptTemplate -> HM.Map Text Text -> Either LangchainError Text
+renderFewShotPromptWithVars ::
+  FewShotPromptTemplate -> HM.Map Text Text -> Either LangchainError Text
 renderFewShotPromptWithVars template vars = do
   renderedBase <- renderFewShotPrompt template
   interpolate vars renderedBase

@@ -47,7 +47,8 @@ tests =
               mem <- newWindowBufferMemory 5 []
               let qaChain = newConversationalRetrievalQA model retriever mem
 
-              res <- runExceptT $ runConversationalRetrievalQA qaChain "What enables safe effect sequencing in Haskell?"
+              res <-
+                runExceptT $ runConversationalRetrievalQA qaChain "What enables safe effect sequencing in Haskell?"
               case res of
                 Left err -> assertFailure ("RAG QA failed: " ++ show err)
                 Right outcome -> do

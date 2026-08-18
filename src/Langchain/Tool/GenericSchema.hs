@@ -40,8 +40,8 @@ class DeriveToolSchema a where
   deriveToolSchema _ = deriveToolParametersSchema (Proxy :: Proxy a)
 
 -- | Derive OpenAI tool parameter schema object
-deriveToolParametersSchema
-  :: forall a. (Generic a, GToolRecordSchema (Rep a)) => Proxy a -> Value
+deriveToolParametersSchema ::
+  forall a. (Generic a, GToolRecordSchema (Rep a)) => Proxy a -> Value
 deriveToolParametersSchema _ =
   let (props, reqs) = gToolRecordSchema (Proxy :: Proxy (Rep a))
    in object

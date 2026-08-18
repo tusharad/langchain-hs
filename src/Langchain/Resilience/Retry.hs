@@ -50,11 +50,11 @@ defaultRetryPolicy =
     }
 
 -- | Execute an action with retry according to RetryPolicy on LangchainError
-withRetry
-  :: (MonadIO m, MonadError LangchainError m)
-  => RetryPolicy
-  -> m a
-  -> m a
+withRetry ::
+  (MonadIO m, MonadError LangchainError m) =>
+  RetryPolicy ->
+  m a ->
+  m a
 withRetry policy action = go (maxRetries policy) (baseDelayMicros policy)
   where
     go retriesLeft currentDelay =

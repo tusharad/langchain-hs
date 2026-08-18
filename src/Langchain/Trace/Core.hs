@@ -77,14 +77,14 @@ newTracer sessId = liftIO $ do
   pure $ Tracer sessId var
 
 -- | Record a step in the tracer
-recordStep
-  :: MonadIO m
-  => Tracer
-  -> ActionType
-  -> Text
-  -> Text
-  -> Int
-  -> m TraceStep
+recordStep ::
+  MonadIO m =>
+  Tracer ->
+  ActionType ->
+  Text ->
+  Text ->
+  Int ->
+  m TraceStep
 recordStep Tracer {..} actType input output duration = liftIO $ do
   now <- getCurrentTime
   atomically $ do

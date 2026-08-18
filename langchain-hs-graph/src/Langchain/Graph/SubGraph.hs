@@ -46,14 +46,14 @@ defaultSubGraphOptions =
     }
 
 -- | Embed a compiled sub-graph into a parent graph node with options
-embedSubGraphWithOptions
-  :: (MonadIO m, MonadError LangchainError m)
-  => NodeId
-  -> CompiledGraph subState m
-  -> SubGraphOptions
-  -> (parentState -> subState)
-  -> (parentState -> subState -> parentState)
-  -> Node parentState m
+embedSubGraphWithOptions ::
+  (MonadIO m, MonadError LangchainError m) =>
+  NodeId ->
+  CompiledGraph subState m ->
+  SubGraphOptions ->
+  (parentState -> subState) ->
+  (parentState -> subState -> parentState) ->
+  Node parentState m
 embedSubGraphWithOptions name subGraph SubGraphOptions {..} toSubState mergeState =
   Node
     { nodeId = name

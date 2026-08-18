@@ -69,17 +69,23 @@ newVotingClassifier models prompt =
     }
 
 -- | Execute the ensemble vote on a given input text
-runVotingClassification
-  :: (ChatModel model, MonadIO m, MonadError LangchainError m)
-  => VotingClassifier model
-  -> Text
-  -> m (Text, [VoteRecord])
+runVotingClassification ::
+  (ChatModel model, MonadIO m, MonadError LangchainError m) =>
+  VotingClassifier model ->
+  Text ->
+  m (Text, [VoteRecord])
 runVotingClassification VotingClassifier {..} input = do
   if null voterModels
-    then throwError $ agentError "Voting classifier requires at least one voter" (Just "runVotingClassification") Nothing
+    then
+      throwError $
+        agentError "Voting classifier requires at least one voter" (Just "runVotingClassification") Nothing
     else do
       voteResults <- flip mapM voterModels $ \(name, model) -> do
-        let p = votePrompt <> "\n\nInput to classify:\n" <> input <> "\n\nOutput ONLY the chosen classification label:"
+        let p =
+              votePrompt
+                <> "\n\nInput to classify:\n"
+                <> input
+                <> "\n\nOutput ONLY the chosen classification label:"
         resp <- invoke model [userMessage p] Nothing
         let choice = T.strip (extractMessageText resp)
         pure $ VoteRecord name choice

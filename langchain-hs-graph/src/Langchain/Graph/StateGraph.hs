@@ -103,7 +103,8 @@ addEdge fromNode toNode g =
   g {graphEdges = Map.insert fromNode (StaticEdge toNode) (graphEdges g)}
 
 -- | Add a dynamic conditional transition edge
-addConditionalEdge :: NodeId -> (s -> m (Either LangchainError NodeId)) -> StateGraph s m -> StateGraph s m
+addConditionalEdge ::
+  NodeId -> (s -> m (Either LangchainError NodeId)) -> StateGraph s m -> StateGraph s m
 addConditionalEdge fromNode condFn g =
   g {graphEdges = Map.insert fromNode (ConditionalEdge condFn) (graphEdges g)}
 
@@ -121,12 +122,12 @@ compileGraph StateGraph {..} =
           }
 
 -- | Execute a CompiledGraph from start node or specified currentId to endNodeId
-runGraph
-  :: (MonadIO m, MonadError LangchainError m)
-  => CompiledGraph s m
-  -> NodeId
-  -> s
-  -> m s
+runGraph ::
+  (MonadIO m, MonadError LangchainError m) =>
+  CompiledGraph s m ->
+  NodeId ->
+  s ->
+  m s
 runGraph CompiledGraph {..} currentId state
   | currentId == endNodeId = pure state
   | otherwise = case Map.lookup currentId compiledNodes of
@@ -151,7 +152,9 @@ runGraph CompiledGraph {..} currentId state
           case eNextId of
             Left err -> throwError err
             Right nextId -> runGraph CompiledGraph {..} nextId state
-        Nothing -> throwError $ internalError ("Node not found in compiled graph: " <> currentId) (Just currentId) Nothing
+        Nothing ->
+          throwError $
+            internalError ("Node not found in compiled graph: " <> currentId) (Just currentId) Nothing
 
 -- | Standard pure reducer concatenating Message lists
 appendMessagesReducer :: StateReducer [Message]

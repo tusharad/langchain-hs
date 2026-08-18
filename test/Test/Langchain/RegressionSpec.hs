@@ -75,7 +75,9 @@ tests =
           Right msgs -> do
             assertBool "Contains system message" (any (\m -> messageRole m == System) msgs)
     , testCase "regression_webscraper_invalid_url: Fails with structured ToolError" $ do
-        res <- toolExecute webScraperTool (object ["url" .= ("invalid-url-protocol" :: Text)]) :: IO (Either LangchainError Text)
+        res <-
+          toolExecute webScraperTool (object ["url" .= ("invalid-url-protocol" :: Text)]) ::
+            IO (Either LangchainError Text)
         case res of
           Left err -> assertBool "Error is ToolError" (case err of ToolError {} -> True; _ -> False)
           Right _ -> assertFailure "Expected tool error for invalid URL"

@@ -63,7 +63,8 @@ tests =
                     "Examples of {type}:\nInput: Hello\nOutput: Bonjour ### Input: Goodbye\nOutput: Au revoir\nNow translate: {query}"
         , testCase "renderFewShotPromptWithVars interpolates full template" $ do
             let inputVars = HM.fromList [("type", "Spanish"), ("query", "Thank you")]
-                expected = "Examples of Spanish:\nInput: Hello\nOutput: Bonjour\n\nInput: Goodbye\nOutput: Au revoir\nNow translate: Thank you"
+                expected =
+                  "Examples of Spanish:\nInput: Hello\nOutput: Bonjour\n\nInput: Goodbye\nOutput: Au revoir\nNow translate: Thank you"
             renderFewShotPromptWithVars fewShotTemplate inputVars @?= Right expected
         ]
     ]

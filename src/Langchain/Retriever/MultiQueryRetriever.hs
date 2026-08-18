@@ -100,11 +100,11 @@ newMultiQueryRetriever r m =
     }
 
 -- | Create retriever with custom configuration
-newMultiQueryRetrieverWithConfig
-  :: a
-  -> model
-  -> MultiQueryRetrieverConfig
-  -> MultiQueryRetriever a model
+newMultiQueryRetrieverWithConfig ::
+  a ->
+  model ->
+  MultiQueryRetrieverConfig ->
+  MultiQueryRetriever a model
 newMultiQueryRetrieverWithConfig r m c =
   MultiQueryRetriever
     { retriever = r
@@ -113,14 +113,14 @@ newMultiQueryRetrieverWithConfig r m c =
     }
 
 -- | Generate multiple query variants using ChatModel
-generateQueries
-  :: (ChatModel model, MonadIO m, MonadError LangchainError m)
-  => model
-  -> QueryGenerationPrompt
-  -> Text
-  -> Int
-  -> Bool
-  -> m [Text]
+generateQueries ::
+  (ChatModel model, MonadIO m, MonadError LangchainError m) =>
+  model ->
+  QueryGenerationPrompt ->
+  Text ->
+  Int ->
+  Bool ->
+  m [Text]
 generateQueries mdl (QueryGenerationPrompt promptTemplate) query n includeOriginal = do
   let vars = HM.fromList [("query", query), ("num_queries", T.pack $ show n)]
   case renderPrompt promptTemplate vars of
@@ -158,5 +158,10 @@ instance (Retriever a, ChatModel model) => Retriever (MultiQueryRetriever a mode
     docLists <- mapM (getRelevantDocuments baseRetriever) queries
     let combined = combineDocuments docLists
     if null combined
-      then throwError $ vectorStoreError "No valid results returned from any query variant" (Just "MultiQueryRetriever") Nothing
+      then
+        throwError $
+          vectorStoreError
+            "No valid results returned from any query variant"
+            (Just "MultiQueryRetriever")
+            Nothing
       else pure combined

@@ -78,11 +78,15 @@ outputLengthGuardrail maxLen =
     , validateOutput = \out ->
         if T.length out <= maxLen
           then pure GuardrailPass
-          else pure $ GuardrailFail ("Output length (" <> T.pack (show (T.length out)) <> ") exceeds limit of " <> T.pack (show maxLen))
+          else
+            pure $
+              GuardrailFail
+                ("Output length (" <> T.pack (show (T.length out)) <> ") exceeds limit of " <> T.pack (show maxLen))
     }
 
 -- | LLM-based topic relevance guardrail
-topicGuardrail :: (ChatModel model, MonadIO m, MonadError LangchainError m) => model -> Text -> Guardrail m
+topicGuardrail ::
+  (ChatModel model, MonadIO m, MonadError LangchainError m) => model -> Text -> Guardrail m
 topicGuardrail model allowedTopic =
   Guardrail
     { guardrailName = "TopicRestriction"
@@ -121,12 +125,12 @@ composeGuardrails rails =
         failRes -> pure failRes
 
 -- | Execute an action wrapped by input and output guardrails
-withGuardrails
-  :: (MonadIO m, MonadError LangchainError m)
-  => Guardrail m
-  -> (Text -> m Text)
-  -> Text
-  -> m Text
+withGuardrails ::
+  (MonadIO m, MonadError LangchainError m) =>
+  Guardrail m ->
+  (Text -> m Text) ->
+  Text ->
+  m Text
 withGuardrails rail action input = do
   inRes <- validateInput rail input
   case inRes of

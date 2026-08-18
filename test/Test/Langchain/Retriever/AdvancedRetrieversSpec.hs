@@ -57,7 +57,9 @@ tests =
           Left err -> assertFailure ("ParentDocumentRetriever failed: " ++ show err)
           Right docs -> do
             assertBool "Returns at least one parent document" (not $ null docs)
-            assertBool "Contains parent 1 content" ("Large Parent Document 1" `TL.isInfixOf` pageContent (head docs))
+            assertBool
+              "Contains parent 1 content"
+              ("Large Parent Document 1" `TL.isInfixOf` pageContent (head docs))
     ]
 
 newtype MockBaseRetriever = MockBaseRetriever [Document]

@@ -43,11 +43,11 @@ newSequentialChain :: [ChainStep m] -> SequentialChain m
 newSequentialChain = SequentialChain
 
 -- | Execute sequential chain passing and accumulating variables through all steps
-runSequentialChain
-  :: (MonadIO m, MonadError LangchainError m)
-  => SequentialChain m
-  -> Map Text Text
-  -> m (Map Text Text)
+runSequentialChain ::
+  (MonadIO m, MonadError LangchainError m) =>
+  SequentialChain m ->
+  Map Text Text ->
+  m (Map Text Text)
 runSequentialChain SequentialChain {..} initVars = go chainSteps initVars
   where
     go [] vars = pure vars

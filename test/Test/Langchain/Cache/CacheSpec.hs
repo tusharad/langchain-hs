@@ -3,7 +3,7 @@
 
 module Test.Langchain.Cache.CacheSpec (tests) where
 
-import Control.Concurrent.STM (newTVarIO, readTVarIO, writeTVar, atomically, modifyTVar')
+import Control.Concurrent.STM (atomically, modifyTVar', newTVarIO, readTVarIO, writeTVar)
 import Control.Monad.Except (runExceptT)
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.Text as T

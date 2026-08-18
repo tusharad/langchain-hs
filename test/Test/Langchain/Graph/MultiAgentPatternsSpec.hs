@@ -18,8 +18,13 @@ tests =
   testGroup
     "Langchain.Graph.MultiAgentPatternsSpec"
     [ testCase "Debate session runs rounds and achieves consensus" $ do
-        let debaterA = Debater "Proponent" "Advocates for pure functions" (newMockModel "Purity eliminates side effects.")
-            debaterB = Debater "Opponent" "Advocates for simplicity" (newMockModel "Purity requires explicit monad stacks.")
+        let debaterA =
+              Debater "Proponent" "Advocates for pure functions" (newMockModel "Purity eliminates side effects.")
+            debaterB =
+              Debater
+                "Opponent"
+                "Advocates for simplicity"
+                (newMockModel "Purity requires explicit monad stacks.")
             moderator = newMockModel "CONVERGED: Pure functions with clear monad boundaries provide optimal safety."
             cfg = defaultDebateConfig "Should code be purely functional?"
         res <- runExceptT $ runDebate cfg [debaterA, debaterB] moderator

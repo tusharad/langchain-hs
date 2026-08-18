@@ -113,7 +113,7 @@ updateHeaderMap rules prefix name title curMap =
       -- keep only headers with depth < prefixDepth
       filtered =
         Map.filterWithKey
-          (\k _ -> case lookupPrefixKey rules k of
+          ( \k _ -> case lookupPrefixKey rules k of
               Just p -> T.length p < prefixDepth
               Nothing -> True
           )

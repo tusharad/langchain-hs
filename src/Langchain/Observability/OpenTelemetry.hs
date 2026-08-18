@@ -96,14 +96,14 @@ getSpans :: MonadIO m => OTelTracer -> m [Span]
 getSpans OTelTracer {..} = liftIO $ readTVarIO tracerSpansVar
 
 -- | Start a new OpenTelemetry span
-startSpan
-  :: MonadIO m
-  => OTelTracer
-  -> Text
-  -> Maybe Text
-  -> SpanKind
-  -> Map Text Text
-  -> m Span
+startSpan ::
+  MonadIO m =>
+  OTelTracer ->
+  Text ->
+  Maybe Text ->
+  SpanKind ->
+  Map Text Text ->
+  m Span
 startSpan OTelTracer {..} name parentId kind attrs = liftIO $ do
   now <- getCurrentTime
   randSpan <- randomRIO (10000000 :: Integer, 99999999 :: Integer)
@@ -141,20 +141,21 @@ endSpan OTelTracer {..} targetSpanId status = liftIO $ do
       | otherwise = sp
 
 -- | Wrap a monadic computation within an OpenTelemetry span
-withSpan
-  :: (MonadIO m, MonadError LangchainError m)
-  => OTelTracer
-  -> Text
-  -> Maybe Text
-  -> SpanKind
-  -> Map Text Text
-  -> m a
-  -> m a
+withSpan ::
+  (MonadIO m, MonadError LangchainError m) =>
+  OTelTracer ->
+  Text ->
+  Maybe Text ->
+  SpanKind ->
+  Map Text Text ->
+  m a ->
+  m a
 withSpan tracer name parentId kind attrs action = do
   sp <- startSpan tracer name parentId kind attrs
-  res <- action `catchError` \err -> do
-    endSpan tracer (spanId sp) (StatusError (T.pack (show err)))
-    throwError err
+  res <-
+    action `catchError` \err -> do
+      endSpan tracer (spanId sp) (StatusError (T.pack (show err)))
+      throwError err
   endSpan tracer (spanId sp) StatusOk
   pure res
 

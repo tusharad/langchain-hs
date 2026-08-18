@@ -50,9 +50,24 @@ validateLangchainConfig :: LangchainConfig -> ValidationResult
 validateLangchainConfig LangchainConfig {..} =
   let issues =
         concat
-          [ [ConfigIssue "defaultModelName" "Model name cannot be empty" "Specify a valid model name such as 'qwen2.5:7b' or 'gpt-4o'" | T.null (T.strip defaultModelName)]
-          , [ConfigIssue "defaultTimeoutSeconds" "Timeout must be between 1 and 3600 seconds" "Set defaultTimeoutSeconds to a reasonable duration, e.g. 60" | defaultTimeoutSeconds < 1 || defaultTimeoutSeconds > 3600]
-          , [ConfigIssue "maxRetries" "maxRetries cannot be negative" "Set maxRetries to 0 or a positive integer (e.g. 3)" | maxRetries < 0]
+          [ [ ConfigIssue
+                "defaultModelName"
+                "Model name cannot be empty"
+                "Specify a valid model name such as 'qwen2.5:7b' or 'gpt-4o'"
+            | T.null (T.strip defaultModelName)
+            ]
+          , [ ConfigIssue
+                "defaultTimeoutSeconds"
+                "Timeout must be between 1 and 3600 seconds"
+                "Set defaultTimeoutSeconds to a reasonable duration, e.g. 60"
+            | defaultTimeoutSeconds < 1 || defaultTimeoutSeconds > 3600
+            ]
+          , [ ConfigIssue
+                "maxRetries"
+                "maxRetries cannot be negative"
+                "Set maxRetries to 0 or a positive integer (e.g. 3)"
+            | maxRetries < 0
+            ]
           ]
    in if null issues
         then ConfigValid
@@ -65,4 +80,8 @@ assertValidConfig cfg = case validateLangchainConfig cfg of
   ConfigInvalid issues ->
     let errorDetails =
           T.intercalate "; " [issueField iss <> ": " <> issueDescription iss | iss <- issues]
-     in throwError $ configurationError ("Invalid Langchain configuration: " <> errorDetails) (Just "validateConfig") Nothing
+     in throwError $
+          configurationError
+            ("Invalid Langchain configuration: " <> errorDetails)
+            (Just "validateConfig")
+            Nothing

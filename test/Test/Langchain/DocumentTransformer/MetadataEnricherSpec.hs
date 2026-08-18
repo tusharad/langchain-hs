@@ -16,7 +16,11 @@ tests =
   testGroup
     "Langchain.DocumentTransformer.MetadataEnricherSpec"
     [ testCase "enrichDocumentMetadata calculates word, char, and token statistics" $ do
-        let doc = Document {pageContent = "Haskell is a purely functional programming language.", metadata = Map.empty}
+        let doc =
+              Document
+                { pageContent = "Haskell is a purely functional programming language."
+                , metadata = Map.empty
+                }
             enriched = enrichDocumentMetadata doc
         Map.member "word_count" (metadata enriched) @?= True
         Map.member "char_count" (metadata enriched) @?= True

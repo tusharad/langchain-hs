@@ -57,11 +57,11 @@ data ConversationalRetrievalQA model retriever memory = ConversationalRetrievalQ
   }
 
 -- | Construct a new ConversationalRetrievalQA chain
-newConversationalRetrievalQA
-  :: model
-  -> retriever
-  -> memory
-  -> ConversationalRetrievalQA model retriever memory
+newConversationalRetrievalQA ::
+  model ->
+  retriever ->
+  memory ->
+  ConversationalRetrievalQA model retriever memory
 newConversationalRetrievalQA model retriever memory =
   ConversationalRetrievalQA
     { convQAModel = model
@@ -71,11 +71,11 @@ newConversationalRetrievalQA model retriever memory =
     }
 
 -- | Execute one conversational QA turn
-runConversationalRetrievalQA
-  :: (ChatModel model, Retriever retriever, BaseMemory memory, MonadIO m, MonadError LangchainError m)
-  => ConversationalRetrievalQA model retriever memory
-  -> Text
-  -> m ConversationalQAResult
+runConversationalRetrievalQA ::
+  (ChatModel model, Retriever retriever, BaseMemory memory, MonadIO m, MonadError LangchainError m) =>
+  ConversationalRetrievalQA model retriever memory ->
+  Text ->
+  m ConversationalQAResult
 runConversationalRetrievalQA ConversationalRetrievalQA {..} userQuery = do
   addUserMessage convQAMemory userQuery
   history <- messages convQAMemory

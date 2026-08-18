@@ -77,9 +77,11 @@ data Role
 -- | Structured tool call from an LLM response.
 data ToolCall = ToolCall
   { toolCallId :: Text
-  , toolCallType :: Text -- ^ Always "function" for current providers
+  , toolCallType :: Text
+  -- ^ Always "function" for current providers
   , toolCallName :: Text
-  , toolCallArguments :: Value -- ^ Parsed JSON Value arguments
+  , toolCallArguments :: Value
+  -- ^ Parsed JSON Value arguments
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON, NFData)
 
@@ -89,7 +91,8 @@ data Message = Message
   , messageContents :: NonEmpty ContentBlock
   , messageName :: Maybe Text
   , messageToolCalls :: Maybe [ToolCall]
-  , messageToolId :: Maybe Text -- ^ Associated tool call ID for Tool role
+  , messageToolId :: Maybe Text
+  -- ^ Associated tool call ID for Tool role
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON, NFData)
 

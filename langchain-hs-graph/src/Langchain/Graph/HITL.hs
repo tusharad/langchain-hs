@@ -42,13 +42,13 @@ isHITLInterrupt err =
         else Nothing
 
 -- | Create a Human-in-the-Loop Node that saves a checkpoint and interrupts execution for human review
-hitlNode
-  :: (Checkpointer cp m, ToJSON s, MonadIO m)
-  => cp
-  -> Text
-  -> NodeId
-  -> (s -> m (Either LangchainError s))
-  -> Node s m
+hitlNode ::
+  (Checkpointer cp m, ToJSON s, MonadIO m) =>
+  cp ->
+  Text ->
+  NodeId ->
+  (s -> m (Either LangchainError s)) ->
+  Node s m
 hitlNode cp threadId name innerAction =
   Node
     { nodeId = name
@@ -58,20 +58,25 @@ hitlNode cp threadId name innerAction =
     }
 
 -- | Resume an interrupted graph execution after human modification of checkpoint state
-resumeGraph
-  :: (Checkpointer cp m, FromJSON s, ToJSON s, MonadIO m, MonadError LangchainError m)
-  => CompiledGraph s m
-  -> cp
-  -> Text
-  -> NodeId
-  -> NodeId
-  -> (s -> s)
-  -> m s
+resumeGraph ::
+  (Checkpointer cp m, FromJSON s, ToJSON s, MonadIO m, MonadError LangchainError m) =>
+  CompiledGraph s m ->
+  cp ->
+  Text ->
+  NodeId ->
+  NodeId ->
+  (s -> s) ->
+  m s
 resumeGraph compiledGraph cp threadId checkpointNodeId resumeStartNodeId modifier = do
   mbState <- loadCheckpoint cp threadId checkpointNodeId
   case mbState of
     Left err -> throwError err
-    Right Nothing -> throwError $ agentError ("No checkpoint found to resume at node: " <> checkpointNodeId) (Just "resumeGraph") Nothing
+    Right Nothing ->
+      throwError $
+        agentError
+          ("No checkpoint found to resume at node: " <> checkpointNodeId)
+          (Just "resumeGraph")
+          Nothing
     Right (Just savedState) -> do
       let modifiedState = modifier savedState
       _ <- saveCheckpoint cp threadId resumeStartNodeId modifiedState

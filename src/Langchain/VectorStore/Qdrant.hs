@@ -22,7 +22,7 @@ module Langchain.VectorStore.Qdrant
 import Control.Exception (SomeException, try)
 import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.Aeson (Value (..), decode, encode, object, (.:), (.:?), (.=), (.!=))
+import Data.Aeson (Value (..), decode, encode, object, (.!=), (.:), (.:?), (.=))
 import qualified Data.Aeson.Key as Key
 import qualified Data.Aeson.KeyMap as KeyMap
 import Data.Aeson.Types (parseEither)

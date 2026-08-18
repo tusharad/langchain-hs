@@ -51,12 +51,14 @@ data MapReduceChain model = MapReduceChain
 -- | Default map prompt for individual document summarization
 defaultMapPrompt :: PromptTemplate
 defaultMapPrompt =
-  PromptTemplate "Summarize the key information in the following document concisely:\n\n{document}\n\nSummary:"
+  PromptTemplate
+    "Summarize the key information in the following document concisely:\n\n{document}\n\nSummary:"
 
 -- | Default reduce prompt for synthesizing all document summaries
 defaultReducePrompt :: PromptTemplate
 defaultReducePrompt =
-  PromptTemplate "Combine and synthesize the following summaries into a comprehensive final response:\n\n{summaries}\n\nFinal Synthesis:"
+  PromptTemplate
+    "Combine and synthesize the following summaries into a comprehensive final response:\n\n{summaries}\n\nFinal Synthesis:"
 
 -- | Construct a new MapReduceChain
 newMapReduceChain :: model -> MapReduceChain model
@@ -70,12 +72,12 @@ newMapReduceChain m =
     }
 
 -- | Execute MapReduceChain across documents
-runMapReduceChain
-  :: (ChatModel model, MonadIO m, MonadError LangchainError m)
-  => MapReduceChain model
-  -> [Document]
-  -> Map Text Text
-  -> m Message
+runMapReduceChain ::
+  (ChatModel model, MonadIO m, MonadError LangchainError m) =>
+  MapReduceChain model ->
+  [Document] ->
+  Map Text Text ->
+  m Message
 runMapReduceChain MapReduceChain {..} docs baseVars = do
   -- Phase 1: Map over each document
   summaries <- flip mapM docs $ \doc -> do

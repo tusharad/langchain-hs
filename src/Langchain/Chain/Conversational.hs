@@ -44,11 +44,11 @@ newConversationalChain :: model -> memory -> Maybe Text -> ConversationalChain m
 newConversationalChain = ConversationalChain
 
 -- | Execute one conversational turn: records user input, generates response, stores AI response
-runConversationalChain
-  :: (ChatModel model, BaseMemory memory, MonadIO m, MonadError LangchainError m)
-  => ConversationalChain model memory
-  -> Text
-  -> m Text
+runConversationalChain ::
+  (ChatModel model, BaseMemory memory, MonadIO m, MonadError LangchainError m) =>
+  ConversationalChain model memory ->
+  Text ->
+  m Text
 runConversationalChain ConversationalChain {..} userTxt = do
   addUserMessage convMemory userTxt
   history <- messages convMemory

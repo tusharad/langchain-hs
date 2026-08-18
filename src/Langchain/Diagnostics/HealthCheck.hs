@@ -71,10 +71,16 @@ checkOllamaHealth baseUrl = liftIO $ do
   end <- getCurrentTime
   let latMs = round (diffUTCTime end start * 1000)
   case eResp of
-    Right resp | getResponseStatusCode resp == 200 ->
-      pure $ ComponentHealth "Ollama" Healthy latMs "Ollama API is responsive"
+    Right resp
+      | getResponseStatusCode resp == 200 ->
+          pure $ ComponentHealth "Ollama" Healthy latMs "Ollama API is responsive"
     Right resp ->
-      pure $ ComponentHealth "Ollama" Degraded latMs ("Ollama returned status " <> T.pack (show (getResponseStatusCode resp)))
+      pure $
+        ComponentHealth
+          "Ollama"
+          Degraded
+          latMs
+          ("Ollama returned status " <> T.pack (show (getResponseStatusCode resp)))
     Left err ->
       pure $ ComponentHealth "Ollama" Unhealthy latMs ("Ollama unreachable: " <> T.pack (show err))
 
@@ -92,7 +98,12 @@ checkSqliteHealth dbPath = liftIO $ do
     Right _ ->
       pure $ ComponentHealth ("SQLite (" <> T.pack dbPath <> ")") Degraded latMs "Unexpected query result"
     Left (err :: SomeException) ->
-      pure $ ComponentHealth ("SQLite (" <> T.pack dbPath <> ")") Unhealthy latMs ("SQLite error: " <> T.pack (show err))
+      pure $
+        ComponentHealth
+          ("SQLite (" <> T.pack dbPath <> ")")
+          Unhealthy
+          latMs
+          ("SQLite error: " <> T.pack (show err))
 
 -- | Run a complete battery of health checks and produce a consolidated HealthReport
 runFullHealthCheck :: MonadIO m => LangchainConfig -> Maybe FilePath -> m HealthReport

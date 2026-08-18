@@ -118,7 +118,11 @@ instance ChatModel Anthropic where
               , Just $ "messages" .= map messageToAnthropic nonSystemMsgs
               , if T.null systemTxt then Nothing else Just ("system" .= systemTxt)
               , if enableThinking provider
-                  then Just ("thinking" .= object ["type" .= ("enabled" :: Text), "budget_tokens" .= fromMaybe 1024 (thinkingBudget provider)])
+                  then
+                    Just
+                      ( "thinking"
+                          .= object ["type" .= ("enabled" :: Text), "budget_tokens" .= fromMaybe 1024 (thinkingBudget provider)]
+                      )
                   else Nothing
               ]
 

@@ -61,7 +61,9 @@ instance BaseMemory TokenBufferMemory where
   addMessage (TokenBufferMemory maxT tv) newMsg = do
     let newMsgTokens = countTokens [newMsg]
     if newMsgTokens > maxT
-      then throwError $ memoryError "New message exceeds maximum token limit" (Just "TokenBufferMemory") Nothing
+      then
+        throwError $
+          memoryError "New message exceeds maximum token limit" (Just "TokenBufferMemory") Nothing
       else liftIO $ atomically $ modifyTVar' tv $ \currMsgs ->
         trimToLimit currMsgs newMsgTokens [newMsg]
     where

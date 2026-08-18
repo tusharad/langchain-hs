@@ -57,7 +57,9 @@ newSqlDatabaseChain model dbPath =
 getSqliteSchema :: FilePath -> IO Text
 getSqliteSchema dbPath = do
   res <- try $ withConnection dbPath $ \conn -> do
-    rows <- query_ conn "SELECT sql FROM sqlite_master WHERE type='table' AND sql IS NOT NULL;" :: IO [Only String]
+    rows <-
+      query_ conn "SELECT sql FROM sqlite_master WHERE type='table' AND sql IS NOT NULL;" ::
+        IO [Only String]
     pure $ T.unlines (map (T.pack . fromOnly) rows)
   case res of
     Right s -> pure s
@@ -72,19 +74,20 @@ cleanGeneratedSql raw =
           let after = T.drop 6 stripped
            in case T.breakOn "```" after of
                 (sqlPart, _) -> T.strip sqlPart
-        else if "```" `T.isPrefixOf` stripped
-          then
-            let after = T.drop 3 stripped
-             in case T.breakOn "```" after of
-                  (sqlPart, _) -> T.strip sqlPart
-          else stripped
+        else
+          if "```" `T.isPrefixOf` stripped
+            then
+              let after = T.drop 3 stripped
+               in case T.breakOn "```" after of
+                    (sqlPart, _) -> T.strip sqlPart
+            else stripped
 
 -- | Run natural language query against database
-runSqlDatabaseChain
-  :: (ChatModel model, MonadIO m, MonadError LangchainError m)
-  => SqlDatabaseChain model
-  -> Text
-  -> m (Text, Text) -- (Generated SQL, Synthesized Answer)
+runSqlDatabaseChain ::
+  (ChatModel model, MonadIO m, MonadError LangchainError m) =>
+  SqlDatabaseChain model ->
+  Text ->
+  m (Text, Text) -- (Generated SQL, Synthesized Answer)
 runSqlDatabaseChain SqlDatabaseChain {..} nlQuery = do
   schemaTxt <- liftIO $ getSqliteSchema sqlDbPath
   let prompt =

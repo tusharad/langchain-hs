@@ -65,12 +65,12 @@ newStuffDocumentsChain m p docVar =
     }
 
 -- | Execute StuffDocumentsChain with documents and template variables
-runStuffDocumentsChain
-  :: (ChatModel model, MonadIO m, MonadError LangchainError m)
-  => StuffDocumentsChain model
-  -> [Document]
-  -> Map Text Text
-  -> m Message
+runStuffDocumentsChain ::
+  (ChatModel model, MonadIO m, MonadError LangchainError m) =>
+  StuffDocumentsChain model ->
+  [Document] ->
+  Map Text Text ->
+  m Message
 runStuffDocumentsChain StuffDocumentsChain {..} docs vars = do
   let combinedDocs = T.intercalate documentSeparator $ map (TL.toStrict . pageContent) docs
       allVars = Map.insert documentVariableName combinedDocs vars
