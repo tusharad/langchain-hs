@@ -14,12 +14,14 @@ module Langchain.PromptTemplate.Chat.ChatPromptTemplate
   , ChatPromptMessage
   , ChatPromptInput (..)
   , ChatPromptValue (..)
+  , PartialValue (..)
   , fromTemplate
   , fromTemplateWithOptions
   , fromMessages
   , message
   , templateMessage
   , messagesPlaceholder
+  , messagesPlaceholderWithOptions
   , append
   , extend
   , partial
@@ -56,7 +58,7 @@ data ChatPromptMessage
   | SystemMessagePrompt PromptTemplate.PromptTemplate
   | AIMessagePrompt PromptTemplate.PromptTemplate
   | ChatMessagePrompt Role PromptTemplate.PromptTemplate
-  | MessagesPlaceholderPrompt MessagesPlaceholder
+  | MessagesPlaceholderPrompt MessagesPlaceholder (Maybe [Message])
   | StaticMessage Message
   deriving (Show, Eq)
 
@@ -74,6 +76,12 @@ newtype ChatPromptValue = ChatPromptValue
 data ChatPromptInput
   = ChatPromptVariables (Map.Map Text Text)
   | ChatPromptMessageList [Message]
+  | ChatPromptInputs (Map.Map Text Text) (Map.Map Text [Message])
+  deriving (Show, Eq)
+
+data PartialValue
+  = PartialText Text
+  | PartialMessages [Message]
   deriving (Show, Eq)
 
 fromTemplate :: Text -> ChatPromptTemplate
@@ -101,7 +109,12 @@ templateMessage :: Role -> Text -> ChatPromptMessage
 templateMessage role = ChatMessagePrompt role . PromptTemplate.fromTemplate
 
 messagesPlaceholder :: Text -> ChatPromptMessage
-messagesPlaceholder = MessagesPlaceholderPrompt . MessagesPlaceholder.messagesPlaceholder
+messagesPlaceholder name = messagesPlaceholderWithOptions $ MessagesPlaceholder.messagesPlaceholderOptions name
+
+messagesPlaceholderWithOptions ::
+  MessagesPlaceholder.MessagesPlaceholderOptions -> ChatPromptMessage
+messagesPlaceholderWithOptions options =
+  MessagesPlaceholderPrompt (MessagesPlaceholder.messagesPlaceholderWithOptions options) Nothing
 
 append :: ChatPromptTemplate -> ChatPromptMessage -> ChatPromptTemplate
 append chatPromptTemplate promptMessage = extend chatPromptTemplate [promptMessage]
@@ -110,21 +123,23 @@ extend :: ChatPromptTemplate -> [ChatPromptMessage] -> ChatPromptTemplate
 extend ChatPromptTemplate {messages = promptMessages} newMessages =
   fromMessages $ promptMessages <> newMessages
 
-partial :: ChatPromptTemplate -> Map.Map Text Text -> ChatPromptTemplate
+partial :: ChatPromptTemplate -> Map.Map Text PartialValue -> ChatPromptTemplate
 partial ChatPromptTemplate {messages = promptMessages} partialVariables =
   fromMessages $ map (`partialMessage` partialVariables) promptMessages
 
 formatPrompt :: ChatPromptTemplate -> Map.Map Text Text -> Either LangchainError ChatPromptValue
 formatPrompt ChatPromptTemplate {messages = promptMessages} variables =
-  ChatPromptValue . concat <$> traverse (`formatMessage` variables) promptMessages
+  formatPromptWithMessages promptMessages variables Map.empty
 
 invoke :: ChatPromptTemplate -> ChatPromptInput -> Either LangchainError ChatPromptValue
 invoke chatPromptTemplate (ChatPromptVariables variables) = formatPrompt chatPromptTemplate variables
-invoke ChatPromptTemplate {messages = [MessagesPlaceholderPrompt placeholder]} (ChatPromptMessageList promptMessages) =
+invoke ChatPromptTemplate {messages = [MessagesPlaceholderPrompt placeholder _]} (ChatPromptMessageList promptMessages) =
   ChatPromptValue
     <$> formatMessages
       placeholder
-      (Map.singleton (variableName placeholder) promptMessages)
+      (Map.singleton (placeholderVariableName placeholder) promptMessages)
+invoke ChatPromptTemplate {messages = promptMessages} (ChatPromptInputs variables messageVariables) =
+  formatPromptWithMessages promptMessages variables messageVariables
 invoke _ (ChatPromptMessageList _) =
   Left $
     validationError
@@ -153,25 +168,38 @@ messageInputVariables
         { variableName = variableName'
         , optional = optional'
         }
+      storedMessages
     )
-    | optional' = []
+    | optional' || maybe False (const True) storedMessages = []
     | otherwise = [variableName']
 messageInputVariables (StaticMessage _) = []
 
-partialMessage :: ChatPromptMessage -> Map.Map Text Text -> ChatPromptMessage
+partialMessage :: ChatPromptMessage -> Map.Map Text PartialValue -> ChatPromptMessage
 partialMessage (HumanMessagePrompt HumanMessagePromptTemplate {prompt = promptTemplate}) partialVariables =
   HumanMessagePrompt $
     HumanMessagePromptTemplate
-      { prompt = partialPromptTemplate promptTemplate partialVariables
+      { prompt = partialPromptTemplate promptTemplate (textPartialVariables partialVariables)
       }
 partialMessage (SystemMessagePrompt promptTemplate) partialVariables =
-  SystemMessagePrompt $ partialPromptTemplate promptTemplate partialVariables
+  SystemMessagePrompt $ partialPromptTemplate promptTemplate (textPartialVariables partialVariables)
 partialMessage (AIMessagePrompt promptTemplate) partialVariables =
-  AIMessagePrompt $ partialPromptTemplate promptTemplate partialVariables
+  AIMessagePrompt $ partialPromptTemplate promptTemplate (textPartialVariables partialVariables)
 partialMessage (ChatMessagePrompt role promptTemplate) partialVariables =
-  ChatMessagePrompt role $ partialPromptTemplate promptTemplate partialVariables
-partialMessage (MessagesPlaceholderPrompt placeholder) _ = MessagesPlaceholderPrompt placeholder
+  ChatMessagePrompt role $
+    partialPromptTemplate promptTemplate (textPartialVariables partialVariables)
+partialMessage (MessagesPlaceholderPrompt placeholder storedMessages) partialVariables =
+  MessagesPlaceholderPrompt placeholder $
+    case Map.lookup (placeholderVariableName placeholder) partialVariables of
+      Just (PartialMessages promptMessages) -> Just promptMessages
+      _ -> storedMessages
 partialMessage (StaticMessage staticMessage) _ = StaticMessage staticMessage
+
+textPartialVariables :: Map.Map Text PartialValue -> Map.Map Text Text
+textPartialVariables = Map.mapMaybe toText
+  where
+    toText :: PartialValue -> Maybe Text
+    toText (PartialText value) = Just value
+    toText (PartialMessages _) = Nothing
 
 partialPromptTemplate ::
   PromptTemplate.PromptTemplate -> Map.Map Text Text -> PromptTemplate.PromptTemplate
@@ -179,18 +207,36 @@ partialPromptTemplate (PromptTemplate.PromptTemplate template _ existingPartials
   PromptTemplate.fromTemplateWithOptions template $
     PromptTemplate.PromptTemplateOptions (partialVariables `Map.union` existingPartials)
 
-formatMessage :: ChatPromptMessage -> Map.Map Text Text -> Either LangchainError [Message]
-formatMessage (HumanMessagePrompt promptMessage) variables =
+formatPromptWithMessages ::
+  [ChatPromptMessage] ->
+  Map.Map Text Text ->
+  Map.Map Text [Message] ->
+  Either LangchainError ChatPromptValue
+formatPromptWithMessages promptMessages variables messageVariables =
+  ChatPromptValue . concat
+    <$> traverse (\promptMessage -> formatMessage promptMessage variables messageVariables) promptMessages
+
+formatMessage ::
+  ChatPromptMessage -> Map.Map Text Text -> Map.Map Text [Message] -> Either LangchainError [Message]
+formatMessage (HumanMessagePrompt promptMessage) variables _ =
   (: []) . userMessage <$> PromptTemplate.renderPrompt (prompt promptMessage) variables
-formatMessage (SystemMessagePrompt promptTemplate) variables =
+formatMessage (SystemMessagePrompt promptTemplate) variables _ =
   (: []) . textMessage System <$> PromptTemplate.renderPrompt promptTemplate variables
-formatMessage (AIMessagePrompt promptTemplate) variables =
+formatMessage (AIMessagePrompt promptTemplate) variables _ =
   (: []) . textMessage Assistant <$> PromptTemplate.renderPrompt promptTemplate variables
-formatMessage (ChatMessagePrompt role promptTemplate) variables =
+formatMessage (ChatMessagePrompt role promptTemplate) variables _ =
   (: []) . textMessage role <$> PromptTemplate.renderPrompt promptTemplate variables
-formatMessage (MessagesPlaceholderPrompt placeholder) _ =
-  formatMessages placeholder (Map.empty :: Map.Map Text [Message])
-formatMessage (StaticMessage staticMessage) _ = Right [staticMessage]
+formatMessage (MessagesPlaceholderPrompt placeholder storedMessages) _ messageVariables =
+  formatMessages placeholder $
+    case storedMessages of
+      Nothing -> messageVariables
+      Just promptMessages ->
+        messageVariables
+          `Map.union` Map.singleton (placeholderVariableName placeholder) promptMessages
+formatMessage (StaticMessage staticMessage) _ _ = Right [staticMessage]
+
+placeholderVariableName :: MessagesPlaceholder -> Text
+placeholderVariableName MessagesPlaceholder {variableName = name} = name
 
 formatMessageString :: Message -> Text
 formatMessageString chatMessage =

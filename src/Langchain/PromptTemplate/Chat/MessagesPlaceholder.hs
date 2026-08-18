@@ -13,20 +13,28 @@ Stability   : experimental
 -}
 module Langchain.PromptTemplate.Chat.MessagesPlaceholder
   ( MessagesPlaceholder (..)
+  , MessagesPlaceholderOptions (..)
   , messagesPlaceholder
-  , optionalMessagesPlaceholder
-  , messagesPlaceholderWithLimit
+  , messagesPlaceholderOptions
+  , messagesPlaceholderWithOptions
   ) where
 
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 
-import Langchain.Core.Error (LangchainError, validationError)
+import Langchain.Core.Error (validationError)
 import Langchain.Core.Model.Types (Message)
 import Langchain.PromptTemplate.Chat (BaseMessagePromptTemplate (..))
 
 -- | Prompt template that expects one variable to contain an existing message list.
 data MessagesPlaceholder = MessagesPlaceholder
+  { variableName :: Text
+  , optional :: Bool
+  , nMessages :: Maybe Int
+  }
+  deriving (Show, Eq)
+
+data MessagesPlaceholderOptions = MessagesPlaceholderOptions
   { variableName :: Text
   , optional :: Bool
   , nMessages :: Maybe Int
@@ -52,21 +60,31 @@ instance BaseMessagePromptTemplate MessagesPlaceholder (Map.Map Text [Message]) 
                     ("Missing variable: " <> variableName')
                     (Just variableName')
                     Nothing
-      pure $ maybe values (`takeLast` values) nMessages'
+      case nMessages' of
+        Just limit
+          | limit <= 0 ->
+              Left $ validationError "n_messages must be positive" (Just variableName') Nothing
+        _ -> pure $ maybe values (`takeLast` values) nMessages'
 
 -- | Create a required messages placeholder.
 messagesPlaceholder :: Text -> MessagesPlaceholder
-messagesPlaceholder name = MessagesPlaceholder name False Nothing
+messagesPlaceholder name = messagesPlaceholderWithOptions $ messagesPlaceholderOptions name
 
--- | Create an optional messages placeholder.
-optionalMessagesPlaceholder :: Text -> MessagesPlaceholder
-optionalMessagesPlaceholder name = MessagesPlaceholder name True Nothing
+messagesPlaceholderOptions :: Text -> MessagesPlaceholderOptions
+messagesPlaceholderOptions name =
+  MessagesPlaceholderOptions
+    { variableName = name
+    , optional = False
+    , nMessages = Nothing
+    }
 
--- | Create a required messages placeholder limited to the last n messages.
-messagesPlaceholderWithLimit :: Text -> Int -> Either LangchainError MessagesPlaceholder
-messagesPlaceholderWithLimit name limit
-  | limit > 0 = Right $ MessagesPlaceholder name False (Just limit)
-  | otherwise = Left $ validationError "n_messages must be positive" (Just name) Nothing
+messagesPlaceholderWithOptions :: MessagesPlaceholderOptions -> MessagesPlaceholder
+messagesPlaceholderWithOptions MessagesPlaceholderOptions {variableName = name, optional = optional', nMessages = nMessages'} =
+  MessagesPlaceholder
+    { variableName = name
+    , optional = optional'
+    , nMessages = nMessages'
+    }
 
 takeLast :: Int -> [a] -> [a]
 takeLast n values = drop (max 0 (length values - n)) values

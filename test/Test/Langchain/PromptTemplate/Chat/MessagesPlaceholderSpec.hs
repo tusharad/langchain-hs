@@ -1,3 +1,4 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Test.Langchain.PromptTemplate.Chat.MessagesPlaceholderSpec (tests) where
@@ -11,6 +12,12 @@ import Langchain.Core.Error (errorMessage)
 import Langchain.Core.Model.Types (Message, assistantMessage, systemMessage, userMessage)
 import Langchain.PromptTemplate.Chat (BaseMessagePromptTemplate (..))
 import Langchain.PromptTemplate.Chat.MessagesPlaceholder
+  ( MessagesPlaceholder
+  , MessagesPlaceholderOptions (..)
+  , messagesPlaceholder
+  , messagesPlaceholderOptions
+  , messagesPlaceholderWithOptions
+  )
 
 tests :: TestTree
 tests =
@@ -24,11 +31,11 @@ tests =
               @? "Expected error to mention missing history"
           Right _ -> assertFailure "Expected missing history to fail"
     , testCase "optional placeholder formats to an empty list when omitted" $
-        formatMessages (optionalMessagesPlaceholder "history") emptyInputs
+        formatMessages optionalPlaceholder emptyInputs
           @?= Right []
     , testCase "optional placeholder accepts messages" $
         formatMessages
-          (optionalMessagesPlaceholder "history")
+          optionalPlaceholder
           ( inputs
               [ systemMessage "You are an AI assistant."
               , userMessage "Hello!"
@@ -46,16 +53,29 @@ tests =
               @?= Right history
     , testCase "placeholder with n_messages returns the last messages" $
         let history = map assistantMessage ["1", "2", "3"]
-         in case messagesPlaceholderWithLimit "history" 2 of
+            prompt =
+              messagesPlaceholderWithOptions $
+                (messagesPlaceholderOptions "history") {nMessages = Just 2}
+         in formatMessages
+              prompt
+              (inputs history)
+              @?= Right [assistantMessage "2", assistantMessage "3"]
+    , testCase "placeholder rejects non-positive n_messages" $
+        let history = map assistantMessage ["1", "2", "3"]
+            prompt =
+              messagesPlaceholderWithOptions $
+                (messagesPlaceholderOptions "history") {nMessages = Just 0}
+         in case formatMessages prompt (inputs history) of
               Left err ->
-                assertFailure $
-                  "Expected valid n_messages, got: " <> T.unpack (errorMessage err)
-              Right prompt ->
-                formatMessages
-                  prompt
-                  (inputs history)
-                  @?= Right [assistantMessage "2", assistantMessage "3"]
+                "n_messages" `T.isInfixOf` errorMessage err
+                  @? "Expected error to mention n_messages"
+              Right _ -> assertFailure "Expected non-positive n_messages to fail"
     ]
+
+optionalPlaceholder :: MessagesPlaceholder
+optionalPlaceholder =
+  messagesPlaceholderWithOptions $
+    (messagesPlaceholderOptions "history") {optional = True}
 
 emptyInputs :: Map.Map T.Text [Message]
 emptyInputs = Map.empty

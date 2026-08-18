@@ -15,6 +15,7 @@ import Langchain.PromptTemplate.Chat.ChatPromptTemplate
   ( ChatPromptInput (..)
   , ChatPromptMessage
   , ChatPromptTemplate (..)
+  , PartialValue (..)
   , append
   , extend
   , format
@@ -25,10 +26,15 @@ import Langchain.PromptTemplate.Chat.ChatPromptTemplate
   , invoke
   , message
   , messagesPlaceholder
+  , messagesPlaceholderWithOptions
   , partial
   , templateMessage
   , toMessages
   , toString
+  )
+import Langchain.PromptTemplate.Chat.MessagesPlaceholder
+  ( MessagesPlaceholderOptions (..)
+  , messagesPlaceholderOptions
   )
 
 tests :: TestTree
@@ -121,7 +127,7 @@ partialTests =
             template2 =
               partial
                 template1
-                (Map.fromList [("user", "Lucy"), ("name", "R2D2")])
+                (Map.fromList [("user", PartialText "Lucy"), ("name", PartialText "R2D2")])
             variables = Map.singleton "input" "hello"
             expected =
               [ textMessage System "You are an AI assistant named R2D2."
@@ -147,6 +153,73 @@ partialTests =
           Left err -> assertFailure $ "Expected formatted prompt, got " <> show err
           Right promptValue -> toMessages promptValue @?= expected
         format template2 variables @?= Right expectedString
+    , testCase "formats role template messages with partial variables" $ do
+        let template =
+              fromMessages
+                [ templateMessage System "You are {name}, a {role} assistant."
+                , templateMessage User "{question}"
+                ]
+            partialTemplate = partial template (Map.fromList [("name", PartialText "Alice"), ("role", PartialText "helpful")])
+
+        inputVariables partialTemplate @?= ["question"]
+        case formatPrompt partialTemplate (Map.singleton "question" "What is Python?") of
+          Left err -> assertFailure $ "Expected formatted prompt, got " <> show err
+          Right promptValue ->
+            toMessages promptValue
+              @?= [ textMessage System "You are Alice, a helpful assistant."
+                  , userMessage "What is Python?"
+                  ]
+    , testCase "infers required variables after partial variables" $ do
+        let template =
+              fromMessages
+                [ templateMessage User "Do something with {question} using {context} giving it like {formatins}"
+                ]
+            partialTemplate = partial template (Map.singleton "formatins" (PartialText "some structure"))
+
+        inputVariables partialTemplate @?= ["question", "context"]
+    , testCase "composes partially initialized messages" $ do
+        let prompt =
+              partial
+                (fromMessages [templateMessage System "Prompt {x} {y}"])
+                (Map.singleton "x" (PartialText "1"))
+            appendix = fromMessages [templateMessage System "Appendix {z}"]
+            composed = extend prompt (messages appendix)
+
+        case formatPrompt composed (Map.fromList [("y", "2"), ("z", "3")]) of
+          Left err -> assertFailure $ "Expected formatted prompt, got " <> show err
+          Right promptValue ->
+            toMessages promptValue
+              @?= [ textMessage System "Prompt 1 2"
+                  , textMessage System "Appendix 3"
+                  ]
+    , testCase "formats messages placeholder with partial messages" $ do
+        let prompt = fromMessages [messagesPlaceholder "history"]
+            partialPrompt = partial prompt (Map.singleton "history" (PartialMessages [textMessage System "foo"]))
+
+        inputVariables partialPrompt @?= []
+        case formatPrompt partialPrompt Map.empty of
+          Left err -> assertFailure $ "Expected formatted placeholder, got " <> show err
+          Right promptValue -> toMessages promptValue @?= [textMessage System "foo"]
+
+        case invoke
+          partialPrompt
+          (ChatPromptInputs Map.empty (Map.singleton "history" [textMessage System "bar"])) of
+          Left err -> assertFailure $ "Expected runtime placeholder override, got " <> show err
+          Right promptValue -> toMessages promptValue @?= [textMessage System "bar"]
+
+        let optionalPrompt =
+              fromMessages
+                [ messagesPlaceholderWithOptions $
+                    (messagesPlaceholderOptions "history") {optional = True}
+                ]
+            partialOptionalPrompt = partial optionalPrompt (Map.singleton "history" (PartialMessages [textMessage System "foo"]))
+
+        case formatPrompt optionalPrompt Map.empty of
+          Left err -> assertFailure $ "Expected empty optional placeholder, got " <> show err
+          Right promptValue -> toMessages promptValue @?= []
+        case formatPrompt partialOptionalPrompt Map.empty of
+          Left err -> assertFailure $ "Expected formatted optional placeholder, got " <> show err
+          Right promptValue -> toMessages promptValue @?= [textMessage System "foo"]
     ]
 
 appendExtendTests :: TestTree
