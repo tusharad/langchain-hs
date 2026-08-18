@@ -3,7 +3,6 @@
 module Test.Langchain.Graph.CheckpointerSpec (tests) where
 
 import Data.Text (Text)
-import qualified Data.Text as T
 import Langchain.Graph.Checkpointer
 import System.FilePath ((</>))
 import System.IO.Temp (withSystemTempDirectory)
@@ -28,7 +27,7 @@ tests =
         withSystemTempDirectory "checkpointer-test" $ \dir -> do
           let dbPath = dir </> "test.db"
           cp <- newSQLiteCheckpointer dbPath
-          let threadId = "thread-1"
+          let threadId = "thread-1" :: Text
               nodeId = "node-1"
               val = "sqlite-value-456" :: Text
           sRes <- saveCheckpoint cp threadId nodeId val

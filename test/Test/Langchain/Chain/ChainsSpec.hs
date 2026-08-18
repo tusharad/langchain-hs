@@ -4,7 +4,6 @@ module Test.Langchain.Chain.ChainsSpec (tests) where
 
 import Control.Monad.Except (runExceptT)
 import qualified Data.Map.Strict as Map
-import qualified Data.Text as T
 import Test.Tasty
 import Test.Tasty.HUnit
 
@@ -12,7 +11,7 @@ import Langchain.Chain.Conversational
 import Langchain.Chain.MapReduce
 import Langchain.Chain.Sequential
 import Langchain.Chain.StuffDocuments
-import Langchain.Core.Model (MockModel (..), extractMessageText, newMockModel)
+import Langchain.Core.Model (extractMessageText, newMockModel)
 import Langchain.DocumentLoader.Core (Document (..))
 import Langchain.Memory.Core (newWindowBufferMemory)
 import Langchain.PromptTemplate (PromptTemplate (..))
@@ -34,7 +33,7 @@ tests =
             initVars = Map.singleton "name" "Haskell"
         res <- runExceptT $ runSequentialChain chain initVars
         case res of
-          Left err -> assertFailure ("SequentialChain failed: " ++ show err)
+          Left _ -> assertFailure "SequentialChain failed: "
           Right outVars -> do
             Map.lookup "greeting" outVars @?= Just "Hello, Haskell"
             Map.lookup "finalMsg" outVars @?= Just "Hello, Haskell!!!"

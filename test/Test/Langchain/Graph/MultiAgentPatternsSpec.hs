@@ -63,7 +63,7 @@ tests =
                 }
         res <- runExceptT $ runBlackboard bb [ks1, ks2] cfg
         case res of
-          Left err -> assertFailure ("Blackboard failed: " ++ show err)
+          Left _ -> assertFailure ("Blackboard failed: ")
           Right finalState -> do
             Map.lookup "status" finalState @?= Just "completed"
             Map.lookup "result" finalState @?= Just "84"

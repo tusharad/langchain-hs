@@ -2,15 +2,13 @@
 
 module Test.Langchain.Agent.MiddlewareSpec (tests) where
 
-import Data.Aeson (object, toJSON)
-import Data.Text (Text)
-import qualified Data.Text as T
+import Data.Aeson (object)
 import Test.Tasty
 import Test.Tasty.HUnit
 
 import Langchain.Agent.Middleware
 import Langchain.Agent.ReAct (AgentStep (..))
-import Langchain.Core.Model (Role (..), ToolCall (..), userMessage)
+import Langchain.Core.Model (ToolCall (..), userMessage)
 
 tests :: TestTree
 tests =
@@ -38,7 +36,7 @@ tests =
         res <- afterToolCall chained tc "initial"
         res @?= "initial [m1] [m2]"
     , testCase "chainMiddlewares beforeStep modifies message list" $ do
-        let mw1 = defaultMiddleware {beforeStep = \msgs -> pure (userMessage "System Header" : msgs)}
+        let mw1 = defaultMiddleware {beforeStep = \msgs1 -> pure (userMessage "System Header" : msgs1)}
             chained = chainMiddlewares [mw1]
             msgs = [userMessage "Query"]
         res <- beforeStep chained msgs

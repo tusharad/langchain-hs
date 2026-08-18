@@ -4,7 +4,6 @@ module Test.Langchain.DocumentTransformer.MetadataEnricherSpec (tests) where
 
 import Data.Aeson (toJSON)
 import qualified Data.Map.Strict as Map
-import qualified Data.Text.Lazy as TL
 import Test.Tasty
 import Test.Tasty.HUnit
 

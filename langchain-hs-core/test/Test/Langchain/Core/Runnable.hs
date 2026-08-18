@@ -8,7 +8,6 @@ import Test.Tasty.HUnit
 import Test.Tasty.QuickCheck as QC
 
 import Control.Monad.Except (ExceptT, runExceptT)
-import Data.Text (Text)
 import qualified Data.Text as T
 
 import Langchain.Core.Error

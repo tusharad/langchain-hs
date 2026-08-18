@@ -4,7 +4,6 @@ module Test.Langchain.DocumentTransformer.HeaderInjectorSpec (tests) where
 
 import Data.Aeson (Value (..))
 import qualified Data.Map.Strict as Map
-import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import Test.Tasty

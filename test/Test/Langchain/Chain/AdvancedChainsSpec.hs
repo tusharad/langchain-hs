@@ -7,7 +7,6 @@ module Test.Langchain.Chain.AdvancedChainsSpec (tests) where
 
 import Control.Monad.Except (runExceptT)
 import qualified Data.Map.Strict as Map
-import Data.Text (Text)
 import qualified Data.Text as T
 import Database.SQLite.Simple
 import System.FilePath ((</>))
@@ -17,7 +16,7 @@ import Test.Tasty.HUnit
 
 import Langchain.Chain.ConversationalRetrievalQA
 import Langchain.Chain.SqlDatabase
-import Langchain.Core.Model (MockModel (..), extractMessageText, newMockModel)
+import Langchain.Core.Model (newMockModel)
 import Langchain.DocumentLoader.Core (Document (..))
 import Langchain.Memory.Core (newWindowBufferMemory)
 import Langchain.Retriever.Core (Retriever (..))

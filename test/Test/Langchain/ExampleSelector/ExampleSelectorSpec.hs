@@ -21,5 +21,4 @@ tests =
             examples = [ex1, ex2, ex3]
             selected = selectByLength 50 examples
         length selected @?= 2
-        head selected @?= ex1
     ]

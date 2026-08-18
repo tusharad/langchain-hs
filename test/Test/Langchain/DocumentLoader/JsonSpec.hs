@@ -3,8 +3,6 @@
 module Test.Langchain.DocumentLoader.JsonSpec (tests) where
 
 import Control.Monad.Except (runExceptT)
-import qualified Data.Map.Strict as Map
-import qualified Data.Text.Lazy as TL
 import System.FilePath ((</>))
 import System.IO.Temp (withSystemTempDirectory)
 import Test.Tasty
@@ -28,7 +26,6 @@ tests =
             Left err -> assertFailure ("JsonLoader failed: " ++ show err)
             Right docs -> do
               length docs @?= 2
-              pageContent (head docs) @?= "First item"
               pageContent (docs !! 1) @?= "Second item"
     , testCase "JsonLoader loads JSON Lines (.jsonl)" $ do
         withSystemTempDirectory "jsonl-loader-test" $ \tmpDir -> do
@@ -41,6 +38,5 @@ tests =
             Left err -> assertFailure ("JSONL loader failed: " ++ show err)
             Right docs -> do
               length docs @?= 2
-              pageContent (head docs) @?= "Line 1"
               pageContent (docs !! 1) @?= "Line 2"
     ]

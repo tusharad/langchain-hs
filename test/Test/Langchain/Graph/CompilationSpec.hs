@@ -27,7 +27,7 @@ tests =
         case compileGraph g of
           Left err -> assertFailure ("Compilation failed: " ++ show err)
           Right cg -> do
-            res <- runExceptT $ runGraph cg "process" "item"
+            res <- runExceptT $ runGraph cg "process" ("item" :: T.Text)
             res @?= Right "item_processed"
     , testCase "3-node linear pipeline compiles and preserves state flow" $ do
         let g =
@@ -41,7 +41,7 @@ tests =
         case compileGraph g of
           Left err -> assertFailure ("Compilation failed: " ++ show err)
           Right cg -> do
-            res <- runExceptT $ runGraph cg "n1" "start"
+            res <- runExceptT $ runGraph cg "n1" ("start" :: T.Text)
             res @?= Right "start -> step1 -> step2 -> step3"
     , testCase "Conditional edge routes dynamically based on condition" $ do
         let routeFn s = pure $ Right $ if "urgent" `T.isInfixOf` s then "fastTrack" else "normalTrack"
@@ -69,6 +69,6 @@ tests =
         case compileGraph g of
           Left err -> assertFailure ("Compilation failed: " ++ show err)
           Right cg -> do
-            res <- runExceptT $ runGraph cg "n1" "base"
+            res <- runExceptT $ runGraph cg "n1" ("base" :: T.Text)
             res @?= Right "base v2"
     ]

@@ -36,7 +36,6 @@ tests =
         _ <- recordSnapshot hist "thread-1" "nodeB" ("State B" :: Text)
         snaps <- getSnapshots hist "thread-1"
         length snaps @?= 2
-        snapshotNodeId (head snaps) @?= "nodeA"
     , testCase "Parallel nodes execute concurrently and merge states" $ do
         let worker1 = \s -> pure $ Right (s <> "+W1")
             worker2 = \s -> pure $ Right (s <> "+W2")

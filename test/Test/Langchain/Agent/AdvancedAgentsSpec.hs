@@ -19,9 +19,7 @@ import Langchain.Core.Model
   , Role (..)
   , ToolCall (..)
   , assistantMessage
-  , extractMessageText
   , newMockModel
-  , userMessage
   )
 import qualified Langchain.Core.Model as Model
 import Langchain.Tool.Core (createTool)

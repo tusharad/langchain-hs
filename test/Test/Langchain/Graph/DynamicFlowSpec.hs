@@ -5,7 +5,6 @@ module Test.Langchain.Graph.DynamicFlowSpec (tests) where
 import Control.Monad.Except (runExceptT)
 import Data.Aeson (Value (..))
 import qualified Data.Map.Strict as Map
-import Data.Text (Text)
 import qualified Data.Text as T
 import Test.Tasty
 import Test.Tasty.HUnit
