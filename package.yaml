@@ -46,6 +46,7 @@ dependencies:
 - random >= 1.2
 - scientific
 - sqlite-simple >= 0.4.18 && < 0.5
+- stache >= 2.3 && < 2.5
 - stm >= 2.5 && < 2.6
 - tagsoup < 0.15
 - text >= 1.2 && < 3

@@ -168,6 +168,7 @@ library
     , random >=1.2
     , scientific
     , sqlite-simple >=0.4.18 && <0.5
+    , stache >=2.3 && <2.5
     , stm ==2.5.*
     , tagsoup <0.15
     , text >=1.2 && <3
@@ -209,6 +210,7 @@ executable big-showcase
     , random >=1.2
     , scientific
     , sqlite-simple >=0.4.18 && <0.5
+    , stache >=2.3 && <2.5
     , stm ==2.5.*
     , tagsoup <0.15
     , temporary
@@ -343,6 +345,7 @@ test-suite langchain-hs-test
     , random >=1.2
     , scientific
     , sqlite-simple >=0.4.18 && <0.5
+    , stache >=2.3 && <2.5
     , stm ==2.5.*
     , tagsoup <0.15
     , tasty
@@ -389,6 +392,7 @@ benchmark langchain-hs-bench
     , random >=1.2
     , scientific
     , sqlite-simple >=0.4.18 && <0.5
+    , stache >=2.3 && <2.5
     , stm ==2.5.*
     , tagsoup <0.15
     , tasty-bench

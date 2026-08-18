@@ -17,9 +17,21 @@ module Langchain.PromptTemplate.String
   , extractTemplateVariablesWithFormat
   ) where
 
+import Data.Aeson (Value, object, (.=))
+import qualified Data.Aeson.Key as Key
+import Data.Foldable (traverse_)
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.Lazy as TL
+import Text.Mustache
+  ( Key
+  , Node (..)
+  , Template (..)
+  , compileMustacheText
+  , renderMustache
+  )
+import Text.Mustache.Type (showKey)
 
 import Langchain.Core.Error (LangchainError, validationError)
 
@@ -34,45 +46,25 @@ data TemplatePart
   | Variable Text
 
 parseTemplateWithFormat :: TemplateFormat -> Text -> Either LangchainError [TemplatePart]
-parseTemplateWithFormat FString = parseFStringTemplate
-parseTemplateWithFormat Mustache = parseDoubleBraceTemplate
-parseTemplateWithFormat Jinja2 = parseDoubleBraceTemplate
+parseTemplateWithFormat FString = parseDelimitedTemplate "{" "}" "Unclosed brace in template"
+parseTemplateWithFormat Mustache = parseDelimitedTemplate "{{" "}}" "Unclosed double brace in template"
+parseTemplateWithFormat Jinja2 = parseDelimitedTemplate "{{" "}}" "Unclosed double brace in template"
 
-parseFStringTemplate :: Text -> Either LangchainError [TemplatePart]
-parseFStringTemplate = go
+parseDelimitedTemplate :: Text -> Text -> Text -> Text -> Either LangchainError [TemplatePart]
+parseDelimitedTemplate open close unclosed = go
   where
     go :: Text -> Either LangchainError [TemplatePart]
     go source =
-      case T.breakOn "{" source of
+      case T.breakOn open source of
         (literal, rest) | T.null rest -> Right [Literal literal | not (T.null literal)]
         (literal, rest) -> do
-          let afterOpen = T.drop 1 rest
-          case T.breakOn "}" afterOpen of
+          let afterOpen = T.drop (T.length open) rest
+          case T.breakOn close afterOpen of
             (_, afterClose)
               | T.null afterClose ->
-                  Left $ validationError "Unclosed brace in template" (Just "PromptTemplate") Nothing
+                  Left $ validationError unclosed (Just "PromptTemplate") Nothing
             (variableName, afterClose) -> do
-              remainingParts <- go (T.drop 1 afterClose)
-              pure $
-                [Literal literal | not (T.null literal)]
-                  <> [Variable (T.strip variableName)]
-                  <> remainingParts
-
-parseDoubleBraceTemplate :: Text -> Either LangchainError [TemplatePart]
-parseDoubleBraceTemplate = go
-  where
-    go :: Text -> Either LangchainError [TemplatePart]
-    go source =
-      case T.breakOn "{{" source of
-        (literal, rest) | T.null rest -> Right [Literal literal | not (T.null literal)]
-        (literal, rest) -> do
-          let afterOpen = T.drop 2 rest
-          case T.breakOn "}}" afterOpen of
-            (_, afterClose)
-              | T.null afterClose ->
-                  Left $ validationError "Unclosed double brace in template" (Just "PromptTemplate") Nothing
-            (variableName, afterClose) -> do
-              remainingParts <- go (T.drop 2 afterClose)
+              remainingParts <- go (T.drop (T.length close) afterClose)
               pure $
                 [Literal literal | not (T.null literal)]
                   <> [Variable (T.strip variableName)]
@@ -80,9 +72,9 @@ parseDoubleBraceTemplate = go
 
 renderTemplateWithFormat ::
   TemplateFormat -> Map.Map Text Text -> Text -> Either LangchainError Text
+renderTemplateWithFormat Mustache vars source = renderMustacheTemplate vars source
 renderTemplateWithFormat format vars source = do
-  let renderedSections = renderSections format vars source
-  parts <- parseTemplateWithFormat format renderedSections
+  parts <- parseTemplateWithFormat format source
   T.concat <$> traverse renderPart parts
   where
     renderPart :: TemplatePart -> Either LangchainError Text
@@ -92,47 +84,67 @@ renderTemplateWithFormat format vars source = do
         Just value -> Right value
         Nothing -> Left $ validationError ("Missing variable: " <> variableName) (Just variableName) Nothing
 
-renderSections :: TemplateFormat -> Map.Map Text Text -> Text -> Text
-renderSections Mustache vars = renderMustacheSections vars
-renderSections _ _ = id
-
-renderMustacheSections :: Map.Map Text Text -> Text -> Text
-renderMustacheSections vars = go
+renderMustacheTemplate :: Map.Map Text Text -> Text -> Either LangchainError Text
+renderMustacheTemplate vars source =
+  case compileMustacheText "PromptTemplate" source of
+    Left err -> Left $ validationError (T.pack $ show err) (Just "PromptTemplate") Nothing
+    Right template -> do
+      traverse_ requireVariable $ requiredMustacheVariables template
+      Right . TL.toStrict $ renderMustache template (toMustacheContext vars)
   where
-    go :: Text -> Text
-    go source =
-      case T.breakOn "{{#" source of
-        (before, rest) | T.null rest -> before
-        (before, rest) ->
-          let afterOpen = T.drop 3 rest
-           in case T.breakOn "}}" afterOpen of
-                (_, closeOpen) | T.null closeOpen -> before <> rest
-                (nameRaw, afterName) ->
-                  let name = T.strip nameRaw
-                      closeTag = "{{/" <> name <> "}}"
-                      bodyAndRest = T.drop 2 afterName
-                   in case T.breakOn closeTag bodyAndRest of
-                        (_, closeClose) | T.null closeClose -> before <> rest
-                        (body, afterClose) ->
-                          let replacement =
-                                case Map.lookup name vars of
-                                  Just value | not (T.null value) -> go body
-                                  _ -> ""
-                           in before <> replacement <> go (T.drop (T.length closeTag) afterClose)
+    requireVariable variableName
+      | variableName `Map.member` vars = Right ()
+      | otherwise =
+          Left $ validationError ("Missing variable: " <> variableName) (Just variableName) Nothing
+
+toMustacheContext :: Map.Map Text Text -> Value
+toMustacheContext vars =
+  object [Key.fromText key .= value | (key, value) <- Map.toList vars]
 
 extractTemplateVariables :: Text -> [Text]
 extractTemplateVariables = extractTemplateVariablesWithFormat FString
 
 extractTemplateVariablesWithFormat :: TemplateFormat -> Text -> [Text]
+extractTemplateVariablesWithFormat Mustache source =
+  case compileMustacheText "PromptTemplate" source of
+    Left _ -> []
+    Right template -> unique $ templateVariables template
 extractTemplateVariablesWithFormat format source =
   case parseTemplateWithFormat format source of
     Left _ -> []
     Right parts -> unique [variableName | Variable variableName <- parts]
-  where
-    unique :: [Text] -> [Text]
-    unique = foldl addIfMissing []
 
-    addIfMissing :: [Text] -> Text -> [Text]
-    addIfMissing variableNames variableName
-      | variableName `elem` variableNames = variableNames
-      | otherwise = variableNames <> [variableName]
+unique :: [Text] -> [Text]
+unique = foldl addIfMissing []
+
+addIfMissing :: [Text] -> Text -> [Text]
+addIfMissing variableNames variableName
+  | variableName `elem` variableNames = variableNames
+  | otherwise = variableNames <> [variableName]
+
+templateVariables :: Template -> [Text]
+templateVariables Template {templateActual = actual, templateCache = cache} =
+  maybe [] (concatMap nodeVariables) $ Map.lookup actual cache
+
+requiredMustacheVariables :: Template -> [Text]
+requiredMustacheVariables Template {templateActual = actual, templateCache = cache} =
+  maybe [] (unique . concatMap requiredNodeVariables) $ Map.lookup actual cache
+
+nodeVariables :: Node -> [Text]
+nodeVariables (TextBlock _) = []
+nodeVariables (EscapedVar key) = keyVariables key
+nodeVariables (UnescapedVar key) = keyVariables key
+nodeVariables (Section key nodes) = keyVariables key <> concatMap nodeVariables nodes
+nodeVariables (InvertedSection key nodes) = keyVariables key <> concatMap nodeVariables nodes
+nodeVariables (Partial _ _) = []
+
+requiredNodeVariables :: Node -> [Text]
+requiredNodeVariables (TextBlock _) = []
+requiredNodeVariables (EscapedVar key) = keyVariables key
+requiredNodeVariables (UnescapedVar key) = keyVariables key
+requiredNodeVariables (Section _ _) = []
+requiredNodeVariables (InvertedSection _ _) = []
+requiredNodeVariables (Partial _ _) = []
+
+keyVariables :: Key -> [Text]
+keyVariables = (: []) . showKey

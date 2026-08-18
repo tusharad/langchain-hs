@@ -30,6 +30,15 @@ tests =
              in case renderPrompt greetingTemplate missingVars of
                   Left err -> "place" `T.isInfixOf` T.pack (show err) @? "Expected error to contain 'place'"
                   Right _ -> assertFailure "Expected an error for missing variable"
+        , testCase "renders mustache sections" $
+            let mustacheTemplate = fromTemplateWithFormat "{{#name}}Hello, {{name}}!{{/name}}" Mustache HM.empty
+                mustacheVars = HM.singleton "name" "Alice"
+             in renderPrompt mustacheTemplate mustacheVars @?= Right "Hello, Alice!"
+        , testCase "returns an error for missing mustache variables" $
+            let mustacheTemplate = fromTemplateWithFormat "Hello, {{name}}!" Mustache HM.empty
+             in case renderPrompt mustacheTemplate HM.empty of
+                  Left err -> "name" `T.isInfixOf` T.pack (show err) @? "Expected error to contain 'name'"
+                  Right _ -> assertFailure "Expected an error for missing mustache variable"
         ]
     , testGroup
         "FewShotPromptTemplate"
