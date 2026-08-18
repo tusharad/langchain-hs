@@ -52,6 +52,28 @@ newtype PromptTemplateOptions = PromptTemplateOptions
 defaultPromptTemplateOptions :: PromptTemplateOptions
 defaultPromptTemplateOptions = PromptTemplateOptions mempty
 
+data TemplatePart
+  = Literal Text
+  | Variable Text
+
+parseTemplate :: Text -> Either LangchainError [TemplatePart]
+parseTemplate = go
+  where
+    go :: Text -> Either LangchainError [TemplatePart]
+    go template =
+      case T.breakOn "{" template of
+        (literal, rest) | T.null rest -> Right [Literal literal | not (T.null literal)]
+        (literal, rest) -> do
+          let afterOpen = T.drop 1 rest
+          case T.breakOn "}" afterOpen of
+            (_, afterClose) | T.null afterClose -> Left $ validationError "Unclosed brace in template" (Just "PromptTemplate") Nothing
+            (variableName, afterClose) -> do
+              remainingParts <- go (T.drop 1 afterClose)
+              pure $
+                [Literal literal | not (T.null literal)]
+                  <> [Variable (T.strip variableName)]
+                  <> remainingParts
+
 fromTemplate :: Text -> PromptTemplate
 fromTemplate template = fromTemplateWithOptions template defaultPromptTemplateOptions
 
@@ -89,22 +111,16 @@ renderFewShotPrompt FewShotPromptTemplate {..} = do
 
 -- | Interpolate variables into a template string
 interpolate :: HM.Map Text Text -> Text -> Either LangchainError Text
-interpolate vars = go
+interpolate vars template = do
+  parts <- parseTemplate template
+  T.concat <$> traverse renderPart parts
   where
-    go :: Text -> Either LangchainError Text
-    go t =
-      case T.breakOn "{" t of
-        (before, after) | T.null after -> Right before
-        (before, after') ->
-          case T.breakOn "}" (T.drop 1 after') of
-            (_, after'') | T.null after'' -> Left $ validationError "Unclosed brace in template" (Just "PromptTemplate") Nothing
-            (key, after''') ->
-              let key' = T.strip key
-               in case HM.lookup key' vars of
-                    Just val -> do
-                      rest <- go (T.drop 1 after''')
-                      pure $ before <> val <> rest
-                    Nothing -> Left $ validationError ("Missing variable: " <> key') (Just key') Nothing
+    renderPart :: TemplatePart -> Either LangchainError Text
+    renderPart (Literal literal) = Right literal
+    renderPart (Variable variableName) =
+      case HM.lookup variableName vars of
+        Just value -> Right value
+        Nothing -> Left $ validationError ("Missing variable: " <> variableName) (Just variableName) Nothing
 
 -- | Render few-shot template with additional variables
 renderFewShotPromptWithVars :: FewShotPromptTemplate -> HM.Map Text Text -> Either LangchainError Text
@@ -113,19 +129,11 @@ renderFewShotPromptWithVars template vars = do
   interpolate vars renderedBase
 
 extractTemplateVariables :: Text -> [Text]
-extractTemplateVariables = unique . go
+extractTemplateVariables template =
+  case parseTemplate template of
+    Left _ -> []
+    Right parts -> unique [variableName | Variable variableName <- parts]
   where
-    go :: Text -> [Text]
-    go template =
-      case T.breakOn "{" template of
-        (_, rest) | T.null rest -> []
-        (_, rest) ->
-          let afterOpen = T.drop 1 rest
-           in case T.breakOn "}" afterOpen of
-                (_, afterClose) | T.null afterClose -> []
-                (variableName, afterClose) ->
-                  T.strip variableName : go (T.drop 1 afterClose)
-
     unique :: [Text] -> [Text]
     unique = foldl addIfMissing []
 
