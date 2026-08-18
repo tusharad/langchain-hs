@@ -16,6 +16,7 @@ module Langchain.PromptTemplate.Chat.ChatPromptTemplate
   , fromTemplate
   , fromTemplateWithOptions
   , fromMessages
+  , partial
   , formatPrompt
   , format
   , toMessages
@@ -76,6 +77,10 @@ fromMessages promptMessages =
     , inputVariables = unique $ concatMap messageInputVariables promptMessages
     }
 
+partial :: ChatPromptTemplate -> Map.Map Text Text -> ChatPromptTemplate
+partial ChatPromptTemplate {messages = promptMessages} partialVariables =
+  fromMessages $ map (`partialMessage` partialVariables) promptMessages
+
 formatPrompt :: ChatPromptTemplate -> Map.Map Text Text -> Either LangchainError ChatPromptValue
 formatPrompt ChatPromptTemplate {messages = promptMessages} variables =
   ChatPromptValue <$> traverse (`formatMessage` variables) promptMessages
@@ -96,6 +101,25 @@ messageInputVariables (SystemMessagePrompt promptTemplate) = PromptTemplate.inpu
 messageInputVariables (AIMessagePrompt promptTemplate) = PromptTemplate.inputVariables promptTemplate
 messageInputVariables (ChatMessagePrompt _ promptTemplate) = PromptTemplate.inputVariables promptTemplate
 messageInputVariables (StaticMessage _) = []
+
+partialMessage :: ChatPromptMessage -> Map.Map Text Text -> ChatPromptMessage
+partialMessage (HumanMessagePrompt HumanMessagePromptTemplate {prompt = promptTemplate}) partialVariables =
+  HumanMessagePrompt $
+    HumanMessagePromptTemplate
+      { prompt = partialPromptTemplate promptTemplate partialVariables
+      }
+partialMessage (SystemMessagePrompt promptTemplate) partialVariables =
+  SystemMessagePrompt $ partialPromptTemplate promptTemplate partialVariables
+partialMessage (AIMessagePrompt promptTemplate) partialVariables =
+  AIMessagePrompt $ partialPromptTemplate promptTemplate partialVariables
+partialMessage (ChatMessagePrompt role promptTemplate) partialVariables =
+  ChatMessagePrompt role $ partialPromptTemplate promptTemplate partialVariables
+partialMessage (StaticMessage message) _ = StaticMessage message
+
+partialPromptTemplate :: PromptTemplate.PromptTemplate -> Map.Map Text Text -> PromptTemplate.PromptTemplate
+partialPromptTemplate (PromptTemplate.PromptTemplate template _ existingPartials) partialVariables =
+  PromptTemplate.fromTemplateWithOptions template $
+    PromptTemplate.PromptTemplateOptions (partialVariables `Map.union` existingPartials)
 
 formatMessage :: ChatPromptMessage -> Map.Map Text Text -> Either LangchainError Message
 formatMessage (HumanMessagePrompt message) variables =

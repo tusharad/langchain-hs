@@ -8,7 +8,7 @@ import qualified Data.Text as T
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import Langchain.Core.Model.Types (Role (..), extractMessageText, userMessage)
+import Langchain.Core.Model.Types (Role (..), extractMessageText, textMessage, userMessage)
 import Langchain.PromptTemplate (PromptTemplate (..), PromptTemplateOptions (..))
 import qualified Langchain.PromptTemplate as PromptTemplate
 import Langchain.PromptTemplate.Chat.ChatPromptTemplate (ChatPromptTemplate (..))
@@ -92,6 +92,47 @@ tests =
           Left err -> assertFailure $ "Expected formatted prompt, got " <> show err
           Right promptValue ->
             last (ChatPromptTemplate.toMessages promptValue) @?= userMessage "foo"
+    , testCase "partial formats chat messages with stored variables" $ do
+        let chatTemplate =
+              ChatPromptTemplate.fromMessages
+                [ ChatPromptTemplate.SystemMessagePrompt $
+                    PromptTemplate.fromTemplate "You are an AI assistant named {name}."
+                , ChatPromptTemplate.HumanMessagePrompt $
+                    HumanMessagePromptTemplate.fromTemplate "Hi I'm {user}"
+                , ChatPromptTemplate.AIMessagePrompt $
+                    PromptTemplate.fromTemplate "Hi there, {user}, I'm {name}."
+                , ChatPromptTemplate.HumanMessagePrompt $
+                    HumanMessagePromptTemplate.fromTemplate "{input}"
+                ]
+            template2 =
+              ChatPromptTemplate.partial
+                chatTemplate
+                (Map.fromList [("user", "Lucy"), ("name", "R2D2")])
+            variables = Map.singleton "input" "hello"
+            expected =
+              [ textMessage System "You are an AI assistant named R2D2."
+              , userMessage "Hi I'm Lucy"
+              , textMessage Assistant "Hi there, Lucy, I'm R2D2."
+              , userMessage "hello"
+              ]
+            expectedString =
+              T.intercalate
+                "\n"
+                [ "System: You are an AI assistant named R2D2."
+                , "Human: Hi I'm Lucy"
+                , "AI: Hi there, Lucy, I'm R2D2."
+                , "Human: hello"
+                ]
+
+        case ChatPromptTemplate.formatPrompt chatTemplate variables of
+          Left _ -> pure ()
+          Right promptValue ->
+            assertFailure $ "Expected missing variable error, got " <> show promptValue
+
+        case ChatPromptTemplate.formatPrompt template2 variables of
+          Left err -> assertFailure $ "Expected formatted prompt, got " <> show err
+          Right promptValue -> ChatPromptTemplate.toMessages promptValue @?= expected
+        ChatPromptTemplate.format template2 variables @?= Right expectedString
     ]
   where
     promptVariables = Map.fromList [("foo", "foo"), ("bar", "bar"), ("context", "context")]
