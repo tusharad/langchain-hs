@@ -98,18 +98,29 @@ parseResearchPlan topic rawText =
         , estimatedDepth = 2
         }
   where
+    cleanMarkdown t =
+      let s = T.strip t
+          s1 = T.dropWhile (\c -> c `elem` ("#*-0123456789. " :: String)) s
+          s2 = T.replace "**" "" s1
+       in T.strip s2
+
+    isSubtopicStart l =
+      let c = cleanMarkdown l
+       in T.isPrefixOf "Subtopic" c || T.isPrefixOf "Section" c
+
     splitIntoSubtopicBlocks [] = []
     splitIntoSubtopicBlocks (l : ls)
-      | T.isPrefixOf "Subtopic:" (T.strip l) =
-          let (content, rest) = break (\x -> T.isPrefixOf "Subtopic:" (T.strip x)) ls
+      | isSubtopicStart l =
+          let (content, rest) = break isSubtopicStart ls
            in (l : content) : splitIntoSubtopicBlocks rest
       | otherwise = splitIntoSubtopicBlocks ls
 
     parseBlock blk =
-      let lns = map T.strip blk
-          title = extractPrefix "Subtopic:" lns
-          goal = extractPrefix "Goal:" lns
-          queriesStr = extractPrefix "Queries:" lns
+      let lns = map cleanMarkdown blk
+          rawTitle = extractPrefix "Subtopic" lns
+          title = if T.null rawTitle then extractPrefix "Section" lns else rawTitle
+          goal = extractPrefix "Goal" lns
+          queriesStr = extractPrefix "Queries" lns
           queries = filter (not . T.null) $ map T.strip (T.splitOn "|" queriesStr)
        in if T.null title
             then Nothing
@@ -122,6 +133,10 @@ parseResearchPlan topic rawText =
                   }
 
     extractPrefix pfx linesList =
-      case filter (T.isPrefixOf pfx) linesList of
-        (m : _) -> T.strip (T.drop (T.length pfx) m)
-        _ -> ""
+      let matches = filter (\l -> T.isPrefixOf pfx l) linesList
+       in case matches of
+            (m : _) ->
+              let dropped = T.drop (T.length pfx) m
+                  stripped = T.dropWhile (\c -> c `elem` (":- 0123456789*." :: String)) dropped
+               in T.strip stripped
+            _ -> ""
