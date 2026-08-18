@@ -3,20 +3,33 @@
 
 module Test.Langchain.PromptTemplate.Chat.ChatPromptTemplateSpec (tests) where
 
+import Data.Aeson (decode, encode, object, (.=))
+import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import qualified Data.Text as T
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import Langchain.Core.Model.Types (Role (..), extractMessageText, textMessage, userMessage)
+import Langchain.Core.Model.Types
+  ( ContentBlock (..)
+  , ImageContent (..)
+  , ImageSource (..)
+  , Message (..)
+  , Role (..)
+  , extractMessageText
+  , textMessage
+  , userMessage
+  )
 import Langchain.PromptTemplate (PromptTemplateOptions (..), TemplateFormat (..))
 import Langchain.PromptTemplate.Chat.ChatPromptTemplate
   ( ChatPromptInput (..)
   , ChatPromptMessage
   , ChatPromptTemplate (..)
+  , ContentPromptBlock (..)
   , PartialValue (..)
   , append
+  , contentMessage
   , extend
   , format
   , formatPrompt
@@ -44,6 +57,7 @@ tests =
     "ChatPromptTemplate"
     [ fromTemplateTests
     , fromMessagesTests
+    , richContentTests
     , formatPromptTests
     , partialTests
     , appendExtendTests
@@ -164,6 +178,138 @@ formatPromptTests =
                   ]
             toString promptValue @?= expectedFormattedPrompt
         format chatPromptTemplate promptVariables @?= Right expectedFormattedPrompt
+    ]
+
+richContentTests :: TestTree
+richContentTests =
+  testGroup
+    "rich content"
+    [ testCase "formats multipart text blocks" $ do
+        let template =
+              fromMessages
+                [ templateMessage System "You are an AI assistant named {name}."
+                , contentMessage
+                    User
+                    [TextPromptBlock FString "What's in this image?", TextPromptBlock FString "Oh nvm"]
+                ]
+
+        case formatPrompt template (Map.singleton "name" "R2D2") of
+          Left err -> assertFailure $ "Expected multipart text prompt, got " <> show err
+          Right promptValue ->
+            toMessages promptValue
+              @?= [ textMessage System "You are an AI assistant named R2D2."
+                  , Message User (TextBlock "What's in this image?" :| [TextBlock "Oh nvm"]) Nothing Nothing Nothing
+                  ]
+    , testCase "formats templated multipart text blocks" $ do
+        let template =
+              fromMessages
+                [ templateMessage System "You are an AI assistant named {name}."
+                , contentMessage
+                    User
+                    [TextPromptBlock FString "What's in this {object_name}?", TextPromptBlock FString "Oh nvm"]
+                ]
+            variables = Map.fromList [("name", "R2D2"), ("object_name", "image")]
+
+        case formatPrompt template variables of
+          Left err -> assertFailure $ "Expected templated multipart text prompt, got " <> show err
+          Right promptValue ->
+            toMessages promptValue
+              @?= [ textMessage System "You are an AI assistant named R2D2."
+                  , Message User (TextBlock "What's in this image?" :| [TextBlock "Oh nvm"]) Nothing Nothing Nothing
+                  ]
+    , testCase "formats image_url blocks" $ do
+        let base64Image = "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAA"
+            otherBase64Image = "other_iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAA"
+            template =
+              fromMessages
+                [ templateMessage System "You are an AI assistant named {name}."
+                , contentMessage
+                    User
+                    [ TextPromptBlock FString "What's in this image?"
+                    , ImagePromptBlock FString $
+                        ImageContent (ImageUrl "data:image/jpeg;base64,{my_image}") Nothing Nothing
+                    , ImagePromptBlock FString $ ImageContent (ImageUrl "{my_other_image}") (Just "medium") Nothing
+                    , ImagePromptBlock FString $
+                        ImageContent (ImageUrl "https://www.langchain.com/image.png") Nothing Nothing
+                    ]
+                ]
+            variables = Map.fromList [("name", "R2D2"), ("my_image", base64Image), ("my_other_image", otherBase64Image)]
+
+        case formatPrompt template variables of
+          Left err -> assertFailure $ "Expected image_url prompt, got " <> show err
+          Right promptValue ->
+            toMessages promptValue
+              @?= [ textMessage System "You are an AI assistant named R2D2."
+                  , Message
+                      User
+                      ( TextBlock "What's in this image?"
+                          :| [ ImageBlock $ ImageContent (ImageUrl ("data:image/jpeg;base64," <> base64Image)) Nothing Nothing
+                             , ImageBlock $ ImageContent (ImageUrl otherBase64Image) (Just "medium") Nothing
+                             , ImageBlock $ ImageContent (ImageUrl "https://www.langchain.com/image.png") Nothing Nothing
+                             ]
+                      )
+                      Nothing
+                      Nothing
+                      Nothing
+                  ]
+    , testCase "formats image data blocks with metadata" $ do
+        let metadata = object ["cache_control" .= object ["type" .= ("{cache_type}" :: Text)]]
+            template =
+              fromMessages
+                [ contentMessage
+                    User
+                    [ ImagePromptBlock FString $
+                        ImageContent (ImageBase64 Nothing "{source_data}") Nothing (Just metadata)
+                    ]
+                ]
+            variables = Map.fromList [("cache_type", "ephemeral"), ("source_data", "base64data")]
+
+        case formatPrompt template variables of
+          Left err -> assertFailure $ "Expected image data prompt, got " <> show err
+          Right promptValue ->
+            toMessages promptValue
+              @?= [ Message
+                      User
+                      ( ImageBlock
+                          ( ImageContent
+                              (ImageBase64 Nothing "base64data")
+                              Nothing
+                              (Just $ object ["cache_control" .= object ["type" .= ("ephemeral" :: Text)]])
+                          )
+                          :| []
+                      )
+                      Nothing
+                      Nothing
+                      Nothing
+                  ]
+    , testCase "round-trips rendered image data blocks through json" $ do
+        let block = ImageBlock $ ImageContent (ImageUrl "https://example.com/image.png") Nothing Nothing
+        decode (encode block) @?= Just block
+    , testCase "rejects jinja2 image data blocks" $ do
+        let template =
+              fromMessages
+                [ contentMessage
+                    User
+                    [ImagePromptBlock Jinja2 $ ImageContent (ImageBase64 Nothing "{{ source_data }}") Nothing Nothing]
+                ]
+        case formatPrompt template (Map.singleton "source_data" "base64data") of
+          Left _ -> pure ()
+          Right promptValue -> assertFailure $ "Expected jinja2 data block validation error, got " <> show promptValue
+    , testCase "drops empty text blocks after mustache conditionals" $ do
+        let template =
+              fromMessages
+                [ contentMessage
+                    User
+                    [ TextPromptBlock Mustache "{{#expectedResponse}}{{expectedResponse}}{{/expectedResponse}}"
+                    , TextPromptBlock Mustache "Always present"
+                    ]
+                ]
+
+        case formatPrompt template Map.empty of
+          Left err -> assertFailure $ "Expected conditional prompt, got " <> show err
+          Right promptValue ->
+            toMessages promptValue
+              @?= [Message User (TextBlock "Always present" :| []) Nothing Nothing Nothing]
     ]
 
 partialTests :: TestTree

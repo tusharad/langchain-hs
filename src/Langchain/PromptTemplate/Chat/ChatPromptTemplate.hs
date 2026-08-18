@@ -12,6 +12,7 @@ Stability   : experimental
 module Langchain.PromptTemplate.Chat.ChatPromptTemplate
   ( ChatPromptTemplate (..)
   , ChatPromptMessage
+  , ContentPromptBlock (..)
   , ChatPromptInput (..)
   , ChatPromptValue (..)
   , PartialValue (..)
@@ -21,6 +22,7 @@ module Langchain.PromptTemplate.Chat.ChatPromptTemplate
   , message
   , templateMessage
   , templateMessageWithFormat
+  , contentMessage
   , messagesPlaceholder
   , messagesPlaceholderWithOptions
   , append
@@ -33,19 +35,24 @@ module Langchain.PromptTemplate.Chat.ChatPromptTemplate
   , toString
   ) where
 
+import Data.Aeson (Value (..))
+import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import qualified Data.Text as T
 
 import Langchain.Core.Error (LangchainError, validationError)
 import Langchain.Core.Model.Types
-  ( Message (..)
+  ( ContentBlock (..)
+  , ImageContent (..)
+  , ImageSource (..)
+  , Message (..)
   , Role (..)
   , formatMessageString
   , textMessage
   , userMessage
   )
-import Langchain.PromptTemplate (PromptTemplateOptions, TemplateFormat)
+import Langchain.PromptTemplate (PromptTemplateOptions, TemplateFormat (..))
 import qualified Langchain.PromptTemplate as PromptTemplate
 import Langchain.PromptTemplate.Chat (BaseMessagePromptTemplate (formatMessages))
 import Langchain.PromptTemplate.Chat.HumanMessagePromptTemplate (HumanMessagePromptTemplate (..))
@@ -60,8 +67,14 @@ data ChatPromptMessage
   | SystemMessagePrompt PromptTemplate.PromptTemplate
   | AIMessagePrompt PromptTemplate.PromptTemplate
   | ChatMessagePrompt Role PromptTemplate.PromptTemplate
+  | ContentMessagePrompt Role [ContentPromptBlock]
   | MessagesPlaceholderPrompt MessagesPlaceholder (Maybe [Message])
   | StaticMessage Message
+  deriving (Show, Eq)
+
+data ContentPromptBlock
+  = TextPromptBlock TemplateFormat Text
+  | ImagePromptBlock TemplateFormat ImageContent
   deriving (Show, Eq)
 
 data ChatPromptTemplate = ChatPromptTemplate
@@ -114,6 +127,9 @@ templateMessageWithFormat :: Role -> TemplateFormat -> Text -> ChatPromptMessage
 templateMessageWithFormat role templateFormat template =
   ChatMessagePrompt role $
     PromptTemplate.fromTemplateWithFormat template templateFormat Map.empty
+
+contentMessage :: Role -> [ContentPromptBlock] -> ChatPromptMessage
+contentMessage = ContentMessagePrompt
 
 messagesPlaceholder :: Text -> ChatPromptMessage
 messagesPlaceholder name = messagesPlaceholderWithOptions $ MessagesPlaceholder.messagesPlaceholderOptions name
@@ -169,6 +185,7 @@ messageInputVariables (HumanMessagePrompt promptMessage) = PromptTemplate.inputV
 messageInputVariables (SystemMessagePrompt promptTemplate) = PromptTemplate.inputVariables promptTemplate
 messageInputVariables (AIMessagePrompt promptTemplate) = PromptTemplate.inputVariables promptTemplate
 messageInputVariables (ChatMessagePrompt _ promptTemplate) = PromptTemplate.inputVariables promptTemplate
+messageInputVariables (ContentMessagePrompt _ blocks) = unique $ concatMap contentBlockInputVariables blocks
 messageInputVariables
   ( MessagesPlaceholderPrompt
       MessagesPlaceholder
@@ -196,6 +213,9 @@ partialMessage (AIMessagePrompt promptTemplate) partialVariables =
 partialMessage (ChatMessagePrompt role promptTemplate) partialVariables =
   ChatMessagePrompt role $
     PromptTemplate.partialPromptTemplate promptTemplate (textPartialVariables partialVariables)
+partialMessage (ContentMessagePrompt role blocks) partialVariables =
+  ContentMessagePrompt role $
+    map (\block -> partialContentBlock block (textPartialVariables partialVariables)) blocks
 partialMessage (MessagesPlaceholderPrompt placeholder storedMessages) partialVariables =
   MessagesPlaceholderPrompt placeholder $
     case Map.lookup (messagesPlaceholderVariableName placeholder) partialVariables of
@@ -229,6 +249,11 @@ formatMessage (AIMessagePrompt promptTemplate) variables _ =
   (: []) . textMessage Assistant <$> PromptTemplate.renderPrompt promptTemplate variables
 formatMessage (ChatMessagePrompt role promptTemplate) variables _ =
   (: []) . textMessage role <$> PromptTemplate.renderPrompt promptTemplate variables
+formatMessage (ContentMessagePrompt role blocks) variables _ = do
+  renderedBlocks <- concat <$> traverse (renderContentBlock variables) blocks
+  case NonEmpty.nonEmpty renderedBlocks of
+    Nothing -> Right []
+    Just nonEmptyBlocks -> Right [Message role nonEmptyBlocks Nothing Nothing Nothing]
 formatMessage (MessagesPlaceholderPrompt placeholder storedMessages) _ messageVariables =
   formatMessages placeholder $
     case storedMessages of
@@ -237,6 +262,106 @@ formatMessage (MessagesPlaceholderPrompt placeholder storedMessages) _ messageVa
         messageVariables
           `Map.union` Map.singleton (messagesPlaceholderVariableName placeholder) promptMessages
 formatMessage (StaticMessage staticMessage) _ _ = Right [staticMessage]
+
+contentBlockInputVariables :: ContentPromptBlock -> [Text]
+contentBlockInputVariables (TextPromptBlock templateFormat template) =
+  PromptTemplate.extractTemplateVariablesWithFormat templateFormat template
+contentBlockInputVariables (ImagePromptBlock templateFormat imageContent) =
+  imageContentInputVariables templateFormat imageContent
+
+partialContentBlock :: ContentPromptBlock -> Map.Map Text Text -> ContentPromptBlock
+partialContentBlock (TextPromptBlock templateFormat template) partials =
+  TextPromptBlock templateFormat $ renderPartial templateFormat partials template
+partialContentBlock (ImagePromptBlock templateFormat imageContent) partials =
+  ImagePromptBlock templateFormat $ partialImageContent templateFormat partials imageContent
+
+renderContentBlock ::
+  Map.Map Text Text -> ContentPromptBlock -> Either LangchainError [ContentBlock]
+renderContentBlock variables (TextPromptBlock templateFormat template) = do
+  rendered <- renderTemplate templateFormat variables template
+  pure [TextBlock rendered | not (T.null rendered)]
+renderContentBlock variables (ImagePromptBlock templateFormat imageContent) = do
+  renderedImage <- renderImageContent templateFormat variables imageContent
+  pure [ImageBlock renderedImage]
+
+imageContentInputVariables :: TemplateFormat -> ImageContent -> [Text]
+imageContentInputVariables templateFormat ImageContent {imageSource = source, imageDetail = detail, imageMetadata = metadata} =
+  imageSourceInputVariables templateFormat source
+    <> maybe [] (PromptTemplate.extractTemplateVariablesWithFormat templateFormat) detail
+    <> maybe [] (valueInputVariables templateFormat) metadata
+
+imageSourceInputVariables :: TemplateFormat -> ImageSource -> [Text]
+imageSourceInputVariables templateFormat (ImageBase64 _ imageTemplate) =
+  PromptTemplate.extractTemplateVariablesWithFormat templateFormat imageTemplate
+imageSourceInputVariables templateFormat (ImageUrl url) =
+  PromptTemplate.extractTemplateVariablesWithFormat templateFormat url
+
+partialImageContent :: TemplateFormat -> Map.Map Text Text -> ImageContent -> ImageContent
+partialImageContent templateFormat partials ImageContent {imageSource = source, imageDetail = detail, imageMetadata = metadata} =
+  ImageContent
+    { imageSource = partialImageSource templateFormat partials source
+    , imageDetail = renderPartial templateFormat partials <$> detail
+    , imageMetadata = renderPartialValue templateFormat partials <$> metadata
+    }
+
+partialImageSource :: TemplateFormat -> Map.Map Text Text -> ImageSource -> ImageSource
+partialImageSource templateFormat partials (ImageBase64 mime imageTemplate) =
+  ImageBase64 mime $ renderPartial templateFormat partials imageTemplate
+partialImageSource templateFormat partials (ImageUrl url) =
+  ImageUrl $ renderPartial templateFormat partials url
+
+renderImageContent ::
+  TemplateFormat -> Map.Map Text Text -> ImageContent -> Either LangchainError ImageContent
+renderImageContent Jinja2 _ ImageContent {imageSource = ImageBase64 _ _} =
+  Left $
+    validationError
+      "Jinja2 is not supported for image data prompt blocks"
+      (Just "ChatPromptTemplate")
+      (Just "contentMessage")
+renderImageContent templateFormat variables ImageContent {imageSource = source, imageDetail = detail, imageMetadata = metadata} = do
+  renderedSource <- renderImageSource templateFormat variables source
+  renderedDetail <- traverse (renderTemplate templateFormat variables) detail
+  renderedMetadata <- traverse (renderValue templateFormat variables) metadata
+  pure $ ImageContent renderedSource renderedDetail renderedMetadata
+
+renderImageSource ::
+  TemplateFormat -> Map.Map Text Text -> ImageSource -> Either LangchainError ImageSource
+renderImageSource templateFormat variables (ImageBase64 mime imageTemplate) =
+  ImageBase64 mime <$> renderTemplate templateFormat variables imageTemplate
+renderImageSource templateFormat variables (ImageUrl url) =
+  ImageUrl <$> renderTemplate templateFormat variables url
+
+renderTemplate :: TemplateFormat -> Map.Map Text Text -> Text -> Either LangchainError Text
+renderTemplate templateFormat variables template =
+  PromptTemplate.renderPrompt
+    (PromptTemplate.fromTemplateWithFormat template templateFormat Map.empty)
+    variables
+
+renderPartial :: TemplateFormat -> Map.Map Text Text -> Text -> Text
+renderPartial templateFormat partials template =
+  either (const template) id $ renderTemplate templateFormat partials template
+
+valueInputVariables :: TemplateFormat -> Value -> [Text]
+valueInputVariables templateFormat (String value) =
+  PromptTemplate.extractTemplateVariablesWithFormat templateFormat value
+valueInputVariables templateFormat (Array values) =
+  concatMap (valueInputVariables templateFormat) values
+valueInputVariables templateFormat (Object object) =
+  concatMap (valueInputVariables templateFormat) object
+valueInputVariables _ _ = []
+
+renderValue :: TemplateFormat -> Map.Map Text Text -> Value -> Either LangchainError Value
+renderValue templateFormat variables (String value) =
+  String <$> renderTemplate templateFormat variables value
+renderValue templateFormat variables (Array values) =
+  Array <$> traverse (renderValue templateFormat variables) values
+renderValue templateFormat variables (Object object) =
+  Object <$> traverse (renderValue templateFormat variables) object
+renderValue _ _ value = Right value
+
+renderPartialValue :: TemplateFormat -> Map.Map Text Text -> Value -> Value
+renderPartialValue templateFormat partials value =
+  either (const value) id $ renderValue templateFormat partials value
 
 unique :: [Text] -> [Text]
 unique = foldl addIfMissing []

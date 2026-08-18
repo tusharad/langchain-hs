@@ -160,7 +160,8 @@ renderFewShotPrompt FewShotPromptTemplate {..} = do
 -- | Interpolate variables into a template string
 interpolate :: TemplateFormat -> HM.Map Text Text -> Text -> Either LangchainError Text
 interpolate templateFormat vars template = do
-  parts <- parseTemplateWithFormat templateFormat template
+  let renderedSections = renderSections templateFormat vars template
+  parts <- parseTemplateWithFormat templateFormat renderedSections
   T.concat <$> traverse renderPart parts
   where
     renderPart :: TemplatePart -> Either LangchainError Text
@@ -169,6 +170,34 @@ interpolate templateFormat vars template = do
       case HM.lookup variableName vars of
         Just value -> Right value
         Nothing -> Left $ validationError ("Missing variable: " <> variableName) (Just variableName) Nothing
+
+renderSections :: TemplateFormat -> HM.Map Text Text -> Text -> Text
+renderSections Mustache vars = renderMustacheSections vars
+renderSections _ _ = id
+
+renderMustacheSections :: HM.Map Text Text -> Text -> Text
+renderMustacheSections vars = go
+  where
+    go :: Text -> Text
+    go template =
+      case T.breakOn "{{#" template of
+        (before, rest) | T.null rest -> before
+        (before, rest) ->
+          let afterOpen = T.drop 3 rest
+           in case T.breakOn "}}" afterOpen of
+                (_, closeOpen) | T.null closeOpen -> before <> rest
+                (nameRaw, afterName) ->
+                  let name = T.strip nameRaw
+                      closeTag = "{{/" <> name <> "}}"
+                      bodyAndRest = T.drop 2 afterName
+                   in case T.breakOn closeTag bodyAndRest of
+                        (_, closeClose) | T.null closeClose -> before <> rest
+                        (body, afterClose) ->
+                          let replacement =
+                                case HM.lookup name vars of
+                                  Just value | not (T.null value) -> go body
+                                  _ -> ""
+                           in before <> replacement <> go (T.drop (T.length closeTag) afterClose)
 
 -- | Render few-shot template with additional variables
 renderFewShotPromptWithVars ::

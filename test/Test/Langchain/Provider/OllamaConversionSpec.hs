@@ -99,7 +99,9 @@ tests =
             let msg =
                   Message
                     User
-                    (TextBlock "Analyze this:" NonEmpty.:| [ImageBlock "image/jpeg" "dGVzdA=="])
+                    ( TextBlock "Analyze this:"
+                        NonEmpty.:| [ImageBlock $ ImageContent (ImageBase64 (Just "image/jpeg") "dGVzdA==") Nothing Nothing]
+                    )
                     Nothing
                     Nothing
                     Nothing

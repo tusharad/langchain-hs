@@ -99,7 +99,9 @@ toOllamaMessage :: Message -> O.Message
 toOllamaMessage msg =
   let r = toOllamaRole (messageRole msg)
       txt = extractMessageText msg
-      imgs = case [b64 | ImageBlock _ b64 <- NonEmpty.toList (messageContents msg)] of
+      imgs = case [ b64
+                  | ImageBlock ImageContent {imageSource = ImageBase64 _ b64} <- NonEmpty.toList (messageContents msg)
+                  ] of
         [] -> Nothing
         xs -> Just (map Base64Image xs)
       tools = case messageToolCalls msg of

@@ -96,11 +96,23 @@ roleToText Function = "function"
 contentBlockToValue :: ContentBlock -> Value
 contentBlockToValue (TextBlock t) =
   object ["type" .= ("text" :: Text), "text" .= t]
-contentBlockToValue (ImageBlock mime b64) =
+contentBlockToValue (ImageBlock ImageContent {imageSource = ImageBase64 (Just mime) b64}) =
   object
     [ "type" .= ("image_url" :: Text)
     , "image_url" .= object ["url" .= ("data:" <> mime <> ";base64," <> b64)]
     ]
+contentBlockToValue (ImageBlock ImageContent {imageSource = ImageUrl url, imageDetail = detail}) =
+  object
+    [ "type" .= ("image_url" :: Text)
+    , "image_url" .= object (["url" .= url] <> maybe [] (pure . ("detail" .=)) detail)
+    ]
+contentBlockToValue (ImageBlock ImageContent {imageSource = ImageBase64 Nothing imageData, imageMetadata = metadata}) =
+  object $
+    [ "type" .= ("image" :: Text)
+    , "source_type" .= ("base64" :: Text)
+    , "data" .= imageData
+    ]
+      <> maybe [] (pure . ("metadata" .=)) metadata
 contentBlockToValue (AudioBlock mime b64) =
   object ["type" .= ("text" :: Text), "text" .= ("[Audio block " <> mime <> "]")]
 contentBlockToValue (DataBlock _) =

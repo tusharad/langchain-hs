@@ -78,7 +78,7 @@ newAnthropic key modelName =
 contentBlockToAnthropic :: ContentBlock -> Value
 contentBlockToAnthropic (TextBlock t) =
   object ["type" .= ("text" :: Text), "text" .= t]
-contentBlockToAnthropic (ImageBlock mime b64) =
+contentBlockToAnthropic (ImageBlock ImageContent {imageSource = ImageBase64 (Just mime) b64}) =
   object
     [ "type" .= ("image" :: Text)
     , "source"
@@ -88,6 +88,10 @@ contentBlockToAnthropic (ImageBlock mime b64) =
           , "data" .= b64
           ]
     ]
+contentBlockToAnthropic (ImageBlock ImageContent {imageSource = ImageUrl url}) =
+  object ["type" .= ("text" :: Text), "text" .= ("[Image URL: " <> url <> "]")]
+contentBlockToAnthropic (ImageBlock ImageContent {imageSource = ImageBase64 Nothing _}) =
+  object ["type" .= ("text" :: Text), "text" .= ("[Image data block: base64]" :: Text)]
 contentBlockToAnthropic (AudioBlock mime _) =
   object ["type" .= ("text" :: Text), "text" .= ("[Audio block " <> mime <> "]")]
 contentBlockToAnthropic (DataBlock _) =

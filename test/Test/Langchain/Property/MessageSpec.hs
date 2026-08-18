@@ -24,8 +24,17 @@ instance Arbitrary Role where
 instance Arbitrary ContentBlock where
   arbitrary =
     oneof
-      [ TextBlock <$> (T.pack <$> listOf1 (elements (['a' .. 'z'] ++ ['A' .. 'Z'] ++ ['0' .. '9'] ++ " \t\n.,!?-")))
-      , ImageBlock <$> elements ["image/png", "image/jpeg", "image/webp"] <*> (T.pack <$> listOf1 (elements ['a' .. 'z']))
+      [ TextBlock
+          <$> (T.pack <$> listOf1 (elements (['a' .. 'z'] ++ ['A' .. 'Z'] ++ ['0' .. '9'] ++ " \t\n.,!?-")))
+      , ImageBlock
+          <$> ( ImageContent
+                  <$> ( ImageBase64 . Just
+                          <$> elements ["image/png", "image/jpeg", "image/webp"]
+                          <*> (T.pack <$> listOf1 (elements ['a' .. 'z']))
+                      )
+                  <*> pure Nothing
+                  <*> pure Nothing
+              )
       , AudioBlock <$> elements ["audio/mp3", "audio/wav"] <*> (T.pack <$> listOf1 (elements ['a' .. 'z']))
       , DataBlock . BS.pack <$> listOf1 arbitrary
       ]
