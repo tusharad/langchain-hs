@@ -22,6 +22,7 @@ module Langchain.PromptTemplate
   , defaultPromptTemplateOptions
   , fromTemplate
   , fromTemplateWithOptions
+  , partialPromptTemplate
   , renderPrompt
   , renderFewShotPrompt
   , renderFewShotPromptWithVars
@@ -38,9 +39,9 @@ import Langchain.Core.Error (LangchainError, validationError)
 data PromptTemplate = PromptTemplate
   { template :: Text
   , inputVariables :: [Text]
-  -- Matches Python partial_variables: pre-bound values reduce required inputs
-  -- without changing the original template string.
-  , partialVariables :: HM.Map Text Text
+  , -- Matches Python partial_variables: pre-bound values reduce required inputs
+    -- without changing the original template string.
+    partialVariables :: HM.Map Text Text
   }
   deriving (Show, Eq)
 
@@ -66,7 +67,9 @@ parseTemplate = go
         (literal, rest) -> do
           let afterOpen = T.drop 1 rest
           case T.breakOn "}" afterOpen of
-            (_, afterClose) | T.null afterClose -> Left $ validationError "Unclosed brace in template" (Just "PromptTemplate") Nothing
+            (_, afterClose)
+              | T.null afterClose ->
+                  Left $ validationError "Unclosed brace in template" (Just "PromptTemplate") Nothing
             (variableName, afterClose) -> do
               remainingParts <- go (T.drop 1 afterClose)
               pure $
@@ -84,6 +87,10 @@ fromTemplateWithOptions template (PromptTemplateOptions partials) =
     , inputVariables = filter (`HM.notMember` partials) (extractTemplateVariables template)
     , partialVariables = partials
     }
+
+partialPromptTemplate :: PromptTemplate -> HM.Map Text Text -> PromptTemplate
+partialPromptTemplate (PromptTemplate template _ existingPartials) partials =
+  fromTemplateWithOptions template $ PromptTemplateOptions (partials `HM.union` existingPartials)
 
 -- | Render a prompt template with the given variable map
 renderPrompt :: PromptTemplate -> HM.Map Text Text -> Either LangchainError Text
@@ -123,7 +130,8 @@ interpolate vars template = do
         Nothing -> Left $ validationError ("Missing variable: " <> variableName) (Just variableName) Nothing
 
 -- | Render few-shot template with additional variables
-renderFewShotPromptWithVars :: FewShotPromptTemplate -> HM.Map Text Text -> Either LangchainError Text
+renderFewShotPromptWithVars ::
+  FewShotPromptTemplate -> HM.Map Text Text -> Either LangchainError Text
 renderFewShotPromptWithVars template vars = do
   renderedBase <- renderFewShotPrompt template
   interpolate vars renderedBase

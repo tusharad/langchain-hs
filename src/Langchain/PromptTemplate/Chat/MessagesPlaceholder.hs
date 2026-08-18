@@ -17,6 +17,7 @@ module Langchain.PromptTemplate.Chat.MessagesPlaceholder
   , messagesPlaceholder
   , messagesPlaceholderOptions
   , messagesPlaceholderWithOptions
+  , messagesPlaceholderVariableName
   ) where
 
 import qualified Data.Map.Strict as Map
@@ -85,6 +86,9 @@ messagesPlaceholderWithOptions MessagesPlaceholderOptions {variableName = name, 
     , optional = optional'
     , nMessages = nMessages'
     }
+
+messagesPlaceholderVariableName :: MessagesPlaceholder -> Text
+messagesPlaceholderVariableName MessagesPlaceholder {variableName = name} = name
 
 takeLast :: Int -> [a] -> [a]
 takeLast n values = drop (max 0 (length values - n)) values

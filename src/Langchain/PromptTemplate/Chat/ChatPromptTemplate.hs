@@ -40,7 +40,7 @@ import Langchain.Core.Error (LangchainError, validationError)
 import Langchain.Core.Model.Types
   ( Message (..)
   , Role (..)
-  , extractMessageText
+  , formatMessageString
   , textMessage
   , userMessage
   )
@@ -50,6 +50,7 @@ import Langchain.PromptTemplate.Chat (BaseMessagePromptTemplate (formatMessages)
 import Langchain.PromptTemplate.Chat.HumanMessagePromptTemplate (HumanMessagePromptTemplate (..))
 import Langchain.PromptTemplate.Chat.MessagesPlaceholder
   ( MessagesPlaceholder (..)
+  , messagesPlaceholderVariableName
   )
 import qualified Langchain.PromptTemplate.Chat.MessagesPlaceholder as MessagesPlaceholder
 
@@ -137,7 +138,7 @@ invoke ChatPromptTemplate {messages = [MessagesPlaceholderPrompt placeholder _]}
   ChatPromptValue
     <$> formatMessages
       placeholder
-      (Map.singleton (placeholderVariableName placeholder) promptMessages)
+      (Map.singleton (messagesPlaceholderVariableName placeholder) promptMessages)
 invoke ChatPromptTemplate {messages = promptMessages} (ChatPromptInputs variables messageVariables) =
   formatPromptWithMessages promptMessages variables messageVariables
 invoke _ (ChatPromptMessageList _) =
@@ -178,18 +179,20 @@ partialMessage :: ChatPromptMessage -> Map.Map Text PartialValue -> ChatPromptMe
 partialMessage (HumanMessagePrompt HumanMessagePromptTemplate {prompt = promptTemplate}) partialVariables =
   HumanMessagePrompt $
     HumanMessagePromptTemplate
-      { prompt = partialPromptTemplate promptTemplate (textPartialVariables partialVariables)
+      { prompt = PromptTemplate.partialPromptTemplate promptTemplate (textPartialVariables partialVariables)
       }
 partialMessage (SystemMessagePrompt promptTemplate) partialVariables =
-  SystemMessagePrompt $ partialPromptTemplate promptTemplate (textPartialVariables partialVariables)
+  SystemMessagePrompt $
+    PromptTemplate.partialPromptTemplate promptTemplate (textPartialVariables partialVariables)
 partialMessage (AIMessagePrompt promptTemplate) partialVariables =
-  AIMessagePrompt $ partialPromptTemplate promptTemplate (textPartialVariables partialVariables)
+  AIMessagePrompt $
+    PromptTemplate.partialPromptTemplate promptTemplate (textPartialVariables partialVariables)
 partialMessage (ChatMessagePrompt role promptTemplate) partialVariables =
   ChatMessagePrompt role $
-    partialPromptTemplate promptTemplate (textPartialVariables partialVariables)
+    PromptTemplate.partialPromptTemplate promptTemplate (textPartialVariables partialVariables)
 partialMessage (MessagesPlaceholderPrompt placeholder storedMessages) partialVariables =
   MessagesPlaceholderPrompt placeholder $
-    case Map.lookup (placeholderVariableName placeholder) partialVariables of
+    case Map.lookup (messagesPlaceholderVariableName placeholder) partialVariables of
       Just (PartialMessages promptMessages) -> Just promptMessages
       _ -> storedMessages
 partialMessage (StaticMessage staticMessage) _ = StaticMessage staticMessage
@@ -200,12 +203,6 @@ textPartialVariables = Map.mapMaybe toText
     toText :: PartialValue -> Maybe Text
     toText (PartialText value) = Just value
     toText (PartialMessages _) = Nothing
-
-partialPromptTemplate ::
-  PromptTemplate.PromptTemplate -> Map.Map Text Text -> PromptTemplate.PromptTemplate
-partialPromptTemplate (PromptTemplate.PromptTemplate template _ existingPartials) partialVariables =
-  PromptTemplate.fromTemplateWithOptions template $
-    PromptTemplate.PromptTemplateOptions (partialVariables `Map.union` existingPartials)
 
 formatPromptWithMessages ::
   [ChatPromptMessage] ->
@@ -232,23 +229,8 @@ formatMessage (MessagesPlaceholderPrompt placeholder storedMessages) _ messageVa
       Nothing -> messageVariables
       Just promptMessages ->
         messageVariables
-          `Map.union` Map.singleton (placeholderVariableName placeholder) promptMessages
+          `Map.union` Map.singleton (messagesPlaceholderVariableName placeholder) promptMessages
 formatMessage (StaticMessage staticMessage) _ _ = Right [staticMessage]
-
-placeholderVariableName :: MessagesPlaceholder -> Text
-placeholderVariableName MessagesPlaceholder {variableName = name} = name
-
-formatMessageString :: Message -> Text
-formatMessageString chatMessage =
-  roleLabel (messageRole chatMessage) <> ": " <> extractMessageText chatMessage
-
-roleLabel :: Role -> Text
-roleLabel System = "System"
-roleLabel User = "Human"
-roleLabel Assistant = "AI"
-roleLabel Tool = "Tool"
-roleLabel Developer = "Developer"
-roleLabel Function = "Function"
 
 unique :: [Text] -> [Text]
 unique = foldl addIfMissing []
