@@ -30,11 +30,9 @@ import Control.Concurrent.Async (async)
 import Control.Concurrent.STM
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Aeson (FromJSON, ToJSON, Value)
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time.Clock (UTCTime, getCurrentTime)
+import Data.Time.Clock (UTCTime)
 import GHC.Generics (Generic)
 
 -- | Comprehensive lifecycle events emitted across Langchain components

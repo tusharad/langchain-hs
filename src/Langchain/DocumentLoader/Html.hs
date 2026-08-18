@@ -1,6 +1,8 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 
+-- TODO: we shall use tagsoup here
+
 {- |
 Module      : Langchain.DocumentLoader.Html
 Description : HTML document loader with tag stripping and title/heading extraction
@@ -18,8 +20,8 @@ module Langchain.DocumentLoader.Html
   ) where
 
 import Control.Exception (try)
-import Control.Monad.Except (MonadError, throwError)
-import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.Except (throwError)
+import Control.Monad.IO.Class (liftIO)
 import Data.Aeson (Value (..))
 import qualified Data.Map.Strict as Map
 import Data.Maybe (listToMaybe)
@@ -29,7 +31,7 @@ import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.IO as TLIO
 import qualified Text.HTML.TagSoup as TSoup
 
-import Langchain.Core.Error (LangchainError, documentLoaderError)
+import Langchain.Core.Error (documentLoaderError)
 import Langchain.DocumentLoader.Core (BaseLoader (..), Document (..))
 import Langchain.TextSplitter.Character (defaultCharacterSplitterOps, splitText)
 

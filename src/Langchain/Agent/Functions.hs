@@ -23,8 +23,6 @@ module Langchain.Agent.Functions
 
 import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.IO.Class (MonadIO)
-import Data.Aeson (Value)
-import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -34,7 +32,6 @@ import Langchain.Core.Model
   ( ChatModel (..)
   , ContentBlock (..)
   , Message (..)
-  , Role (..)
   , ToolCall (..)
   , extractMessageText
   , systemMessage

@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -29,7 +30,6 @@ module Langchain.Agent.PlanAndExecute
 import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.IO.Class (MonadIO)
 import Data.Aeson (FromJSON, ToJSON)
-import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import qualified Data.Text as T
 import GHC.Generics (Generic)
@@ -37,9 +37,7 @@ import GHC.Generics (Generic)
 import Langchain.Core.Error (LangchainError, agentError)
 import Langchain.Core.Model
   ( ChatModel (..)
-  , Message (..)
   , extractMessageText
-  , systemMessage
   , userMessage
   )
 
@@ -54,7 +52,8 @@ data PlanStep = PlanStep
 newtype Plan = Plan
   { planSteps :: [PlanStep]
   }
-  deriving (Show, Eq, Generic, ToJSON, FromJSON)
+  deriving stock (Show, Eq, Generic)
+  deriving anyclass (ToJSON, FromJSON)
 
 -- | Plan-and-Execute agent container
 data PlanAndExecuteAgent planner executor = PlanAndExecuteAgent

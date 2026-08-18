@@ -28,7 +28,6 @@ module Langchain.Cache.Core
 
 import Control.Concurrent.STM
 import Control.Exception (SomeException, try)
-import Control.Monad.Except (MonadError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Aeson (decode, encode)
 import qualified Data.ByteString.Lazy as LBS
@@ -37,14 +36,11 @@ import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import qualified Data.Text as TS
 import qualified Data.Text.Encoding as TE
-import Data.Time.Clock
 import Database.SQLite.Simple
 
-import Langchain.Core.Error (LangchainError)
 import Langchain.Core.Model
   ( ChatModel (..)
   , Message (..)
-  , ModelConfig (..)
   , extractMessageText
   )
 

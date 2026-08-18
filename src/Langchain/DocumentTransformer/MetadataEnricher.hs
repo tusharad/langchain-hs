@@ -22,9 +22,8 @@ module Langchain.DocumentTransformer.MetadataEnricher
   ) where
 
 import Control.Monad.IO.Class (MonadIO)
-import Data.Aeson (Value, toJSON)
+import Data.Aeson (toJSON)
 import qualified Data.Map.Strict as Map
-import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 

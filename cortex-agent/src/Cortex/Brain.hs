@@ -29,8 +29,7 @@ module Cortex.Brain
   ) where
 
 import Control.Concurrent.STM (TVar, atomically, newTVarIO, readTVar, writeTVar)
-import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.Aeson (FromJSON (..), ToJSON (..), decode, encode, object, (.=))
+import Data.Aeson (FromJSON (..), ToJSON (..), decode, encode)
 import qualified Data.ByteString.Lazy.Char8 as LBSC
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
@@ -121,7 +120,7 @@ reloadCache BrainStore {..} = do
 
 -- | Create and persist a new Brain
 createBrain :: BrainStore -> BrainConfig -> IO Brain
-createBrain store@BrainStore {..} cfg = do
+createBrain BrainStore {..} cfg = do
   now <- getCurrentTime
   let uniqueId = "brain-" <> T.pack (show (T.length (brainName cfg))) <> "-" <> T.take 8 (brainName cfg)
       bId = BrainId uniqueId

@@ -159,7 +159,7 @@ reviseDraftSection
   -> FactCheckReview
   -> [ScrapedSource]
   -> m DraftSection
-reviseDraftSection model draft review sources = do
+reviseDraftSection model draft review _ = do
   let promptText =
         "You are revising a section based on Fact-Checker feedback. Fix any unsupported claims or factual inaccuracies.\n\n"
           <> "Section: " <> draftTitle draft <> "\n"

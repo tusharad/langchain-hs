@@ -21,16 +21,15 @@ module Cortex.Knowledge.Retriever
   ) where
 
 import Control.Monad.Except (MonadError)
-import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.IO.Class (MonadIO)
 import Data.Aeson (Value (..))
 import Data.Text (Text)
-import qualified Data.Text as T
 
 import Cortex.Brain (BrainId (..))
 import Langchain.Core.Error (LangchainError)
 import Langchain.Core.Model (ChatModel)
 import Langchain.DocumentLoader.Core (Document (..))
-import Langchain.Retriever.BM25 (BM25Index, newBM25Index)
+import Langchain.Retriever.BM25 (newBM25Index)
 import Langchain.Retriever.Hybrid (HybridRetriever (..), newHybridRetriever, searchHybrid)
 import Langchain.Retriever.Reranker (LLMReranker (..), Reranker (..), newLLMReranker)
 import Langchain.VectorStore.Filter (eqFilter, filterDocuments)

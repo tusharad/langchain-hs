@@ -19,7 +19,7 @@ module Langchain.Core.Tool
 import Data.Aeson
 import Data.Text (Text)
 
-import Langchain.Core.Error (LangchainError, toolError)
+import Langchain.Core.Error (LangchainError)
 
 -- | Effect-polymorphic Tool abstraction
 data Tool m = Tool

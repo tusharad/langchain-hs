@@ -49,7 +49,7 @@ hitlNode ::
   NodeId ->
   (s -> m (Either LangchainError s)) ->
   Node s m
-hitlNode cp threadId name innerAction =
+hitlNode cp threadId name _ =
   Node
     { nodeId = name
     , nodeAction = \state -> do

@@ -33,23 +33,13 @@ import Data.Aeson
   ( FromJSON (..)
   , ToJSON (..)
   , Value (..)
-  , object
-  , withObject
-  , (.!=)
-  , (.:)
-  , (.:?)
-  , (.=)
   )
-import Data.List (find, foldl', nub, partition)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
-import Data.Set (Set)
-import qualified Data.Set as Set
 import Data.Text (Text)
-import qualified Data.Text as T
 import GHC.Generics (Generic)
 
-import Langchain.Core.Error (LangchainError, agentError, internalError)
+import Langchain.Core.Error (LangchainError, agentError)
 
 -- | Declarative node in a dynamic flow graph
 data FlowNode = FlowNode
@@ -116,7 +106,7 @@ topologicalSortFlow DynamicFlow {..} =
     countInDegrees acc edge = Map.insertWith (+) (edgeTarget edge) 1 acc
     buildAdj acc edge = Map.insertWith (++) (edgeSource edge) [edgeTarget edge] acc
 
-    kahnLoop [] inDegs _ order total
+    kahnLoop [] _ _ order total
       | length order == total = Right (reverse order)
       | otherwise = Left "Cycle detected in dynamic flow graph"
     kahnLoop (cur : rest) inDegs adj order total =

@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# OPTIONS_GHC -Wno-partial-fields #-}
 
 {- |
 Module      : Langchain.Observability.StreamProtocol
@@ -22,7 +23,6 @@ module Langchain.Observability.StreamProtocol
 import Data.Aeson (FromJSON (..), ToJSON (..), encode)
 import qualified Data.ByteString.Lazy.Char8 as LBSC
 import Data.Text (Text)
-import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import GHC.Generics (Generic)
 

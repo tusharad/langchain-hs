@@ -5,7 +5,7 @@
 {- |
 Module      : Langchain.Graph.Voting
 Description : Voting and ensemble classification multi-agent pattern
-Copyright   : (c) 2025-2026 Tushar Adhatrao
+Copyright   : (c) 2026 Tushar Adhatrao
 License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
@@ -21,20 +21,16 @@ module Langchain.Graph.Voting
   , runVotingClassification
   ) where
 
-import Control.Concurrent.Async (mapConcurrently)
-import Control.Monad.Except (MonadError, runExceptT, throwError)
-import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.List (maximumBy)
-import Data.Map.Strict (Map)
+import Control.Monad.Except (MonadError, throwError)
+import Control.Monad.IO.Class (MonadIO)
 import qualified Data.Map.Strict as Map
-import Data.Ord (comparing)
+import Data.Maybe (listToMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 
 import Langchain.Core.Error (LangchainError, agentError)
 import Langchain.Core.Model
   ( ChatModel (..)
-  , Message (..)
   , extractMessageText
   , userMessage
   )
@@ -92,7 +88,13 @@ runVotingClassification VotingClassifier {..} input = do
 
       let tally = foldr (\v m -> Map.insertWith (+) (voteChoice v) (1 :: Int) m) Map.empty voteResults
           topScore = maximum (Map.elems tally)
-          winners = [label | (label, count) <- Map.toList tally, count == topScore]
-          winningChoice = head winners
+          winners =
+            [ label
+            | (label, count) <- Map.toList tally
+            , count == topScore
+            ]
+      winningChoice <- case listToMaybe winners of
+        Just res -> pure res
+        Nothing -> throwError $ agentError "winner list is empty" Nothing Nothing
 
       pure (winningChoice, voteResults)

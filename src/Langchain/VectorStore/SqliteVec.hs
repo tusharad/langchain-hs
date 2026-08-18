@@ -7,7 +7,7 @@
 {- |
 Module      : Langchain.VectorStore.SqliteVec
 Description : SQLite-backed vector store with persistent storage and cosine distance
-Copyright   : (c) 2025-2026 Tushar Adhatrao
+Copyright   : (c) 2026 Tushar Adhatrao
 License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
@@ -28,7 +28,6 @@ import qualified Data.ByteString.Lazy as LBS
 import Data.Int (Int64)
 import Data.List (sortOn)
 import Data.Ord (Down (..))
-import Data.Text (Text)
 import qualified Data.Text as TS
 import qualified Data.Text.Encoding as TE
 import qualified Data.Text.Lazy as TL
@@ -48,11 +47,10 @@ data SqliteVecStore e = SqliteVecStore
 
 -- | Construct a new SqliteVecStore and initialize schema
 newSqliteVecStore ::
-  (MonadIO m, MonadError LangchainError m, Embeddings e) =>
+  (MonadIO m, MonadError LangchainError m) =>
   FilePath ->
   e ->
   m (SqliteVecStore e)
-{--}
 newSqliteVecStore dbPath emb = do
   initSqliteVecSchema dbPath
   pure $ SqliteVecStore dbPath emb
@@ -118,8 +116,8 @@ instance (Embeddings e) => VectorStore (SqliteVecStore e) where
             Nothing
       Right () -> pure store
 
-  similaritySearch store query k = do
-    qVec <- embedQuery (sqliteEmbeddings store) query
+  similaritySearch store query0 k = do
+    qVec <- embedQuery (sqliteEmbeddings store) query0
     similaritySearchByVector store qVec k
 
   similaritySearchByVector store qVec k = do

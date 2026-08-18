@@ -20,9 +20,6 @@ module Langchain.Graph.Parallel
 
 import Control.Concurrent.Async (mapConcurrently)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map
-import Data.Text (Text)
 
 import Langchain.Core.Error (LangchainError)
 import Langchain.Graph.StateGraph

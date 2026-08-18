@@ -21,17 +21,16 @@ module Cortex.Flow.Components
   , scraperComponent
   ) where
 
-import Control.Monad.Except (MonadError, runExceptT)
-import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.Except (MonadError)
+import Control.Monad.IO.Class (MonadIO)
 import Data.Aeson (Value (..), toJSON)
 import qualified Data.Map.Strict as Map
-import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 
 import Cortex.Knowledge.Retriever (BrainRetriever (..), queryBrain)
 import Cortex.Research.Scraper (ScrapedSource (..), defaultScraperConfig, scrapeUrl)
-import Langchain.Core.Error (LangchainError, agentError)
+import Langchain.Core.Error (LangchainError)
 import Langchain.Core.Model (ChatModel, Role (..), extractMessageText, invoke, textMessage)
 import Langchain.DocumentLoader.Core (Document (..))
 import Langchain.Graph.DynamicFlow (ComponentRegistry, FlowNode (..), NodeExecutor)

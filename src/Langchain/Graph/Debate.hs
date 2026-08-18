@@ -5,7 +5,7 @@
 {- |
 Module      : Langchain.Graph.Debate
 Description : Multi-agent debate orchestration pattern
-Copyright   : (c) 2025-2026 Tushar Adhatrao
+Copyright   : (c) 2026 Tushar Adhatrao
 License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
@@ -29,9 +29,7 @@ import qualified Data.Text as T
 import Langchain.Core.Error (LangchainError, agentError)
 import Langchain.Core.Model
   ( ChatModel (..)
-  , Message (..)
   , extractMessageText
-  , systemMessage
   , userMessage
   )
 

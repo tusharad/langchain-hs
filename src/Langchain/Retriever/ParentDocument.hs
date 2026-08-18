@@ -7,7 +7,7 @@
 {- |
 Module      : Langchain.Retriever.ParentDocument
 Description : Parent document retriever linking small child search chunks to full parent documents
-Copyright   : (c) 2025-2026 Tushar Adhatrao
+Copyright   : (c) 2026 Tushar Adhatrao
 License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
@@ -52,7 +52,7 @@ data ParentDocumentRetriever vs = ParentDocumentRetriever
 
 -- | Construct a new ParentDocumentRetriever
 newParentDocumentRetriever ::
-  (MonadIO m, VectorStore vs) =>
+  (MonadIO m) =>
   vs ->
   m (ParentDocumentRetriever vs)
 newParentDocumentRetriever vs = liftIO $ do

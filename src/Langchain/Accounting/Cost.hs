@@ -7,7 +7,7 @@
 {- |
 Module      : Langchain.Accounting.Cost
 Description : Token counting estimation and multi-provider financial cost accounting
-Copyright   : (c) 2025-2026 Tushar Adhatrao
+Copyright   : (c) 2026 Tushar Adhatrao
 License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
@@ -24,8 +24,6 @@ module Langchain.Accounting.Cost
   ) where
 
 import Data.Aeson (FromJSON, ToJSON)
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import qualified Data.Text as T
 import GHC.Generics (Generic)

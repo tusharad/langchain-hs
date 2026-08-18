@@ -19,17 +19,14 @@ module Langchain.Memory.Summary
   ) where
 
 import Control.Concurrent.STM
-import Control.Monad.Except (MonadError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Text (Text)
 import qualified Data.Text as T
 
-import Langchain.Core.Error (LangchainError)
 import Langchain.Core.Model
   ( ChatModel (..)
   , Message (..)
   , Role (..)
-  , assistantMessage
   , extractMessageText
   , systemMessage
   , userMessage
@@ -63,8 +60,8 @@ instance (ChatModel model) => BaseMemory (SummaryMemory model) where
       then pure recent
       else pure (systemMessage ("Summary of previous conversation:\n" <> sumTxt) : recent)
 
-  addMessage mem@SummaryMemory {..} newMsg = do
-    (shouldSummarize, toSummarize, remaining) <- liftIO $ atomically $ do
+  addMessage SummaryMemory {..} newMsg = do
+    (shouldSummarize, toSummarize, _) <- liftIO $ atomically $ do
       modifyTVar' recentMessagesVar (\msgs -> msgs ++ [newMsg])
       currentMsgs <- readTVar recentMessagesVar
       if length currentMsgs > maxMessageThreshold

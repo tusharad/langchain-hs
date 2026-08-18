@@ -23,6 +23,7 @@ module Langchain.Logging.Structured
   , newInMemoryLogger
   , getInMemoryLogs
   , stderrLogger
+  , inMemoryToLogger
   , logEvent
   , logDebug
   , logInfo
@@ -37,8 +38,6 @@ import qualified Data.ByteString.Lazy.Char8 as LBSC
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)
-import qualified Data.Text as T
-import qualified Data.Text.IO as TIO
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import GHC.Generics (Generic)
 import System.IO (hPutStrLn, stderr)

@@ -30,7 +30,6 @@ import qualified Data.Text as T
 import Langchain.Core.Error (LangchainError, agentError)
 import Langchain.Core.Model
   ( ChatModel (..)
-  , Message (..)
   , extractMessageText
   , userMessage
   )

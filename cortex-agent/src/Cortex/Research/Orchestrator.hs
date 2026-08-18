@@ -22,17 +22,16 @@ module Cortex.Research.Orchestrator
   ) where
 
 import Control.Monad.Except (MonadError)
-import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.IO.Class (MonadIO)
 import Data.Aeson (FromJSON (..), ToJSON (..))
 import Data.Text (Text)
-import qualified Data.Text as T
 import GHC.Generics (Generic)
 
 import Cortex.Research.Conductor (AccumulatedResearch (..), SubTopicFindings (..), conductFullResearch)
 import Cortex.Research.MultiAgent (DraftSection (..), runDraftAndFactCheckLoop)
 import Cortex.Research.Planner (ResearchPlan (..), planResearchOutline)
 import Cortex.Research.Publisher (PublishedReport (..), publishResearchReport)
-import Cortex.Research.Scraper (ScrapedSource (..), ScraperConfig (..), defaultScraperConfig)
+import Cortex.Research.Scraper (ScrapedSource (..), ScraperConfig (..))
 import Langchain.Core.Error (LangchainError)
 import Langchain.Core.Model (ChatModel)
 import Langchain.Graph.StateGraph (StateReducer)

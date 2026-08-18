@@ -22,11 +22,9 @@ module Langchain.Pipeline.DSL
   , runPipeline
   ) where
 
-import Control.Monad ((>=>))
-import Control.Monad.Except (MonadError, runExceptT, throwError)
-import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.Except (MonadError, throwError)
+import Control.Monad.IO.Class (MonadIO)
 import Data.Text (Text)
-import qualified Data.Text as T
 
 import Langchain.Core.Error (LangchainError)
 

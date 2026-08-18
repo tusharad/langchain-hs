@@ -23,7 +23,7 @@ module Langchain.Graph.Checkpointer
 import Control.Concurrent.STM
 import Control.Exception (try)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.Aeson (FromJSON, ToJSON, decode, encode, fromJSON, toJSON)
+import Data.Aeson (FromJSON, ToJSON, decode, encode)
 import qualified Data.ByteString.Lazy as BL
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map

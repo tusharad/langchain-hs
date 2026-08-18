@@ -38,10 +38,10 @@ import GHC.Generics (Generic)
 
 -- | A single content block within a multi-modal message.
 data ContentBlock
-  = TextBlock {blockText :: Text}
-  | ImageBlock {blockMimeType :: Text, blockBase64 :: Text}
-  | AudioBlock {blockMimeType :: Text, blockBase64 :: Text}
-  | DataBlock {blockBytes :: ByteString}
+  = TextBlock Text
+  | ImageBlock Text Text
+  | AudioBlock Text Text
+  | DataBlock ByteString
   deriving (Eq, Show, Generic, NFData)
 
 instance ToJSON ContentBlock where

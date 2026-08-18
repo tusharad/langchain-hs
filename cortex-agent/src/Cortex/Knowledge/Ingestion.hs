@@ -24,7 +24,7 @@ module Cortex.Knowledge.Ingestion
 
 import Control.Monad.Except (runExceptT)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.Aeson (Value (..), toJSON)
+import Data.Aeson (Value (..))
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import qualified Data.Text as T

@@ -35,7 +35,6 @@ import Control.Monad.IO.Class (MonadIO)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)
-import qualified Data.Text as T
 
 import Langchain.Core.Error (LangchainError, internalError)
 import Langchain.Core.Model (Message)

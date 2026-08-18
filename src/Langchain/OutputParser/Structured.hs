@@ -52,11 +52,11 @@ import Langchain.Core.Model
 -- | Typeclass for types that declare a JSON Schema and structured parser
 class (FromJSON a) => StructuredOutput a where
   outputSchema :: Proxy a -> Value
-  default outputSchema :: (Generic a, GRecordSchema (Rep a)) => Proxy a -> Value
+  default outputSchema :: (GRecordSchema (Rep a)) => Proxy a -> Value
   outputSchema _ = genericJsonSchema (Proxy :: Proxy a)
 
 -- | Generic JSON Schema derivation helper
-genericJsonSchema :: forall a. (Generic a, GRecordSchema (Rep a)) => Proxy a -> Value
+genericJsonSchema :: forall a. (GRecordSchema (Rep a)) => Proxy a -> Value
 genericJsonSchema _ =
   let (props, reqs) = gRecordSchema (Proxy :: Proxy (Rep a))
    in object

@@ -24,17 +24,15 @@ module Langchain.Agent.Supervisor
 
 import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.IO.Class (MonadIO)
-import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
+import Data.Maybe (listToMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 
 import Langchain.Core.Error (LangchainError, agentError)
 import Langchain.Core.Model
   ( ChatModel (..)
-  , Message (..)
   , extractMessageText
-  , systemMessage
   , userMessage
   )
 
@@ -156,7 +154,9 @@ runSupervisorTeam SupervisorTeam {..} goal = do
                       loop (turn + 1) (history ++ [event])
                     Nothing -> do
                       -- Fallback to first agent if supervisor hallucinated a name
-                      let fallbackAgent = head specialistAgents
+                      fallbackAgent <- case listToMaybe specialistAgents of
+                        Just res -> pure res
+                        Nothing -> throwError $ agentError "supervisor agent is empty" Nothing Nothing
                       res <- specialistAction fallbackAgent taskDesc
                       let event = DelegationEvent turn (specialistName fallbackAgent) taskDesc res
                       loop (turn + 1) (history ++ [event])

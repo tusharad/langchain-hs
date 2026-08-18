@@ -450,12 +450,8 @@ module Langchain.Prelude
   , newOllama
   , OpenAI
   , newOpenAI
-  , Anthropic
-  , newAnthropic
   , Gemini
   , newGemini
-  , DeepSeek
-  , newDeepSeek
   ) where
 
 import Langchain.Accounting.Cost
@@ -523,8 +519,6 @@ import Langchain.OutputParser.Structured
 import Langchain.OutputParser.Xml
 import Langchain.Pipeline.DSL
 import Langchain.PromptTemplate
-import Langchain.Provider.Anthropic (Anthropic, newAnthropic)
-import Langchain.Provider.DeepSeek (DeepSeek, newDeepSeek)
 import Langchain.Provider.Gemini (Gemini, newGemini)
 import Langchain.Provider.Ollama (Ollama, newOllama)
 import Langchain.Provider.OpenAI (OpenAI, newOpenAI)

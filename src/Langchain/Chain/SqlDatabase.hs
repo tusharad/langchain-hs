@@ -23,16 +23,15 @@ module Langchain.Chain.SqlDatabase
   ) where
 
 import Control.Exception (SomeException, try)
-import Control.Monad.Except (MonadError, throwError)
+import Control.Monad.Except (MonadError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Database.SQLite.Simple
 
-import Langchain.Core.Error (LangchainError, internalError)
+import Langchain.Core.Error (LangchainError)
 import Langchain.Core.Model
   ( ChatModel (..)
-  , Message (..)
   , extractMessageText
   , userMessage
   )

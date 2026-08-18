@@ -23,17 +23,12 @@ module Langchain.Retriever.Hybrid
   , reciprocalRankFusion
   ) where
 
-import Control.Monad.Except (MonadError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.List (foldl', nubBy, sortBy)
-import Data.Map.Strict (Map)
+import Data.List (sortBy)
 import qualified Data.Map.Strict as Map
 import Data.Ord (Down (..), comparing)
 import Data.Text (Text)
-import qualified Data.Text as T
-import GHC.Generics (Generic)
 
-import Langchain.Core.Error (LangchainError)
 import Langchain.DocumentLoader.Core (Document (..))
 import Langchain.Retriever.BM25 (BM25Index, bm25Search)
 import Langchain.Retriever.Core (Retriever (..))
@@ -106,7 +101,7 @@ reciprocalRankFusion rrfK rankedLists =
 
     updateScore weight acc (rank, doc) =
       let key = pageContent doc
-          delta = weight / (rrfK + fromIntegral rank)
+          delta = weight / (rrfK + rank)
        in Map.insertWith (+) key delta acc
 
     buildLookup acc doc = Map.insert (pageContent doc) doc acc

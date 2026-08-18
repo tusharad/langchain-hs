@@ -44,7 +44,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import GHC.Generics
 
-import Langchain.Core.Error (LangchainError, toolError)
+import Langchain.Core.Error (toolError)
 import Langchain.Core.Tool (Tool (..), createTool)
 import Langchain.Tool.Utils (cleanHtmlContent)
 import Network.HTTP.Simple

@@ -5,6 +5,8 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
 
+-- TODO: This is not tested
+
 {- |
 Module      : Langchain.Provider.OpenAI
 Description : OpenAI provider implementing effect-polymorphic ChatModel
@@ -24,21 +26,19 @@ module Langchain.Provider.OpenAI
   , parseOpenAIResponse
   ) where
 
-import Control.Monad.Except (MonadError, throwError)
-import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.Except (throwError)
+import Control.Monad.IO.Class (liftIO)
 import Data.Aeson
 import Data.Aeson.Types (parseEither)
-import Data.ByteString (ByteString)
 import Data.Conduit (yield)
 import qualified Data.List.NonEmpty as NonEmpty
-import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import GHC.Generics (Generic)
 import Network.HTTP.Simple
 
-import Langchain.Core.Error (LangchainError, llmError)
+import Langchain.Core.Error (llmError)
 import Langchain.Core.Model
 import Langchain.Core.Stream (StreamEvent (..), TokenUsage (..))
 
@@ -101,10 +101,10 @@ contentBlockToValue (ImageBlock mime b64) =
     [ "type" .= ("image_url" :: Text)
     , "image_url" .= object ["url" .= ("data:" <> mime <> ";base64," <> b64)]
     ]
-contentBlockToValue (AudioBlock mime b64) =
+contentBlockToValue (AudioBlock mime _) =
   object ["type" .= ("text" :: Text), "text" .= ("[Audio block " <> mime <> "]")]
 contentBlockToValue (DataBlock _) =
-  object ["type" .= ("text" :: Text), "text" .= ("[Data block]")]
+  object ["type" .= ("text" :: Text), "text" .= ("[Data block]" :: Text)]
 
 -- Convert Message to OpenAI JSON payload
 messageToValue :: Message -> Value
@@ -119,7 +119,7 @@ messageToValue msg =
 instance ChatModel OpenAI where
   type ModelConfig OpenAI = Value
 
-  invoke provider inputMsgs mbExtraCfg = do
+  invoke provider inputMsgs _ = do
     let payload =
           object
             [ "model" .= model provider
@@ -138,7 +138,7 @@ instance ChatModel OpenAI where
       Left err -> throwError $ llmError err Nothing Nothing
       Right bodyVal -> case parseOpenAIResponse bodyVal of
         Left parseErr -> throwError $ llmError (T.pack parseErr) Nothing Nothing
-        Right (respMsg, mbUsage) -> pure respMsg
+        Right (respMsg, _) -> pure respMsg
 
   stream provider inputMsgs _ = do
     let rId = "openai-stream-run"

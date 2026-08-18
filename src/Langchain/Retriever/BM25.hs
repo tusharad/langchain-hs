@@ -24,10 +24,8 @@ module Langchain.Retriever.BM25
   , tokenize
   ) where
 
-import Control.Monad.Except (MonadError)
-import Control.Monad.IO.Class (MonadIO)
-import Data.Char (isAlphaNum, isSpace, toLower)
-import Data.List (foldl', sortBy)
+import Data.Char (isAlphaNum)
+import Data.List (sortBy)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Ord (Down (..), comparing)
@@ -36,7 +34,6 @@ import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import GHC.Generics (Generic)
 
-import Langchain.Core.Error (LangchainError)
 import Langchain.DocumentLoader.Core (Document (..))
 import Langchain.Retriever.Core (Retriever (..))
 

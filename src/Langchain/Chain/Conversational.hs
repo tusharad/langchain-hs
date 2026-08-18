@@ -25,10 +25,8 @@ import Data.Text (Text)
 import Langchain.Core.Error (LangchainError)
 import Langchain.Core.Model
   ( ChatModel (..)
-  , Message (..)
   , extractMessageText
   , systemMessage
-  , userMessage
   )
 import Langchain.Memory.Core (BaseMemory (..))
 

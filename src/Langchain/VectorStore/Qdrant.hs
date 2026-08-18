@@ -20,25 +20,25 @@ module Langchain.VectorStore.Qdrant
   ) where
 
 import Control.Exception (SomeException, try)
-import Control.Monad.Except (MonadError, throwError)
-import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.Aeson (Value (..), decode, encode, object, (.!=), (.:), (.:?), (.=))
+import Control.Monad.Except (throwError)
+import Control.Monad.IO.Class (liftIO)
+import Data.Aeson (Value (..), decode, object, (.!=), (.:), (.:?), (.=))
 import qualified Data.Aeson.Key as Key
 import qualified Data.Aeson.KeyMap as KeyMap
 import Data.Aeson.Types (parseEither)
 import qualified Data.ByteString.Lazy as LBS
-import Data.Int (Int64)
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import qualified Data.Text as TS
-import qualified Data.Text.Encoding as TE
 import qualified Data.Text.Lazy as TL
 import Network.HTTP.Simple
 
-import Langchain.Core.Error (LangchainError, vectorStoreError)
+import Langchain.Core.Error (vectorStoreError)
 import Langchain.DocumentLoader.Core (Document (..))
 import Langchain.Embeddings.Core (Embeddings (..))
 import Langchain.VectorStore.Core (VectorStore (..))
+
+-- TODO: This is untested, will probably remove it
 
 -- | Qdrant vector store configuration container
 data QdrantStore e = QdrantStore

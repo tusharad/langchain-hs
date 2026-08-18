@@ -22,8 +22,6 @@ module Langchain.Chain.ConversationalRetrievalQA
 
 import Control.Monad.Except (MonadError)
 import Control.Monad.IO.Class (MonadIO)
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
@@ -33,7 +31,6 @@ import Langchain.Core.Model
   ( ChatModel (..)
   , Message (..)
   , extractMessageText
-  , systemMessage
   , userMessage
   )
 import Langchain.DocumentLoader.Core (Document (..))

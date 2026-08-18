@@ -2,10 +2,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
+-- TODO: too simple
+
 {- |
 Module      : Langchain.Retriever.Reranker
 Description : Document Reranking Subsystem
-Copyright   : (c) 2025-2026 Tushar Adhatrao
+Copyright   : (c) 2026 Tushar Adhatrao
 License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
@@ -20,8 +22,8 @@ module Langchain.Retriever.Reranker
   , newLLMReranker
   ) where
 
-import Control.Monad.Except (MonadError, runExceptT)
-import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.Except (MonadError)
+import Control.Monad.IO.Class (MonadIO)
 import Data.Char (isDigit)
 import Data.List (sortBy)
 import Data.Ord (Down (..), comparing)
@@ -33,7 +35,6 @@ import qualified Data.Text.Read as TR
 import Langchain.Core.Error (LangchainError)
 import Langchain.Core.Model
   ( ChatModel (..)
-  , Message (..)
   , Role (..)
   , extractMessageText
   , textMessage

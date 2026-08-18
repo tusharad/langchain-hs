@@ -45,14 +45,11 @@ import Data.Aeson
 import Data.Aeson.Types (parseEither)
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.ByteString.Lazy.Char8 as LBSC
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
-import qualified Data.Vector as V
 import Network.HTTP.Simple
-import System.IO (BufferMode (..), Handle, hFlush, hGetLine, hPutStrLn, hSetBuffering)
+import System.IO (BufferMode (..), hFlush, hGetLine, hSetBuffering)
 import System.Process (CreateProcess (..), StdStream (..), createProcess, proc)
 
 import Langchain.Core.Error (LangchainError, toolError)
