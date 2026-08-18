@@ -19,11 +19,9 @@ module Langchain.PromptTemplate.Chat
   , extractTemplateVariables
   ) where
 
-import Data.Text (Text)
-import qualified Data.Text as T
-
 import Langchain.Core.Error (LangchainError)
 import Langchain.Core.Model.Types (Message)
+import Langchain.PromptTemplate (extractTemplateVariables)
 
 -- | Base class for message prompt templates backed by string prompt templates.
 class BaseStringMessagePromptTemplate template options | template -> options where
@@ -32,25 +30,3 @@ class BaseStringMessagePromptTemplate template options | template -> options whe
 -- | Base class for message prompt templates.
 class BaseMessagePromptTemplate template input where
   formatMessages :: template -> input -> Either LangchainError [Message]
-
-extractTemplateVariables :: Text -> [Text]
-extractTemplateVariables = unique . go
-  where
-    go :: Text -> [Text]
-    go template =
-      case T.breakOn "{" template of
-        (_, rest) | T.null rest -> []
-        (_, rest) ->
-          let afterOpen = T.drop 1 rest
-           in case T.breakOn "}" afterOpen of
-                (_, afterClose) | T.null afterClose -> []
-                (variableName, afterClose) ->
-                  T.strip variableName : go (T.drop 1 afterClose)
-
-    unique :: [Text] -> [Text]
-    unique = foldl addIfMissing []
-
-    addIfMissing :: [Text] -> Text -> [Text]
-    addIfMissing variableNames variableName
-      | variableName `elem` variableNames = variableNames
-      | otherwise = variableNames <> [variableName]

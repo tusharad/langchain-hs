@@ -1,3 +1,4 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -17,23 +18,24 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 
-import Langchain.PromptTemplate (PromptTemplate (..))
+import Langchain.PromptTemplate (PromptTemplate)
+import qualified Langchain.PromptTemplate as PromptTemplate
 import Langchain.PromptTemplate.Chat (BaseStringMessagePromptTemplate (..), extractTemplateVariables)
 
 -- | Chat message prompt template contract with a custom role.
 data ChatMessagePromptTemplate = ChatMessagePromptTemplate
-  { chatMessagePromptTemplatePrompt :: PromptTemplate
-  , chatMessagePromptTemplateInputVariables :: [Text]
-  , chatMessagePromptTemplateRole :: Text
+  { prompt :: PromptTemplate
+  , inputVariables :: [Text]
+  , role :: Text
   }
   deriving (Show, Eq)
 
 instance BaseStringMessagePromptTemplate ChatMessagePromptTemplate Text where
-  fromTemplateFile templateFile role = do
+  fromTemplateFile templateFile messageRole = do
     template <- T.dropWhileEnd (== '\n') <$> TIO.readFile templateFile
     pure $
       ChatMessagePromptTemplate
-        { chatMessagePromptTemplatePrompt = PromptTemplate template
-        , chatMessagePromptTemplateInputVariables = extractTemplateVariables template
-        , chatMessagePromptTemplateRole = role
+        { prompt = PromptTemplate.fromTemplate template
+        , inputVariables = extractTemplateVariables template
+        , role = messageRole
         }

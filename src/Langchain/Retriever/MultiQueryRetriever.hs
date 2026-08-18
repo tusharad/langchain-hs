@@ -34,7 +34,7 @@ import Langchain.Core.Error (LangchainError, vectorStoreError)
 import Langchain.Core.Model (ChatModel (..), extractMessageText, userMessage)
 import Langchain.DocumentLoader.Core (Document)
 import Langchain.OutputParser.Core (NumberSeparatedList (..), OutputParser (..))
-import Langchain.PromptTemplate (PromptTemplate (..), renderPrompt)
+import Langchain.PromptTemplate (PromptTemplate, fromTemplate, renderPrompt)
 import Langchain.Retriever.Core (Retriever (..))
 
 -- | Query generation prompt template
@@ -45,20 +45,19 @@ newtype QueryGenerationPrompt = QueryGenerationPrompt PromptTemplate
 defaultQueryGenerationPrompt :: QueryGenerationPrompt
 defaultQueryGenerationPrompt =
   QueryGenerationPrompt $
-    PromptTemplate
-      { templateString =
-          T.unlines
-            [ "You are an AI language model assistant that helps users by generating multiple search queries based on their initial query."
-            , "These queries should help retrieve relevant documents or information from a vector database."
-            , ""
-            , "Original query: {query}"
-            , ""
-            , "Please generate {num_queries} different versions of this query that will help the user find the most relevant information."
-            , "The queries should be different but related to the original query."
-            , "Return these queries in the following format: 1. query 1 \n 2. query 2 \n 3. query 3"
-            , "Only return queries and nothing else"
-            ]
-      }
+    fromTemplate
+      ( T.unlines
+          [ "You are an AI language model assistant that helps users by generating multiple search queries based on their initial query."
+          , "These queries should help retrieve relevant documents or information from a vector database."
+          , ""
+          , "Original query: {query}"
+          , ""
+          , "Please generate {num_queries} different versions of this query that will help the user find the most relevant information."
+          , "The queries should be different but related to the original query."
+          , "Return these queries in the following format: 1. query 1 \n 2. query 2 \n 3. query 3"
+          , "Only return queries and nothing else"
+          ]
+      )
 
 -- | Configuration for multi-query retrieval
 data MultiQueryRetrieverConfig = MultiQueryRetrieverConfig

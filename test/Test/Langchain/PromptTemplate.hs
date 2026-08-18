@@ -16,17 +16,17 @@ tests =
     [ testGroup
         "PromptTemplate"
         [ testCase "correctly interpolates all variables" $
-            renderPrompt template vars @?= Right "Hello, Alice! Welcome to Wonderland."
+            renderPrompt greetingTemplate vars @?= Right "Hello, Alice! Welcome to Wonderland."
         , testCase "handles templates with no variables" $
-            let noVarTemplate = PromptTemplate "Hello, world!"
+            let noVarTemplate = fromTemplate "Hello, world!"
              in renderPrompt noVarTemplate HM.empty @?= Right "Hello, world!"
         , testCase "handles templates with repeated variables" $
-            let repeatTemplate = PromptTemplate "{name} likes {food}. {name} eats {food} every day."
+            let repeatTemplate = fromTemplate "{name} likes {food}. {name} eats {food} every day."
                 repeatVars = HM.fromList [("name", "Bob"), ("food", "pizza")]
              in renderPrompt repeatTemplate repeatVars @?= Right "Bob likes pizza. Bob eats pizza every day."
         , testCase "returns an error for missing variables" $
             let missingVars = HM.fromList [("name", "Charlie")]
-             in case renderPrompt template missingVars of
+              in case renderPrompt greetingTemplate missingVars of
                   Left err -> "place" `T.isInfixOf` T.pack (show err) @? "Expected error to contain 'place'"
                   Right _ -> assertFailure "Expected an error for missing variable"
         ]
@@ -68,7 +68,7 @@ tests =
         ]
     ]
   where
-    template = PromptTemplate "Hello, {name}! Welcome to {place}."
+    greetingTemplate = fromTemplate "Hello, {name}! Welcome to {place}."
     vars = HM.fromList [("name", "Alice"), ("place", "Wonderland")]
     fewShotTemplate =
       FewShotPromptTemplate

@@ -35,7 +35,7 @@ import Langchain.Core.Model
   , userMessage
   )
 import Langchain.DocumentLoader.Core (Document (..))
-import Langchain.PromptTemplate (PromptTemplate (..), renderPrompt)
+import Langchain.PromptTemplate (PromptTemplate, fromTemplate, renderPrompt)
 import Langchain.Retriever.Core (Retriever (..))
 
 -- | QA Chain configuration combining retrieval and LLM response generation.
@@ -52,7 +52,7 @@ newRetrievalQA m r = RetrievalQA m r defaultQAPrompt
 -- | Default QA prompt template
 defaultQAPrompt :: PromptTemplate
 defaultQAPrompt =
-  PromptTemplate
+  fromTemplate
     ( "Use the following pieces of context to answer the question at the end.\n"
         <> "If you don't know the answer, just say that you don't know, don't try to make up an answer.\n\n"
         <> "Context:\n{context}"

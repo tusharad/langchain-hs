@@ -95,6 +95,8 @@ library
       Langchain.PromptTemplate
       Langchain.PromptTemplate.Chat
       Langchain.PromptTemplate.Chat.ChatMessagePromptTemplate
+      Langchain.PromptTemplate.Chat.ChatPromptTemplate
+      Langchain.PromptTemplate.Chat.HumanMessagePromptTemplate
       Langchain.PromptTemplate.Chat.MessagesPlaceholder
       Langchain.Provider.Anthropic
       Langchain.Provider.DeepSeek
@@ -270,6 +272,7 @@ test-suite langchain-hs-test
       Test.Langchain.PreludeSpec
       Test.Langchain.PromptTemplate
       Test.Langchain.PromptTemplate.Chat.ChatMessagePromptTemplateSpec
+      Test.Langchain.PromptTemplate.Chat.ChatPromptTemplateSpec
       Test.Langchain.PromptTemplate.Chat.MessagesPlaceholderSpec
       Test.Langchain.Property.CheckpointerSpec
       Test.Langchain.Property.ErrorSpec
