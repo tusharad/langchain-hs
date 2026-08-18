@@ -10,7 +10,7 @@ import Test.Tasty
 import Test.Tasty.HUnit
 
 import Langchain.Core.Model.Types (Role (..), extractMessageText, textMessage, userMessage)
-import Langchain.PromptTemplate (PromptTemplateOptions (..))
+import Langchain.PromptTemplate (PromptTemplateOptions (..), TemplateFormat (..))
 import Langchain.PromptTemplate.Chat.ChatPromptTemplate
   ( ChatPromptInput (..)
   , ChatPromptMessage
@@ -29,6 +29,7 @@ import Langchain.PromptTemplate.Chat.ChatPromptTemplate
   , messagesPlaceholderWithOptions
   , partial
   , templateMessage
+  , templateMessageWithFormat
   , toMessages
   , toString
   )
@@ -89,6 +90,59 @@ fromMessagesTests =
           Left err -> assertFailure $ "Expected formatted prompt, got " <> show err
           Right promptValue ->
             last (toMessages promptValue) @?= userMessage "foo"
+    , testCase "formats mustache role messages" $ do
+        let template =
+              fromMessages
+                [ templateMessageWithFormat System Mustache "You are a helpful AI bot. Your name is {{name}}."
+                , templateMessageWithFormat User Mustache "Hello, how are you doing?"
+                , templateMessageWithFormat Assistant Mustache "I'm doing well, thanks!"
+                , templateMessageWithFormat User Mustache "{{user_input}}"
+                ]
+            variables = Map.fromList [("name", "Bob"), ("user_input", "What is your name?")]
+
+        case formatPrompt template variables of
+          Left err -> assertFailure $ "Expected formatted prompt, got " <> show err
+          Right promptValue ->
+            toMessages promptValue
+              @?= [ textMessage System "You are a helpful AI bot. Your name is Bob."
+                  , userMessage "Hello, how are you doing?"
+                  , textMessage Assistant "I'm doing well, thanks!"
+                  , userMessage "What is your name?"
+                  ]
+    , testCase "formats jinja2 role messages" $ do
+        let template =
+              fromMessages
+                [ templateMessageWithFormat System Jinja2 "You are a helpful AI bot. Your name is {{ name }}."
+                , templateMessageWithFormat User Jinja2 "Hello, how are you doing?"
+                , templateMessageWithFormat Assistant Jinja2 "I'm doing well, thanks!"
+                , templateMessageWithFormat User Jinja2 "{{ user_input }}"
+                ]
+            variables = Map.fromList [("name", "Bob"), ("user_input", "What is your name?")]
+
+        case formatPrompt template variables of
+          Left err -> assertFailure $ "Expected formatted prompt, got " <> show err
+          Right promptValue ->
+            toMessages promptValue
+              @?= [ textMessage System "You are a helpful AI bot. Your name is Bob."
+                  , userMessage "Hello, how are you doing?"
+                  , textMessage Assistant "I'm doing well, thanks!"
+                  , userMessage "What is your name?"
+                  ]
+    , testCase "formats mustache typed role messages" $ do
+        let template =
+              fromMessages
+                [ templateMessageWithFormat System Mustache "You are {{name}}."
+                , templateMessageWithFormat User Mustache "{{question}}"
+                ]
+            variables = Map.fromList [("name", "Bob"), ("question", "Hello?")]
+
+        case formatPrompt template variables of
+          Left err -> assertFailure $ "Expected formatted prompt, got " <> show err
+          Right promptValue ->
+            toMessages promptValue
+              @?= [ textMessage System "You are Bob."
+                  , userMessage "Hello?"
+                  ]
     ]
 
 formatPromptTests :: TestTree

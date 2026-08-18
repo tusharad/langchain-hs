@@ -20,6 +20,7 @@ module Langchain.PromptTemplate.Chat.ChatPromptTemplate
   , fromMessages
   , message
   , templateMessage
+  , templateMessageWithFormat
   , messagesPlaceholder
   , messagesPlaceholderWithOptions
   , append
@@ -44,7 +45,7 @@ import Langchain.Core.Model.Types
   , textMessage
   , userMessage
   )
-import Langchain.PromptTemplate (PromptTemplateOptions)
+import Langchain.PromptTemplate (PromptTemplateOptions, TemplateFormat)
 import qualified Langchain.PromptTemplate as PromptTemplate
 import Langchain.PromptTemplate.Chat (BaseMessagePromptTemplate (formatMessages))
 import Langchain.PromptTemplate.Chat.HumanMessagePromptTemplate (HumanMessagePromptTemplate (..))
@@ -108,6 +109,11 @@ message = StaticMessage
 
 templateMessage :: Role -> Text -> ChatPromptMessage
 templateMessage role = ChatMessagePrompt role . PromptTemplate.fromTemplate
+
+templateMessageWithFormat :: Role -> TemplateFormat -> Text -> ChatPromptMessage
+templateMessageWithFormat role templateFormat template =
+  ChatMessagePrompt role $
+    PromptTemplate.fromTemplateWithFormat template templateFormat Map.empty
 
 messagesPlaceholder :: Text -> ChatPromptMessage
 messagesPlaceholder name = messagesPlaceholderWithOptions $ MessagesPlaceholder.messagesPlaceholderOptions name

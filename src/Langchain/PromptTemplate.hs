@@ -16,17 +16,20 @@ module Langchain.PromptTemplate
   ( -- * Core Types
     PromptTemplate (..)
   , PromptTemplateOptions (..)
+  , TemplateFormat (..)
   , FewShotPromptTemplate (..)
 
     -- * Rendering Functions
   , defaultPromptTemplateOptions
   , fromTemplate
   , fromTemplateWithOptions
+  , fromTemplateWithFormat
   , partialPromptTemplate
   , renderPrompt
   , renderFewShotPrompt
   , renderFewShotPromptWithVars
   , extractTemplateVariables
+  , extractTemplateVariablesWithFormat
   ) where
 
 import qualified Data.Map.Strict as HM
@@ -42,7 +45,14 @@ data PromptTemplate = PromptTemplate
   , -- Matches Python partial_variables: pre-bound values reduce required inputs
     -- without changing the original template string.
     partialVariables :: HM.Map Text Text
+  , templateFormat :: TemplateFormat
   }
+  deriving (Show, Eq)
+
+data TemplateFormat
+  = FString
+  | Mustache
+  | Jinja2
   deriving (Show, Eq)
 
 newtype PromptTemplateOptions = PromptTemplateOptions
@@ -57,8 +67,13 @@ data TemplatePart
   = Literal Text
   | Variable Text
 
-parseTemplate :: Text -> Either LangchainError [TemplatePart]
-parseTemplate = go
+parseTemplateWithFormat :: TemplateFormat -> Text -> Either LangchainError [TemplatePart]
+parseTemplateWithFormat FString = parseFStringTemplate
+parseTemplateWithFormat Mustache = parseDoubleBraceTemplate
+parseTemplateWithFormat Jinja2 = parseDoubleBraceTemplate
+
+parseFStringTemplate :: Text -> Either LangchainError [TemplatePart]
+parseFStringTemplate = go
   where
     go :: Text -> Either LangchainError [TemplatePart]
     go template =
@@ -77,24 +92,50 @@ parseTemplate = go
                   <> [Variable (T.strip variableName)]
                   <> remainingParts
 
+parseDoubleBraceTemplate :: Text -> Either LangchainError [TemplatePart]
+parseDoubleBraceTemplate = go
+  where
+    go :: Text -> Either LangchainError [TemplatePart]
+    go template =
+      case T.breakOn "{{" template of
+        (literal, rest) | T.null rest -> Right [Literal literal | not (T.null literal)]
+        (literal, rest) -> do
+          let afterOpen = T.drop 2 rest
+          case T.breakOn "}}" afterOpen of
+            (_, afterClose)
+              | T.null afterClose ->
+                  Left $ validationError "Unclosed double brace in template" (Just "PromptTemplate") Nothing
+            (variableName, afterClose) -> do
+              remainingParts <- go (T.drop 2 afterClose)
+              pure $
+                [Literal literal | not (T.null literal)]
+                  <> [Variable (T.strip variableName)]
+                  <> remainingParts
+
 fromTemplate :: Text -> PromptTemplate
 fromTemplate template = fromTemplateWithOptions template defaultPromptTemplateOptions
 
 fromTemplateWithOptions :: Text -> PromptTemplateOptions -> PromptTemplate
 fromTemplateWithOptions template (PromptTemplateOptions partials) =
+  fromTemplateWithFormat template FString partials
+
+fromTemplateWithFormat :: Text -> TemplateFormat -> HM.Map Text Text -> PromptTemplate
+fromTemplateWithFormat template templateFormat partials =
   PromptTemplate
     { template = template
-    , inputVariables = filter (`HM.notMember` partials) (extractTemplateVariables template)
+    , inputVariables =
+        filter (`HM.notMember` partials) (extractTemplateVariablesWithFormat templateFormat template)
     , partialVariables = partials
+    , templateFormat = templateFormat
     }
 
 partialPromptTemplate :: PromptTemplate -> HM.Map Text Text -> PromptTemplate
-partialPromptTemplate (PromptTemplate template _ existingPartials) partials =
-  fromTemplateWithOptions template $ PromptTemplateOptions (partials `HM.union` existingPartials)
+partialPromptTemplate (PromptTemplate template _ existingPartials templateFormat) partials =
+  fromTemplateWithFormat template templateFormat (partials `HM.union` existingPartials)
 
 -- | Render a prompt template with the given variable map
 renderPrompt :: PromptTemplate -> HM.Map Text Text -> Either LangchainError Text
-renderPrompt (PromptTemplate template _ partials) vars = interpolate (vars `HM.union` partials) template
+renderPrompt (PromptTemplate template _ partials templateFormat) vars = interpolate templateFormat (vars `HM.union` partials) template
 
 -- | Represents a few-shot prompt template with examples
 data FewShotPromptTemplate = FewShotPromptTemplate
@@ -111,15 +152,15 @@ renderFewShotPrompt :: FewShotPromptTemplate -> Either LangchainError Text
 renderFewShotPrompt FewShotPromptTemplate {..} = do
   formattedExamples <-
     mapM
-      (`interpolate` fsExampleTemplate)
+      (\example -> interpolate FString example fsExampleTemplate)
       fsExamples
   let examplesText = T.intercalate fsExampleSeparator formattedExamples
   pure $ fsPrefix <> examplesText <> fsSuffix
 
 -- | Interpolate variables into a template string
-interpolate :: HM.Map Text Text -> Text -> Either LangchainError Text
-interpolate vars template = do
-  parts <- parseTemplate template
+interpolate :: TemplateFormat -> HM.Map Text Text -> Text -> Either LangchainError Text
+interpolate templateFormat vars template = do
+  parts <- parseTemplateWithFormat templateFormat template
   T.concat <$> traverse renderPart parts
   where
     renderPart :: TemplatePart -> Either LangchainError Text
@@ -134,11 +175,14 @@ renderFewShotPromptWithVars ::
   FewShotPromptTemplate -> HM.Map Text Text -> Either LangchainError Text
 renderFewShotPromptWithVars template vars = do
   renderedBase <- renderFewShotPrompt template
-  interpolate vars renderedBase
+  interpolate FString vars renderedBase
 
 extractTemplateVariables :: Text -> [Text]
-extractTemplateVariables template =
-  case parseTemplate template of
+extractTemplateVariables = extractTemplateVariablesWithFormat FString
+
+extractTemplateVariablesWithFormat :: TemplateFormat -> Text -> [Text]
+extractTemplateVariablesWithFormat templateFormat template =
+  case parseTemplateWithFormat templateFormat template of
     Left _ -> []
     Right parts -> unique [variableName | Variable variableName <- parts]
   where

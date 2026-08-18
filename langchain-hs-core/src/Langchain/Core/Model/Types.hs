@@ -23,6 +23,8 @@ module Langchain.Core.Model.Types
   , assistantMessage
   , imageMessage
   , extractMessageText
+  , roleLabel
+  , formatMessageString
   ) where
 
 import Control.DeepSeq (NFData)
@@ -77,9 +79,11 @@ data Role
 -- | Structured tool call from an LLM response.
 data ToolCall = ToolCall
   { toolCallId :: Text
-  , toolCallType :: Text -- ^ Always "function" for current providers
+  , toolCallType :: Text
+  -- ^ Always "function" for current providers
   , toolCallName :: Text
-  , toolCallArguments :: Value -- ^ Parsed JSON Value arguments
+  , toolCallArguments :: Value
+  -- ^ Parsed JSON Value arguments
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON, NFData)
 
@@ -89,7 +93,8 @@ data Message = Message
   , messageContents :: NonEmpty ContentBlock
   , messageName :: Maybe Text
   , messageToolCalls :: Maybe [ToolCall]
-  , messageToolId :: Maybe Text -- ^ Associated tool call ID for Tool role
+  , messageToolId :: Maybe Text
+  -- ^ Associated tool call ID for Tool role
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON, NFData)
 
@@ -116,3 +121,17 @@ imageMessage r mime b64 = Message r (ImageBlock mime b64 :| []) Nothing Nothing 
 -- | Extract all text content blocks concatenated into a single Text string.
 extractMessageText :: Message -> Text
 extractMessageText msg = T.intercalate "\n" [t | TextBlock t <- NonEmpty.toList (messageContents msg)]
+
+-- | Label used when rendering a chat message role as plain text.
+roleLabel :: Role -> Text
+roleLabel System = "System"
+roleLabel User = "Human"
+roleLabel Assistant = "AI"
+roleLabel Tool = "Tool"
+roleLabel Developer = "Developer"
+roleLabel Function = "Function"
+
+-- | Render a message as a single plain-text line with its role label.
+formatMessageString :: Message -> Text
+formatMessageString chatMessage =
+  roleLabel (messageRole chatMessage) <> ": " <> extractMessageText chatMessage
