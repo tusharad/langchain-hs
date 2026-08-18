@@ -18,9 +18,9 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 
-import Langchain.PromptTemplate (PromptTemplate)
-import qualified Langchain.PromptTemplate as PromptTemplate
-import Langchain.PromptTemplate.Chat (BaseStringMessagePromptTemplate (..), extractTemplateVariables)
+import Langchain.PromptTemplate.Chat (BaseStringMessagePromptTemplate (..))
+import Langchain.PromptTemplate.Prompt (PromptTemplate, fromTemplate)
+import Langchain.PromptTemplate.String (extractTemplateVariables)
 
 -- | Chat message prompt template contract with a custom role.
 data ChatMessagePromptTemplate = ChatMessagePromptTemplate
@@ -35,7 +35,7 @@ instance BaseStringMessagePromptTemplate ChatMessagePromptTemplate Text where
     template <- T.dropWhileEnd (== '\n') <$> TIO.readFile templateFile
     pure $
       ChatMessagePromptTemplate
-        { prompt = PromptTemplate.fromTemplate template
+        { prompt = fromTemplate template
         , inputVariables = extractTemplateVariables template
         , role = messageRole
         }

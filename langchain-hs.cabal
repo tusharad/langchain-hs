@@ -92,12 +92,14 @@ library
       Langchain.OutputParser.Xml
       Langchain.Pipeline.DSL
       Langchain.Prelude
-      Langchain.PromptTemplate
       Langchain.PromptTemplate.Chat
       Langchain.PromptTemplate.Chat.ChatMessagePromptTemplate
       Langchain.PromptTemplate.Chat.ChatPromptTemplate
       Langchain.PromptTemplate.Chat.HumanMessagePromptTemplate
       Langchain.PromptTemplate.Chat.MessagesPlaceholder
+      Langchain.PromptTemplate.FewShot
+      Langchain.PromptTemplate.Prompt
+      Langchain.PromptTemplate.String
       Langchain.Provider.Anthropic
       Langchain.Provider.DeepSeek
       Langchain.Provider.Gemini

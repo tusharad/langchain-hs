@@ -15,7 +15,7 @@ import Langchain.DocumentLoader.PdfLoader
 import Langchain.Embeddings.Ollama
 import qualified Langchain.Error as Langchain
 import Langchain.LLM.OpenAICompatible
-import Langchain.PromptTemplate
+import Langchain.PromptTemplate.Prompt
 import Langchain.Retriever.Core
 import Langchain.VectorStore.InMemory
 import qualified OpenAI.V1.Chat.Completions as CreateChat hiding

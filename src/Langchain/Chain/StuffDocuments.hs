@@ -34,7 +34,7 @@ import Langchain.Core.Model
   , userMessage
   )
 import Langchain.DocumentLoader.Core (Document (..))
-import Langchain.PromptTemplate (PromptTemplate, fromTemplate, renderPrompt)
+import Langchain.PromptTemplate.Prompt (PromptTemplate, fromTemplate, renderPrompt)
 
 -- | Stuff documents chain configuration
 data StuffDocumentsChain model = StuffDocumentsChain

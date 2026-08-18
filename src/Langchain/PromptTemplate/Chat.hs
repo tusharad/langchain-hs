@@ -1,7 +1,7 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 {- |
 Module      : Langchain.PromptTemplate.Chat
@@ -21,7 +21,7 @@ module Langchain.PromptTemplate.Chat
 
 import Langchain.Core.Error (LangchainError)
 import Langchain.Core.Model.Types (Message)
-import Langchain.PromptTemplate (extractTemplateVariables)
+import Langchain.PromptTemplate.String (extractTemplateVariables)
 
 -- | Base class for message prompt templates backed by string prompt templates.
 class BaseStringMessagePromptTemplate template options | template -> options where

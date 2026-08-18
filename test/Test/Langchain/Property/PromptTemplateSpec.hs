@@ -9,7 +9,8 @@ import Test.QuickCheck
 import Test.Tasty
 import Test.Tasty.QuickCheck
 
-import Langchain.PromptTemplate
+import Langchain.PromptTemplate.FewShot
+import Langchain.PromptTemplate.Prompt
 
 -- QuickCheck helper to generate safe variable names [a-z]+
 newtype SafeVar = SafeVar Text

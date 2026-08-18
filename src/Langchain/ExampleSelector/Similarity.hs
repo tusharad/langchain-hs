@@ -27,8 +27,6 @@ import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import qualified Data.Text as T
 
-import Langchain.PromptTemplate (FewShotPromptTemplate (..))
-
 -- | Type alias for few-shot key-value mapping
 type Example = Map Text Text
 

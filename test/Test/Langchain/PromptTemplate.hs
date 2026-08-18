@@ -7,7 +7,8 @@ import qualified Data.Text as T
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import Langchain.PromptTemplate
+import Langchain.PromptTemplate.FewShot
+import Langchain.PromptTemplate.Prompt
 
 tests :: TestTree
 tests =
@@ -26,7 +27,7 @@ tests =
              in renderPrompt repeatTemplate repeatVars @?= Right "Bob likes pizza. Bob eats pizza every day."
         , testCase "returns an error for missing variables" $
             let missingVars = HM.fromList [("name", "Charlie")]
-              in case renderPrompt greetingTemplate missingVars of
+             in case renderPrompt greetingTemplate missingVars of
                   Left err -> "place" `T.isInfixOf` T.pack (show err) @? "Expected error to contain 'place'"
                   Right _ -> assertFailure "Expected an error for missing variable"
         ]
@@ -63,7 +64,8 @@ tests =
                     "Examples of {type}:\nInput: Hello\nOutput: Bonjour ### Input: Goodbye\nOutput: Au revoir\nNow translate: {query}"
         , testCase "renderFewShotPromptWithVars interpolates full template" $ do
             let inputVars = HM.fromList [("type", "Spanish"), ("query", "Thank you")]
-                expected = "Examples of Spanish:\nInput: Hello\nOutput: Bonjour\n\nInput: Goodbye\nOutput: Au revoir\nNow translate: Thank you"
+                expected =
+                  "Examples of Spanish:\nInput: Hello\nOutput: Bonjour\n\nInput: Goodbye\nOutput: Au revoir\nNow translate: Thank you"
             renderFewShotPromptWithVars fewShotTemplate inputVars @?= Right expected
         ]
     ]

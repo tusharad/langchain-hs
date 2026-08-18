@@ -21,7 +21,6 @@ import Langchain.Core.Model.Types
   , textMessage
   , userMessage
   )
-import Langchain.PromptTemplate (PromptTemplateOptions (..), TemplateFormat (..))
 import Langchain.PromptTemplate.Chat.ChatPromptTemplate
   ( ChatPromptInput (..)
   , ChatPromptMessage
@@ -50,6 +49,8 @@ import Langchain.PromptTemplate.Chat.MessagesPlaceholder
   ( MessagesPlaceholderOptions (..)
   , messagesPlaceholderOptions
   )
+import Langchain.PromptTemplate.Prompt (PromptTemplateOptions (..))
+import Langchain.PromptTemplate.String (TemplateFormat (..))
 
 tests :: TestTree
 tests =

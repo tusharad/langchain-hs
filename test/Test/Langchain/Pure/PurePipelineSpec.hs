@@ -11,7 +11,7 @@ import Test.Tasty
 import Test.Tasty.HUnit
 
 import Langchain.Core.Error
-import Langchain.PromptTemplate
+import Langchain.PromptTemplate.Prompt
 
 -- | A purely pure chain transformation without IO
 pureTransform :: Text -> Text

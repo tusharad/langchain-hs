@@ -34,7 +34,7 @@ import Langchain.Core.Error (LangchainError, vectorStoreError)
 import Langchain.Core.Model (ChatModel (..), extractMessageText, userMessage)
 import Langchain.DocumentLoader.Core (Document)
 import Langchain.OutputParser.Core (NumberSeparatedList (..), OutputParser (..))
-import Langchain.PromptTemplate (PromptTemplate, fromTemplate, renderPrompt)
+import Langchain.PromptTemplate.Prompt (PromptTemplate, fromTemplate, renderPrompt)
 import Langchain.Retriever.Core (Retriever (..))
 
 -- | Query generation prompt template

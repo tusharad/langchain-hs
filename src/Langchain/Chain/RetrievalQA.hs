@@ -35,7 +35,7 @@ import Langchain.Core.Model
   , userMessage
   )
 import Langchain.DocumentLoader.Core (Document (..))
-import Langchain.PromptTemplate (PromptTemplate, fromTemplate, renderPrompt)
+import Langchain.PromptTemplate.Prompt (PromptTemplate, fromTemplate, renderPrompt)
 import Langchain.Retriever.Core (Retriever (..))
 
 -- | QA Chain configuration combining retrieval and LLM response generation.

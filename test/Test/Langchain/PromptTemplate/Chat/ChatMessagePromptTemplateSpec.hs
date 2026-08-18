@@ -6,9 +6,9 @@ module Test.Langchain.PromptTemplate.Chat.ChatMessagePromptTemplateSpec (tests) 
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import Langchain.PromptTemplate (fromTemplate)
 import Langchain.PromptTemplate.Chat (BaseStringMessagePromptTemplate (..))
 import Langchain.PromptTemplate.Chat.ChatMessagePromptTemplate
+import Langchain.PromptTemplate.Prompt (fromTemplate)
 
 tests :: TestTree
 tests =

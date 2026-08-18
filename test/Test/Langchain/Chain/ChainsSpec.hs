@@ -15,7 +15,7 @@ import Langchain.Chain.StuffDocuments
 import Langchain.Core.Model (MockModel (..), extractMessageText, newMockModel)
 import Langchain.DocumentLoader.Core (Document (..))
 import Langchain.Memory.Core (newWindowBufferMemory)
-import Langchain.PromptTemplate (fromTemplate)
+import Langchain.PromptTemplate.Prompt (fromTemplate)
 
 tests :: TestTree
 tests =

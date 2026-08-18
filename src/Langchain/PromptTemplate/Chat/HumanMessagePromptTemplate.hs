@@ -16,8 +16,12 @@ module Langchain.PromptTemplate.Chat.HumanMessagePromptTemplate
 
 import Data.Text (Text)
 
-import Langchain.PromptTemplate (PromptTemplate, PromptTemplateOptions)
-import qualified Langchain.PromptTemplate as PromptTemplate
+import Langchain.PromptTemplate.Prompt
+  ( PromptTemplate
+  , PromptTemplateOptions
+  , defaultPromptTemplateOptions
+  )
+import qualified Langchain.PromptTemplate.Prompt as Prompt
 
 newtype HumanMessagePromptTemplate = HumanMessagePromptTemplate
   { prompt :: PromptTemplate
@@ -25,10 +29,10 @@ newtype HumanMessagePromptTemplate = HumanMessagePromptTemplate
   deriving (Show, Eq)
 
 fromTemplate :: Text -> HumanMessagePromptTemplate
-fromTemplate template = fromTemplateWithOptions template PromptTemplate.defaultPromptTemplateOptions
+fromTemplate template = fromTemplateWithOptions template defaultPromptTemplateOptions
 
 fromTemplateWithOptions :: Text -> PromptTemplateOptions -> HumanMessagePromptTemplate
 fromTemplateWithOptions template options =
   HumanMessagePromptTemplate
-    { prompt = PromptTemplate.fromTemplateWithOptions template options
+    { prompt = Prompt.fromTemplateWithOptions template options
     }
