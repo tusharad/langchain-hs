@@ -8,7 +8,7 @@ import Test.Tasty
 import Test.Tasty.HUnit
 
 import Langchain.Core.Error (errorMessage)
-import Langchain.Core.Model.Types (Role (..), assistantMessage, systemMessage, userMessage)
+import Langchain.Core.Model.Types (Message, assistantMessage, systemMessage, userMessage)
 import Langchain.PromptTemplate.Chat (BaseMessagePromptTemplate (..))
 import Langchain.PromptTemplate.Chat.MessagesPlaceholder
 
@@ -26,12 +26,12 @@ tests =
     , testCase "optional placeholder formats to an empty list when omitted" $
         formatMessages (optionalMessagesPlaceholder "history") emptyInputs
           @?= Right []
-    , testCase "optional placeholder converts mixed message representations" $
+    , testCase "optional placeholder accepts messages" $
         formatMessages
           (optionalMessagesPlaceholder "history")
           ( inputs
-              [ PlaceholderRoleMessage System "You are an AI assistant."
-              , PlaceholderHumanText "Hello!"
+              [ systemMessage "You are an AI assistant."
+              , userMessage "Hello!"
               ]
           )
           @?= Right
@@ -39,13 +39,13 @@ tests =
             , userMessage "Hello!"
             ]
     , testCase "placeholder without a message limit returns the whole history" $
-        let history = map (PlaceholderMessage . assistantMessage) ["1", "2", "3"]
+        let history = map assistantMessage ["1", "2", "3"]
          in formatMessages
               (messagesPlaceholder "history")
               (inputs history)
-              @?= Right (map assistantMessage ["1", "2", "3"])
+              @?= Right history
     , testCase "placeholder with n_messages returns the last messages" $
-        let history = map (PlaceholderMessage . assistantMessage) ["1", "2", "3"]
+        let history = map assistantMessage ["1", "2", "3"]
          in case messagesPlaceholderWithLimit "history" 2 of
               Left err ->
                 assertFailure $
@@ -57,8 +57,8 @@ tests =
                   @?= Right [assistantMessage "2", assistantMessage "3"]
     ]
 
-emptyInputs :: Map.Map T.Text [MessagePlaceholderInput]
+emptyInputs :: Map.Map T.Text [Message]
 emptyInputs = Map.empty
 
-inputs :: [MessagePlaceholderInput] -> Map.Map T.Text [MessagePlaceholderInput]
+inputs :: [Message] -> Map.Map T.Text [Message]
 inputs history = Map.fromList [("history", history)]

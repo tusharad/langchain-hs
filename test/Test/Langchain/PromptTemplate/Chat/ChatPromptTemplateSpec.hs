@@ -4,57 +4,97 @@
 module Test.Langchain.PromptTemplate.Chat.ChatPromptTemplateSpec (tests) where
 
 import qualified Data.Map.Strict as Map
+import Data.Text (Text)
 import qualified Data.Text as T
 import Test.Tasty
 import Test.Tasty.HUnit
 
 import Langchain.Core.Model.Types (Role (..), extractMessageText, textMessage, userMessage)
-import Langchain.PromptTemplate (PromptTemplate (..), PromptTemplateOptions (..))
-import qualified Langchain.PromptTemplate as PromptTemplate
-import Langchain.PromptTemplate.Chat.ChatPromptTemplate (ChatPromptTemplate (..))
-import qualified Langchain.PromptTemplate.Chat.ChatPromptTemplate as ChatPromptTemplate
-import Langchain.PromptTemplate.Chat.HumanMessagePromptTemplate (HumanMessagePromptTemplate (..))
-import qualified Langchain.PromptTemplate.Chat.HumanMessagePromptTemplate as HumanMessagePromptTemplate
+import Langchain.PromptTemplate (PromptTemplateOptions (..))
+import Langchain.PromptTemplate.Chat.ChatPromptTemplate
+  ( ChatPromptInput (..)
+  , ChatPromptMessage
+  , ChatPromptTemplate (..)
+  , append
+  , extend
+  , format
+  , formatPrompt
+  , fromMessages
+  , fromTemplate
+  , fromTemplateWithOptions
+  , invoke
+  , message
+  , messagesPlaceholder
+  , partial
+  , templateMessage
+  , toMessages
+  , toString
+  )
 
 tests :: TestTree
 tests =
   testGroup
     "ChatPromptTemplate"
-    [ testCase "fromTemplate creates a chat prompt template" $ do
-        let actual = ChatPromptTemplate.fromTemplate "hi {foo} {bar}"
+    [ fromTemplateTests
+    , fromMessagesTests
+    , formatPromptTests
+    , partialTests
+    , appendExtendTests
+    , invokeTests
+    ]
+
+fromTemplateTests :: TestTree
+fromTemplateTests =
+  testGroup
+    "fromTemplate"
+    [ testCase "creates a chat prompt template" $ do
+        let actual = fromTemplate "hi {foo} {bar}"
             expected =
               ChatPromptTemplate
                 { messages =
-                    [ ChatPromptTemplate.HumanMessagePrompt $
-                        HumanMessagePromptTemplate.fromTemplate "hi {foo} {bar}"
-                    ]
+                    [templateMessage User "hi {foo} {bar}"]
                 , inputVariables = ["foo", "bar"]
                 }
         actual @?= expected
-    , testCase "fromTemplate creates a chat prompt template with partials" $ do
+    , testCase "creates a chat prompt template with partials" $ do
         let actual =
-              ChatPromptTemplate.fromTemplateWithOptions
+              fromTemplateWithOptions
                 "hi {foo} {bar}"
                 (PromptTemplateOptions (Map.singleton "foo" "jim"))
-            expectedPrompt =
-              PromptTemplate
-                { template = "hi {foo} {bar}"
-                , inputVariables = ["bar"]
-                , partialVariables = Map.singleton "foo" "jim"
-                }
-        case messages actual of
-          [ChatPromptTemplate.HumanMessagePrompt outputPrompt] ->
-            outputPrompt
-              @?= HumanMessagePromptTemplate
-                { prompt = expectedPrompt
-                }
-          actualMessages -> assertFailure $ "Expected one message, got " <> show (length actualMessages)
-    , testCase "formatPrompt formats all chat prompt messages" $ do
-        let actual = ChatPromptTemplate.formatPrompt chatPromptTemplate promptVariables
+        inputVariables actual @?= ["bar"]
+        case formatPrompt actual (Map.singleton "bar" "bob") of
+          Left err -> assertFailure $ "Expected formatted prompt, got " <> show err
+          Right promptValue -> toMessages promptValue @?= [userMessage "hi jim bob"]
+    ]
+
+fromMessagesTests :: TestTree
+fromMessagesTests =
+  testGroup
+    "fromMessages"
+    [ testCase "preserves static messages" $ do
+        let actual =
+              fromMessages $
+                chatPromptMessages <> [message (userMessage "foo")]
+        case actual of
+          ChatPromptTemplate {inputVariables = actualInputVariables} ->
+            actualInputVariables @?= ["context", "foo", "bar"]
+        length (messages actual) @?= 5
+        case formatPrompt actual withMessagesVariables of
+          Left err -> assertFailure $ "Expected formatted prompt, got " <> show err
+          Right promptValue ->
+            last (toMessages promptValue) @?= userMessage "foo"
+    ]
+
+formatPromptTests :: TestTree
+formatPromptTests =
+  testGroup
+    "formatPrompt / format"
+    [ testCase "formats all chat prompt messages" $ do
+        let actual = formatPrompt chatPromptTemplate promptVariables
         case actual of
           Left err -> assertFailure $ "Expected formatted prompt, got " <> show err
           Right promptValue -> do
-            let promptMessages = ChatPromptTemplate.toMessages promptValue
+            let promptMessages = toMessages promptValue
             length promptMessages @?= 4
             map extractMessageText promptMessages
               @?= [ "Here's some context: context"
@@ -62,51 +102,25 @@ tests =
                   , "I'm an AI. I'm foo. I'm bar."
                   , "I'm a generic message. I'm foo. I'm bar."
                   ]
-            ChatPromptTemplate.toString promptValue
-              @?= T.intercalate
-                "\n"
-                [ "System: Here's some context: context"
-                , "Human: Hello foo, I'm bar. Thanks for the context"
-                , "AI: I'm an AI. I'm foo. I'm bar."
-                , "Human: I'm a generic message. I'm foo. I'm bar."
-                ]
-        ChatPromptTemplate.format chatPromptTemplate promptVariables
-          @?= Right
-            ( T.intercalate
-                "\n"
-                [ "System: Here's some context: context"
-                , "Human: Hello foo, I'm bar. Thanks for the context"
-                , "AI: I'm an AI. I'm foo. I'm bar."
-                , "Human: I'm a generic message. I'm foo. I'm bar."
-                ]
-            )
-    , testCase "formatPrompt preserves static messages" $ do
-        let actual =
-              ChatPromptTemplate.fromMessages $
-                chatPromptMessages <> [ChatPromptTemplate.StaticMessage (userMessage "foo")]
-        case actual of
-          ChatPromptTemplate {inputVariables = actualInputVariables} ->
-            actualInputVariables @?= ["context", "foo", "bar"]
-        length (messages actual) @?= 5
-        case ChatPromptTemplate.formatPrompt actual withMessagesVariables of
-          Left err -> assertFailure $ "Expected formatted prompt, got " <> show err
-          Right promptValue ->
-            last (ChatPromptTemplate.toMessages promptValue) @?= userMessage "foo"
-    , testCase "partial formats chat messages with stored variables" $ do
-        let chatTemplate =
-              ChatPromptTemplate.fromMessages
-                [ ChatPromptTemplate.SystemMessagePrompt $
-                    PromptTemplate.fromTemplate "You are an AI assistant named {name}."
-                , ChatPromptTemplate.HumanMessagePrompt $
-                    HumanMessagePromptTemplate.fromTemplate "Hi I'm {user}"
-                , ChatPromptTemplate.AIMessagePrompt $
-                    PromptTemplate.fromTemplate "Hi there, {user}, I'm {name}."
-                , ChatPromptTemplate.HumanMessagePrompt $
-                    HumanMessagePromptTemplate.fromTemplate "{input}"
+            toString promptValue @?= expectedFormattedPrompt
+        format chatPromptTemplate promptVariables @?= Right expectedFormattedPrompt
+    ]
+
+partialTests :: TestTree
+partialTests =
+  testGroup
+    "partial"
+    [ testCase "formats chat messages with stored variables" $ do
+        let template1 =
+              fromMessages
+                [ templateMessage System "You are an AI assistant named {name}."
+                , templateMessage User "Hi I'm {user}"
+                , templateMessage Assistant "Hi there, {user}, I'm {name}."
+                , templateMessage User "{input}"
                 ]
             template2 =
-              ChatPromptTemplate.partial
-                chatTemplate
+              partial
+                template1
                 (Map.fromList [("user", "Lucy"), ("name", "R2D2")])
             variables = Map.singleton "input" "hello"
             expected =
@@ -124,50 +138,127 @@ tests =
                 , "Human: hello"
                 ]
 
-        case ChatPromptTemplate.formatPrompt chatTemplate variables of
+        case formatPrompt template1 variables of
           Left _ -> pure ()
           Right promptValue ->
             assertFailure $ "Expected missing variable error, got " <> show promptValue
 
-        case ChatPromptTemplate.formatPrompt template2 variables of
+        case formatPrompt template2 variables of
           Left err -> assertFailure $ "Expected formatted prompt, got " <> show err
-          Right promptValue -> ChatPromptTemplate.toMessages promptValue @?= expected
-        ChatPromptTemplate.format template2 variables @?= Right expectedString
+          Right promptValue -> toMessages promptValue @?= expected
+        format template2 variables @?= Right expectedString
     ]
-  where
-    promptVariables = Map.fromList [("foo", "foo"), ("bar", "bar"), ("context", "context")]
 
-    withMessagesVariables =
-      Map.fromList [("context", "see"), ("foo", "this"), ("bar", "magic")]
+appendExtendTests :: TestTree
+appendExtendTests =
+  testGroup
+    "append / extend"
+    [ testCase "appends template messages" $ do
+        let template =
+              fromMessages
+                [templateMessage System "You are helpful."]
+            template' = append template (templateMessage User "{question}")
 
-    chatPromptTemplate =
-      ChatPromptTemplate
-        { messages = chatPromptMessages
-        , inputVariables = ["foo", "bar", "context"]
-        }
+        case formatPrompt template' (Map.singleton "question" "What is AI?") of
+          Left err -> assertFailure $ "Expected formatted prompt, got " <> show err
+          Right promptValue ->
+            toMessages promptValue
+              @?= [ textMessage System "You are helpful."
+                  , userMessage "What is AI?"
+                  ]
+    , testCase "appends and extends messages" $ do
+        let message1 = textMessage System "foo"
+            message2 = userMessage "bar"
+            message3 = userMessage "baz"
+            baseTemplate = fromMessages [message message1]
+            template' = append (append baseTemplate (message message2)) (message message3)
+            template'' = extend template' [message message2, message message3]
+            template''' = append template'' (templateMessage System "hello!")
 
-    chatPromptMessages =
-      [ ChatPromptTemplate.SystemMessagePrompt $
-          PromptTemplate.fromTemplate "Here's some context: {context}"
-      , ChatPromptTemplate.HumanMessagePrompt $
-          HumanMessagePromptTemplate
-            { prompt =
-                PromptTemplate
-                  { template = "Hello {foo}, I'm {bar}. Thanks for the {context}"
-                  , inputVariables = ["foo", "bar", "context"]
-                  , partialVariables = Map.empty
-                  }
-            }
-      , ChatPromptTemplate.AIMessagePrompt $
-          PromptTemplate
-            { template = "I'm an AI. I'm {foo}. I'm {bar}."
-            , inputVariables = ["foo", "bar"]
-            , partialVariables = Map.empty
-            }
-      , ChatPromptTemplate.ChatMessagePrompt User $
-          PromptTemplate
-            { template = "I'm a generic message. I'm {foo}. I'm {bar}."
-            , inputVariables = ["foo", "bar"]
-            , partialVariables = Map.empty
-            }
-      ]
+        length (messages template') @?= 3
+        length (messages template'') @?= 5
+        messages template''
+          @?= [ message message1
+              , message message2
+              , message message3
+              , message message2
+              , message message3
+              ]
+        case formatPrompt template''' Map.empty of
+          Left err -> assertFailure $ "Expected formatted prompt, got " <> show err
+          Right promptValue ->
+            last (toMessages promptValue) @?= textMessage System "hello!"
+    ]
+
+invokeTests :: TestTree
+invokeTests =
+  testGroup
+    "invoke"
+    [ testCase "formats chat prompt template messages" $ do
+        let invokeTemplate =
+              fromMessages
+                [ templateMessage System "You are {name}."
+                , templateMessage User "{question}"
+                ]
+            variables = ChatPromptVariables $ Map.fromList [("name", "Alice"), ("question", "Hello?")]
+
+        case invoke invokeTemplate variables of
+          Left err -> assertFailure $ "Expected formatted prompt, got " <> show err
+          Right promptValue ->
+            toMessages promptValue
+              @?= [ textMessage System "You are Alice."
+                  , userMessage "Hello?"
+                  ]
+    , testCase "accepts message list input for a single messages placeholder" $ do
+        let placeholderTemplate =
+              fromMessages
+                [messagesPlaceholder "history"]
+            input = ChatPromptMessageList [userMessage "Hi there"]
+
+        case invoke placeholderTemplate input of
+          Left err -> assertFailure $ "Expected placeholder prompt value, got " <> show err
+          Right promptValue -> toMessages promptValue @?= [userMessage "Hi there"]
+    , testCase "rejects list input for mixed templates" $ do
+        let mixedPrompt =
+              fromMessages
+                [ templateMessage System "You are a {foo}"
+                , messagesPlaceholder "history"
+                ]
+            listInput = ChatPromptMessageList [userMessage "Hi there"]
+        case invoke mixedPrompt listInput of
+          Left _ -> pure ()
+          Right promptValue ->
+            assertFailure $ "Expected list input validation error, got " <> show promptValue
+    ]
+
+promptVariables :: Map.Map Text Text
+promptVariables = Map.fromList [("foo", "foo"), ("bar", "bar"), ("context", "context")]
+
+withMessagesVariables :: Map.Map Text Text
+withMessagesVariables =
+  Map.fromList [("context", "see"), ("foo", "this"), ("bar", "magic")]
+
+chatPromptTemplate :: ChatPromptTemplate
+chatPromptTemplate =
+  ChatPromptTemplate
+    { messages = chatPromptMessages
+    , inputVariables = ["foo", "bar", "context"]
+    }
+
+chatPromptMessages :: [ChatPromptMessage]
+chatPromptMessages =
+  [ templateMessage System "Here's some context: {context}"
+  , templateMessage User "Hello {foo}, I'm {bar}. Thanks for the {context}"
+  , templateMessage Assistant "I'm an AI. I'm {foo}. I'm {bar}."
+  , templateMessage User "I'm a generic message. I'm {foo}. I'm {bar}."
+  ]
+
+expectedFormattedPrompt :: Text
+expectedFormattedPrompt =
+  T.intercalate
+    "\n"
+    [ "System: Here's some context: context"
+    , "Human: Hello foo, I'm bar. Thanks for the context"
+    , "AI: I'm an AI. I'm foo. I'm bar."
+    , "Human: I'm a generic message. I'm foo. I'm bar."
+    ]
