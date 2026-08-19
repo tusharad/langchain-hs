@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 
 {- |
@@ -22,8 +24,10 @@ module Langchain.PromptTemplate.Prompt
   , renderPrompt
   ) where
 
+import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)
+import GHC.Generics (Generic)
 
 import Langchain.Core.Error (LangchainError)
 import Langchain.PromptTemplate.String
@@ -41,12 +45,12 @@ data PromptTemplate = PromptTemplate
     partialVariables :: Map.Map Text Text
   , templateFormat :: TemplateFormat
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic, ToJSON, FromJSON)
 
 newtype PromptTemplateOptions = PromptTemplateOptions
   { partialVariables :: Map.Map Text Text
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic, ToJSON, FromJSON)
 
 defaultPromptTemplateOptions :: PromptTemplateOptions
 defaultPromptTemplateOptions = PromptTemplateOptions mempty

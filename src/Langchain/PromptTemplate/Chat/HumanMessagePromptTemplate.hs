@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 {- |
@@ -14,7 +16,9 @@ module Langchain.PromptTemplate.Chat.HumanMessagePromptTemplate
   , fromTemplateWithOptions
   ) where
 
+import Data.Aeson (FromJSON, ToJSON)
 import Data.Text (Text)
+import GHC.Generics (Generic)
 
 import Langchain.PromptTemplate.Prompt
   ( PromptTemplate
@@ -26,7 +30,7 @@ import qualified Langchain.PromptTemplate.Prompt as Prompt
 newtype HumanMessagePromptTemplate = HumanMessagePromptTemplate
   { prompt :: PromptTemplate
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic, ToJSON, FromJSON)
 
 fromTemplate :: Text -> HumanMessagePromptTemplate
 fromTemplate template = fromTemplateWithOptions template defaultPromptTemplateOptions

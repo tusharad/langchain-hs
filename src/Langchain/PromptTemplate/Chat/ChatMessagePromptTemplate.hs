@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -14,9 +16,11 @@ module Langchain.PromptTemplate.Chat.ChatMessagePromptTemplate
   ( ChatMessagePromptTemplate (..)
   ) where
 
+import Data.Aeson (FromJSON, ToJSON)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
+import GHC.Generics (Generic)
 
 import Langchain.PromptTemplate.Chat (BaseStringMessagePromptTemplate (..))
 import Langchain.PromptTemplate.Prompt (PromptTemplate, fromTemplate)
@@ -28,7 +32,7 @@ data ChatMessagePromptTemplate = ChatMessagePromptTemplate
   , inputVariables :: [Text]
   , role :: Text
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic, ToJSON, FromJSON)
 
 instance BaseStringMessagePromptTemplate ChatMessagePromptTemplate Text where
   fromTemplateFile templateFile messageRole = do

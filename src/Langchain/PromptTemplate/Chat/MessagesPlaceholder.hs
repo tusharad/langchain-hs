@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -20,8 +22,10 @@ module Langchain.PromptTemplate.Chat.MessagesPlaceholder
   , messagesPlaceholderVariableName
   ) where
 
+import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)
+import GHC.Generics (Generic)
 
 import Langchain.Core.Error (validationError)
 import Langchain.Core.Model.Types (Message)
@@ -33,14 +37,14 @@ data MessagesPlaceholder = MessagesPlaceholder
   , optional :: Bool
   , nMessages :: Maybe Int
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic, ToJSON, FromJSON)
 
 data MessagesPlaceholderOptions = MessagesPlaceholderOptions
   { variableName :: Text
   , optional :: Bool
   , nMessages :: Maybe Int
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic, ToJSON, FromJSON)
 
 instance BaseMessagePromptTemplate MessagesPlaceholder (Map.Map Text [Message]) where
   formatMessages

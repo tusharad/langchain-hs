@@ -46,8 +46,8 @@ import Langchain.PromptTemplate.Chat.ChatPromptTemplate
   , toString
   )
 import Langchain.PromptTemplate.Chat.MessagesPlaceholder
-  ( MessagesPlaceholderOptions (..)
-  , messagesPlaceholderOptions
+  ( MessagesPlaceholder (..)
+  , MessagesPlaceholderOptions (..)
   )
 import Langchain.PromptTemplate.Prompt (PromptTemplateOptions (..))
 import Langchain.PromptTemplate.String (TemplateFormat (..))
@@ -63,6 +63,7 @@ tests =
     , partialTests
     , appendExtendTests
     , invokeTests
+    , serializationTests
     ]
 
 fromTemplateTests :: TestTree
@@ -229,6 +230,7 @@ richContentTests =
                     [ TextPromptBlock FString "What's in this image?"
                     , ImagePromptBlock FString $
                         ImageContent (ImageUrl "data:image/jpeg;base64,{my_image}") Nothing Nothing
+                    , ImagePromptBlock FString $ ImageContent (ImageUrl "{my_other_image}") Nothing Nothing
                     , ImagePromptBlock FString $ ImageContent (ImageUrl "{my_other_image}") (Just "medium") Nothing
                     , ImagePromptBlock FString $
                         ImageContent (ImageUrl "https://www.langchain.com/image.png") Nothing Nothing
@@ -245,6 +247,7 @@ richContentTests =
                       User
                       ( TextBlock "What's in this image?"
                           :| [ ImageBlock $ ImageContent (ImageUrl ("data:image/jpeg;base64," <> base64Image)) Nothing Nothing
+                             , ImageBlock $ ImageContent (ImageUrl otherBase64Image) Nothing Nothing
                              , ImageBlock $ ImageContent (ImageUrl otherBase64Image) (Just "medium") Nothing
                              , ImageBlock $ ImageContent (ImageUrl "https://www.langchain.com/image.png") Nothing Nothing
                              ]
@@ -411,7 +414,7 @@ partialTests =
         let optionalPrompt =
               fromMessages
                 [ messagesPlaceholderWithOptions $
-                    (messagesPlaceholderOptions "history") {optional = True}
+                    MessagesPlaceholderOptions "history" True Nothing
                 ]
             partialOptionalPrompt = partial optionalPrompt (Map.singleton "history" (PartialMessages [textMessage System "foo"]))
 
@@ -503,6 +506,52 @@ invokeTests =
           Left _ -> pure ()
           Right promptValue ->
             assertFailure $ "Expected list input validation error, got " <> show promptValue
+    ]
+
+serializationTests :: TestTree
+serializationTests =
+  testGroup
+    "serialization"
+    [ testCase "round-trips messages placeholder and chat prompt" $ do
+        let placeholder = MessagesPlaceholder "bar" False Nothing
+            prompt =
+              fromMessages
+                [ templateMessage System "foo"
+                , messagesPlaceholder "bar"
+                , templateMessage User "baz"
+                ]
+
+        decode (encode placeholder) @?= Just placeholder
+        decode (encode prompt) @?= Just prompt
+    , testCase "round-trips rich chat prompt template" $ do
+        let prompt =
+              fromMessages
+                [ templateMessage System "You are an AI assistant named {name}."
+                , contentMessage
+                    System
+                    [TextPromptBlock FString "You are an AI assistant named {name}."]
+                , templateMessage System "you are {foo}"
+                , contentMessage
+                    User
+                    [ TextPromptBlock FString "hello"
+                    , TextPromptBlock FString "What's in this image?"
+                    , TextPromptBlock FString "What's in this image?"
+                    , ImagePromptBlock FString $
+                        ImageContent (ImageUrl "data:image/jpeg;base64,{my_image}") Nothing Nothing
+                    , ImagePromptBlock FString $
+                        ImageContent (ImageUrl "{my_other_image}") Nothing Nothing
+                    , ImagePromptBlock FString $ ImageContent (ImageUrl "{my_other_image}") (Just "medium") Nothing
+                    , ImagePromptBlock FString $
+                        ImageContent (ImageUrl "https://www.langchain.com/image.png") Nothing Nothing
+                    , ImagePromptBlock FString $
+                        ImageContent (ImageUrl "data:image/jpeg;base64,foobar") Nothing Nothing
+                    ]
+                , messagesPlaceholderWithOptions $ MessagesPlaceholderOptions "history" True (Just 3)
+                , messagesPlaceholder "chat_history"
+                , messagesPlaceholder "more_history"
+                ]
+
+        decode (encode prompt) @?= Just prompt
     ]
 
 promptVariables :: Map.Map Text Text

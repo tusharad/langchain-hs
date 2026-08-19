@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 {- |
@@ -17,13 +19,14 @@ module Langchain.PromptTemplate.String
   , extractTemplateVariablesWithFormat
   ) where
 
-import Data.Aeson (Value, object, (.=))
+import Data.Aeson (FromJSON, ToJSON, Value, object, (.=))
 import qualified Data.Aeson.Key as Key
 import Data.Foldable (traverse_)
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
+import GHC.Generics (Generic)
 import Text.Mustache
   ( Key
   , Node (..)
@@ -39,7 +42,7 @@ data TemplateFormat
   = FString
   | Mustache
   | Jinja2
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic, ToJSON, FromJSON)
 
 data TemplatePart
   = Literal Text

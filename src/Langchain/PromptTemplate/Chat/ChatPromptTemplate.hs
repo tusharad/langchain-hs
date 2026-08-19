@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -35,11 +37,13 @@ module Langchain.PromptTemplate.Chat.ChatPromptTemplate
   , toString
   ) where
 
-import Data.Aeson (Value (..))
+import Data.Aeson (FromJSON (..), ToJSON (..), Value (..), object, withObject, (.:), (.:?), (.=))
+import Data.Aeson.Types (Parser)
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import qualified Data.Text as T
+import GHC.Generics (Generic)
 
 import Langchain.Core.Error (LangchainError, validationError)
 import Langchain.Core.Model.Types
@@ -72,34 +76,93 @@ data ChatPromptMessage
   | ContentMessagePrompt Role [ContentPromptBlock]
   | MessagesPlaceholderPrompt MessagesPlaceholder (Maybe [Message])
   | StaticMessage Message
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic, ToJSON, FromJSON)
 
 data ContentPromptBlock
   = TextPromptBlock TemplateFormat Text
   | ImagePromptBlock TemplateFormat ImageContent
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic)
+
+instance ToJSON ContentPromptBlock where
+  toJSON (TextPromptBlock templateFormat template) =
+    object
+      [ "type" .= ("text_prompt" :: Text)
+      , "templateFormat" .= templateFormat
+      , "template" .= template
+      ]
+  toJSON (ImagePromptBlock templateFormat imageContent) =
+    object
+      [ "type" .= ("image_prompt" :: Text)
+      , "templateFormat" .= templateFormat
+      , "imageContent" .= imageContentToJSON imageContent
+      ]
+
+instance FromJSON ContentPromptBlock where
+  parseJSON = withObject "ContentPromptBlock" $ \value -> do
+    blockType <- value .: "type"
+    case (blockType :: Text) of
+      "text_prompt" -> TextPromptBlock <$> value .: "templateFormat" <*> value .: "template"
+      "image_prompt" ->
+        ImagePromptBlock <$> value .: "templateFormat" <*> (value .: "imageContent" >>= parseImageContent)
+      other -> fail $ "Unknown ContentPromptBlock type: " ++ show other
+
+imageContentToJSON :: ImageContent -> Value
+imageContentToJSON ImageContent {imageSource = source, imageDetail = detail, imageMetadata = metadata} =
+  object
+    [ "source" .= imageSourceToJSON source
+    , "detail" .= detail
+    , "metadata" .= metadata
+    ]
+
+imageSourceToJSON :: ImageSource -> Value
+imageSourceToJSON (ImageBase64 mime sourceData) =
+  object
+    [ "type" .= ("base64" :: Text)
+    , "mimeType" .= mime
+    , "data" .= sourceData
+    ]
+imageSourceToJSON (ImageUrl url) =
+  object
+    [ "type" .= ("url" :: Text)
+    , "url" .= url
+    ]
+
+parseImageContent :: Value -> Parser ImageContent
+parseImageContent = withObject "ImageContent" $ \value ->
+  ImageContent
+    <$> (value .: "source" >>= parseImageSource)
+    <*> value .:? "detail"
+    <*> value .:? "metadata"
+
+parseImageSource :: Value -> Parser ImageSource
+parseImageSource = withObject "ImageSource" $ \value -> do
+  sourceType <- value .: "type"
+  case (sourceType :: Text) of
+    "base64" -> ImageBase64 <$> value .:? "mimeType" <*> value .: "data"
+    "url" -> ImageUrl <$> value .: "url"
+    other -> fail $ "Unknown ImageSource type: " ++ show other
 
 data ChatPromptTemplate = ChatPromptTemplate
   { messages :: [ChatPromptMessage]
   , inputVariables :: [Text]
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic, ToJSON, FromJSON)
 
 newtype ChatPromptValue = ChatPromptValue
   { messages :: [Message]
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic, ToJSON, FromJSON)
 
 data ChatPromptInput
   = ChatPromptVariables (Map.Map Text Text)
   | ChatPromptMessageList [Message]
   | ChatPromptInputs (Map.Map Text Text) (Map.Map Text [Message])
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic, ToJSON, FromJSON)
 
 data PartialValue
   = PartialText Text
   | PartialMessages [Message]
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic, ToJSON, FromJSON)
 
 fromTemplate :: Text -> ChatPromptTemplate
 fromTemplate template = fromTemplateWithOptions template Prompt.defaultPromptTemplateOptions
@@ -348,8 +411,8 @@ valueInputVariables templateFormat (String value) =
   String.extractTemplateVariablesWithFormat templateFormat value
 valueInputVariables templateFormat (Array values) =
   concatMap (valueInputVariables templateFormat) values
-valueInputVariables templateFormat (Object object) =
-  concatMap (valueInputVariables templateFormat) object
+valueInputVariables templateFormat (Object objectValue) =
+  concatMap (valueInputVariables templateFormat) objectValue
 valueInputVariables _ _ = []
 
 renderValue :: TemplateFormat -> Map.Map Text Text -> Value -> Either LangchainError Value
@@ -357,8 +420,8 @@ renderValue templateFormat variables (String value) =
   String <$> renderTemplate templateFormat variables value
 renderValue templateFormat variables (Array values) =
   Array <$> traverse (renderValue templateFormat variables) values
-renderValue templateFormat variables (Object object) =
-  Object <$> traverse (renderValue templateFormat variables) object
+renderValue templateFormat variables (Object objectValue) =
+  Object <$> traverse (renderValue templateFormat variables) objectValue
 renderValue _ _ value = Right value
 
 renderPartialValue :: TemplateFormat -> Map.Map Text Text -> Value -> Value
