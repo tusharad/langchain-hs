@@ -60,6 +60,7 @@ tests =
     , fromMessagesTests
     , richContentTests
     , formatPromptTests
+    , missingVariableTests
     , partialTests
     , appendExtendTests
     , invokeTests
@@ -180,6 +181,57 @@ formatPromptTests =
                   ]
             toString promptValue @?= expectedFormattedPrompt
         format chatPromptTemplate promptVariables @?= Right expectedFormattedPrompt
+    ]
+
+missingVariableTests :: TestTree
+missingVariableTests =
+  testGroup
+    "missing variables"
+    [ testCase "fails for missing FString variables in chat messages" $ do
+        let template = fromMessages [templateMessage User "Hi {foo}"]
+        assertMissingVariable "Parameter not found: foo" (formatPrompt template Map.empty)
+    , testCase "fails for missing Mustache variables in chat messages" $ do
+        let template = fromMessages [templateMessageWithFormat User Mustache "Hi {{foo}}"]
+        assertMissingVariable "Missing variable: foo" (formatPrompt template Map.empty)
+    , testCase "fails for missing Jinja2 variables in chat messages" $ do
+        let template = fromMessages [templateMessageWithFormat User Jinja2 "Hi {{ foo }}"]
+        assertMissingVariable "Missing variable: foo" (formatPrompt template Map.empty)
+    , testCase "fails for missing FString variables in multipart text blocks" $ do
+        let template = fromMessages [contentMessage User [TextPromptBlock FString "Hi {foo}"]]
+        assertMissingVariable "Parameter not found: foo" (formatPrompt template Map.empty)
+    , testCase "fails for missing FString variables in image url blocks" $ do
+        let template =
+              fromMessages
+                [ contentMessage
+                    User
+                    [ ImagePromptBlock FString $
+                        ImageContent (ImageUrl "https://example.com/{foo}") Nothing Nothing
+                    ]
+                ]
+        assertMissingVariable "Parameter not found: foo" (formatPrompt template Map.empty)
+    , testCase "fails for missing FString variables in image detail blocks" $ do
+        let template =
+              fromMessages
+                [ contentMessage
+                    User
+                    [ ImagePromptBlock FString $
+                        ImageContent (ImageUrl "https://example.com/image.png") (Just "{foo}") Nothing
+                    ]
+                ]
+        assertMissingVariable "Parameter not found: foo" (formatPrompt template Map.empty)
+    , testCase "fails for missing FString variables in image metadata blocks" $ do
+        let template =
+              fromMessages
+                [ contentMessage
+                    User
+                    [ ImagePromptBlock FString $
+                        ImageContent
+                          (ImageUrl "https://example.com/image.png")
+                          Nothing
+                          (Just $ object ["cache_control" .= object ["type" .= ("{foo}" :: Text)]])
+                    ]
+                ]
+        assertMissingVariable "Parameter not found: foo" (formatPrompt template Map.empty)
     ]
 
 richContentTests :: TestTree
@@ -671,6 +723,16 @@ serializationTests =
 
         decode (encode prompt) @?= Just prompt
     ]
+
+assertMissingVariable :: (Show err, Show a) => Text -> Either err a -> Assertion
+assertMissingVariable expectedFragment result =
+  case result of
+    Left err ->
+      if T.isInfixOf expectedFragment (T.pack (show err))
+        then pure ()
+        else assertFailure $ "Expected missing variable error, got " <> show err
+    Right value ->
+      assertFailure $ "Expected missing variable error, got " <> show value
 
 promptVariables :: Map.Map Text Text
 promptVariables = Map.fromList [("foo", "foo"), ("bar", "bar"), ("context", "context")]
