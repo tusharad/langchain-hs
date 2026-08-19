@@ -256,6 +256,40 @@ richContentTests =
                       Nothing
                       Nothing
                   ]
+    , testCase "formats image_url blocks with detail" $ do
+        let templateWith templateFormat urlTemplate =
+              fromMessages
+                [ contentMessage
+                    User
+                    [ ImagePromptBlock templateFormat $
+                        ImageContent urlTemplate (Just "low") Nothing
+                    ]
+                ]
+            expected =
+              [ Message
+                  User
+                  ( ImageBlock
+                      (ImageContent (ImageUrl "data:image/png;base64, base64data") (Just "low") Nothing)
+                      :| []
+                  )
+                  Nothing
+                  Nothing
+                  Nothing
+              ]
+            assertFormats template variables =
+              case formatPrompt template variables of
+                Left err -> assertFailure $ "Expected image_url detail prompt, got " <> show err
+                Right promptValue -> toMessages promptValue @?= expected
+
+        assertFormats
+          (templateWith FString (ImageUrl "data:{image_type};base64, {image_data}"))
+          (Map.fromList [("image_type", "image/png"), ("image_data", "base64data")])
+        assertFormats
+          (templateWith Mustache (ImageUrl "data:{{image_type}};base64, {{image_data}}"))
+          (Map.fromList [("image_type", "image/png"), ("image_data", "base64data")])
+        assertFormats
+          (templateWith Jinja2 (ImageUrl "data:{{ image_type }};base64, {{ image_data }}"))
+          (Map.fromList [("image_type", "image/png"), ("image_data", "base64data")])
     , testCase "formats image data blocks with metadata" $ do
         let metadata = object ["cache_control" .= object ["type" .= ("{cache_type}" :: Text)]]
             template =
@@ -270,6 +304,36 @@ richContentTests =
 
         case formatPrompt template variables of
           Left err -> assertFailure $ "Expected image data prompt, got " <> show err
+          Right promptValue ->
+            toMessages promptValue
+              @?= [ Message
+                      User
+                      ( ImageBlock
+                          ( ImageContent
+                              (ImageBase64 Nothing "base64data")
+                              Nothing
+                              (Just $ object ["cache_control" .= object ["type" .= ("ephemeral" :: Text)]])
+                          )
+                          :| []
+                      )
+                      Nothing
+                      Nothing
+                      Nothing
+                  ]
+    , testCase "formats mustache image data blocks with metadata" $ do
+        let metadata = object ["cache_control" .= object ["type" .= ("{{cache_type}}" :: Text)]]
+            template =
+              fromMessages
+                [ contentMessage
+                    User
+                    [ ImagePromptBlock Mustache $
+                        ImageContent (ImageBase64 Nothing "{{source_data}}") Nothing (Just metadata)
+                    ]
+                ]
+            variables = Map.fromList [("cache_type", "ephemeral"), ("source_data", "base64data")]
+
+        case formatPrompt template variables of
+          Left err -> assertFailure $ "Expected mustache image data prompt, got " <> show err
           Right promptValue ->
             toMessages promptValue
               @?= [ Message
