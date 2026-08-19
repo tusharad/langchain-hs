@@ -330,6 +330,20 @@ richContentTests =
         assertFormats
           (templateWith Jinja2 (ImageUrl "data:{{ image_type }};base64, {{ image_data }}"))
           (Map.fromList [("image_type", "image/png"), ("image_data", "base64data")])
+    , testCase "rejects nested f-string replacement fields in image_url blocks" $ do
+        let template =
+              fromMessages
+                [ contentMessage
+                    User
+                    [ ImagePromptBlock FString $
+                        ImageContent (ImageUrl "{img:{img.__class__.__name__}}") Nothing Nothing
+                    ]
+                ]
+        case formatPrompt template (Map.singleton "img" "image-url") of
+          Left err ->
+            "Nested replacement fields are not allowed" `T.isInfixOf` T.pack (show err)
+              @? "Expected nested replacement field error"
+          Right _ -> assertFailure "Expected nested replacement field error"
     , testCase "formats image data blocks with metadata" $ do
         let metadata = object ["cache_control" .= object ["type" .= ("{cache_type}" :: Text)]]
             template =

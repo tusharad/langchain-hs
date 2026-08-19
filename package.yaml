@@ -43,6 +43,7 @@ dependencies:
 - parsec < 4
 - pdf-toolbox-document == 0.1.4
 - process >= 1.6 && < 1.7
+- pystrformat
 - QuickCheck >= 2.14
 - random >= 1.2
 - scientific

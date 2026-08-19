@@ -27,6 +27,9 @@ import Data.Functor.Identity (runIdentity)
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Text.Format.Heavy.Build (formatEither)
+import Data.Text.Format.Heavy.Instances ()
+import Data.Text.Format.Heavy.Parse (FormatParseItem (..), parse, parseFormat)
 import qualified Data.Text.Lazy as TL
 import GHC.Generics (Generic)
 import qualified Text.Ginger as Ginger
@@ -48,49 +51,58 @@ data TemplateFormat
   | Jinja2
   deriving (Show, Eq, Generic, ToJSON, FromJSON)
 
-data TemplatePart
-  = Literal Text
-  | Variable Text
-
-parseTemplateWithFormat :: TemplateFormat -> Text -> Either LangchainError [TemplatePart]
-parseTemplateWithFormat FString = parseDelimitedTemplate "{" "}" "Unclosed brace in template"
-parseTemplateWithFormat Mustache = parseDelimitedTemplate "{{" "}}" "Unclosed double brace in template"
-parseTemplateWithFormat Jinja2 = parseDelimitedTemplate "{{" "}}" "Unclosed double brace in template"
-
-parseDelimitedTemplate :: Text -> Text -> Text -> Text -> Either LangchainError [TemplatePart]
-parseDelimitedTemplate open close unclosed = go
-  where
-    go :: Text -> Either LangchainError [TemplatePart]
-    go source =
-      case T.breakOn open source of
-        (literal, rest) | T.null rest -> Right [Literal literal | not (T.null literal)]
-        (literal, rest) -> do
-          let afterOpen = T.drop (T.length open) rest
-          case T.breakOn close afterOpen of
-            (_, afterClose)
-              | T.null afterClose ->
-                  Left $ validationError unclosed (Just "PromptTemplate") Nothing
-            (variableName, afterClose) -> do
-              remainingParts <- go (T.drop (T.length close) afterClose)
-              pure $
-                [Literal literal | not (T.null literal)]
-                  <> [Variable (T.strip variableName)]
-                  <> remainingParts
-
 renderTemplateWithFormat ::
   TemplateFormat -> Map.Map Text Text -> Text -> Either LangchainError Text
+renderTemplateWithFormat FString vars source = renderFStringTemplate vars source
 renderTemplateWithFormat Mustache vars source = renderMustacheTemplate vars source
 renderTemplateWithFormat Jinja2 vars source = renderJinja2Template vars source
-renderTemplateWithFormat format vars source = do
-  parts <- parseTemplateWithFormat format source
-  T.concat <$> traverse renderPart parts
+
+renderFStringTemplate :: Map.Map Text Text -> Text -> Either LangchainError Text
+renderFStringTemplate vars source = do
+  items <- parseFStringTemplate source
+  traverse_ validateFStringItem items
+  format <- mapParseError $ parseFormat (TL.fromStrict source)
+  mapFormatError $ TL.toStrict <$> formatEither format (toFStringVars vars)
   where
-    renderPart :: TemplatePart -> Either LangchainError Text
-    renderPart (Literal literal) = Right literal
-    renderPart (Variable variableName) =
-      case Map.lookup variableName vars of
-        Just value -> Right value
-        Nothing -> Left $ validationError ("Missing variable: " <> variableName) (Just variableName) Nothing
+    mapFormatError :: Either String a -> Either LangchainError a
+    mapFormatError (Left err) = Left $ validationError (T.pack err) (Just "PromptTemplate") Nothing
+    mapFormatError (Right result) = Right result
+
+toFStringVars :: Map.Map Text Text -> Map.Map TL.Text Text
+toFStringVars = Map.mapKeys TL.fromStrict
+
+parseFStringTemplate :: Text -> Either LangchainError [FormatParseItem]
+parseFStringTemplate source = mapParseError $ parse (TL.fromStrict source)
+
+mapParseError :: (Show err) => Either err a -> Either LangchainError a
+mapParseError (Left err) = Left $ validationError (T.pack $ show err) (Just "PromptTemplate") Nothing
+mapParseError (Right result) = Right result
+
+validateFStringItem :: FormatParseItem -> Either LangchainError ()
+validateFStringItem (FormatString _) = Right ()
+validateFStringItem (FormatReplacementField variableName formatSpec) = do
+  validateFStringVariableName variableName
+  traverse_ validateFStringFormatSpec formatSpec
+
+validateFStringVariableName :: TL.Text -> Either LangchainError ()
+validateFStringVariableName variableName
+  | TL.all isAsciiDigit variableName =
+      Left $
+        validationError "Positional arguments are not supported" (Just $ TL.toStrict variableName) Nothing
+  | TL.any (== '.') variableName =
+      Left $ validationError "Attribute access is not supported" (Just $ TL.toStrict variableName) Nothing
+  | TL.any (`elem` ['[', ']']) variableName =
+      Left $ validationError "Index access is not supported" (Just $ TL.toStrict variableName) Nothing
+  | otherwise = Right ()
+
+validateFStringFormatSpec :: TL.Text -> Either LangchainError ()
+validateFStringFormatSpec formatSpec
+  | TL.any (`elem` ['{', '}']) formatSpec =
+      Left $ validationError "Nested replacement fields are not allowed" (Just "PromptTemplate") Nothing
+  | otherwise = Right ()
+
+isAsciiDigit :: Char -> Bool
+isAsciiDigit char = char >= '0' && char <= '9'
 
 renderMustacheTemplate :: Map.Map Text Text -> Text -> Either LangchainError Text
 renderMustacheTemplate vars source =
@@ -144,10 +156,10 @@ extractTemplateVariablesWithFormat Jinja2 source =
   case parseJinja2Template source of
     Left _ -> []
     Right template -> gingerTemplateVariables template
-extractTemplateVariablesWithFormat format source =
-  case parseTemplateWithFormat format source of
+extractTemplateVariablesWithFormat FString source =
+  case parseFStringTemplate source of
     Left _ -> []
-    Right parts -> unique [variableName | Variable variableName <- parts]
+    Right parts -> unique [TL.toStrict variableName | FormatReplacementField variableName _ <- parts]
 
 gingerTemplateVariables :: Ginger.Template a -> [Text]
 gingerTemplateVariables Ginger.Template {Ginger.templateBody = body} = unique $ statementVariables [] body

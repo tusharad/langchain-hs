@@ -166,6 +166,7 @@ library
     , parsec <4
     , pdf-toolbox-document ==0.1.4
     , process ==1.6.*
+    , pystrformat
     , random >=1.2
     , scientific
     , sqlite-simple >=0.4.18 && <0.5
@@ -209,6 +210,7 @@ executable big-showcase
     , parsec <4
     , pdf-toolbox-document ==0.1.4
     , process ==1.6.*
+    , pystrformat
     , random >=1.2
     , scientific
     , sqlite-simple >=0.4.18 && <0.5
@@ -346,6 +348,7 @@ test-suite langchain-hs-test
     , parsec <4
     , pdf-toolbox-document ==0.1.4
     , process ==1.6.*
+    , pystrformat
     , random >=1.2
     , scientific
     , sqlite-simple >=0.4.18 && <0.5
@@ -394,6 +397,7 @@ benchmark langchain-hs-bench
     , parsec <4
     , pdf-toolbox-document ==0.1.4
     , process ==1.6.*
+    , pystrformat
     , random >=1.2
     , scientific
     , sqlite-simple >=0.4.18 && <0.5
