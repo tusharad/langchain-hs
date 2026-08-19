@@ -25,9 +25,10 @@ module Langchain.Retriever.BM25
   ) where
 
 import Data.Char (isAlphaNum)
+#if MIN_VERSION_base(4,20,0)
 import Data.List (sortBy)
-#if !MIN_VERSION_base(4,20,0)
-import Data.List (foldl')
+#else
+import Data.List (foldl', sortBy)
 #endif
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map

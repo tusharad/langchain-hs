@@ -24,9 +24,10 @@ module Langchain.Retriever.Hybrid
   ) where
 
 import Control.Monad.IO.Class (MonadIO, liftIO)
+#if MIN_VERSION_base(4,20,0)
 import Data.List (sortBy)
-#if !MIN_VERSION_base(4,20,0)
-import Data.List (foldl')
+#else
+import Data.List (foldl', sortBy)
 #endif
 import qualified Data.Map.Strict as Map
 import Data.Ord (Down (..), comparing)
