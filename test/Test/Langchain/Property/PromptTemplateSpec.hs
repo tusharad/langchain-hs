@@ -9,7 +9,8 @@ import Test.QuickCheck
 import Test.Tasty
 import Test.Tasty.QuickCheck
 
-import Langchain.PromptTemplate
+import Langchain.PromptTemplate.FewShot
+import Langchain.PromptTemplate.Prompt
 
 -- QuickCheck helper to generate safe variable names [a-z]+
 newtype SafeVar = SafeVar Text
@@ -31,18 +32,18 @@ tests =
     "Langchain.Property.PromptTemplateSpec (QuickCheck)"
     [ testProperty "Static templates without braces render unchanged" $
         \(PlainText txt) ->
-          renderPrompt (PromptTemplate txt) Map.empty === Right txt
+          renderPrompt (fromTemplate txt) Map.empty === Right txt
     , testProperty "Single variable interpolation replaces {var} with value" $
         \(SafeVar var) (PlainText val) ->
           let tmpl = "Hello {" <> var <> "}!"
               vars = Map.singleton var val
               expected = "Hello " <> val <> "!"
-           in renderPrompt (PromptTemplate tmpl) vars === Right expected
+           in renderPrompt (fromTemplate tmpl) vars === Right expected
     , testProperty "Missing variable causes render error" $
         \(SafeVar var) ->
           let tmpl = "Prefix {" <> var <> "} Suffix"
               vars = Map.empty
-           in case renderPrompt (PromptTemplate tmpl) vars of
+           in case renderPrompt (fromTemplate tmpl) vars of
                 Left _ -> property True
                 Right _ -> property False
     , testProperty "Two variable interpolation succeeds when all vars present" $
@@ -51,7 +52,7 @@ tests =
             let tmpl = "{" <> v1 <> "} and {" <> v2 <> "}"
                 vars = Map.fromList [(v1, val1), (v2, val2)]
                 expected = val1 <> " and " <> val2
-             in renderPrompt (PromptTemplate tmpl) vars === Right expected
+             in renderPrompt (fromTemplate tmpl) vars === Right expected
     , testProperty "FewShotPromptTemplate renders all examples" $
         \(PlainText prefix) (PlainText suffix) (PlainText ex1) (PlainText ex2) ->
           let examples =

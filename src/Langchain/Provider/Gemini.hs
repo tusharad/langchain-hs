@@ -69,7 +69,7 @@ newGemini = Gemini
 contentBlockToPart :: ContentBlock -> Value
 contentBlockToPart (TextBlock t) =
   object ["text" .= t]
-contentBlockToPart (ImageBlock mime b64) =
+contentBlockToPart (ImageBlock ImageContent {imageSource = ImageBase64 (Just mime) b64}) =
   object
     [ "inline_data"
         .= object
@@ -77,6 +77,10 @@ contentBlockToPart (ImageBlock mime b64) =
           , "data" .= b64
           ]
     ]
+contentBlockToPart (ImageBlock ImageContent {imageSource = ImageUrl url}) =
+  object ["text" .= ("[Image URL: " <> url <> "]")]
+contentBlockToPart (ImageBlock ImageContent {imageSource = ImageBase64 Nothing _}) =
+  object ["text" .= ("[Image data block: base64]" :: Text)]
 contentBlockToPart (AudioBlock mime b64) =
   object
     [ "inline_data"

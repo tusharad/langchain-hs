@@ -44,7 +44,11 @@ import qualified Test.Langchain.OutputParser.AdvancedParsersSpec as AdvancedPars
 import qualified Test.Langchain.OutputParser.Core as OutputParserTest
 import qualified Test.Langchain.Pipeline.PipelineDSLSpec as PipelineDSLTest
 import qualified Test.Langchain.PreludeSpec as PreludeTest
-import qualified Test.Langchain.PromptTemplate as PromptTemplateTest
+import qualified Test.Langchain.PromptTemplate.Chat.ChatMessagePromptTemplateSpec as ChatMessagePromptTemplateTest
+import qualified Test.Langchain.PromptTemplate.Chat.ChatPromptTemplateSpec as ChatPromptTemplateTest
+import qualified Test.Langchain.PromptTemplate.Chat.MessagesPlaceholderSpec as MessagesPlaceholderTest
+import qualified Test.Langchain.PromptTemplate.FewShotSpec as FewShotPromptTemplateTest
+import qualified Test.Langchain.PromptTemplate.PromptSpec as PromptTemplateTest
 import qualified Test.Langchain.Provider.FixturesSpec as FixturesTest
 import qualified Test.Langchain.Provider.Gemini as GeminiProviderTest
 import qualified Test.Langchain.Provider.Ollama as OllamaProviderTest
@@ -104,6 +108,10 @@ main =
           "Unit Tests"
           [ ErrorTest.tests
           , PromptTemplateTest.tests
+          , FewShotPromptTemplateTest.tests
+          , ChatPromptTemplateTest.tests
+          , ChatMessagePromptTemplateTest.tests
+          , MessagesPlaceholderTest.tests
           , OutputParserTest.tests
           , AdvancedParsersTest.tests
           , TextSplitterTest.tests

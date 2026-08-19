@@ -14,7 +14,7 @@ import Langchain.Chain.StuffDocuments
 import Langchain.Core.Model (extractMessageText, newMockModel)
 import Langchain.DocumentLoader.Core (Document (..))
 import Langchain.Memory.Core (newWindowBufferMemory)
-import Langchain.PromptTemplate (PromptTemplate (..))
+import Langchain.PromptTemplate.Prompt (fromTemplate)
 
 tests :: TestTree
 tests =
@@ -48,7 +48,7 @@ tests =
     , testCase "StuffDocumentsChain concatenates documents into prompt" $ do
         let mockModel = newMockModel "Answer based on context"
             docs = [Document "Doc 1 content" Map.empty, Document "Doc 2 content" Map.empty]
-            chain = newStuffDocumentsChain mockModel (PromptTemplate "Context: {context}\nQ: {question}") "context"
+            chain = newStuffDocumentsChain mockModel (fromTemplate "Context: {context}\nQ: {question}") "context"
             vars = Map.singleton "question" "What is in docs?"
         res <- runExceptT $ runStuffDocumentsChain chain docs vars
         case res of

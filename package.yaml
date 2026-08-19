@@ -31,6 +31,7 @@ dependencies:
 - containers >= 0.6 && < 0.9
 - directory >= 1.3.6 && < 1.4
 - filepath < 2
+- ginger >= 0.10.6 && < 0.11
 - http-client
 - http-conduit >= 2 && < 3
 - http-types >= 0.11 && < 0.13
@@ -42,10 +43,12 @@ dependencies:
 - parsec < 4
 - pdf-toolbox-document == 0.1.4
 - process >= 1.6 && < 1.7
+- pystrformat
 - QuickCheck >= 2.14
 - random >= 1.2
 - scientific
 - sqlite-simple >= 0.4.18 && < 0.5
+- stache >= 2.3 && < 2.5
 - stm >= 2.5 && < 2.6
 - tagsoup < 0.15
 - text >= 1.2 && < 3

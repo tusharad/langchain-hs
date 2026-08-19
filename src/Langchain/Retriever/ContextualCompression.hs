@@ -36,7 +36,7 @@ import Langchain.Core.Model
   , userMessage
   )
 import Langchain.DocumentLoader.Core (Document (..))
-import Langchain.PromptTemplate (PromptTemplate (..), renderPrompt)
+import Langchain.PromptTemplate.Prompt (PromptTemplate, fromTemplate, renderPrompt)
 import Langchain.Retriever.Core (Retriever (..))
 
 -- | Contextual compression retriever container
@@ -49,7 +49,7 @@ data ContextualCompressionRetriever retriever model = ContextualCompressionRetri
 -- | Default compression prompt template
 defaultCompressionPrompt :: PromptTemplate
 defaultCompressionPrompt =
-  PromptTemplate
+  fromTemplate
     ( "Given the following question and context, extract any parts of the context directly relevant to answering the question.\n"
         <> "If no parts of the context are relevant, reply with 'NO_RELEVANT_CONTEXT'.\n\n"
         <> "Question: {question}\n\n"

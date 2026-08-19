@@ -28,7 +28,7 @@ tests =
             let msg = imageMessage User "image/png" "base64data=="
             messageRole msg @?= User
             case messageContents msg of
-              (ImageBlock mime b64 :| []) -> do
+              (ImageBlock (ImageContent (ImageBase64 (Just mime) b64) Nothing Nothing) :| []) -> do
                 mime @?= "image/png"
                 b64 @?= "base64data=="
               _ -> assertFailure "Expected ImageBlock"

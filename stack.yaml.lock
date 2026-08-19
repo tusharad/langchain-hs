@@ -64,6 +64,17 @@ packages:
       size: 1528
   original:
     hackage: random-1.2.1.3@sha256:117541ba0a177397a3333f94870f789ef050dca31b0688a19824b2bc401b8823,6237
+- completed:
+    commit: f603a296800ed3fb488eb9ba8976812bca4bb983
+    git: https://github.com/lbobylev/pystrformat.git
+    name: pystrformat
+    pantry-tree:
+      sha256: df18f7f792d847620e874788daa1aa8aef0dd44111a91cad30fa90468ebf9918
+      size: 1637
+    version: 0.1.0.0
+  original:
+    commit: f603a296800ed3fb488eb9ba8976812bca4bb983
+    git: https://github.com/lbobylev/pystrformat.git
 snapshots:
 - completed:
     sha256: 00a21f6385077a5340603ff2cb3cd625502e533f09a80c99959ca5754073cac1

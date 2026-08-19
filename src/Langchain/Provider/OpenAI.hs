@@ -3,8 +3,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 
--- TODO: This is not tested
-
 {- |
 Module      : Langchain.Provider.OpenAI
 Description : OpenAI provider implementing effect-polymorphic ChatModel
@@ -29,15 +27,17 @@ import Control.Monad.Except (throwError)
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson
 import Data.Aeson.Types (parseEither)
+import Data.ByteString (ByteString)
 import Data.Conduit (yield)
 import qualified Data.List.NonEmpty as NonEmpty
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import GHC.Generics (Generic)
 import Network.HTTP.Simple
 
-import Langchain.Core.Error (llmError)
+import Langchain.Core.Error (LangchainError, llmError)
 import Langchain.Core.Model
 import Langchain.Core.Stream (StreamEvent (..), TokenUsage (..))
 
@@ -95,15 +95,27 @@ roleToText Function = "function"
 contentBlockToValue :: ContentBlock -> Value
 contentBlockToValue (TextBlock t) =
   object ["type" .= ("text" :: Text), "text" .= t]
-contentBlockToValue (ImageBlock mime b64) =
+contentBlockToValue (ImageBlock ImageContent {imageSource = ImageBase64 (Just mime) b64}) =
   object
     [ "type" .= ("image_url" :: Text)
     , "image_url" .= object ["url" .= ("data:" <> mime <> ";base64," <> b64)]
     ]
-contentBlockToValue (AudioBlock mime _) =
+contentBlockToValue (ImageBlock ImageContent {imageSource = ImageUrl url, imageDetail = detail}) =
+  object
+    [ "type" .= ("image_url" :: Text)
+    , "image_url" .= object (["url" .= url] <> maybe [] (pure . ("detail" .=)) detail)
+    ]
+contentBlockToValue (ImageBlock ImageContent {imageSource = ImageBase64 Nothing imageData, imageMetadata = metadata}) =
+  object $
+    [ "type" .= ("image" :: Text)
+    , "source_type" .= ("base64" :: Text)
+    , "data" .= imageData
+    ]
+      <> maybe [] (pure . ("metadata" .=)) metadata
+contentBlockToValue (AudioBlock mime b64) =
   object ["type" .= ("text" :: Text), "text" .= ("[Audio block " <> mime <> "]")]
 contentBlockToValue (DataBlock _) =
-  object ["type" .= ("text" :: Text), "text" .= ("[Data block]" :: Text)]
+  object ["type" .= ("text" :: Text), "text" .= ("[Data block]")]
 
 -- Convert Message to OpenAI JSON payload
 messageToValue :: Message -> Value
@@ -118,7 +130,7 @@ messageToValue msg =
 instance ChatModel OpenAI where
   type ModelConfig OpenAI = Value
 
-  invoke provider inputMsgs _ = do
+  invoke provider inputMsgs mbExtraCfg = do
     let payload =
           object
             [ "model" .= model provider
@@ -137,7 +149,7 @@ instance ChatModel OpenAI where
       Left err -> throwError $ llmError err Nothing Nothing
       Right bodyVal -> case parseOpenAIResponse bodyVal of
         Left parseErr -> throwError $ llmError (T.pack parseErr) Nothing Nothing
-        Right (respMsg, _) -> pure respMsg
+        Right (respMsg, mbUsage) -> pure respMsg
 
   stream provider inputMsgs _ = do
     let rId = "openai-stream-run"
