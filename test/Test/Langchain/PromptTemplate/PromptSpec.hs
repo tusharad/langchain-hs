@@ -36,17 +36,17 @@ tests =
     , testCase "infers f-string variables without escaped braces" $
         let promptTemplate = fromTemplate "Hello {{name}}, {name}!"
          in inputVariables promptTemplate @?= ["name"]
-    , testCase "rejects f-string positional fields"
-        $ assertRenderErrorContains "Positional arguments are not supported"
-        $ renderPrompt (fromTemplate "Hello, {0}!") (Map.singleton "0" "Alice")
-    , testCase "rejects f-string attribute access"
-        $ assertRenderErrorContains "Attribute access is not supported"
-        $ renderPrompt (fromTemplate "Hello, {user.name}!") (Map.singleton "user.name" "Alice")
-    , testCase "rejects nested f-string replacement fields"
-        $ assertRenderErrorContains "Nested replacement fields are not allowed"
-        $ renderPrompt
-          (fromTemplate "Hello, {name:{width}}!")
-          (Map.fromList [("name", "Alice"), ("width", "10")])
+    , testCase "rejects f-string positional fields" $
+        assertRenderErrorContains "Positional arguments are not supported" $
+          renderPrompt (fromTemplate "Hello, {0}!") (Map.singleton "0" "Alice")
+    , testCase "rejects f-string attribute access" $
+        assertRenderErrorContains "Attribute access is not supported" $
+          renderPrompt (fromTemplate "Hello, {user.name}!") (Map.singleton "user.name" "Alice")
+    , testCase "rejects nested f-string replacement fields" $
+        assertRenderErrorContains "Nested replacement fields are not allowed" $
+          renderPrompt
+            (fromTemplate "Hello, {name:{width}}!")
+            (Map.fromList [("name", "Alice"), ("width", "10")])
     , testCase "renders mustache sections" $
         let mustacheTemplate = fromTemplateWithFormat "{{#name}}Hello, {{name}}!{{/name}}" Mustache Map.empty
             mustacheVars = Map.singleton "name" "Alice"

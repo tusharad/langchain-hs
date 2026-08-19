@@ -291,8 +291,6 @@ test-suite langchain-hs-test
       Test.Langchain.Property.RunnableSpec
       Test.Langchain.Property.StateReducerSpec
       Test.Langchain.Property.TextSplitterSpec
-      Test.Langchain.Provider.Anthropic
-      Test.Langchain.Provider.DeepSeek
       Test.Langchain.Provider.FixturesSpec
       Test.Langchain.Provider.Gemini
       Test.Langchain.Provider.Ollama

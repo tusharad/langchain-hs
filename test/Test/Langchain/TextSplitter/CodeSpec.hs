@@ -2,7 +2,6 @@
 
 module Test.Langchain.TextSplitter.CodeSpec (tests) where
 
-import qualified Data.Text.Lazy as TL
 import Test.Tasty
 import Test.Tasty.HUnit
 

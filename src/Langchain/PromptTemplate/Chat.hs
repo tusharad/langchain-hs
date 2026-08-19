@@ -1,7 +1,6 @@
+{-# LANGUAGE ConstrainedClassMethods #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverloadedStrings #-}
 
 {- |
 Module      : Langchain.PromptTemplate.Chat

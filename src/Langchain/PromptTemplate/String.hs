@@ -22,6 +22,7 @@ module Langchain.PromptTemplate.String
 import Control.Monad.Trans.Writer.Lazy (Writer)
 import Data.Aeson (FromJSON, ToJSON, Value, object, (.=))
 import qualified Data.Aeson.Key as Key
+import Data.Char (isDigit)
 import Data.Foldable (traverse_)
 import Data.Functor.Identity (runIdentity)
 import qualified Data.Map.Strict as Map
@@ -102,7 +103,7 @@ validateFStringFormatSpec formatSpec
   | otherwise = Right ()
 
 isAsciiDigit :: Char -> Bool
-isAsciiDigit char = char >= '0' && char <= '9'
+isAsciiDigit = isDigit
 
 renderMustacheTemplate :: Map.Map Text Text -> Text -> Either LangchainError Text
 renderMustacheTemplate vars source =

@@ -39,8 +39,10 @@ module Langchain.PromptTemplate.Chat.ChatPromptTemplate
 
 import Data.Aeson (FromJSON (..), ToJSON (..), Value (..), object, withObject, (.:), (.:?), (.=))
 import Data.Aeson.Types (Parser)
+import Data.Either (fromRight)
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.Map.Strict as Map
+import Data.Maybe (isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import GHC.Generics (Generic)
@@ -259,7 +261,7 @@ messageInputVariables
         }
       storedMessages
     )
-    | optional' || maybe False (const True) storedMessages = []
+    | optional' || isJust storedMessages = []
     | otherwise = [variableName']
 messageInputVariables (StaticMessage _) = []
 
@@ -404,7 +406,7 @@ renderTemplate templateFormat variables template =
 
 renderPartial :: TemplateFormat -> Map.Map Text Text -> Text -> Text
 renderPartial templateFormat partials template =
-  either (const template) id $ renderTemplate templateFormat partials template
+  fromRight template $ renderTemplate templateFormat partials template
 
 valueInputVariables :: TemplateFormat -> Value -> [Text]
 valueInputVariables templateFormat (String value) =
@@ -426,7 +428,7 @@ renderValue _ _ value = Right value
 
 renderPartialValue :: TemplateFormat -> Map.Map Text Text -> Value -> Value
 renderPartialValue templateFormat partials value =
-  either (const value) id $ renderValue templateFormat partials value
+  fromRight value $ renderValue templateFormat partials value
 
 unique :: [Text] -> [Text]
 unique = foldl addIfMissing []

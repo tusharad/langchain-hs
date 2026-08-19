@@ -1,8 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
 
 {- |
@@ -23,6 +21,7 @@ module Langchain.Provider.Anthropic
   , parseAnthropicResponse
   ) where
 
+import Control.Monad (forM)
 import Control.Monad.Except (throwError)
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson
@@ -65,10 +64,10 @@ data Anthropic = Anthropic
 
 -- | Create a standard Anthropic provider instance
 newAnthropic :: Text -> Text -> Anthropic
-newAnthropic key modelName =
+newAnthropic key mName =
   Anthropic
     { apiKey = key
-    , model = modelName
+    , model = mName
     , enableThinking = False
     , thinkingBudget = Nothing
     , maxTokens = 1024
@@ -95,7 +94,7 @@ contentBlockToAnthropic (ImageBlock ImageContent {imageSource = ImageBase64 Noth
 contentBlockToAnthropic (AudioBlock mime _) =
   object ["type" .= ("text" :: Text), "text" .= ("[Audio block " <> mime <> "]")]
 contentBlockToAnthropic (DataBlock _) =
-  object ["type" .= ("text" :: Text), "text" .= ("[Data block]")]
+  object ["type" .= ("text" :: Text), "text" .= ("[Data block]" :: Text)]
 
 -- Convert Message to Anthropic JSON payload
 messageToAnthropic :: Message -> Value
@@ -122,7 +121,11 @@ instance ChatModel Anthropic where
               , Just $ "messages" .= map messageToAnthropic nonSystemMsgs
               , if T.null systemTxt then Nothing else Just ("system" .= systemTxt)
               , if enableThinking provider
-                  then Just ("thinking" .= object ["type" .= ("enabled" :: Text), "budget_tokens" .= fromMaybe 1024 (thinkingBudget provider)])
+                  then
+                    Just
+                      ( "thinking"
+                          .= object ["type" .= ("enabled" :: Text), "budget_tokens" .= fromMaybe 1024 (thinkingBudget provider)]
+                      )
                   else Nothing
               ]
 
@@ -185,7 +188,7 @@ safeHttpRequest req = do
 parseAnthropicResponse :: Value -> Either String (Message, Maybe TokenUsage)
 parseAnthropicResponse = parseEither $ withObject "AnthropicResponse" $ \o -> do
   contentArr <- o .: "content"
-  txts <- flip mapM contentArr $ withObject "Content" $ \c -> do
+  txts <- forM contentArr $ withObject "Content" $ \c -> do
     t <- c .: "type"
     if (t :: Text) == "text"
       then c .: "text"

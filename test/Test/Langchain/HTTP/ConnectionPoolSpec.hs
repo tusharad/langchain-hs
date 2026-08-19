@@ -13,6 +13,6 @@ tests =
     "Langchain.HTTP.ConnectionPoolSpec"
     [ testCase "newPooledHttpManager initializes manager with custom pool configuration" $ do
         let cfg = defaultPoolConfig {maxIdleConnections = 64, responseTimeoutSec = 120}
-        mgr <- newPooledHttpManager cfg
+        _mgr <- newPooledHttpManager cfg
         assertBool "Manager successfully created" True
     ]

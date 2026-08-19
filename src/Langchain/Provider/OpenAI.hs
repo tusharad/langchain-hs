@@ -27,17 +27,15 @@ import Control.Monad.Except (throwError)
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson
 import Data.Aeson.Types (parseEither)
-import Data.ByteString (ByteString)
 import Data.Conduit (yield)
 import qualified Data.List.NonEmpty as NonEmpty
-import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import GHC.Generics (Generic)
 import Network.HTTP.Simple
 
-import Langchain.Core.Error (LangchainError, llmError)
+import Langchain.Core.Error (llmError)
 import Langchain.Core.Model
 import Langchain.Core.Stream (StreamEvent (..), TokenUsage (..))
 
@@ -105,17 +103,17 @@ contentBlockToValue (ImageBlock ImageContent {imageSource = ImageUrl url, imageD
     [ "type" .= ("image_url" :: Text)
     , "image_url" .= object (["url" .= url] <> maybe [] (pure . ("detail" .=)) detail)
     ]
-contentBlockToValue (ImageBlock ImageContent {imageSource = ImageBase64 Nothing imageData, imageMetadata = metadata}) =
+contentBlockToValue (ImageBlock ImageContent {imageSource = ImageBase64 Nothing imgData, imageMetadata = metadata}) =
   object $
     [ "type" .= ("image" :: Text)
     , "source_type" .= ("base64" :: Text)
-    , "data" .= imageData
+    , "data" .= imgData
     ]
       <> maybe [] (pure . ("metadata" .=)) metadata
-contentBlockToValue (AudioBlock mime b64) =
+contentBlockToValue (AudioBlock mime _) =
   object ["type" .= ("text" :: Text), "text" .= ("[Audio block " <> mime <> "]")]
 contentBlockToValue (DataBlock _) =
-  object ["type" .= ("text" :: Text), "text" .= ("[Data block]")]
+  object ["type" .= ("text" :: Text), "text" .= ("[Data block]" :: Text)]
 
 -- Convert Message to OpenAI JSON payload
 messageToValue :: Message -> Value
@@ -130,7 +128,7 @@ messageToValue msg =
 instance ChatModel OpenAI where
   type ModelConfig OpenAI = Value
 
-  invoke provider inputMsgs mbExtraCfg = do
+  invoke provider inputMsgs _ = do
     let payload =
           object
             [ "model" .= model provider
@@ -149,7 +147,7 @@ instance ChatModel OpenAI where
       Left err -> throwError $ llmError err Nothing Nothing
       Right bodyVal -> case parseOpenAIResponse bodyVal of
         Left parseErr -> throwError $ llmError (T.pack parseErr) Nothing Nothing
-        Right (respMsg, mbUsage) -> pure respMsg
+        Right (respMsg, _mbUsage) -> pure respMsg
 
   stream provider inputMsgs _ = do
     let rId = "openai-stream-run"
