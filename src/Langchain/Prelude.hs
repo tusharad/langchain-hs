@@ -56,19 +56,18 @@ module Langchain.Prelude
   , assistantMessage
   , imageMessage
   , extractMessageText
-
   , StreamEvent
-      ( LLMStart
-      , LLMChunk
-      , LLMEnd
-      , ToolStart
-      , ToolEnd
-      , ToolErrorEvent
-      , ChainStart
-      , ChainEnd
-      , NodeStart
-      , NodeEnd
-      )
+    ( LLMStart
+    , LLMChunk
+    , LLMEnd
+    , ToolStart
+    , ToolEnd
+    , ToolErrorEvent
+    , ChainStart
+    , ChainEnd
+    , NodeStart
+    , NodeEnd
+    )
   , TokenUsage (..)
   , EventStream
   , collectEvents
