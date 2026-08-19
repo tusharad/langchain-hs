@@ -68,6 +68,7 @@ import qualified Langchain.PromptTemplate.Prompt as Prompt
 import Langchain.PromptTemplate.String (TemplateFormat (..))
 import qualified Langchain.PromptTemplate.String as String
 
+-- | A single chat message template inside a chat prompt.
 data ChatPromptMessage
   = HumanMessagePrompt HumanMessagePromptTemplate
   | SystemMessagePrompt Prompt.PromptTemplate
@@ -78,6 +79,7 @@ data ChatPromptMessage
   | StaticMessage Message
   deriving (Show, Eq, Generic, ToJSON, FromJSON)
 
+-- | A templated block inside a multipart chat message.
 data ContentPromptBlock
   = TextPromptBlock TemplateFormat Text
   | ImagePromptBlock TemplateFormat ImageContent
@@ -142,31 +144,37 @@ parseImageSource = withObject "ImageSource" $ \value -> do
     "url" -> ImageUrl <$> value .: "url"
     other -> fail $ "Unknown ImageSource type: " ++ show other
 
+-- | A chat prompt template made of ordered message templates.
 data ChatPromptTemplate = ChatPromptTemplate
   { messages :: [ChatPromptMessage]
   , inputVariables :: [Text]
   }
   deriving (Show, Eq, Generic, ToJSON, FromJSON)
 
+-- | A rendered chat prompt as concrete messages.
 newtype ChatPromptValue = ChatPromptValue
   { messages :: [Message]
   }
   deriving (Show, Eq, Generic, ToJSON, FromJSON)
 
+-- | Inputs accepted by 'invoke' for chat prompts.
 data ChatPromptInput
   = ChatPromptVariables (Map.Map Text Text)
   | ChatPromptMessageList [Message]
   | ChatPromptInputs (Map.Map Text Text) (Map.Map Text [Message])
   deriving (Show, Eq, Generic, ToJSON, FromJSON)
 
+-- | Partial values that can pre-bind text or message placeholders.
 data PartialValue
   = PartialText Text
   | PartialMessages [Message]
   deriving (Show, Eq, Generic, ToJSON, FromJSON)
 
+-- | Create a single-message user chat prompt from raw text.
 fromTemplate :: Text -> ChatPromptTemplate
 fromTemplate template = fromTemplateWithOptions template Prompt.defaultPromptTemplateOptions
 
+-- | Create a single-message user chat prompt with partial variables.
 fromTemplateWithOptions :: Text -> PromptTemplateOptions -> ChatPromptTemplate
 fromTemplateWithOptions template options =
   let promptTemplate = Prompt.fromTemplateWithOptions template options
@@ -175,6 +183,7 @@ fromTemplateWithOptions template options =
         , inputVariables = Prompt.inputVariables promptTemplate
         }
 
+-- | Create a chat prompt from an explicit list of message templates.
 fromMessages :: [ChatPromptMessage] -> ChatPromptTemplate
 fromMessages promptMessages =
   ChatPromptTemplate
@@ -182,43 +191,54 @@ fromMessages promptMessages =
     , inputVariables = unique $ concatMap messageInputVariables promptMessages
     }
 
+-- | Wrap a concrete message as part of a chat prompt.
 message :: Message -> ChatPromptMessage
 message = StaticMessage
 
+-- | Create a templated message for a specific role.
 templateMessage :: Role -> Text -> ChatPromptMessage
 templateMessage role = ChatMessagePrompt role . Prompt.fromTemplate
 
+-- | Create a templated message for a specific role and template format.
 templateMessageWithFormat :: Role -> TemplateFormat -> Text -> ChatPromptMessage
 templateMessageWithFormat role templateFormat template =
   ChatMessagePrompt role $
     Prompt.fromTemplateWithFormat template templateFormat Map.empty
 
+-- | Create a multipart content message for a specific role.
 contentMessage :: Role -> [ContentPromptBlock] -> ChatPromptMessage
 contentMessage = ContentMessagePrompt
 
+-- | Create a placeholder for an injected message list.
 messagesPlaceholder :: Text -> ChatPromptMessage
 messagesPlaceholder name = messagesPlaceholderWithOptions $ MessagesPlaceholder.messagesPlaceholderOptions name
 
+-- | Create a message-list placeholder with explicit options.
 messagesPlaceholderWithOptions ::
   MessagesPlaceholder.MessagesPlaceholderOptions -> ChatPromptMessage
 messagesPlaceholderWithOptions options =
   MessagesPlaceholderPrompt (MessagesPlaceholder.messagesPlaceholderWithOptions options) Nothing
 
+-- | Append one message template to the end of a chat prompt.
 append :: ChatPromptTemplate -> ChatPromptMessage -> ChatPromptTemplate
 append chatPromptTemplate promptMessage = extend chatPromptTemplate [promptMessage]
 
+-- | Append multiple message templates to the end of a chat prompt.
 extend :: ChatPromptTemplate -> [ChatPromptMessage] -> ChatPromptTemplate
 extend ChatPromptTemplate {messages = promptMessages} newMessages =
   fromMessages $ promptMessages <> newMessages
 
+-- | Apply partial text and message bindings to a chat prompt.
 partial :: ChatPromptTemplate -> Map.Map Text PartialValue -> ChatPromptTemplate
 partial ChatPromptTemplate {messages = promptMessages} partialVariables =
   fromMessages $ map (`partialMessage` partialVariables) promptMessages
 
+-- | Render a chat prompt to concrete messages.
 formatPrompt :: ChatPromptTemplate -> Map.Map Text Text -> Either LangchainError ChatPromptValue
 formatPrompt ChatPromptTemplate {messages = promptMessages} variables =
   formatPromptWithMessages promptMessages variables Map.empty
 
+-- | Render a chat prompt with either variables or message-list inputs.
 invoke :: ChatPromptTemplate -> ChatPromptInput -> Either LangchainError ChatPromptValue
 invoke chatPromptTemplate (ChatPromptVariables variables) = formatPrompt chatPromptTemplate variables
 invoke ChatPromptTemplate {messages = [MessagesPlaceholderPrompt placeholder _]} (ChatPromptMessageList promptMessages) =
@@ -235,12 +255,15 @@ invoke _ (ChatPromptMessageList _) =
       (Just "ChatPromptTemplate")
       (Just "invoke")
 
+-- | Render a chat prompt to a single formatted text value.
 format :: ChatPromptTemplate -> Map.Map Text Text -> Either LangchainError Text
 format chatPromptTemplate variables = toString <$> formatPrompt chatPromptTemplate variables
 
+-- | Extract the concrete messages from a rendered chat prompt.
 toMessages :: ChatPromptValue -> [Message]
 toMessages (ChatPromptValue promptMessages) = promptMessages
 
+-- | Render a chat prompt as newline-separated message text.
 toString :: ChatPromptValue -> Text
 toString (ChatPromptValue promptMessages) =
   T.intercalate "\n" $ map formatMessageString promptMessages

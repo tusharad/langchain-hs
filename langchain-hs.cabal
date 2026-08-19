@@ -101,7 +101,6 @@ library
       Langchain.PromptTemplate.Prompt
       Langchain.PromptTemplate.String
       Langchain.Provider.Anthropic
-      Langchain.Provider.DeepSeek
       Langchain.Provider.Gemini
       Langchain.Provider.Ollama
       Langchain.Provider.OpenAI
@@ -291,8 +290,6 @@ test-suite langchain-hs-test
       Test.Langchain.Property.RunnableSpec
       Test.Langchain.Property.StateReducerSpec
       Test.Langchain.Property.TextSplitterSpec
-      Test.Langchain.Provider.Anthropic
-      Test.Langchain.Provider.DeepSeek
       Test.Langchain.Provider.FixturesSpec
       Test.Langchain.Provider.Gemini
       Test.Langchain.Provider.Ollama

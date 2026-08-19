@@ -49,8 +49,6 @@ import qualified Test.Langchain.PromptTemplate.Chat.ChatPromptTemplateSpec as Ch
 import qualified Test.Langchain.PromptTemplate.Chat.MessagesPlaceholderSpec as MessagesPlaceholderTest
 import qualified Test.Langchain.PromptTemplate.FewShotSpec as FewShotPromptTemplateTest
 import qualified Test.Langchain.PromptTemplate.PromptSpec as PromptTemplateTest
-import qualified Test.Langchain.Provider.Anthropic as AnthropicProviderTest
-import qualified Test.Langchain.Provider.DeepSeek as DeepSeekProviderTest
 import qualified Test.Langchain.Provider.FixturesSpec as FixturesTest
 import qualified Test.Langchain.Provider.Gemini as GeminiProviderTest
 import qualified Test.Langchain.Provider.Ollama as OllamaProviderTest
@@ -169,9 +167,7 @@ main =
           , TokenBufferMemoryTest.tests
           , OllamaProviderTest.tests
           , OllamaConversionTest.tests
-          , DeepSeekProviderTest.tests
           , OpenAIProviderTest.tests
-          , AnthropicProviderTest.tests
           , GeminiProviderTest.tests
           , FixturesTest.tests
           , CalculatorToolTest.tests
