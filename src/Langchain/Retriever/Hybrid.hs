@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -24,6 +25,9 @@ module Langchain.Retriever.Hybrid
 
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.List (sortBy)
+#if !MIN_VERSION_base(4,20,0)
+import Data.List (foldl')
+#endif
 import qualified Data.Map.Strict as Map
 import Data.Ord (Down (..), comparing)
 import Data.Text (Text)
