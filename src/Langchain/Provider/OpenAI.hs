@@ -1,8 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
 
 -- TODO: This is not tested
@@ -26,6 +24,7 @@ module Langchain.Provider.OpenAI
   , parseOpenAIResponse
   ) where
 
+import Control.Monad (forM)
 import Control.Monad.Except (throwError)
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson
@@ -65,20 +64,20 @@ data OpenAI = OpenAI
 
 -- | Create standard OpenAI provider instance
 newOpenAI :: Text -> Text -> OpenAI
-newOpenAI key modelName =
+newOpenAI key mName =
   OpenAI
     { apiKey = key
-    , model = modelName
+    , model = mName
     , baseUrl = "https://api.openai.com/v1/chat/completions"
     , temperature = Just 0.7
     }
 
 -- | Create OpenAICompatible provider instance for OpenRouter/Fireworks/Together
 openAICompatible :: Text -> Text -> Text -> OpenAI
-openAICompatible key modelName endpoint =
+openAICompatible key mName endpoint =
   OpenAI
     { apiKey = key
-    , model = modelName
+    , model = mName
     , baseUrl = endpoint
     , temperature = Just 0.7
     }
@@ -194,7 +193,7 @@ parseOpenAIResponse = parseEither $ withObject "OpenAIResponse" $ \o -> do
       cToolCalls <- case mbToolCalls of
         Nothing -> pure Nothing
         Just tcs -> do
-          calls <- flip mapM (tcs :: [Value]) $ withObject "ToolCall" $ \tcObj -> do
+          calls <- forM (tcs :: [Value]) $ withObject "ToolCall" $ \tcObj -> do
             tcId <- tcObj .:? "id" .!= ""
             fnObj <- tcObj .: "function"
             fnName <- fnObj .: "name"

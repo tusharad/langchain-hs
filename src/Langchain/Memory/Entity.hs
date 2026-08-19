@@ -20,6 +20,7 @@ module Langchain.Memory.Entity
   ) where
 
 import Control.Concurrent.STM
+import Control.Monad (when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
@@ -74,16 +75,14 @@ instance (ChatModel model) => BaseMemory (EntityMemory model) where
   addMessage EntityMemory {..} newMsg = do
     liftIO $ atomically $ modifyTVar' entityMessagesVar (\msgs -> msgs ++ [newMsg])
     -- If user message, prompt entityModel to extract any entities
-    if messageRole newMsg == User
-      then do
-        let prompt =
-              "Extract any key entities, topics, or facts mentioned in this message in the format 'Entity: Description'.\n"
-                <> "Message: "
-                <> extractMessageText newMsg
-        resp <- invoke entityModel [userMessage prompt] Nothing
-        let extracted = parseEntityLines (extractMessageText resp)
-        liftIO $ atomically $ modifyTVar' entityStoreVar (\m -> Map.union (Map.fromList extracted) m)
-      else pure ()
+    when (messageRole newMsg == User) $ do
+      let prompt =
+            "Extract any key entities, topics, or facts mentioned in this message in the format 'Entity: Description'.\n"
+              <> "Message: "
+              <> extractMessageText newMsg
+      resp <- invoke entityModel [userMessage prompt] Nothing
+      let extracted = parseEntityLines (extractMessageText resp)
+      liftIO $ atomically $ modifyTVar' entityStoreVar (Map.union (Map.fromList extracted))
 
   clear EntityMemory {..} = liftIO $ atomically $ do
     writeTVar entityStoreVar Map.empty

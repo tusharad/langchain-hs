@@ -41,7 +41,7 @@ tests =
         \(PositiveChunkSize cSize) (SplitterText txt) ->
           let ops = defaultCharacterSplitterOps {chunkSize = cSize}
               chunks = splitText ops txt
-           in property (all (not . TL.null) chunks)
+           in property (not (any TL.null chunks))
     , testProperty "Single character chunks never exceed chunkSize 1" $
         \() ->
           let ops = defaultCharacterSplitterOps {chunkSize = 1, separator = ""}

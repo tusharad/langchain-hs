@@ -21,6 +21,7 @@ module Langchain.Agent.Functions
   , runFunctionsAgent
   ) where
 
+import Control.Monad (forM)
 import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.IO.Class (MonadIO)
 import qualified Data.Map.Strict as Map
@@ -85,7 +86,7 @@ runFunctionsAgent FunctionsAgent {..} query = do
             Nothing -> pure $ extractMessageText resp
             Just [] -> pure $ extractMessageText resp
             Just tCalls -> do
-              toolResultMsgs <- flip mapM tCalls $ \tCall -> do
+              toolResultMsgs <- forM tCalls $ \tCall -> do
                 let tName = toolCallName tCall
                     tArgs = toolCallArguments tCall
                     tId = toolCallId tCall

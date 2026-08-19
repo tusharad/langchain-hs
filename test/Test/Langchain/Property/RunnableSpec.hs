@@ -4,7 +4,6 @@ module Test.Langchain.Property.RunnableSpec (tests) where
 
 import Control.Monad.Except (ExceptT, runExceptT)
 import Data.Text (Text)
-import qualified Data.Text as T
 import Test.QuickCheck
 import Test.Tasty
 import Test.Tasty.QuickCheck

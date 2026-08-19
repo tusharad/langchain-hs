@@ -1,6 +1,4 @@
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 
 {- |
 Module      : Langchain.VectorStore.Filter
@@ -93,4 +91,4 @@ evalFilter (Not p) meta = not (evalFilter p meta)
 -- | Filter a list of documents by metadata predicate
 filterDocuments :: FilterPredicate -> [Document] -> [Document]
 filterDocuments TrueFilter docs = docs
-filterDocuments predicate docs = filter (\d -> evalFilter predicate (metadata d)) docs
+filterDocuments predicate docs = filter (evalFilter predicate . metadata) docs

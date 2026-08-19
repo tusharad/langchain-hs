@@ -12,7 +12,7 @@ format-check:
 
 ## Build Haddock documentation
 docs:
-	cabal haddock
+	stack haddock --no-haddock-deps langchain-hs-core langchain-hs-graph langchain-hs
 
 ## Clean build artifacts
 clean:

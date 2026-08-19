@@ -3,7 +3,6 @@
 module Test.Langchain.Observability.StreamProtocolSpec (tests) where
 
 import Data.Aeson (decode, encode)
-import Data.Text (Text)
 import qualified Data.Text as T
 import Test.Tasty
 import Test.Tasty.HUnit

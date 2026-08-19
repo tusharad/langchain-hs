@@ -7,7 +7,6 @@ import Control.Exception (displayException)
 import Data.Aeson (decode, encode)
 import Data.List (isInfixOf)
 import qualified Data.Map.Strict as Map
-import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import Test.QuickCheck

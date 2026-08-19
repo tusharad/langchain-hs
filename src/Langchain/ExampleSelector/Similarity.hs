@@ -1,5 +1,4 @@
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
 {- |
@@ -35,8 +34,8 @@ class ExampleSelector s where
   selectExamples :: MonadIO m => s -> Text -> [Example] -> m [Example]
 
 -- | Length-based example selector enforcing max character budget
-data LengthBasedSelector = LengthBasedSelector
-  { maxCharacterBudget :: !Int
+newtype LengthBasedSelector = LengthBasedSelector
+  { maxCharacterBudget :: Int
   }
   deriving (Show, Eq)
 

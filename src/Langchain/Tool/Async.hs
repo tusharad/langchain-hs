@@ -64,7 +64,7 @@ executeToolBatchConcurrently ::
   [(Tool IO, Value)] ->
   m [Text]
 executeToolBatchConcurrently toolCalls = do
-  results <- liftIO $ mapConcurrently (\(t, args) -> toolExecute t args) toolCalls
+  results <- liftIO $ mapConcurrently (uncurry toolExecute) toolCalls
   case sequence results of
     Left err -> throwError err
     Right outputs -> pure outputs

@@ -5,7 +5,6 @@ module Test.Langchain.Retriever.Core (tests) where
 
 import Control.Monad.Except (runExceptT)
 import qualified Data.Map.Strict as HM
-import Data.Text (Text)
 import qualified Data.Text.Lazy as T
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -21,6 +20,7 @@ data DummyLLM = DummyLLM
 instance ChatModel DummyLLM where
   type ModelConfig DummyLLM = ()
   invoke _ _ _ = pure $ assistantMessage "1. test query 1\n2. test query 2"
+  stream _ _ _ = pure ()
 
 data DummyRetriever = DummyRetriever
   deriving (Show, Eq)

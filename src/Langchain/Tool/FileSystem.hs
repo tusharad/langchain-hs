@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 {- |
@@ -42,7 +43,7 @@ readFileTool =
         , "required" .= (["path"] :: [Text])
         ]
     )
-    ( \args -> case args of
+    ( \case
         Object o -> case parseEither (.:? "path") o of
           Right (Just p) -> do
             eContent <- liftIO $ try (TIO.readFile (T.unpack p))
@@ -69,7 +70,7 @@ writeFileTool =
         , "required" .= (["path", "content"] :: [Text])
         ]
     )
-    ( \args -> case args of
+    ( \case
         Object o -> case (parseEither (.:? "path") o, parseEither (.:? "content") o) of
           (Right (Just p), Right (Just content)) -> do
             eRes <- liftIO $ try (TIO.writeFile (T.unpack p) content)
@@ -94,7 +95,7 @@ listDirTool =
         , "required" .= (["path"] :: [Text])
         ]
     )
-    ( \args -> case args of
+    ( \case
         Object o -> case parseEither (.:? "path") o of
           Right (Just p) -> do
             eFiles <- liftIO $ try (listDirectory (T.unpack p))

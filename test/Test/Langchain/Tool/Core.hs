@@ -6,7 +6,6 @@
 module Test.Langchain.Tool.Core (tests) where
 
 import Data.Aeson (decode, object, (.=))
-import Data.Either (isLeft)
 import qualified Data.Map as M
 import Data.Text (Text)
 import qualified Data.Text as T

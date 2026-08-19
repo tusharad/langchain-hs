@@ -1,5 +1,4 @@
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
 {- |
@@ -60,7 +59,7 @@ readBlackboard Blackboard {..} = liftIO $ readTVarIO blackboardVar
 -- | Write/update key-value entries into the blackboard
 writeBlackboard :: MonadIO m => Blackboard -> Map Text Text -> m ()
 writeBlackboard Blackboard {..} updates =
-  liftIO $ atomically $ modifyTVar' blackboardVar (\current -> Map.union updates current)
+  liftIO $ atomically $ modifyTVar' blackboardVar (Map.union updates)
 
 -- | Run the blackboard agent loop until isComplete or maxIterations
 runBlackboard ::
@@ -78,11 +77,11 @@ runBlackboard bb sources BlackboardConfig {..} = loop 1
           if isComplete currState
             then pure currState
             else do
-              let eligibleSources = filter (\ks -> ksCanContribute ks currState) sources
+              let eligibleSources = filter (`ksCanContribute` currState) sources
               if null eligibleSources
                 then pure currState -- No more contributions can be made
                 else do
-                  updatesList <- mapM (\ks -> ksExecute ks currState) eligibleSources
+                  updatesList <- mapM (`ksExecute` currState) eligibleSources
                   let combinedUpdates = Map.unions updatesList
                   writeBlackboard bb combinedUpdates
                   loop (iter + 1)

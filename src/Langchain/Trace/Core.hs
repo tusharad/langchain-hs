@@ -1,7 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
 -- TODO: we must use hs-telemetry instead of writing it from scratch
@@ -112,7 +111,7 @@ findSlowestStep AgentTrace {..} =
 -- | Filter trace steps by action type
 filterByActionType :: (ActionType -> Bool) -> AgentTrace -> [TraceStep]
 filterByActionType predicate AgentTrace {..} =
-  filter (\s -> predicate (stepActionType s)) traceSteps
+  filter (predicate . stepActionType) traceSteps
 
 -- | Reset the tracer history
 clearTracer :: MonadIO m => Tracer -> m ()

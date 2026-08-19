@@ -21,6 +21,7 @@ module Langchain.Graph.Voting
   , runVotingClassification
   ) where
 
+import Control.Monad (forM)
 import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.IO.Class (MonadIO)
 import qualified Data.Map.Strict as Map
@@ -76,7 +77,7 @@ runVotingClassification VotingClassifier {..} input = do
       throwError $
         agentError "Voting classifier requires at least one voter" (Just "runVotingClassification") Nothing
     else do
-      voteResults <- flip mapM voterModels $ \(name, model) -> do
+      voteResults <- forM voterModels $ \(name, model) -> do
         let p =
               votePrompt
                 <> "\n\nInput to classify:\n"

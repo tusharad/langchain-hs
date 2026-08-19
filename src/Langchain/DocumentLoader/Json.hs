@@ -83,8 +83,7 @@ instance BaseLoader JsonLoader where
     if jsonIsLines loader
       then do
         let linesList = filter (not . LBS.null) (LBSC.lines rawBytes)
-        docs <- mapM (parseJsonLine filePath mbKey) (zip [1 :: Int ..] linesList)
-        pure docs
+        mapM (parseJsonLine filePath mbKey) (zip [1 :: Int ..] linesList)
       else case decode rawBytes of
         Nothing ->
           throwError $

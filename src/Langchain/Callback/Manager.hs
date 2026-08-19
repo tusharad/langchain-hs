@@ -1,7 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
 {- |
@@ -74,7 +73,7 @@ registerHandler CallbackManager {..} handler = liftIO $ do
 dispatchEvent :: MonadIO m => CallbackManager -> CallbackEvent -> m ()
 dispatchEvent CallbackManager {..} event = liftIO $ do
   handlers <- readTVarIO handlersVar
-  mapM_ (\h -> handleEvent h event) handlers
+  mapM_ (`handleEvent` event) handlers
 
 -- | Dispatch an event asynchronously in background threads without blocking
 dispatchEventAsync :: MonadIO m => CallbackManager -> CallbackEvent -> m ()

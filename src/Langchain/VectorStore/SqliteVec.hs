@@ -2,7 +2,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 
 {- |
 Module      : Langchain.VectorStore.SqliteVec
@@ -27,6 +26,7 @@ import Data.Aeson (decode, encode)
 import qualified Data.ByteString.Lazy as LBS
 import Data.Int (Int64)
 import Data.List (sortOn)
+import Data.Maybe (fromMaybe)
 import Data.Ord (Down (..))
 import qualified Data.Text as TS
 import qualified Data.Text.Encoding as TE
@@ -140,9 +140,7 @@ instance (Embeddings e) => VectorStore (SqliteVecStore e) where
           , Just vec <- [mbVec]
           , let score = cosineSimilarity qVec vec
           , let mbMeta = decode (LBS.fromStrict (TE.encodeUtf8 (TS.pack metaStr)))
-          , let meta = case mbMeta of
-                  Just m -> m
-                  Nothing -> mempty
+          , let meta = fromMaybe mempty mbMeta
           , let doc = Document (TL.pack contentStr) meta
           ]
         topK = take k $ map snd $ sortOn (Down . fst) scoredDocs

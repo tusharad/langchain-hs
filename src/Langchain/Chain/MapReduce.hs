@@ -21,6 +21,7 @@ module Langchain.Chain.MapReduce
   , runMapReduceChain
   ) where
 
+import Control.Monad (forM)
 import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.IO.Class (MonadIO)
 import Data.Map.Strict (Map)
@@ -80,7 +81,7 @@ runMapReduceChain ::
   m Message
 runMapReduceChain MapReduceChain {..} docs baseVars = do
   -- Phase 1: Map over each document
-  summaries <- flip mapM docs $ \doc -> do
+  summaries <- forM docs $ \doc -> do
     let docTxt = TL.toStrict (pageContent doc)
         vars = Map.insert mapDocVar docTxt baseVars
     rendered <- case renderPrompt mapPromptTemplate vars of

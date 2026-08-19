@@ -4,7 +4,6 @@ module Test.Langchain.Graph.MultiAgentSpec (tests) where
 
 import Control.Monad.Except (ExceptT, runExceptT)
 import Data.Text (Text)
-import qualified Data.Text as T
 import Langchain.Core.Error (LangchainError)
 import Langchain.Core.Model (newMockModel)
 import Langchain.Graph.MultiAgent
@@ -35,8 +34,10 @@ tests =
                 addEdge "sub1" endNodeId $
                   addNode "sub1" action $
                     emptyStateGraph replaceFieldReducer
-            Right compiledSub = compileGraph subG
-            parentN = embedSubGraphNode "subGraphNode" compiledSub id (\p s -> p <> " | " <> s)
-        res <- runExceptT $ nodeAction parentN ("parent-input" :: Text)
-        res @?= Right (Right ("parent-input | parent-input [sub-processed]" :: Text))
+        case compileGraph subG of
+          Left err -> assertFailure $ "Failed to compile sub-graph: " ++ show err
+          Right compiledSub -> do
+            let parentN = embedSubGraphNode "subGraphNode" compiledSub id (\p s -> p <> " | " <> s)
+            res <- runExceptT $ nodeAction parentN ("parent-input" :: Text)
+            res @?= Right (Right ("parent-input | parent-input [sub-processed]" :: Text))
     ]

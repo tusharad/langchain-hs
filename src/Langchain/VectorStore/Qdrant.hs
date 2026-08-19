@@ -1,8 +1,8 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 
 {- |
 Module      : Langchain.VectorStore.Qdrant
@@ -20,6 +20,7 @@ module Langchain.VectorStore.Qdrant
   ) where
 
 import Control.Exception (SomeException, try)
+import Control.Monad (forM)
 import Control.Monad.Except (throwError)
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson (Value (..), decode, object, (.!=), (.:), (.:?), (.=))
@@ -161,10 +162,10 @@ instance (Embeddings e) => VectorStore (QdrantStore e) where
             Right docs -> pure docs
 
 parseQdrantResults :: Value -> Either String [Document]
-parseQdrantResults = parseEither $ \val -> case val of
+parseQdrantResults = parseEither $ \case
   Object o -> do
     resultList <- o .: "result"
-    flip mapM (resultList :: [Value]) $ \item -> case item of
+    forM (resultList :: [Value]) $ \case
       Object io -> do
         pObj <- io .: "payload"
         case pObj of

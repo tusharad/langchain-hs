@@ -48,7 +48,8 @@ tests =
             similaritySearch store "Haskell programming" 1
           case res of
             Left err -> assertFailure ("SqliteVecStore failed: " ++ show err)
-            Right matchedDocs -> do
-              length matchedDocs @?= 1
-              pageContent (head matchedDocs) @?= "Haskell is purely functional"
+            Right [topDoc] ->
+              pageContent topDoc @?= "Haskell is purely functional"
+            Right docs ->
+              assertFailure ("Expected exactly 1 document, got: " ++ show (length docs))
     ]

@@ -1,6 +1,6 @@
-{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -24,9 +24,9 @@ module Langchain.Tool.WikipediaTool
   , defaultDocMaxChars
   , defaultLanguageCode
 
-    -- * Internal types
-  , SearchQuery (..)
+    -- * Responses & Search
   , SearchResponse (..)
+  , SearchQuery (..)
   , Page (..)
   , SearchResult (..)
   , Pages (..)
@@ -35,6 +35,7 @@ module Langchain.Tool.WikipediaTool
   ) where
 
 import Control.Exception (try)
+import Control.Monad (forM)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Aeson (FromJSON (..), Value (..), decode, object, withObject, (.:), (.:?), (.=))
 import Data.Aeson.Types (parseEither)
@@ -160,7 +161,7 @@ searchWikipedia WikipediaTool {..} queryTxt = liftIO $ do
       Nothing -> pure $ Left "Failed to decode Wikipedia search response"
       Just SearchResponse {query = SearchQuery results} -> do
         let topResults = take topK results
-        pageTexts <- flip mapM topResults $ \r -> do
+        pageTexts <- forM topResults $ \r -> do
           let pageUrl =
                 "https://"
                   <> T.unpack languageCode
@@ -192,7 +193,7 @@ wikipediaTool cfg =
         , "required" .= (["query"] :: [Text])
         ]
     )
-    ( \args -> case args of
+    ( \case
         Object o -> case parseEither (.:? "query") o of
           Right (Just q) -> do
             eRes <- searchWikipedia cfg q

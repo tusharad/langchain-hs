@@ -4,7 +4,6 @@ module Test.Langchain.Graph.StateGraphSpec (tests) where
 
 import Control.Monad.Except (ExceptT, runExceptT)
 import Data.Text (Text)
-import qualified Data.Text as T
 import Langchain.Core.Error (LangchainError)
 import Langchain.Graph.StateGraph
 import Test.Tasty
@@ -37,9 +36,11 @@ unitTests =
               addEdge "node1" endNodeId $
                 addNode "node1" action $
                   emptyStateGraph replaceFieldReducer
-            Right compiled = compileGraph g
-        res <- runExceptT $ runGraph compiled "node1" ("hello" :: Text)
-        res @?= Right "hello world"
+        case compileGraph g of
+          Left err -> assertFailure $ "Compilation failed: " ++ show err
+          Right compiled -> do
+            res <- runExceptT $ runGraph compiled "node1" ("hello" :: Text)
+            res @?= Right "hello world"
     ]
 
 propertyTests :: TestTree

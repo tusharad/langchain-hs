@@ -21,6 +21,7 @@ module Langchain.Graph.Debate
   , runDebate
   ) where
 
+import Control.Monad (forM)
 import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.IO.Class (MonadIO)
 import Data.Text (Text)
@@ -79,7 +80,7 @@ runDebate DebateConfig {..} debaters moderator = do
       | roundNum > maxDebateRounds = finalizeDebate prevRounds
       | otherwise = do
           let historyContext = formatHistory prevRounds
-          roundArgs <- flip mapM debaters $ \d -> do
+          roundArgs <- forM debaters $ \d -> do
             let prompt =
                   "Topic: "
                     <> debateTopic

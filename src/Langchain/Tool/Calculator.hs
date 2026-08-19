@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 {- |
@@ -57,7 +58,7 @@ calculatorTool =
         , "required" .= (["expression"] :: [Text])
         ]
     )
-    ( \args -> case args of
+    ( \case
         Object o -> case parseEither (.:? "expression") o of
           Right (Just expr) -> case evaluateExpr expr of
             Right num -> pure $ Right (T.pack $ show num)

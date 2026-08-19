@@ -22,14 +22,11 @@ tests =
           Left _ -> pure ()
           Right _ -> assertFailure "Expected error"
     , testCase "askConfig retrieves default configuration" $ do
-        res <- runLangchainT defaultConfig $ do
-          cfg <- askConfig
-          pure (defaultModelName cfg)
+        res <- runLangchainT defaultConfig $ defaultModelName <$> askConfig
         res @?= Right "qwen3.5:9b"
     , testCase "withConfig modifies configuration locally" $ do
         res <- runLangchainT defaultConfig $ do
-          withConfig (\c -> c {defaultModelName = "custom-model"}) $ do
-            cfg <- askConfig
-            pure (defaultModelName cfg)
+          withConfig (\c -> c {defaultModelName = "custom-model"}) $
+            defaultModelName <$> askConfig
         res @?= Right "custom-model"
     ]

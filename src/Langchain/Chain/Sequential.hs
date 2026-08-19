@@ -1,5 +1,4 @@
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
 {- |
@@ -31,7 +30,7 @@ data ChainStep m = ChainStep
   }
 
 -- | Sequential chain composed of an ordered list of steps
-data SequentialChain m = SequentialChain
+newtype SequentialChain m = SequentialChain
   { chainSteps :: [ChainStep m]
   }
 
@@ -45,7 +44,7 @@ runSequentialChain ::
   SequentialChain m ->
   Map Text Text ->
   m (Map Text Text)
-runSequentialChain SequentialChain {..} initVars = go chainSteps initVars
+runSequentialChain SequentialChain {..} = go chainSteps
   where
     go [] vars = pure vars
     go (step : rest) vars = do

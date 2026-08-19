@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 {- |
 Module      : Langchain.Agent.Core
 Description : Core types and abstractions for LangChain agents

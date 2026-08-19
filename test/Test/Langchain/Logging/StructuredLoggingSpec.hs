@@ -1,10 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 
 module Test.Langchain.Logging.StructuredLoggingSpec (tests) where
 
 import Control.Concurrent.STM (atomically, modifyTVar')
-import Control.Monad.IO.Class (liftIO)
 import qualified Data.Map.Strict as Map
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -29,9 +27,12 @@ tests =
         logError logHandler "Model" "Rate limit reached"
 
         logs <- getInMemoryLogs logger
-        length logs @?= 3
-        logLevel (head logs) @?= InfoLevel
-        logMessage (head logs) @?= "Starting agent turn"
+        case logs of
+          (firstLog : _) -> do
+            length logs @?= 3
+            logLevel firstLog @?= InfoLevel
+            logMessage firstLog @?= "Starting agent turn"
+          [] -> assertFailure "Expected logs to be non-empty"
     , testCase "logEvent attaches custom metadata" $ do
         logger <- newInMemoryLogger DebugLevel
         let logHandler =
@@ -44,6 +45,7 @@ tests =
         logEvent logHandler InfoLevel "Provider" "Model invocation complete" meta
 
         logs <- getInMemoryLogs logger
-        length logs @?= 1
-        logMetadata (head logs) @?= meta
+        case logs of
+          [firstLog] -> logMetadata firstLog @?= meta
+          _ -> assertFailure ("Expected exactly 1 log, got " ++ show (length logs))
     ]

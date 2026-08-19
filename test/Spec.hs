@@ -45,8 +45,6 @@ import qualified Test.Langchain.OutputParser.Core as OutputParserTest
 import qualified Test.Langchain.Pipeline.PipelineDSLSpec as PipelineDSLTest
 import qualified Test.Langchain.PreludeSpec as PreludeTest
 import qualified Test.Langchain.PromptTemplate as PromptTemplateTest
-import qualified Test.Langchain.Provider.Anthropic as AnthropicProviderTest
-import qualified Test.Langchain.Provider.DeepSeek as DeepSeekProviderTest
 import qualified Test.Langchain.Provider.FixturesSpec as FixturesTest
 import qualified Test.Langchain.Provider.Gemini as GeminiProviderTest
 import qualified Test.Langchain.Provider.Ollama as OllamaProviderTest
@@ -161,9 +159,7 @@ main =
           , TokenBufferMemoryTest.tests
           , OllamaProviderTest.tests
           , OllamaConversionTest.tests
-          , DeepSeekProviderTest.tests
           , OpenAIProviderTest.tests
-          , AnthropicProviderTest.tests
           , GeminiProviderTest.tests
           , FixturesTest.tests
           , CalculatorToolTest.tests

@@ -4,6 +4,7 @@ module Test.Langchain.Observability.OpenTelemetrySpec (tests) where
 
 import Control.Monad.Except (runExceptT)
 import qualified Data.Map.Strict as Map
+import Data.Maybe (isJust)
 import qualified Data.Text as T
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -21,12 +22,13 @@ tests =
         res @?= Right "success response"
 
         spans <- getSpans tracer
-        length spans @?= 1
-        let sp = head spans
-        spanName sp @?= "llm_invoke"
-        spanTraceId sp @?= "trace-100"
-        spanStatus sp @?= StatusOk
-        assertBool "Duration recorded" (spanDurationMicros sp /= Nothing)
+        case spans of
+          [sp] -> do
+            spanName sp @?= "llm_invoke"
+            spanTraceId sp @?= "trace-100"
+            spanStatus sp @?= StatusOk
+            assertBool "Duration recorded" (isJust (spanDurationMicros sp))
+          _ -> assertFailure ("Expected exactly 1 span, got " ++ show (length spans))
     , testCase "exportSpansJson exports valid JSON formatted trace" $ do
         tracer <- newOTelTracer (Just "trace-export")
         _ <- startSpan tracer "step1" Nothing InternalSpan Map.empty
