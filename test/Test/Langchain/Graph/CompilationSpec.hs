@@ -49,7 +49,7 @@ tests =
               addConditionalEdge "dispatch" routeFn $
                 addEdge "fastTrack" endNodeId $
                   addEdge "normalTrack" endNodeId $
-                    addNode "dispatch" (\s -> pure $ Right s) $
+                    addNode "dispatch" (pure . Right) $
                       addNode "fastTrack" (\s -> pure $ Right (s <> " [FAST]")) $
                         addNode "normalTrack" (\s -> pure $ Right (s <> " [NORMAL]")) $
                           emptyStateGraph replaceFieldReducer

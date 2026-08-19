@@ -108,7 +108,7 @@ mergeChunksWithOverlap maxLen overlapLen sep pieces = go [] 0 [] pieces
                         ps
 
     joinPieces :: Text -> [Text] -> Text
-    joinPieces s ps = T.intercalate s ps
+    joinPieces = T.intercalate
 
     computeOverlapPieces :: Int64 -> Text -> [Text] -> [Text]
     computeOverlapPieces targetOverlap s ps

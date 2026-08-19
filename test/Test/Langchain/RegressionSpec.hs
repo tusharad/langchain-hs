@@ -6,7 +6,6 @@ import Control.Monad.Except (runExceptT)
 import Data.Aeson (decode, object, (.=))
 import qualified Data.ByteString.Lazy.Char8 as LBSC
 import Data.Text (Text)
-import qualified Data.Text as T
 import Test.Tasty
 import Test.Tasty.HUnit
 

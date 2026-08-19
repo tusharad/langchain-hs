@@ -2,7 +2,6 @@
 
 module Test.Langchain.Resilience.CircuitBreakerSpec (tests) where
 
-import Control.Concurrent (threadDelay)
 import Control.Monad.Except (runExceptT, throwError)
 import Test.Tasty
 import Test.Tasty.HUnit

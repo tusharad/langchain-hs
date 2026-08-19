@@ -1,6 +1,5 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -26,6 +25,7 @@ module Langchain.Provider.Gemini
   , parseGeminiBatchEmbedResponse
   ) where
 
+import Control.Monad (forM)
 import Control.Monad.Except (throwError)
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson
@@ -63,7 +63,7 @@ data Gemini = Gemini
 
 -- | Create a new Gemini provider instance
 newGemini :: Text -> Text -> Gemini
-newGemini key modelName = Gemini key modelName
+newGemini = Gemini
 
 -- Convert ContentBlock to Gemini Part JSON
 contentBlockToPart :: ContentBlock -> Value
@@ -227,16 +227,15 @@ parseGeminiResponse = parseEither $ withObject "GeminiResponse" $ \o -> do
     (c : _) -> flip (withObject "Candidate") c $ \cand -> do
       contentObj <- cand .: "content"
       parts <- contentObj .: "parts"
-      txts <- flip mapM parts $ withObject "Part" $ \p -> p .:? "text" .!= ""
+      txts <- forM parts $ withObject "Part" $ \p -> p .:? "text" .!= ""
       pure $ assistantMessage (T.intercalate "\n" txts)
 
 parseGeminiEmbedResponse :: Value -> Either String [Float]
 parseGeminiEmbedResponse = parseEither $ withObject "GeminiEmbedResponse" $ \o -> do
   embObj <- o .: "embedding"
-  values <- embObj .: "values"
-  pure values
+  embObj .: "values"
 
 parseGeminiBatchEmbedResponse :: Value -> Either String [[Float]]
 parseGeminiBatchEmbedResponse = parseEither $ withObject "GeminiBatchEmbedResponse" $ \o -> do
   embs <- o .: "embeddings"
-  flip mapM embs $ withObject "Embedding" $ \e -> e .: "values"
+  forM embs $ withObject "Embedding" $ \e -> e .: "values"

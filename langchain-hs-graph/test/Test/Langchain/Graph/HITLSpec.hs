@@ -39,9 +39,10 @@ tests =
               addEdge "node2" endNodeId $
                 addNode "node2" action $
                   emptyStateGraph replaceFieldReducer
-            Right compiled = compileGraph g
-
-        res <-
-          runExceptT $ resumeGraph compiled cp threadId "node2" "node2" (\s -> s <> " [human-reviewed]")
-        res @?= Right "draft-content [human-reviewed] -> approved"
+        case compileGraph g of
+          Left err -> assertFailure $ "Failed to compile graph: " ++ show err
+          Right compiled -> do
+            res <-
+              runExceptT $ resumeGraph compiled cp threadId "node2" "node2" (<> " [human-reviewed]")
+            res @?= Right "draft-content [human-reviewed] -> approved"
     ]

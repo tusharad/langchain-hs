@@ -5,9 +5,7 @@ module Test.Langchain.Property.MessageSpec (tests) where
 
 import Data.Aeson (decode, encode, toJSON)
 import qualified Data.ByteString as BS
-import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as NonEmpty
-import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import qualified Data.Text as T
 import Test.QuickCheck
@@ -24,8 +22,8 @@ instance Arbitrary Role where
 instance Arbitrary ContentBlock where
   arbitrary =
     oneof
-      [ TextBlock
-          <$> (T.pack <$> listOf1 (elements (['a' .. 'z'] ++ ['A' .. 'Z'] ++ ['0' .. '9'] ++ " \t\n.,!?-")))
+      [ TextBlock . T.pack
+          <$> listOf1 (elements (['a' .. 'z'] ++ ['A' .. 'Z'] ++ ['0' .. '9'] ++ " \t\n.,!?-"))
       , ImageBlock
           <$> ( ImageContent
                   <$> ( ImageBase64 . Just

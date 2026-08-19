@@ -4,11 +4,10 @@ module Test.Langchain.Memory.EntitySpec (tests) where
 
 import Control.Monad.Except (runExceptT)
 import qualified Data.Map.Strict as Map
-import qualified Data.Text as T
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import Langchain.Core.Model (MockModel (..), newMockModel, userMessage)
+import Langchain.Core.Model (newMockModel, userMessage)
 import Langchain.Memory.Core (BaseMemory (..))
 import Langchain.Memory.Entity
 

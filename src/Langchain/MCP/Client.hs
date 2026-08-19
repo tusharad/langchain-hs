@@ -299,4 +299,4 @@ mcpToolToLangchainTool client McpToolInfo {..} =
     mcpToolName
     mcpToolDescription
     mcpToolInputSchema
-    (\args -> runExceptT (callMcpTool client mcpToolName args))
+    (runExceptT . callMcpTool client mcpToolName)

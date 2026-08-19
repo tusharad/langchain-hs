@@ -2,7 +2,6 @@
 
 module Test.Langchain.Trace.TraceSpec (tests) where
 
-import qualified Data.Text as T
 import Test.Tasty
 import Test.Tasty.HUnit
 

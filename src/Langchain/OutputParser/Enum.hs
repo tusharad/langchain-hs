@@ -25,8 +25,8 @@ import Data.Text (Text)
 import qualified Data.Text as T
 
 -- | Enum parser container
-data EnumParser a = EnumParser
-  { enumOptions :: ![a]
+newtype EnumParser a = EnumParser
+  { enumOptions :: [a]
   }
 
 -- | Construct an EnumParser for any Bounded Enum type

@@ -1,7 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
 {- |
@@ -32,6 +31,7 @@ module Langchain.Logging.Structured
   ) where
 
 import Control.Concurrent.STM
+import Control.Monad (when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Aeson (FromJSON, ToJSON, encode)
 import qualified Data.ByteString.Lazy.Char8 as LBSC
@@ -103,12 +103,10 @@ stderrLogger minLvl =
 -- | Log a structured event through a logger
 logEvent :: MonadIO m => Logger -> LogLevel -> Text -> Text -> Map Text Text -> m ()
 logEvent Logger {..} lvl comp msg meta =
-  if lvl >= minLevel
-    then liftIO $ do
-      now <- getCurrentTime
-      let event = LogEvent lvl now comp msg meta
-      writeLog event
-    else pure ()
+  when (lvl >= minLevel) $ liftIO $ do
+    now <- getCurrentTime
+    let event = LogEvent lvl now comp msg meta
+    writeLog event
 
 -- | Log a debug message
 logDebug :: MonadIO m => Logger -> Text -> Text -> m ()

@@ -3,9 +3,6 @@
 module Test.Langchain.Retriever.HybridSpec (tests) where
 
 import qualified Data.Map.Strict as Map
-import Data.Text (Text)
-import qualified Data.Text as T
-import qualified Data.Text.Lazy as TL
 import Test.Tasty
 import Test.Tasty.HUnit
 
@@ -26,7 +23,9 @@ tests =
             fused = reciprocalRankFusion 60.0 [(denseList, 1.0), (sparseList, 1.0)]
         -- docA appears in both dense (rank 1) and sparse (rank 2) -> highest combined score
         length fused @?= 3
-        fst (head fused) @?= docA
+        case fused of
+          ((topDoc, _) : _) -> topDoc @?= docA
+          [] -> assertFailure "Expected non-empty fused results"
     , testCase "searchHybrid executes dense and sparse searches" $ do
         let doc1 = Document {pageContent = "Haskell state monad and effects", metadata = Map.empty}
             doc2 = Document {pageContent = "Rust borrow checker and lifetimes", metadata = Map.empty}
@@ -35,5 +34,7 @@ tests =
             hybrid = newHybridRetriever bm25 mockVecSearch
         results <- searchHybrid hybrid "Haskell" 2
         length results @?= 2
-        head results @?= doc1
+        case results of
+          (topDoc : _) -> topDoc @?= doc1
+          [] -> assertFailure "Expected non-empty results"
     ]

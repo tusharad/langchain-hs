@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 {- |
 Module      : Langchain.Error
 Description : Central error handling for langchain-hs re-exporting Langchain.Core.Error

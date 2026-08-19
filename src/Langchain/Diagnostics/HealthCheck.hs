@@ -2,7 +2,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 {- |
@@ -114,11 +113,8 @@ runFullHealthCheck _ mbDbPath = liftIO $ do
     Just path -> checkSqliteHealth path
     Nothing -> pure $ ComponentHealth "SQLite" Healthy 0 "No database configured (skipped)"
   let checks = [ollamaCheck, sqliteCheck]
-      overall =
-        if any (\c -> componentStatus c == Unhealthy) checks
-          then Unhealthy
-          else
-            if any (\c -> componentStatus c == Degraded) checks
-              then Degraded
-              else Healthy
+      overall
+        | any (\c -> componentStatus c == Unhealthy) checks = Unhealthy
+        | any (\c -> componentStatus c == Degraded) checks = Degraded
+        | otherwise = Healthy
   pure $ HealthReport overall now checks

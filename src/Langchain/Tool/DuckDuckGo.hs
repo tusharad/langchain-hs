@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 {- |
@@ -196,7 +197,7 @@ duckDuckGoTool =
         , "required" .= (["query"] :: [Text])
         ]
     )
-    ( \args -> case args of
+    ( \case
         Object o -> case parseEither (.:? "query") o of
           Right (Just q) -> do
             eRes <- searchDuckDuckGo q

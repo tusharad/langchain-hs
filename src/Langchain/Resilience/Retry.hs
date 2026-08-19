@@ -1,5 +1,4 @@
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
 {- |
@@ -23,6 +22,7 @@ module Langchain.Resilience.Retry
 
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.STM
+import Control.Monad (when)
 import Control.Monad.Except (MonadError, catchError, throwError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Time.Clock
@@ -109,8 +109,6 @@ withRateLimit RateLimiter {..} action = do
             let deficit = 1.0 - refilledTokens
                 sleepSecs = deficit / refillRatePerSec
             pure (ceiling (sleepSecs * 1000000) :: Int)
-      if waitNeeded > 0
-        then do
-          threadDelay waitNeeded
-          waitForToken
-        else pure ()
+      when (waitNeeded > 0) $ do
+        threadDelay waitNeeded
+        waitForToken

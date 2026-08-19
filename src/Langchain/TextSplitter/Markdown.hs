@@ -78,17 +78,11 @@ groupLinesByHeaders _ _ [] = []
 groupLinesByHeaders headerRules currentHeaders ls = go currentHeaders [] ls
   where
     go :: Map Text Text -> [Text] -> [Text] -> [MarkdownChunk]
-    go hdrs acc [] =
-      if null acc
-        then []
-        else [MarkdownChunk (T.unlines (reverse acc)) hdrs]
+    go hdrs acc [] = [MarkdownChunk (T.unlines (reverse acc)) hdrs | not (null acc)]
     go hdrs acc (l : rest) =
       case matchHeader headerRules l of
         Just (hPrefix, hName, hTitle) ->
-          let currentChunk =
-                if null acc
-                  then []
-                  else [MarkdownChunk (T.unlines (reverse acc)) hdrs]
+          let currentChunk = [MarkdownChunk (T.unlines (reverse acc)) hdrs | not (null acc)]
               -- update headers: clear deeper headers when higher header occurs
               newHdrs = updateHeaderMap headerRules hPrefix hName hTitle hdrs
            in currentChunk ++ go newHdrs [l] rest

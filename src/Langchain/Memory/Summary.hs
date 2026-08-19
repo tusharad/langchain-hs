@@ -19,6 +19,7 @@ module Langchain.Memory.Summary
   ) where
 
 import Control.Concurrent.STM
+import Control.Monad (when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -71,19 +72,17 @@ instance (ChatModel model) => BaseMemory (SummaryMemory model) where
           pure (True, old, keep)
         else pure (False, [], currentMsgs)
 
-    if shouldSummarize && not (null toSummarize)
-      then do
-        currentSummary <- liftIO $ readTVarIO summaryBufferVar
-        let summaryPrompt =
-              "Current summary:\n"
-                <> currentSummary
-                <> "\n\nNew lines to summarize:\n"
-                <> formatMessages toSummarize
-                <> "\n\nPlease provide an updated, concise summary of the conversation above."
-        aiResp <- invoke summaryModel [userMessage summaryPrompt] Nothing
-        let newSummary = extractMessageText aiResp
-        liftIO $ atomically $ writeTVar summaryBufferVar newSummary
-      else pure ()
+    when (shouldSummarize && not (null toSummarize)) $ do
+      currentSummary <- liftIO $ readTVarIO summaryBufferVar
+      let summaryPrompt =
+            "Current summary:\n"
+              <> currentSummary
+              <> "\n\nNew lines to summarize:\n"
+              <> formatMessages toSummarize
+              <> "\n\nPlease provide an updated, concise summary of the conversation above."
+      aiResp <- invoke summaryModel [userMessage summaryPrompt] Nothing
+      let newSummary = extractMessageText aiResp
+      liftIO $ atomically $ writeTVar summaryBufferVar newSummary
 
   clear SummaryMemory {..} = liftIO $ atomically $ do
     writeTVar summaryBufferVar ""

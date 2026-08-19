@@ -24,8 +24,6 @@ module Test.Langchain.TestHelpers
 
 import Control.Exception (SomeException, try)
 import Data.Aeson (Value, decode)
-import qualified Data.Aeson.KeyMap as KM
-import qualified Data.ByteString.Lazy as LBS
 import Data.Text (Text)
 import qualified Data.Text as T
 import Network.HTTP.Simple
@@ -37,7 +35,6 @@ import Network.HTTP.Simple
   )
 import System.Environment (lookupEnv)
 import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.HUnit (assertBool, assertFailure)
 
 -- | Test categorization levels configured via LANGCHAIN_TEST_LEVEL environment variable
 data TestLevel

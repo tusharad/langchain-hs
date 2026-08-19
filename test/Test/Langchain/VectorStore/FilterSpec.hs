@@ -4,9 +4,6 @@ module Test.Langchain.VectorStore.FilterSpec (tests) where
 
 import Data.Aeson (Value (..))
 import qualified Data.Map.Strict as Map
-import Data.Text (Text)
-import qualified Data.Text as T
-import qualified Data.Text.Lazy as TL
 import Test.Tasty
 import Test.Tasty.HUnit
 
@@ -22,8 +19,7 @@ tests =
             doc2 = Document {pageContent = "Doc 2", metadata = Map.fromList [("brain_id", String "engineering")]}
             predEq = eqFilter "brain_id" (String "finance")
             filtered = filterDocuments predEq [doc1, doc2]
-        length filtered @?= 1
-        head filtered @?= doc1
+        filtered @?= [doc1]
     , testCase "In filter matches any allowed value" $ do
         let doc1 = Document {pageContent = "Doc 1", metadata = Map.fromList [("tag", String "haskell")]}
             doc2 = Document {pageContent = "Doc 2", metadata = Map.fromList [("tag", String "rust")]}
@@ -49,6 +45,5 @@ tests =
                 }
             predComp = andFilter [eqFilter "env" (String "prod"), Gt "tier" 1.5]
             filtered = filterDocuments predComp [doc1, doc2, doc3]
-        length filtered @?= 1
-        head filtered @?= doc3
+        filtered @?= [doc3]
     ]

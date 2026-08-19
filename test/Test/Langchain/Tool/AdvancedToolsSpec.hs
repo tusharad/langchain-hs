@@ -9,7 +9,6 @@ import Control.Monad.Except (runExceptT)
 import Data.Aeson (FromJSON, ToJSON, Value (..), object)
 import Data.Proxy (Proxy (..))
 import Data.Text (Text)
-import qualified Data.Text as T
 import GHC.Generics (Generic)
 import Test.Tasty
 import Test.Tasty.HUnit

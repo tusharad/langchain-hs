@@ -1,5 +1,4 @@
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
 {- |
@@ -21,6 +20,7 @@ module Langchain.Router.Semantic
   , routeQueryWithScore
   ) where
 
+import Control.Monad (forM)
 import Control.Monad.Except (MonadError)
 import Control.Monad.IO.Class (MonadIO)
 import Data.List (maximumBy)
@@ -75,7 +75,7 @@ routeQueryWithScore SemanticRouter {..} query
   | null routerRoutes = pure Nothing
   | otherwise = do
       qVec <- embedQuery routerEmbeddings query
-      routeScores <- flip mapM routerRoutes $ \r -> do
+      routeScores <- forM routerRoutes $ \r -> do
         let sampleDocs = [Document (TL.fromStrict s) mempty | s <- routeSamples r]
         sampleVecs <- embedDocuments routerEmbeddings sampleDocs
         let scores = map (cosineSimilarity qVec) sampleVecs

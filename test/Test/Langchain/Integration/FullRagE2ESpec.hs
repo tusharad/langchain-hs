@@ -35,10 +35,10 @@ tests =
               docs = [Document c Map.empty | c <- chunks]
 
           let embedder = Embed.OllamaEmbeddings "nomic-embed-text" Nothing Nothing Nothing
-              store = emptyInMemoryVectorStore embedder
+              initialStore = emptyInMemoryVectorStore embedder
 
           -- Embedding may fail if nomic-embed-text is not pulled, so catch gracefully if needed
-          eStore <- runExceptT $ addDocuments store docs
+          eStore <- runExceptT $ addDocuments initialStore docs
           case eStore of
             Left err -> do
               putStrLn ("Notice: Embeddings skipped in E2E: " ++ show err)

@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 {- |
@@ -89,7 +90,7 @@ webScraperTool =
         , "required" .= (["url"] :: [Text])
         ]
     )
-    ( \args -> case args of
+    ( \case
         Object o -> case parseEither (.:? "url") o of
           Right (Just u) -> do
             eRes <- fetchAndScrape u

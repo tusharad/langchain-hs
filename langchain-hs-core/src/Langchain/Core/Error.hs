@@ -55,7 +55,7 @@ data ErrorContext = ErrorContext
 
 -- | Pure context constructor.
 mkContext :: Text -> Text -> Map Text Text -> ErrorContext
-mkContext comp op dt = ErrorContext comp op (posixSecondsToUTCTime 0) dt
+mkContext comp op = ErrorContext comp op (posixSecondsToUTCTime 0)
 
 -- | IO context constructor with real timestamp.
 mkContextIO :: MonadIO m => Text -> Text -> Map Text Text -> m ErrorContext

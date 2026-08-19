@@ -1,6 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 
 {- |
 Module      : Langchain.Guardrail.Core
@@ -54,14 +53,14 @@ contentSafetyGuardrail forbiddenWords =
     { guardrailName = "ContentSafety"
     , validateInput = \input ->
         let lower = T.toLower input
-            matched = filter (\w -> w `T.isInfixOf` lower) (map T.toLower forbiddenWords)
+            matched = filter (`T.isInfixOf` lower) (map T.toLower forbiddenWords)
          in pure $
               if null matched
                 then GuardrailPass
                 else GuardrailFail ("Input contains forbidden content: " <> T.intercalate ", " matched)
     , validateOutput = \output ->
         let lower = T.toLower output
-            matched = filter (\w -> w `T.isInfixOf` lower) (map T.toLower forbiddenWords)
+            matched = filter (`T.isInfixOf` lower) (map T.toLower forbiddenWords)
          in pure $
               if null matched
                 then GuardrailPass
@@ -112,8 +111,8 @@ composeGuardrails [] =
 composeGuardrails rails =
   Guardrail
     { guardrailName = T.intercalate "+" (map guardrailName rails)
-    , validateInput = \input -> checkAll (map validateInput rails) input
-    , validateOutput = \output -> checkAll (map validateOutput rails) output
+    , validateInput = checkAll (map validateInput rails)
+    , validateOutput = checkAll (map validateOutput rails)
     }
   where
     checkAll [] _ = pure GuardrailPass

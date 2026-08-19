@@ -7,20 +7,17 @@ module Test.Langchain.Retriever.AdvancedRetrieversSpec (tests) where
 
 import Control.Monad.Except (runExceptT)
 import qualified Data.Map.Strict as Map
-import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import Langchain.Core.Model (MockModel (..), newMockModel)
+import Langchain.Core.Model (newMockModel)
 import Langchain.DocumentLoader.Core (Document (..))
 import Langchain.Embeddings.Core (Embeddings (..))
 import Langchain.Retriever.ContextualCompression
 import Langchain.Retriever.Core
-import Langchain.Retriever.MultiQueryRetriever
 import Langchain.Retriever.ParentDocument
-import Langchain.VectorStore.Core
 import Langchain.VectorStore.InMemory
 
 data MockEmbeddings = MockEmbeddings
@@ -41,25 +38,26 @@ tests =
         res <- runExceptT $ getRelevantDocuments compressor "Find relevant sentence"
         case res of
           Left err -> assertFailure ("Compression failed: " ++ show err)
-          Right docs -> do
-            length docs @?= 1
-            pageContent (head docs) @?= "Only this relevant sentence."
+          Right [topDoc] ->
+            pageContent topDoc @?= "Only this relevant sentence."
+          Right docs ->
+            assertFailure ("Expected 1 doc, got " ++ show (length docs))
     , testCase "ParentDocumentRetriever returns full parent when child matches" $ do
         let emb = MockEmbeddings
-            vs = emptyInMemoryVectorStore emb
+            initialVs = emptyInMemoryVectorStore emb
         res <- runExceptT $ do
-          pRetriever <- newParentDocumentRetriever vs
+          pRetriever <- newParentDocumentRetriever initialVs
           let parent1 = Document "Large Parent Document 1 with extensive detailed chapters" Map.empty
               parent2 = Document "Large Parent Document 2 with other contents" Map.empty
           updatedPR <- addParentDocuments pRetriever [parent1, parent2]
           getRelevantDocuments updatedPR "Parent Document 1"
         case res of
           Left err -> assertFailure ("ParentDocumentRetriever failed: " ++ show err)
-          Right docs -> do
-            assertBool "Returns at least one parent document" (not $ null docs)
+          Right (topDoc : _) ->
             assertBool
               "Contains parent 1 content"
-              ("Large Parent Document 1" `TL.isInfixOf` pageContent (head docs))
+              ("Large Parent Document 1" `TL.isInfixOf` pageContent topDoc)
+          Right [] -> assertFailure "Expected at least one parent document"
     ]
 
 newtype MockBaseRetriever = MockBaseRetriever [Document]

@@ -10,7 +10,6 @@ module Test.Langchain.OutputParser.AdvancedParsersSpec (tests) where
 
 import Control.Monad.Except (runExceptT)
 import Data.Aeson (FromJSON, ToJSON)
-import Data.Proxy (Proxy (..))
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
@@ -18,7 +17,7 @@ import GHC.Generics (Generic)
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import Langchain.Core.Model (MockModel (..), newMockModel, userMessage)
+import Langchain.Core.Model (newMockModel, userMessage)
 import Langchain.DocumentLoader.Core (Document (..))
 import Langchain.Embeddings.Core (Embeddings (..))
 import Langchain.OutputParser.Enum

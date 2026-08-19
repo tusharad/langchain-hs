@@ -3,7 +3,6 @@
 module Test.Langchain.Integration.OllamaChatSpec (tests) where
 
 import Control.Monad.Except (runExceptT)
-import Data.Text (Text)
 import qualified Data.Text as T
 import Test.Tasty
 import Test.Tasty.HUnit

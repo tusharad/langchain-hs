@@ -3,11 +3,9 @@
 module Test.Langchain.Guardrail.GuardrailSpec (tests) where
 
 import Control.Monad.Except (runExceptT)
-import qualified Data.Text as T
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import Langchain.Core.Model (newMockModel)
 import Langchain.Guardrail.Core
 
 tests :: TestTree

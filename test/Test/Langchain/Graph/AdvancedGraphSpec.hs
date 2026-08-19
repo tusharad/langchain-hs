@@ -37,9 +37,9 @@ tests =
         snaps <- getSnapshots hist "thread-1"
         length snaps @?= 2
     , testCase "Parallel nodes execute concurrently and merge states" $ do
-        let worker1 = \s -> pure $ Right (s <> "+W1")
-            worker2 = \s -> pure $ Right (s <> "+W2")
-            mergeFn = \_ outputs -> T.intercalate "|" outputs
+        let worker1 s = pure $ Right (s <> "+W1")
+            worker2 s = pure $ Right (s <> "+W2")
+            mergeFn _ = T.intercalate "|"
             pNode = parallelNode "p_step" [worker1, worker2] mergeFn :: Node Text IO
         res <- nodeAction pNode ("Init" :: Text)
         case res of
@@ -59,7 +59,7 @@ tests =
           Left err -> assertFailure ("Compilation failed: " ++ show err)
           Right compiledSub -> do
             let subNode =
-                  embedSubGraphWithOptions "sub_exec" compiledSub defaultSubGraphOptions (\p -> p + 5) (\_ s -> s + 1)
+                  embedSubGraphWithOptions "sub_exec" compiledSub defaultSubGraphOptions (+ 5) (\_ s -> s + 1)
             res <- runExceptT $ nodeAction subNode (10 :: Int)
             case res of
               Left err -> assertFailure ("SubGraph failed: " ++ show err)

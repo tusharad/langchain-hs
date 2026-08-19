@@ -3,8 +3,6 @@
 module Test.Langchain.Provider.OllamaConversionSpec (tests) where
 
 import qualified Data.List.NonEmpty as NonEmpty
-import Data.Text (Text)
-import qualified Data.Text as T
 import Test.Tasty
 import Test.Tasty.HUnit
 

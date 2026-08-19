@@ -2,8 +2,6 @@
 
 module Test.Langchain.Pure.PurePipelineSpec (tests) where
 
-import Control.Monad.Except (Except, runExcept, throwError)
-import Control.Monad.Identity (Identity (..), runIdentity)
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import qualified Data.Text as T

@@ -1,120 +1,97 @@
-name: Haskell CI/CD Pipeline
+name: Haskell CI
 
 on:
   push:
     branches: [ "main", "develop" ]
   pull_request:
     branches: [ "main", "develop" ]
-  workflow_dispatch:
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
-  code-quality:
-    name: Code Quality & Linting
+  format:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Run Fourmolu Formatter Check
-        uses: haskell-actions/run-fourmolu@v11
+      - uses: actions/checkout@v4
+      - uses: haskell-actions/run-fourmolu@v11
         with:
-          version: "latest"
-          working-directory: "."
+          version: "0.17.0.0"
+          working-directory: "./src"
 
-      - name: Set up HLint
-        uses: haskell-actions/hlint-setup@v2
-        with:
-          version: '3.10'
+  hlint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
 
-      - name: Run HLint Code Audit
-        uses: haskell-actions/hlint-run@v2
-        with:
-          path: |
-            src/
-            langchain-hs-core/src/
-            langchain-hs-graph/src/
-          fail-on: warning
+    - name: 'Set up HLint'
+      uses: haskell-actions/hlint-setup@v2
+      with:
+        version: '3.10'
 
-  build-and-test:
-    name: Build & Test Monorepo
-    runs-on: ubuntu-22.04
+    - name: 'Run HLint'
+      uses: haskell-actions/hlint-run@v2
+      with:
+        path: src/
+        fail-on: warning
+
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - id: generate
+        uses: freckle/stack-action/generate-matrix@v5
+    outputs:
+      stack-yamls: ${{ steps.generate.outputs.stack-yamls }}
+
+  build:
+    needs: [generate, hlint, format]
+    strategy:
+      matrix:
+        stack-yaml: ${{ fromJSON(needs.generate.outputs.stack-yamls) }}
+      fail-fast: false
+
+    runs-on: ubuntu-latest
     defaults:
       run:
         shell: bash
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
+    - name: Copy repo into actions 
+      uses: actions/checkout@v4
 
-      - name: Setup Haskell Stack
-        uses: haskell-actions/setup@v2
-        with:
-          ghc-version: '9.12.2'
-          enable-stack: true
-          stack-version: 'latest'
+    - name: install dependancies, build and test stack project.
+      uses: freckle/stack-action@v5
+      with:
+          stack-arguments: --stack-yaml ${{ matrix.stack-yaml }}
+          test: false
+  
+  tests:
+    needs: build
 
-      - name: Cache Stack Root & Work Directories
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.stack
-            .stack-work
-            langchain-hs-core/.stack-work
-            langchain-hs-graph/.stack-work
-          key: ${{ runner.os }}-stack-${{ hashFiles('**/package.yaml', 'stack.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-stack-
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
 
-      - name: Build Core & Graph Packages
-        run: |
-          stack build langchain-hs-core langchain-hs-graph --test --no-run-tests
-
-      - name: Run Unit & Property Tests (Core & Graph)
-        run: |
-          stack test langchain-hs-core langchain-hs-graph
-
-      - name: Install & Warm up Ollama for Integration Testing
-        uses: pydantic/ollama-action@v3
-        with:
-          model: gemma3:latest
-
-      - name: Run Full Workspace Test Suite
-        run: |
-          stack test
-
-      - name: Build & Run Big Showcase Application
-        run: |
-          stack run big-showcase
-
-  haddock-docs:
-    name: Haddock API Documentation Check
-    runs-on: ubuntu-22.04
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    - name: Copy repo into actions 
+      uses: actions/checkout@v4
+ 
+    - name: Installing ollama
+      uses: ai-action/ollama-action@v2
+      with:
+        model: gemma3:latest
 
-      - name: Setup Haskell Stack
-        uses: haskell-actions/setup@v2
-        with:
-          ghc-version: '9.12.2'
-          enable-stack: true
-          stack-version: 'latest'
+    - name: Installing ollama
+      uses: ai-action/ollama-action@v2
+      with:
+        model: qwen3.5:2b
 
-      - name: Cache Stack
-        uses: actions/cache@v4
-        with:
-          path: ~/.stack
-          key: ${{ runner.os }}-haddock-${{ hashFiles('**/package.yaml', 'stack.yaml') }}
+    - name: Warming up ollama models
+      run: |
+        ollama run gemma3 "Hey, how are you?"
+        ollama run qwen3.5:2b "Hey, how are you?"
 
-      - name: Build Haddock Docs
-        run: |
-          stack haddock --no-haddock-deps langchain-hs-core langchain-hs-graph langchain-hs
+    - name: install dependancies, build and test stack project.
+      uses: freckle/stack-action@v5

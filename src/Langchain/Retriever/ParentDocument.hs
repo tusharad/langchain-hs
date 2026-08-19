@@ -25,7 +25,7 @@ import Control.Concurrent.STM
 import Control.Monad.Except (MonadError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Aeson (Value (..))
-import Data.List (nubBy)
+import Data.List (nub)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (mapMaybe)
@@ -80,7 +80,7 @@ addParentDocuments ParentDocumentRetriever {..} parentDocs = do
         ]
 
   -- Save parents in STM map
-  liftIO $ atomically $ modifyTVar' parentDocStoreVar (\m -> Map.union (Map.fromList parentPairs) m)
+  liftIO $ atomically $ modifyTVar' parentDocStoreVar (Map.union (Map.fromList parentPairs))
 
   -- Create child chunks referencing parent_id
   let childDocs =
@@ -103,6 +103,6 @@ instance VectorStore vs => Retriever (ParentDocumentRetriever vs) where
                 _ -> Nothing
             )
             childResults
-        uniqueParentIds = nubBy (==) parentIds
+        uniqueParentIds = nub parentIds
         resolvedParents = mapMaybe (`Map.lookup` parentStore) uniqueParentIds
     pure resolvedParents

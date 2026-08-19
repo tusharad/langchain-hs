@@ -27,7 +27,7 @@ tests =
         res <- parallelStep "haskell"
         res @?= Right ("HASKELL", 7)
     , testCase "runPipeline evaluates named step" $ do
-        let step = mkStep "upper" (\x -> pure $ Right (T.toUpper x))
+        let step = mkStep "upper" (pure . Right . T.toUpper)
         res <- runExceptT $ runPipeline step "hello"
         res @?= Right "HELLO"
     ]

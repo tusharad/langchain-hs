@@ -3,7 +3,6 @@
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -70,7 +69,7 @@ instance (Selector s, ToolFieldSchema a) => GToolRecordSchema (M1 S s (K1 R a)) 
     let selNameStr = selName (undefined :: M1 S s (K1 R a) p)
         propKey = Key.fromString selNameStr
         propSchema = toolFieldSchema (Proxy :: Proxy a)
-        req = if isOptionalField (Proxy :: Proxy a) then [] else [TS.pack selNameStr]
+        req = [TS.pack selNameStr | not (isOptionalField (Proxy :: Proxy a))]
      in ([(propKey, propSchema)], req)
 
 class ToolFieldSchema a where

@@ -23,8 +23,10 @@ module Langchain.Retriever.ContextualCompression
   , defaultCompressionPrompt
   ) where
 
+import Control.Monad (forM)
 import Control.Monad.Except (throwError)
 import qualified Data.Map.Strict as Map
+import Data.Maybe (catMaybes)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 
@@ -69,7 +71,7 @@ instance
   where
   getRelevantDocuments ContextualCompressionRetriever {..} query = do
     rawDocs <- getRelevantDocuments baseRetriever query
-    compressedDocs <- flip mapM rawDocs $ \doc -> do
+    compressedDocs <- forM rawDocs $ \doc -> do
       let docText = TL.toStrict (pageContent doc)
           vars = Map.fromList [("question", query), ("context", docText)]
       renderedPrompt <- case renderPrompt compressionPrompt vars of
@@ -80,4 +82,4 @@ instance
       if "NO_RELEVANT_CONTEXT" `T.isInfixOf` extracted || T.null extracted
         then pure Nothing
         else pure $ Just $ doc {pageContent = TL.fromStrict extracted}
-    pure [d | Just d <- compressedDocs]
+    pure (catMaybes compressedDocs)

@@ -2,7 +2,6 @@
 
 module Test.Langchain.MCP.McpSpec (tests) where
 
-import Control.Monad.Except (runExceptT)
 import qualified Data.Aeson as Aeson
 import qualified Data.Text as T
 import Test.Tasty

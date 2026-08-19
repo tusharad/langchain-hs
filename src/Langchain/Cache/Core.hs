@@ -51,8 +51,8 @@ class CacheBackend cb where
   clearCache :: MonadIO m => cb -> m ()
 
 -- | Thread-safe in-memory cache backed by STM TVar
-data InMemoryCache = InMemoryCache
-  { memCacheVar :: !(TVar (Map Text Message))
+newtype InMemoryCache = InMemoryCache
+  { memCacheVar :: TVar (Map Text Message)
   }
 
 -- | Construct a new InMemoryCache
@@ -73,7 +73,7 @@ instance CacheBackend InMemoryCache where
     atomically $ writeTVar memCacheVar Map.empty
 
 -- | Persistent SQLite cache backend
-data SQLiteCache = SQLiteCache
+newtype SQLiteCache = SQLiteCache
   { sqliteCacheDbPath :: FilePath
   }
 
@@ -155,5 +155,5 @@ instance (ChatModel model, CacheBackend cache) => ChatModel (CachedModel model c
         putCache modelCache key freshMsg
         pure freshMsg
 
-  stream CachedModel {..} msgs mbCfg =
-    stream underlyingModel msgs mbCfg
+  stream CachedModel {..} =
+    stream underlyingModel

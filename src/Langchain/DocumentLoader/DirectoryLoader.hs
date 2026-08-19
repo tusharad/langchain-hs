@@ -19,7 +19,7 @@ module Langchain.DocumentLoader.DirectoryLoader
   ) where
 
 import Control.Concurrent.Async (mapConcurrently)
-import Control.Monad (filterM)
+import Control.Monad (filterM, forM)
 import Control.Monad.Except (throwError)
 import Control.Monad.IO.Class (liftIO)
 import Data.Maybe (listToMaybe)
@@ -112,7 +112,7 @@ instance BaseLoader DirectoryLoader where
     if exists
       then do
         filePaths <- liftIO $ getFilesInDirectory directoryLoaderOptions 0 dirPath
-        fmap concat $ flip mapM filePaths $ \path -> do
+        fmap concat $ forM filePaths $ \path -> do
           if takeExtension path == ".pdf"
             then load (PdfLoader path)
             else load (FileLoader path)
