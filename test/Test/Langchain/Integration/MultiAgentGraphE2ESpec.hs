@@ -25,12 +25,12 @@ tests =
                   , specialistDescription = "Provides factual data about computer science concepts"
                   , specialistCapabilities = ["research", "facts"]
                   , specialistAction = \task -> do
-                      resp <- invoke model [userMessage ("Provide brief facts for: " <> task)] Nothing
+                      resp <- invoke model [userMessage ("Provide 1 short sentence fact for: " <> task)] Nothing
                       pure (extractMessageText resp)
                   }
               team = newSupervisorTeam model [researcher]
 
-          res <- runExceptT $ runSupervisorTeam team "What is functional programming?"
+          res <- runExceptT $ runSupervisorTeam team "Define functional programming in one short sentence."
           case res of
             Left err -> assertFailure ("Supervisor team failed: " ++ show err)
             Right ans -> do
