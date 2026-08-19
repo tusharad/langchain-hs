@@ -154,6 +154,7 @@ library
     , containers >=0.6 && <0.9
     , directory >=1.3.6 && <1.4
     , filepath <2
+    , ginger >=0.10.6 && <0.11
     , http-client
     , http-conduit ==2.*
     , http-types >=0.11 && <0.13
@@ -195,6 +196,7 @@ executable big-showcase
     , containers >=0.6 && <0.9
     , directory >=1.3.6 && <1.4
     , filepath <2
+    , ginger >=0.10.6 && <0.11
     , http-client
     , http-conduit ==2.*
     , http-types >=0.11 && <0.13
@@ -274,10 +276,11 @@ test-suite langchain-hs-test
       Test.Langchain.OutputParser.Core
       Test.Langchain.Pipeline.PipelineDSLSpec
       Test.Langchain.PreludeSpec
-      Test.Langchain.PromptTemplate
       Test.Langchain.PromptTemplate.Chat.ChatMessagePromptTemplateSpec
       Test.Langchain.PromptTemplate.Chat.ChatPromptTemplateSpec
       Test.Langchain.PromptTemplate.Chat.MessagesPlaceholderSpec
+      Test.Langchain.PromptTemplate.FewShotSpec
+      Test.Langchain.PromptTemplate.PromptSpec
       Test.Langchain.Property.CheckpointerSpec
       Test.Langchain.Property.ErrorSpec
       Test.Langchain.Property.MessageSpec
@@ -330,6 +333,7 @@ test-suite langchain-hs-test
     , containers
     , directory
     , filepath
+    , ginger >=0.10.6 && <0.11
     , http-client
     , http-conduit
     , http-types >=0.11 && <0.13
@@ -377,6 +381,7 @@ benchmark langchain-hs-bench
     , containers >=0.6 && <0.9
     , directory >=1.3.6 && <1.4
     , filepath <2
+    , ginger >=0.10.6 && <0.11
     , http-client
     , http-conduit ==2.*
     , http-types >=0.11 && <0.13

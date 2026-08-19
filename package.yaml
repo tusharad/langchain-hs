@@ -31,6 +31,7 @@ dependencies:
 - containers >= 0.6 && < 0.9
 - directory >= 1.3.6 && < 1.4
 - filepath < 2
+- ginger >= 0.10.6 && < 0.11
 - http-client
 - http-conduit >= 2 && < 3
 - http-types >= 0.11 && < 0.13

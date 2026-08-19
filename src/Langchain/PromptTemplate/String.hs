@@ -19,14 +19,18 @@ module Langchain.PromptTemplate.String
   , extractTemplateVariablesWithFormat
   ) where
 
+import Control.Monad.Trans.Writer.Lazy (Writer)
 import Data.Aeson (FromJSON, ToJSON, Value, object, (.=))
 import qualified Data.Aeson.Key as Key
 import Data.Foldable (traverse_)
+import Data.Functor.Identity (runIdentity)
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import GHC.Generics (Generic)
+import qualified Text.Ginger as Ginger
+import Text.Ginger.Html (Html, htmlSource)
 import Text.Mustache
   ( Key
   , Node (..)
@@ -76,6 +80,7 @@ parseDelimitedTemplate open close unclosed = go
 renderTemplateWithFormat ::
   TemplateFormat -> Map.Map Text Text -> Text -> Either LangchainError Text
 renderTemplateWithFormat Mustache vars source = renderMustacheTemplate vars source
+renderTemplateWithFormat Jinja2 vars source = renderJinja2Template vars source
 renderTemplateWithFormat format vars source = do
   parts <- parseTemplateWithFormat format source
   T.concat <$> traverse renderPart parts
@@ -100,6 +105,29 @@ renderMustacheTemplate vars source =
       | otherwise =
           Left $ validationError ("Missing variable: " <> variableName) (Just variableName) Nothing
 
+renderJinja2Template :: Map.Map Text Text -> Text -> Either LangchainError Text
+renderJinja2Template vars source = do
+  template <- parseJinja2Template source
+  traverse_ requireVariable $ gingerTemplateVariables template
+  Right . htmlSource $ Ginger.runGinger (gingerContext vars) template
+  where
+    requireVariable variableName
+      | variableName `Map.member` vars = Right ()
+      | otherwise =
+          Left $ validationError ("Missing variable: " <> variableName) (Just variableName) Nothing
+
+parseJinja2Template :: Text -> Either LangchainError (Ginger.Template Ginger.SourcePos)
+parseJinja2Template source =
+  case runIdentity $ Ginger.parseGinger noIncludes Nothing (T.unpack source) of
+    Left err -> Left $ validationError (T.pack $ show err) (Just "PromptTemplate") Nothing
+    Right template -> Right template
+  where
+    noIncludes _ = pure Nothing
+
+gingerContext :: Map.Map Text Text -> Ginger.GingerContext Ginger.SourcePos (Writer Html) Html
+gingerContext vars = Ginger.makeContextHtml $ \variableName ->
+  Ginger.toGVal $ Map.findWithDefault "" variableName vars
+
 toMustacheContext :: Map.Map Text Text -> Value
 toMustacheContext vars =
   object [Key.fromText key .= value | (key, value) <- Map.toList vars]
@@ -112,10 +140,97 @@ extractTemplateVariablesWithFormat Mustache source =
   case compileMustacheText "PromptTemplate" source of
     Left _ -> []
     Right template -> unique $ templateVariables template
+extractTemplateVariablesWithFormat Jinja2 source =
+  case parseJinja2Template source of
+    Left _ -> []
+    Right template -> gingerTemplateVariables template
 extractTemplateVariablesWithFormat format source =
   case parseTemplateWithFormat format source of
     Left _ -> []
     Right parts -> unique [variableName | Variable variableName <- parts]
+
+gingerTemplateVariables :: Ginger.Template a -> [Text]
+gingerTemplateVariables Ginger.Template {Ginger.templateBody = body} = unique $ statementVariables [] body
+
+statementVariables :: [Ginger.VarName] -> Ginger.Statement a -> [Text]
+statementVariables scope statement =
+  case statement of
+    Ginger.MultiS _ statements -> fst $ foldl collectStatementVariables ([], scope) statements
+    Ginger.ScopedS _ scopedStatement -> statementVariables scope scopedStatement
+    Ginger.IndentS _ expression indentedStatement -> expressionVariables scope expression <> statementVariables scope indentedStatement
+    Ginger.LiteralS _ _ -> []
+    Ginger.InterpolationS _ expression -> expressionVariables scope expression
+    Ginger.ExpressionS _ expression -> expressionVariables scope expression
+    Ginger.IfS _ condition trueBranch falseBranch ->
+      expressionVariables scope condition
+        <> statementVariables scope trueBranch
+        <> statementVariables scope falseBranch
+    Ginger.SwitchS _ expression branches defaultBranch ->
+      expressionVariables scope expression
+        <> concatMap
+          ( \(branchExpression, branchBody) -> expressionVariables scope branchExpression <> statementVariables scope branchBody
+          )
+          branches
+        <> statementVariables scope defaultBranch
+    Ginger.ForS _ maybeIndexName itemName expression body ->
+      expressionVariables scope expression
+        <> statementVariables (itemName : maybe scope (: scope) maybeIndexName) body
+    Ginger.SetVarS _ _ expression -> expressionVariables scope expression
+    Ginger.DefMacroS _ macroName Ginger.Macro {Ginger.macroArgs = args, Ginger.macroBody = body} ->
+      statementVariables (macroName : args <> scope) body
+    Ginger.BlockRefS _ variableName -> [variableName | variableName `notElem` scope]
+    Ginger.PreprocessedIncludeS _ includedTemplate -> gingerTemplateVariables includedTemplate
+    Ginger.NullS _ -> []
+    Ginger.TryCatchS _ tryBody catchBlocks finallyBody ->
+      statementVariables scope tryBody
+        <> concatMap (catchBlockVariables scope) catchBlocks
+        <> statementVariables scope finallyBody
+
+catchBlockVariables :: [Ginger.VarName] -> Ginger.CatchBlock a -> [Text]
+catchBlockVariables scope Ginger.Catch {Ginger.catchCaptureAs = captureName, Ginger.catchBody = body} =
+  statementVariables (maybe scope (: scope) captureName) body
+
+expressionVariables :: [Ginger.VarName] -> Ginger.Expression a -> [Text]
+expressionVariables scope expression =
+  case expression of
+    Ginger.StringLiteralE _ _ -> []
+    Ginger.NumberLiteralE _ _ -> []
+    Ginger.BoolLiteralE _ _ -> []
+    Ginger.NullLiteralE _ -> []
+    Ginger.VarE _ variableName -> [variableName | variableName `notElem` scope]
+    Ginger.ListE _ expressions -> concatMap (expressionVariables scope) expressions
+    Ginger.ObjectE _ pairs ->
+      concatMap
+        ( \(keyExpression, valueExpression) -> expressionVariables scope keyExpression <> expressionVariables scope valueExpression
+        )
+        pairs
+    Ginger.MemberLookupE _ objectExpression memberExpression ->
+      expressionVariables scope objectExpression <> expressionVariables scope memberExpression
+    Ginger.CallE _ callee arguments ->
+      callableVariables scope callee
+        <> concatMap (expressionVariables scope . snd) arguments
+    Ginger.LambdaE _ args body -> expressionVariables (args <> scope) body
+    Ginger.TernaryE _ condition trueExpression falseExpression ->
+      expressionVariables scope condition
+        <> expressionVariables scope trueExpression
+        <> expressionVariables scope falseExpression
+    Ginger.DoE _ body -> statementVariables scope body
+
+callableVariables :: [Ginger.VarName] -> Ginger.Expression a -> [Text]
+callableVariables _ (Ginger.VarE _ _) = []
+callableVariables scope expression = expressionVariables scope expression
+
+collectStatementVariables ::
+  ([Text], [Ginger.VarName]) -> Ginger.Statement a -> ([Text], [Ginger.VarName])
+collectStatementVariables (variableNames, scope) statement =
+  (variableNames <> statementVariables scope statement, statementBindings scope statement)
+
+statementBindings :: [Ginger.VarName] -> Ginger.Statement a -> [Ginger.VarName]
+statementBindings scope statement =
+  case statement of
+    Ginger.SetVarS _ variableName _ -> variableName : scope
+    Ginger.DefMacroS _ macroName _ -> macroName : scope
+    _ -> scope
 
 unique :: [Text] -> [Text]
 unique = foldl addIfMissing []
