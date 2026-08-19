@@ -219,6 +219,46 @@ richContentTests =
               @?= [ textMessage System "You are an AI assistant named R2D2."
                   , Message User (TextBlock "What's in this image?" :| [TextBlock "Oh nvm"]) Nothing Nothing Nothing
                   ]
+    , testCase "formats system template with partial variables" $ do
+        let graphCreatorContent = "\n    Your instructions are:\n    {instructions}\n    History:\n    {history}\n    "
+            template =
+              partial
+                (fromMessages [templateMessage System graphCreatorContent])
+                (Map.singleton "instructions" (PartialText "{}"))
+
+        case formatPrompt template (Map.singleton "history" "history") of
+          Left err -> assertFailure $ "Expected system partial prompt, got " <> show err
+          Right promptValue ->
+            toMessages promptValue
+              @?= [ textMessage
+                      System
+                      "\n    Your instructions are:\n    {}\n    History:\n    history\n    "
+                  ]
+    , testCase "formats system multipart text template" $ do
+        let graphCreatorContent1 = "\n    This is the prompt for the first test:\n    {variables}\n    "
+            graphCreatorContent2 = "\n    This is the prompt for the second test:\n        {variables}\n        "
+            template =
+              fromMessages
+                [ contentMessage
+                    System
+                    [ TextPromptBlock FString graphCreatorContent1
+                    , TextPromptBlock FString graphCreatorContent2
+                    ]
+                ]
+
+        case formatPrompt template (Map.singleton "variables" "foo") of
+          Left err -> assertFailure $ "Expected system multipart text prompt, got " <> show err
+          Right promptValue ->
+            toMessages promptValue
+              @?= [ Message
+                      System
+                      ( TextBlock "\n    This is the prompt for the first test:\n    foo\n    "
+                          :| [TextBlock "\n    This is the prompt for the second test:\n        foo\n        "]
+                      )
+                      Nothing
+                      Nothing
+                      Nothing
+                  ]
     , testCase "formats image_url blocks" $ do
         let base64Image = "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAA"
             otherBase64Image = "other_iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAA"
