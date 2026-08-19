@@ -5,6 +5,17 @@
 
 packages:
 - completed:
+    commit: f110772552b450856b2eaed6f3c7800c402d0a42
+    git: https://github.com/tusharad/ollama-haskell
+    name: ollama-haskell
+    pantry-tree:
+      sha256: d4b78905c3030e4afd61073a12ac6f505fbc8d660f6243d0aafa1b75dc1c40c4
+      size: 5512
+    version: 0.3.0.0
+  original:
+    commit: f110772552b450856b2eaed6f3c7800c402d0a42
+    git: https://github.com/tusharad/ollama-haskell
+- completed:
     commit: 2031a05135b892a82b461558d19b813ab67cfb8f
     git: https://github.com/MercuryTechnologies/openai
     name: openai
@@ -75,6 +86,20 @@ packages:
   original:
     commit: f603a296800ed3fb488eb9ba8976812bca4bb983
     git: https://github.com/lbobylev/pystrformat.git
+- completed:
+    hackage: mcp-server-0.2.0.1@sha256:7b09ac83c868f7a5b453aefd68c769e9cac5c5b60a0bac3cc418df1ba9587945,6795
+    pantry-tree:
+      sha256: 9f3773f7067eefd89a58954150ebff2a538a9d1f825dfd0515b0cd9b48981cac
+      size: 7850
+  original:
+    hackage: mcp-server-0.2.0.1@sha256:7b09ac83c868f7a5b453aefd68c769e9cac5c5b60a0bac3cc418df1ba9587945,6795
+- completed:
+    hackage: http-types-0.12.5@sha256:cb708ff8d2001dc7bcff615350a835a6dc1b2488829acfcc6d8bc7e13d423153,2927
+    pantry-tree:
+      sha256: 965919723c06fdbf823a194da320717219f080da390516d76e842287ddecac99
+      size: 1379
+  original:
+    hackage: http-types-0.12.5@sha256:cb708ff8d2001dc7bcff615350a835a6dc1b2488829acfcc6d8bc7e13d423153,2927
 snapshots:
 - completed:
     sha256: 00a21f6385077a5340603ff2cb3cd625502e533f09a80c99959ca5754073cac1

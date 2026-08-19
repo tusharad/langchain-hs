@@ -8,7 +8,7 @@ format:
 
 ## Check code formatting with Fourmolu
 format-check:
-	fourmolu --check src/ test/ langchain-hs-core/ langchain-hs-graph
+	fourmolu -m check src/ test/ langchain-hs-core/ langchain-hs-graph
 
 ## Build Haddock documentation
 docs:

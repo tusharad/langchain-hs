@@ -88,6 +88,11 @@ jobs:
       with:
         model: qwen3.5:2b
 
+    - name: Installing ollama embedding model
+      uses: ai-action/ollama-action@v2
+      with:
+        model: nomic-embed-text
+
     - name: Warming up ollama models
       run: |
         ollama run gemma3 "Hey, how are you?"

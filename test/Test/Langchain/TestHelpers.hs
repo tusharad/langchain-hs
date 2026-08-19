@@ -67,7 +67,7 @@ testAtLevel requiredLevel name tree = do
 
 -- | Default primary LLM model for integration and E2E tests
 defaultTestModel :: Text
-defaultTestModel = "qwen2.5:7b"
+defaultTestModel = "qwen3.5:2b"
 
 -- | Fallback test model name if qwen is not available
 ollamaModelName :: Text

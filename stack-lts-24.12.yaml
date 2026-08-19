@@ -3,7 +3,9 @@ packages:
 - .
 extra-deps:
   - git: https://github.com/tusharad/ollama-haskell
-    commit: 33807a3a5a507e99d92b26e245c0aed582fde581
-    
+    commit: f110772552b450856b2eaed6f3c7800c402d0a42
+
   - git: https://github.com/MercuryTechnologies/openai
     commit: 2031a05135b892a82b461558d19b813ab67cfb8f
+
+  - mcp-server-0.2.0.1@sha256:7b09ac83c868f7a5b453aefd68c769e9cac5c5b60a0bac3cc418df1ba9587945,6795

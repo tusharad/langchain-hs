@@ -4,7 +4,8 @@ packages:
 - ./langchain-hs-core
 - ./langchain-hs-graph
 extra-deps:
-  - ../ollama-haskell
+  - git: https://github.com/tusharad/ollama-haskell
+    commit: f110772552b450856b2eaed6f3c7800c402d0a42
 
   - git: https://github.com/MercuryTechnologies/openai
     commit: 2031a05135b892a82b461558d19b813ab67cfb8f
@@ -25,3 +26,9 @@ extra-deps:
 
   - git: https://github.com/lbobylev/pystrformat.git
     commit: f603a296800ed3fb488eb9ba8976812bca4bb983
+
+  - mcp-server-0.2.0.1@sha256:7b09ac83c868f7a5b453aefd68c769e9cac5c5b60a0bac3cc418df1ba9587945,6795
+
+  - http-types-0.12.5@sha256:cb708ff8d2001dc7bcff615350a835a6dc1b2488829acfcc6d8bc7e13d423153,2927
+
+allow-newer: true
