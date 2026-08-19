@@ -34,6 +34,7 @@ import Data.Aeson
   , ToJSON (..)
   , Value (..)
   )
+import Data.List (foldl')
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)

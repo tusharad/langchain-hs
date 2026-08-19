@@ -16,7 +16,7 @@ observability, structured logging, circuit breakers, pipeline DSLs, and runtime 
 module Langchain.Prelude
   ( -- * Core Monad & Errors
     LangchainT
-  , LangchainConfig (..)
+  , LangchainConfig (LangchainConfig)
   , defaultLangchainConfig
   , runLangchainT
   , runLangchainTIO
@@ -57,8 +57,18 @@ module Langchain.Prelude
   , imageMessage
   , extractMessageText
 
-    -- * Streaming Events
-  , StreamEvent (..)
+  , StreamEvent
+      ( LLMStart
+      , LLMChunk
+      , LLMEnd
+      , ToolStart
+      , ToolEnd
+      , ToolErrorEvent
+      , ChainStart
+      , ChainEnd
+      , NodeStart
+      , NodeEnd
+      )
   , TokenUsage (..)
   , EventStream
   , collectEvents
@@ -74,7 +84,7 @@ module Langchain.Prelude
   , pipe
   , (>>>#)
   , pipeParallel
-  , PipelineStep (..)
+  , PipelineStep (PipelineStep)
   , mkStep
   , runPipeline
 
@@ -91,7 +101,7 @@ module Langchain.Prelude
     -- * State Graphs & Multi-Agent
   , StateGraph (..)
   , CompiledGraph (..)
-  , Node (..)
+  , Node (Node)
   , Edge (..)
   , NodeId
   , startNodeId
@@ -131,7 +141,7 @@ module Langchain.Prelude
   , PlanAndExecuteAgent (..)
   , newPlanAndExecuteAgent
   , runPlanAndExecute
-  , FunctionsAgent (..)
+  , FunctionsAgent (FunctionsAgent)
   , newFunctionsAgent
   , runFunctionsAgent
   , SpecialistAgent (..)
@@ -266,7 +276,7 @@ module Langchain.Prelude
   , defaultQdrantStore
   , Retriever (..)
   , VectorStoreRetriever (..)
-  , MultiQueryRetriever (..)
+  , MultiQueryRetriever (MultiQueryRetriever)
   , newMultiQueryRetriever
   , ContextualCompressionRetriever (..)
   , newContextualCompressionRetriever
@@ -311,21 +321,21 @@ module Langchain.Prelude
   , selectByLength
 
     -- * Text Splitters
-  , CharacterSplitterOps (..)
+  , CharacterSplitterOps (CharacterSplitterOps)
   , defaultCharacterSplitterOps
   , splitText
-  , RecursiveCharacterSplitterOps (..)
+  , RecursiveCharacterSplitterOps (RecursiveCharacterSplitterOps)
   , defaultRecursiveCharacterSplitterOps
   , splitTextRecursive
-  , MarkdownSplitterOps (..)
+  , MarkdownSplitterOps (MarkdownSplitterOps)
   , defaultMarkdownSplitterOps
   , splitMarkdown
   , splitMarkdownToChunks
-  , TokenSplitterOps (..)
+  , TokenSplitterOps (TokenSplitterOps)
   , defaultTokenSplitterOps
   , splitByTokens
   , Language (..)
-  , CodeSplitterOps (..)
+  , CodeSplitterOps (CodeSplitterOps)
   , splitCode
 
     -- * Caching & Resilience
@@ -336,7 +346,7 @@ module Langchain.Prelude
   , newSQLiteCache
   , CachedModel (..)
   , withCaching
-  , RetryPolicy (..)
+  , RetryPolicy (RetryPolicy)
   , defaultRetryPolicy
   , withRetry
   , RateLimiter (..)
@@ -344,11 +354,11 @@ module Langchain.Prelude
   , withRateLimit
 
     -- * Chains
-  , RetrievalQA (..)
+  , RetrievalQA (RetrievalQA)
   , newRetrievalQA
   , runRetrievalQA
   , SequentialChain (..)
-  , ChainStep (..)
+  , ChainStep (ChainStep)
   , newSequentialChain
   , runSequentialChain
   , ConversationalChain (..)
@@ -389,7 +399,7 @@ module Langchain.Prelude
   , verifyAllLaws
 
     -- * Agents & Execution
-  , ReActAgent (..)
+  , ReActAgent (ReActAgent)
   , AgentStep (..)
   , createReActAgent
   , reactStep
@@ -431,7 +441,7 @@ module Langchain.Prelude
   , injectChunkHeaders
 
     -- * Dynamic Flows & Event Streaming Protocol
-  , FlowNode (..)
+  , FlowNode (FlowNode)
   , FlowEdge (..)
   , DynamicFlow (..)
   , FlowExecutionResult (..)

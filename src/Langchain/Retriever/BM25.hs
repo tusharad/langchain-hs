@@ -24,7 +24,7 @@ module Langchain.Retriever.BM25
   ) where
 
 import Data.Char (isAlphaNum)
-import Data.List (sortBy)
+import Data.List (foldl', sortBy)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Ord (Down (..), comparing)

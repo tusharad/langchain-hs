@@ -23,7 +23,7 @@ module Langchain.Retriever.Hybrid
   ) where
 
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.List (sortBy)
+import Data.List (foldl', sortBy)
 import qualified Data.Map.Strict as Map
 import Data.Ord (Down (..), comparing)
 import Data.Text (Text)
