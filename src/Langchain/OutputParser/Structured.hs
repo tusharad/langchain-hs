@@ -52,11 +52,11 @@ import Langchain.Core.Model
 -- | Typeclass for types that declare a JSON Schema and structured parser
 class (FromJSON a) => StructuredOutput a where
   outputSchema :: Proxy a -> Value
-  default outputSchema :: (Generic a, GRecordSchema (Rep a)) => Proxy a -> Value
+  default outputSchema :: (GRecordSchema (Rep a)) => Proxy a -> Value
   outputSchema _ = genericJsonSchema (Proxy :: Proxy a)
 
 -- | Generic JSON Schema derivation helper
-genericJsonSchema :: forall a. (Generic a, GRecordSchema (Rep a)) => Proxy a -> Value
+genericJsonSchema :: forall a. (GRecordSchema (Rep a)) => Proxy a -> Value
 genericJsonSchema _ =
   let (props, reqs) = gRecordSchema (Proxy :: Proxy (Rep a))
    in object
@@ -116,22 +116,22 @@ instance (TypeSchema a) => TypeSchema [a] where
       ]
 
 -- | Invoke a ChatModel and extract a typed StructuredOutput value
-structuredInvoke
-  :: forall a model m
-   . (StructuredOutput a, ChatModel model, MonadIO m, MonadError LangchainError m)
-  => model
-  -> [Message]
-  -> m a
+structuredInvoke ::
+  forall a model m.
+  (StructuredOutput a, ChatModel model, MonadIO m, MonadError LangchainError m) =>
+  model ->
+  [Message] ->
+  m a
 structuredInvoke model msgs = structuredInvokeWithRetries model msgs 3
 
 -- | Invoke a ChatModel with up to N retry iterations with error-correction feedback
-structuredInvokeWithRetries
-  :: forall a model m
-   . (StructuredOutput a, ChatModel model, MonadIO m, MonadError LangchainError m)
-  => model
-  -> [Message]
-  -> Int
-  -> m a
+structuredInvokeWithRetries ::
+  forall a model m.
+  (StructuredOutput a, ChatModel model, MonadIO m, MonadError LangchainError m) =>
+  model ->
+  [Message] ->
+  Int ->
+  m a
 structuredInvokeWithRetries model baseMsgs maxAttempts = do
   let schema = outputSchema (Proxy :: Proxy a)
       schemaStr = TE.decodeUtf8 $ LBSC.toStrict $ encode schema
@@ -182,9 +182,10 @@ extractJsonFromMarkdown t =
           let afterPrefix = TS.drop 7 stripped
            in case TS.breakOn "```" afterPrefix of
                 (jsonPart, _) -> TS.strip jsonPart
-        else if "```" `TS.isPrefixOf` stripped
-          then
-            let afterPrefix = TS.drop 3 stripped
-             in case TS.breakOn "```" afterPrefix of
-                  (jsonPart, _) -> TS.strip jsonPart
-          else stripped
+        else
+          if "```" `TS.isPrefixOf` stripped
+            then
+              let afterPrefix = TS.drop 3 stripped
+               in case TS.breakOn "```" afterPrefix of
+                    (jsonPart, _) -> TS.strip jsonPart
+            else stripped

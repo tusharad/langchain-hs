@@ -5,7 +5,7 @@
 {- |
 Module      : Langchain.Graph.Voting
 Description : Voting and ensemble classification multi-agent pattern
-Copyright   : (c) 2025-2026 Tushar Adhatrao
+Copyright   : (c) 2026 Tushar Adhatrao
 License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
@@ -21,20 +21,16 @@ module Langchain.Graph.Voting
   , runVotingClassification
   ) where
 
-import Control.Concurrent.Async (mapConcurrently)
-import Control.Monad.Except (MonadError, runExceptT, throwError)
-import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.List (maximumBy)
-import Data.Map.Strict (Map)
+import Control.Monad.Except (MonadError, throwError)
+import Control.Monad.IO.Class (MonadIO)
 import qualified Data.Map.Strict as Map
-import Data.Ord (comparing)
+import Data.Maybe (listToMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 
 import Langchain.Core.Error (LangchainError, agentError)
 import Langchain.Core.Model
   ( ChatModel (..)
-  , Message (..)
   , extractMessageText
   , userMessage
   )
@@ -69,24 +65,36 @@ newVotingClassifier models prompt =
     }
 
 -- | Execute the ensemble vote on a given input text
-runVotingClassification
-  :: (ChatModel model, MonadIO m, MonadError LangchainError m)
-  => VotingClassifier model
-  -> Text
-  -> m (Text, [VoteRecord])
+runVotingClassification ::
+  (ChatModel model, MonadIO m, MonadError LangchainError m) =>
+  VotingClassifier model ->
+  Text ->
+  m (Text, [VoteRecord])
 runVotingClassification VotingClassifier {..} input = do
   if null voterModels
-    then throwError $ agentError "Voting classifier requires at least one voter" (Just "runVotingClassification") Nothing
+    then
+      throwError $
+        agentError "Voting classifier requires at least one voter" (Just "runVotingClassification") Nothing
     else do
       voteResults <- flip mapM voterModels $ \(name, model) -> do
-        let p = votePrompt <> "\n\nInput to classify:\n" <> input <> "\n\nOutput ONLY the chosen classification label:"
+        let p =
+              votePrompt
+                <> "\n\nInput to classify:\n"
+                <> input
+                <> "\n\nOutput ONLY the chosen classification label:"
         resp <- invoke model [userMessage p] Nothing
         let choice = T.strip (extractMessageText resp)
         pure $ VoteRecord name choice
 
       let tally = foldr (\v m -> Map.insertWith (+) (voteChoice v) (1 :: Int) m) Map.empty voteResults
           topScore = maximum (Map.elems tally)
-          winners = [label | (label, count) <- Map.toList tally, count == topScore]
-          winningChoice = head winners
+          winners =
+            [ label
+            | (label, count) <- Map.toList tally
+            , count == topScore
+            ]
+      winningChoice <- case listToMaybe winners of
+        Just res -> pure res
+        Nothing -> throwError $ agentError "winner list is empty" Nothing Nothing
 
       pure (winningChoice, voteResults)

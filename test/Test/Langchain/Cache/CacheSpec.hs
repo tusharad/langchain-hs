@@ -3,10 +3,8 @@
 
 module Test.Langchain.Cache.CacheSpec (tests) where
 
-import Control.Concurrent.STM (newTVarIO, readTVarIO, writeTVar, atomically, modifyTVar')
+import Control.Concurrent.STM (newTVarIO)
 import Control.Monad.Except (runExceptT)
-import Control.Monad.IO.Class (liftIO)
-import qualified Data.Text as T
 import System.FilePath ((</>))
 import System.IO.Temp (withSystemTempDirectory)
 import Test.Tasty
@@ -15,7 +13,6 @@ import Test.Tasty.HUnit
 import Langchain.Cache.Core
 import Langchain.Core.Model
   ( ChatModel (..)
-  , MockModel (..)
   , assistantMessage
   , extractMessageText
   , newMockModel
@@ -44,7 +41,7 @@ tests =
           res <- getCache cache "keyA"
           res @?= Just msg
     , testCase "CachedModel caches response and returns cached on second call" $ do
-        callCountVar <- newTVarIO (0 :: Int)
+        _ <- newTVarIO (0 :: Int)
         let mockModel = newMockModel "Dynamic Output"
         cache <- newInMemoryCache
         let cachedModel = withCaching mockModel cache

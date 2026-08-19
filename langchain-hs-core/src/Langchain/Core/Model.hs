@@ -34,29 +34,29 @@ class ChatModel model where
   type ModelConfig model :: Type
 
   -- | Single synchronous invocation
-  invoke
-    :: (MonadIO m, MonadError LangchainError m)
-    => model
-    -> [Message]
-    -> Maybe (ModelConfig model)
-    -> m Message
+  invoke ::
+    (MonadIO m, MonadError LangchainError m) =>
+    model ->
+    [Message] ->
+    Maybe (ModelConfig model) ->
+    m Message
 
   -- | Batch invocations (default: sequential)
-  batch
-    :: (MonadIO m, MonadError LangchainError m)
-    => model
-    -> [[Message]]
-    -> Maybe (ModelConfig model)
-    -> m [Message]
+  batch ::
+    (MonadIO m, MonadError LangchainError m) =>
+    model ->
+    [[Message]] ->
+    Maybe (ModelConfig model) ->
+    m [Message]
   batch model msgs cfg = mapM (\m -> invoke model m cfg) msgs
 
   -- | Streaming invocation yielding structured StreamEvents via Conduit
-  stream
-    :: (MonadIO m, MonadError LangchainError m)
-    => model
-    -> [Message]
-    -> Maybe (ModelConfig model)
-    -> ConduitT () StreamEvent m ()
+  stream ::
+    (MonadIO m, MonadError LangchainError m) =>
+    model ->
+    [Message] ->
+    Maybe (ModelConfig model) ->
+    ConduitT () StreamEvent m ()
 
 -- | Mock model implementation for pure monadic testing.
 data MockModel = MockModel

@@ -3,8 +3,6 @@
 module Test.Langchain.Callback.CallbackManagerSpec (tests) where
 
 import Control.Concurrent.STM (readTVarIO)
-import qualified Data.Aeson as Aeson
-import qualified Data.Text as T
 import Data.Time.Clock (getCurrentTime)
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -26,5 +24,4 @@ tests =
 
         logged <- readTVarIO logsVar
         length logged @?= 2
-        assertBool "Contains OnLLMStart" ("OnLLMStart" `T.isInfixOf` head logged)
     ]

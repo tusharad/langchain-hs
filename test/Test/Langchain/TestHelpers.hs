@@ -65,7 +65,8 @@ testAtLevel requiredLevel name tree = do
   pure $
     if currentLevel >= requiredLevel
       then tree
-      else testGroup (name ++ " (SKIPPED - requires LANGCHAIN_TEST_LEVEL=" ++ show requiredLevel ++ ")") []
+      else
+        testGroup (name ++ " (SKIPPED - requires LANGCHAIN_TEST_LEVEL=" ++ show requiredLevel ++ ")") []
 
 -- | Default primary LLM model for integration and E2E tests
 defaultTestModel :: Text
@@ -113,7 +114,13 @@ withOllamaModel preferredModel action = do
           hasFallback <- isModelAvailable ollamaModelName
           if hasFallback
             then action ollamaModelName
-            else putStrLn $ " [SKIPPED] Neither " ++ T.unpack preferredModel ++ " nor fallback " ++ T.unpack ollamaModelName ++ " is available in Ollama."
+            else
+              putStrLn $
+                " [SKIPPED] Neither "
+                  ++ T.unpack preferredModel
+                  ++ " nor fallback "
+                  ++ T.unpack ollamaModelName
+                  ++ " is available in Ollama."
 
 -- | Helper for integration tests that require Ollama
 skipIfNoOllama :: IO () -> IO ()

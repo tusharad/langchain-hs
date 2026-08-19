@@ -59,7 +59,9 @@ loggingMiddleware :: MonadIO m => AgentMiddleware m
 loggingMiddleware =
   AgentMiddleware
     { beforeStep = \msgs -> do
-        liftIO $ hPutStrLn stderr $ "[AgentMiddleware] Executing step with " ++ show (length msgs) ++ " messages"
+        liftIO $
+          hPutStrLn stderr $
+            "[AgentMiddleware] Executing step with " ++ show (length msgs) ++ " messages"
         pure msgs
     , afterStep = \step -> do
         liftIO $ hPutStrLn stderr $ "[AgentMiddleware] Step result: " ++ show step
@@ -68,6 +70,11 @@ loggingMiddleware =
         liftIO $ hPutStrLn stderr $ "[AgentMiddleware] Calling tool: " ++ T.unpack (toolCallName tc)
         pure tc
     , afterToolCall = \tc out -> do
-        liftIO $ hPutStrLn stderr $ "[AgentMiddleware] Tool " ++ T.unpack (toolCallName tc) ++ " finished with output length " ++ show (T.length out)
+        liftIO $
+          hPutStrLn stderr $
+            "[AgentMiddleware] Tool "
+              ++ T.unpack (toolCallName tc)
+              ++ " finished with output length "
+              ++ show (T.length out)
         pure out
     }

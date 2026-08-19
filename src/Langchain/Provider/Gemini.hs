@@ -109,7 +109,11 @@ instance ChatModel Gemini where
   invoke provider inputMsgs _ = do
     let contentsPayload = map messageToGemini inputMsgs
         payload = object ["contents" .= contentsPayload]
-        url = "https://generativelanguage.googleapis.com/v1beta/models/" <> model provider <> ":generateContent?key=" <> apiKey provider
+        url =
+          "https://generativelanguage.googleapis.com/v1beta/models/"
+            <> model provider
+            <> ":generateContent?key="
+            <> apiKey provider
         initReq = parseRequest_ (T.unpack url)
         req =
           setRequestMethod "POST" $
@@ -128,7 +132,11 @@ instance ChatModel Gemini where
     yield $ LLMStart rId (model provider) inputMsgs
     let contentsPayload = map messageToGemini inputMsgs
         payload = object ["contents" .= contentsPayload]
-        url = "https://generativelanguage.googleapis.com/v1beta/models/" <> model provider <> ":generateContent?key=" <> apiKey provider
+        url =
+          "https://generativelanguage.googleapis.com/v1beta/models/"
+            <> model provider
+            <> ":generateContent?key="
+            <> apiKey provider
         initReq = parseRequest_ (T.unpack url)
         req =
           setRequestMethod "POST" $
@@ -154,9 +162,19 @@ data GeminiEmbeddings = GeminiEmbeddings
 instance Embeddings GeminiEmbeddings where
   embedDocuments GeminiEmbeddings {..} docs = do
     let texts = map (TL.toStrict . pageContent) docs
-        reqs = [object ["model" .= ("models/" <> geminiEmbedModel), "content" .= object ["parts" .= [object ["text" .= t]]]] | t <- texts]
+        reqs =
+          [ object
+              [ "model" .= ("models/" <> geminiEmbedModel)
+              , "content" .= object ["parts" .= [object ["text" .= t]]]
+              ]
+          | t <- texts
+          ]
         payload = object ["requests" .= reqs]
-        url = "https://generativelanguage.googleapis.com/v1beta/models/" <> geminiEmbedModel <> ":batchEmbedContents?key=" <> geminiEmbedApiKey
+        url =
+          "https://generativelanguage.googleapis.com/v1beta/models/"
+            <> geminiEmbedModel
+            <> ":batchEmbedContents?key="
+            <> geminiEmbedApiKey
         initReq = parseRequest_ (T.unpack url)
         req =
           setRequestMethod "POST" $
@@ -170,8 +188,16 @@ instance Embeddings GeminiEmbeddings where
         Right vecs -> pure vecs
 
   embedQuery GeminiEmbeddings {..} query = do
-    let payload = object ["model" .= ("models/" <> geminiEmbedModel), "content" .= object ["parts" .= [object ["text" .= query]]]]
-        url = "https://generativelanguage.googleapis.com/v1beta/models/" <> geminiEmbedModel <> ":embedContent?key=" <> geminiEmbedApiKey
+    let payload =
+          object
+            [ "model" .= ("models/" <> geminiEmbedModel)
+            , "content" .= object ["parts" .= [object ["text" .= query]]]
+            ]
+        url =
+          "https://generativelanguage.googleapis.com/v1beta/models/"
+            <> geminiEmbedModel
+            <> ":embedContent?key="
+            <> geminiEmbedApiKey
         initReq = parseRequest_ (T.unpack url)
         req =
           setRequestMethod "POST" $

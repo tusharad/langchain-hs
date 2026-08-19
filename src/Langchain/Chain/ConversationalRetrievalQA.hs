@@ -22,8 +22,6 @@ module Langchain.Chain.ConversationalRetrievalQA
 
 import Control.Monad.Except (MonadError)
 import Control.Monad.IO.Class (MonadIO)
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
@@ -33,7 +31,6 @@ import Langchain.Core.Model
   ( ChatModel (..)
   , Message (..)
   , extractMessageText
-  , systemMessage
   , userMessage
   )
 import Langchain.DocumentLoader.Core (Document (..))
@@ -57,11 +54,11 @@ data ConversationalRetrievalQA model retriever memory = ConversationalRetrievalQ
   }
 
 -- | Construct a new ConversationalRetrievalQA chain
-newConversationalRetrievalQA
-  :: model
-  -> retriever
-  -> memory
-  -> ConversationalRetrievalQA model retriever memory
+newConversationalRetrievalQA ::
+  model ->
+  retriever ->
+  memory ->
+  ConversationalRetrievalQA model retriever memory
 newConversationalRetrievalQA model retriever memory =
   ConversationalRetrievalQA
     { convQAModel = model
@@ -71,11 +68,11 @@ newConversationalRetrievalQA model retriever memory =
     }
 
 -- | Execute one conversational QA turn
-runConversationalRetrievalQA
-  :: (ChatModel model, Retriever retriever, BaseMemory memory, MonadIO m, MonadError LangchainError m)
-  => ConversationalRetrievalQA model retriever memory
-  -> Text
-  -> m ConversationalQAResult
+runConversationalRetrievalQA ::
+  (ChatModel model, Retriever retriever, BaseMemory memory, MonadIO m, MonadError LangchainError m) =>
+  ConversationalRetrievalQA model retriever memory ->
+  Text ->
+  m ConversationalQAResult
 runConversationalRetrievalQA ConversationalRetrievalQA {..} userQuery = do
   addUserMessage convQAMemory userQuery
   history <- messages convQAMemory

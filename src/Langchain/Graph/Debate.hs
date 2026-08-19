@@ -5,7 +5,7 @@
 {- |
 Module      : Langchain.Graph.Debate
 Description : Multi-agent debate orchestration pattern
-Copyright   : (c) 2025-2026 Tushar Adhatrao
+Copyright   : (c) 2026 Tushar Adhatrao
 License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
@@ -29,9 +29,7 @@ import qualified Data.Text as T
 import Langchain.Core.Error (LangchainError, agentError)
 import Langchain.Core.Model
   ( ChatModel (..)
-  , Message (..)
   , extractMessageText
-  , systemMessage
   , userMessage
   )
 
@@ -66,12 +64,12 @@ defaultDebateConfig topic =
     }
 
 -- | Run a multi-agent debate session to convergence or max rounds
-runDebate
-  :: (ChatModel model, ChatModel moderatorModel, MonadIO m, MonadError LangchainError m)
-  => DebateConfig
-  -> [Debater model]
-  -> moderatorModel
-  -> m (Text, [DebateRound])
+runDebate ::
+  (ChatModel model, ChatModel moderatorModel, MonadIO m, MonadError LangchainError m) =>
+  DebateConfig ->
+  [Debater model] ->
+  moderatorModel ->
+  m (Text, [DebateRound])
 runDebate DebateConfig {..} debaters moderator = do
   if null debaters
     then throwError $ agentError "Debate requires at least one debater" (Just "runDebate") Nothing

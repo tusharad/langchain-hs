@@ -17,8 +17,8 @@ module Langchain.DocumentLoader.WebPage
   ) where
 
 import Control.Exception (SomeException, try)
-import Control.Monad.Except (MonadError, throwError)
-import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.Except (throwError)
+import Control.Monad.IO.Class (liftIO)
 import Data.Aeson (Value (..))
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Map.Strict as Map
@@ -27,10 +27,18 @@ import qualified Data.Text.Encoding as TE
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as TL
 import Network.HTTP.Client (responseTimeoutMicro)
-import Network.HTTP.Simple (Response, getResponseBody, getResponseStatus, httpLBS, parseRequest, setRequestMethod, setRequestHeader, setRequestResponseTimeout)
+import Network.HTTP.Simple
+  ( Response
+  , getResponseBody
+  , getResponseStatus
+  , httpLBS
+  , parseRequest
+  , setRequestHeader
+  , setRequestResponseTimeout
+  )
 import Network.HTTP.Types.Status (statusCode)
 
-import Langchain.Core.Error (LangchainError, documentLoaderError)
+import Langchain.Core.Error (documentLoaderError)
 import Langchain.DocumentLoader.Core (BaseLoader (..), Document (..))
 import Langchain.DocumentLoader.Html (extractCleanHtml)
 import Langchain.TextSplitter.Character (defaultCharacterSplitterOps, splitText)

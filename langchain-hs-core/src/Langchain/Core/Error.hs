@@ -114,10 +114,18 @@ instance Exception LangchainError where
     where
       formatError errType msg Nothing = errType ++ ": " ++ T.unpack msg
       formatError errType msg (Just ctx) =
-        errType ++ ": " ++ T.unpack msg ++ " [Component: " ++ T.unpack (component ctx) ++ ", Operation: " ++ T.unpack (operation ctx) ++ "]"
+        errType
+          ++ ": "
+          ++ T.unpack msg
+          ++ " [Component: "
+          ++ T.unpack (component ctx)
+          ++ ", Operation: "
+          ++ T.unpack (operation ctx)
+          ++ "]"
 
 -- | Helper constructors
-mkErrorCtx :: (Text -> Maybe ErrorContext -> LangchainError) -> Text -> Maybe Text -> Maybe Text -> LangchainError
+mkErrorCtx ::
+  (Text -> Maybe ErrorContext -> LangchainError) -> Text -> Maybe Text -> Maybe Text -> LangchainError
 mkErrorCtx ctor msg mbComp mbOp =
   let mbCtx = case (mbComp, mbOp) of
         (Nothing, Nothing) -> Nothing

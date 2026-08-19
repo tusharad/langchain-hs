@@ -18,8 +18,8 @@ module Langchain.DocumentLoader.Csv
   ) where
 
 import Control.Exception (try)
-import Control.Monad.Except (MonadError, throwError)
-import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.Except (throwError)
+import Control.Monad.IO.Class (liftIO)
 import Data.Aeson (Value (..))
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as TS
@@ -27,7 +27,7 @@ import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.IO as TLIO
 
-import Langchain.Core.Error (LangchainError, documentLoaderError)
+import Langchain.Core.Error (documentLoaderError)
 import Langchain.DocumentLoader.Core (BaseLoader (..), Document (..))
 import Langchain.TextSplitter.Character (defaultCharacterSplitterOps, splitText)
 

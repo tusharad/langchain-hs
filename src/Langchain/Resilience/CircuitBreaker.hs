@@ -7,7 +7,7 @@
 {- |
 Module      : Langchain.Resilience.CircuitBreaker
 Description : Circuit breaker pattern for LLM provider failover and graceful degradation
-Copyright   : (c) 2025-2026 Tushar Adhatrao
+Copyright   : (c) 2026 Tushar Adhatrao
 License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
@@ -30,7 +30,6 @@ import Control.Monad.Except (MonadError, catchError, throwError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Text (Text)
-import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime)
 import GHC.Generics (Generic)
 
@@ -78,15 +77,15 @@ getCircuitState CircuitBreaker {..} = liftIO $ do
   pure st
 
 -- | Execute a protected action through the circuit breaker
-withCircuitBreaker
-  :: (MonadIO m, MonadError LangchainError m)
-  => CircuitBreaker
-  -> m a
-  -> m a
+withCircuitBreaker ::
+  (MonadIO m, MonadError LangchainError m) =>
+  CircuitBreaker ->
+  m a ->
+  m a
 withCircuitBreaker CircuitBreaker {..} action = do
   now <- liftIO getCurrentTime
   canProceed <- liftIO $ atomically $ do
-    (st, fails) <- readTVar circuitStateVar
+    (st, _) <- readTVar circuitStateVar -- TODO: second arguement fails not taken care of
     case st of
       CircuitClosed -> pure True
       CircuitHalfOpen -> pure True
@@ -105,14 +104,15 @@ withCircuitBreaker CircuitBreaker {..} action = do
           (Just circuitName)
           Nothing
     else do
-      res <- action `catchError` \err -> do
-        liftIO $ atomically $ do
-          (st, fails) <- readTVar circuitStateVar
-          let newFails = fails + 1
-          if newFails >= failureThreshold circuitConfig
-            then writeTVar circuitStateVar (CircuitOpen now, newFails)
-            else writeTVar circuitStateVar (st, newFails)
-        throwError err
+      res <-
+        action `catchError` \err -> do
+          liftIO $ atomically $ do
+            (st, fails) <- readTVar circuitStateVar
+            let newFails = fails + 1
+            if newFails >= failureThreshold circuitConfig
+              then writeTVar circuitStateVar (CircuitOpen now, newFails)
+              else writeTVar circuitStateVar (st, newFails)
+          throwError err
 
       -- On success, reset circuit to closed and reset failure count
       liftIO $ atomically $ writeTVar circuitStateVar (CircuitClosed, 0)

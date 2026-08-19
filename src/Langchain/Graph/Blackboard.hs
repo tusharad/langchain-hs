@@ -5,7 +5,7 @@
 {- |
 Module      : Langchain.Graph.Blackboard
 Description : Blackboard architecture multi-agent pattern with shared STM knowledge base
-Copyright   : (c) 2025-2026 Tushar Adhatrao
+Copyright   : (c) 2026 Tushar Adhatrao
 License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
@@ -24,15 +24,10 @@ module Langchain.Graph.Blackboard
   ) where
 
 import Control.Concurrent.STM
-import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.Aeson (Value)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)
-import qualified Data.Text as T
-
-import Langchain.Core.Error (LangchainError, agentError)
 
 -- | Shared in-memory blackboard backed by STM TVar
 newtype Blackboard = Blackboard
@@ -68,12 +63,12 @@ writeBlackboard Blackboard {..} updates =
   liftIO $ atomically $ modifyTVar' blackboardVar (\current -> Map.union updates current)
 
 -- | Run the blackboard agent loop until isComplete or maxIterations
-runBlackboard
-  :: (MonadIO m, MonadError LangchainError m)
-  => Blackboard
-  -> [KnowledgeSource m]
-  -> BlackboardConfig
-  -> m (Map Text Text)
+runBlackboard ::
+  (MonadIO m) =>
+  Blackboard ->
+  [KnowledgeSource m] ->
+  BlackboardConfig ->
+  m (Map Text Text)
 runBlackboard bb sources BlackboardConfig {..} = loop 1
   where
     loop iter

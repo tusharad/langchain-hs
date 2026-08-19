@@ -20,19 +20,16 @@ module Langchain.Memory.Entity
   ) where
 
 import Control.Concurrent.STM
-import Control.Monad.Except (MonadError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import qualified Data.Text as T
 
-import Langchain.Core.Error (LangchainError)
 import Langchain.Core.Model
   ( ChatModel (..)
   , Message (..)
   , Role (..)
-  , assistantMessage
   , extractMessageText
   , systemMessage
   , userMessage
@@ -71,10 +68,10 @@ instance (ChatModel model) => BaseMemory (EntityMemory model) where
       else
         let entityCtx =
               "Known Entities & Context:\n"
-                <> T.unlines [ "- " <> k <> ": " <> v | (k, v) <- Map.toList entities ]
+                <> T.unlines ["- " <> k <> ": " <> v | (k, v) <- Map.toList entities]
          in pure (systemMessage entityCtx : msgs)
 
-  addMessage mem@EntityMemory {..} newMsg = do
+  addMessage EntityMemory {..} newMsg = do
     liftIO $ atomically $ modifyTVar' entityMessagesVar (\msgs -> msgs ++ [newMsg])
     -- If user message, prompt entityModel to extract any entities
     if messageRole newMsg == User

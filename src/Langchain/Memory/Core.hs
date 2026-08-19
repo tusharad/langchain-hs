@@ -37,39 +37,39 @@ import Langchain.Core.Model
 -- | Effect-polymorphic BaseMemory typeclass
 class BaseMemory mem where
   -- | Retrieve current conversation messages
-  messages
-    :: (MonadIO m, MonadError LangchainError m)
-    => mem
-    -> m [Message]
+  messages ::
+    (MonadIO m, MonadError LangchainError m) =>
+    mem ->
+    m [Message]
 
   -- | Add a user message to history
-  addUserMessage
-    :: (MonadIO m, MonadError LangchainError m)
-    => mem
-    -> Text
-    -> m ()
+  addUserMessage ::
+    (MonadIO m, MonadError LangchainError m) =>
+    mem ->
+    Text ->
+    m ()
   addUserMessage mem txt = addMessage mem (userMessage txt)
 
   -- | Add an AI response message to history
-  addAiMessage
-    :: (MonadIO m, MonadError LangchainError m)
-    => mem
-    -> Text
-    -> m ()
+  addAiMessage ::
+    (MonadIO m, MonadError LangchainError m) =>
+    mem ->
+    Text ->
+    m ()
   addAiMessage mem txt = addMessage mem (assistantMessage txt)
 
   -- | Add a structured message to history
-  addMessage
-    :: (MonadIO m, MonadError LangchainError m)
-    => mem
-    -> Message
-    -> m ()
+  addMessage ::
+    (MonadIO m, MonadError LangchainError m) =>
+    mem ->
+    Message ->
+    m ()
 
   -- | Reset memory to initial state
-  clear
-    :: (MonadIO m, MonadError LangchainError m)
-    => mem
-    -> m ()
+  clear ::
+    (MonadIO m, MonadError LangchainError m) =>
+    mem ->
+    m ()
 
 -- | Sliding window memory backed by thread-safe STM TVar
 data WindowBufferMemory = WindowBufferMemory

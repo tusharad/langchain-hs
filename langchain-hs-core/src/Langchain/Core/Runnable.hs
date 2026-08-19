@@ -35,31 +35,34 @@ class Runnable r m where
   type RunnableOutput r :: Type
   invoke :: r -> RunnableInput r -> m (Either LangchainError (RunnableOutput r))
 
--- | Pure GADT representing a composable pipeline AST.
--- 'i' = input type, 'o' = output type, 'm' = monad context.
+{- | Pure GADT representing a composable pipeline AST.
+'i' = input type, 'o' = output type, 'm' = monad context.
+-}
 data RunnableTree m i o where
   -- | Identity: passes input through unchanged
   Id :: RunnableTree m a a
   -- | Lift a component implementing Runnable into the tree
-  Prim
-    :: (Runnable r m, RunnableInput r ~ i, RunnableOutput r ~ o)
-    => r
-    -> RunnableTree m i o
+  Prim ::
+    (Runnable r m, RunnableInput r ~ i, RunnableOutput r ~ o) =>
+    r ->
+    RunnableTree m i o
   -- | Lift a monadic function into the tree
   Lambda :: (i -> m (Either LangchainError o)) -> RunnableTree m i o
   -- | Sequential composition AST node
   Seq :: RunnableTree m i mid -> RunnableTree m mid o -> RunnableTree m i o
   -- | Parallel composition AST node
-  Par
-    :: RunnableTree (ExceptT LangchainError IO) i o1
-    -> RunnableTree (ExceptT LangchainError IO) i o2
-    -> RunnableTree (ExceptT LangchainError IO) i (o1, o2)
+  Par ::
+    RunnableTree (ExceptT LangchainError IO) i o1 ->
+    RunnableTree (ExceptT LangchainError IO) i o2 ->
+    RunnableTree (ExceptT LangchainError IO) i (o1, o2)
   -- | Conditional branching AST node
-  Branch
-    :: (i -> m Bool)
-    -> RunnableTree m i o -- ^ True branch
-    -> RunnableTree m i o -- ^ False branch
-    -> RunnableTree m i o
+  Branch ::
+    (i -> m Bool) ->
+    -- | True branch
+    RunnableTree m i o ->
+    -- | False branch
+    RunnableTree m i o ->
+    RunnableTree m i o
   -- | Fallback node: if primary fails, executes fallback
   Fallback :: RunnableTree m i o -> RunnableTree m i o -> RunnableTree m i o
 
@@ -70,10 +73,10 @@ data RunnableTree m i o where
 infixl 1 |>>
 
 -- | Parallel composition operator — PURE AST builder.
-(&>&)
-  :: RunnableTree (ExceptT LangchainError IO) a b
-  -> RunnableTree (ExceptT LangchainError IO) a c
-  -> RunnableTree (ExceptT LangchainError IO) a (b, c)
+(&>&) ::
+  RunnableTree (ExceptT LangchainError IO) a b ->
+  RunnableTree (ExceptT LangchainError IO) a c ->
+  RunnableTree (ExceptT LangchainError IO) a (b, c)
 (&>&) = Par
 
 infixl 2 &>&
@@ -83,10 +86,10 @@ runLambda :: (i -> m (Either LangchainError o)) -> RunnableTree m i o
 runLambda = Lambda
 
 -- | Helper to create a primitive runnable node.
-runPrim
-  :: (Runnable r m, RunnableInput r ~ i, RunnableOutput r ~ o)
-  => r
-  -> RunnableTree m i o
+runPrim ::
+  (Runnable r m, RunnableInput r ~ i, RunnableOutput r ~ o) =>
+  r ->
+  RunnableTree m i o
 runPrim = Prim
 
 -- | Helper to convert Either to MonadError
@@ -95,11 +98,11 @@ liftEither (Left err) = throwError err
 liftEither (Right x) = pure x
 
 -- | Sole execution engine for 'RunnableTree' AST pipelines.
-interpret
-  :: (MonadIO m, MonadError LangchainError m)
-  => RunnableTree m i o
-  -> i
-  -> m o
+interpret ::
+  (MonadIO m, MonadError LangchainError m) =>
+  RunnableTree m i o ->
+  i ->
+  m o
 interpret Id input = pure input
 interpret (Prim r) input = invoke r input >>= liftEither
 interpret (Lambda f) input = f input >>= liftEither

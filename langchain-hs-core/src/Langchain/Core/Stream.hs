@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# OPTIONS_GHC -Wno-partial-fields #-}
 
 {- |
 Module      : Langchain.Core.Stream
@@ -36,65 +37,66 @@ data TokenUsage = TokenUsage
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
--- | All streaming events emitted across the framework execution lifecycle.
--- Every event carries a 'runId' for correlation.
+{- | All streaming events emitted across the framework execution lifecycle.
+Every event carries a 'runId' for correlation.
+-}
 data StreamEvent
-  -- | LLM lifecycle start
-  = LLMStart
+  = -- | LLM lifecycle start
+    LLMStart
       { runId :: Text
       , modelName :: Text
       , inputMessages :: [Message]
       }
-  -- | LLM incremental streaming chunk
-  | LLMChunk
+  | -- | LLM incremental streaming chunk
+    LLMChunk
       { runId :: Text
       , chunkText :: Text
       , toolCallDelta :: Maybe ToolCall
       }
-  -- | LLM lifecycle completion
-  | LLMEnd
+  | -- | LLM lifecycle completion
+    LLMEnd
       { runId :: Text
       , finalMessage :: Message
       , tokenUsage :: Maybe TokenUsage
       }
-  -- | Tool execution start
-  | ToolStart
+  | -- | Tool execution start
+    ToolStart
       { runId :: Text
       , toolName :: Text
       , toolInput :: Value
       }
-  -- | Tool execution completion
-  | ToolEnd
+  | -- | Tool execution completion
+    ToolEnd
       { runId :: Text
       , toolName :: Text
       , toolOutput :: Value
       }
-  -- | Tool execution failure
-  | ToolErrorEvent
+  | -- | Tool execution failure
+    ToolErrorEvent
       { runId :: Text
       , toolName :: Text
       , toolErrorPayload :: LangchainError
       }
-  -- | Chain execution start
-  | ChainStart
+  | -- | Chain execution start
+    ChainStart
       { runId :: Text
       , chainName :: Text
       , chainInput :: Value
       }
-  -- | Chain execution completion
-  | ChainEnd
+  | -- | Chain execution completion
+    ChainEnd
       { runId :: Text
       , chainName :: Text
       , chainOutput :: Value
       }
-  -- | Graph node execution start
-  | NodeStart
+  | -- | Graph node execution start
+    NodeStart
       { runId :: Text
       , nodeId :: Text
       , nodeState :: Value
       }
-  -- | Graph node execution completion
-  | NodeEnd
+  | -- | Graph node execution completion
+    NodeEnd
       { runId :: Text
       , nodeId :: Text
       , nodeState :: Value

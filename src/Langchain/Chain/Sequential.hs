@@ -5,7 +5,7 @@
 {- |
 Module      : Langchain.Chain.Sequential
 Description : Sequential variable-threaded chain execution
-Copyright   : (c) 2025-2026 Tushar Adhatrao
+Copyright   : (c) 2026 Tushar Adhatrao
 License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
@@ -19,13 +19,10 @@ module Langchain.Chain.Sequential
   , runSequentialChain
   ) where
 
-import Control.Monad.Except (MonadError)
 import Control.Monad.IO.Class (MonadIO)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)
-
-import Langchain.Core.Error (LangchainError)
 
 -- | A single transformation step in a sequential chain
 data ChainStep m = ChainStep
@@ -43,11 +40,11 @@ newSequentialChain :: [ChainStep m] -> SequentialChain m
 newSequentialChain = SequentialChain
 
 -- | Execute sequential chain passing and accumulating variables through all steps
-runSequentialChain
-  :: (MonadIO m, MonadError LangchainError m)
-  => SequentialChain m
-  -> Map Text Text
-  -> m (Map Text Text)
+runSequentialChain ::
+  (MonadIO m) =>
+  SequentialChain m ->
+  Map Text Text ->
+  m (Map Text Text)
 runSequentialChain SequentialChain {..} initVars = go chainSteps initVars
   where
     go [] vars = pure vars

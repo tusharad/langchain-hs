@@ -7,7 +7,7 @@
 {- |
 Module      : Langchain.Retriever.ParentDocument
 Description : Parent document retriever linking small child search chunks to full parent documents
-Copyright   : (c) 2025-2026 Tushar Adhatrao
+Copyright   : (c) 2026 Tushar Adhatrao
 License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
@@ -51,10 +51,10 @@ data ParentDocumentRetriever vs = ParentDocumentRetriever
   }
 
 -- | Construct a new ParentDocumentRetriever
-newParentDocumentRetriever
-  :: (MonadIO m, VectorStore vs)
-  => vs
-  -> m (ParentDocumentRetriever vs)
+newParentDocumentRetriever ::
+  (MonadIO m) =>
+  vs ->
+  m (ParentDocumentRetriever vs)
 newParentDocumentRetriever vs = liftIO $ do
   storeVar <- newTVarIO Map.empty
   let defaultSplitter =
@@ -66,11 +66,11 @@ newParentDocumentRetriever vs = liftIO $ do
   pure $ ParentDocumentRetriever vs storeVar defaultSplitter
 
 -- | Add parent documents, splitting each into child chunks and indexing in vectorStore
-addParentDocuments
-  :: (VectorStore vs, MonadIO m, MonadError LangchainError m)
-  => ParentDocumentRetriever vs
-  -> [Document]
-  -> m (ParentDocumentRetriever vs)
+addParentDocuments ::
+  (VectorStore vs, MonadIO m, MonadError LangchainError m) =>
+  ParentDocumentRetriever vs ->
+  [Document] ->
+  m (ParentDocumentRetriever vs)
 addParentDocuments ParentDocumentRetriever {..} parentDocs = do
   let indexedParents = zip [1 :: Int ..] parentDocs
       parentPairs =
@@ -98,7 +98,7 @@ instance VectorStore vs => Retriever (ParentDocumentRetriever vs) where
     parentStore <- liftIO $ readTVarIO parentDocStoreVar
     let parentIds =
           mapMaybe
-            (\d -> case Map.lookup "parent_id" (metadata d) of
+            ( \d -> case Map.lookup "parent_id" (metadata d) of
                 Just (String pid) -> Just pid
                 _ -> Nothing
             )

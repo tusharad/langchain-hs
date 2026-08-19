@@ -24,17 +24,15 @@ module Langchain.Agent.Supervisor
 
 import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.IO.Class (MonadIO)
-import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
+import Data.Maybe (listToMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 
 import Langchain.Core.Error (LangchainError, agentError)
 import Langchain.Core.Model
   ( ChatModel (..)
-  , Message (..)
   , extractMessageText
-  , systemMessage
   , userMessage
   )
 
@@ -71,10 +69,10 @@ data SupervisorTeam supervisorModel m = SupervisorTeam
   }
 
 -- | Construct a new SupervisorTeam
-newSupervisorTeam
-  :: supervisorModel
-  -> [SpecialistAgent m]
-  -> SupervisorTeam supervisorModel m
+newSupervisorTeam ::
+  supervisorModel ->
+  [SpecialistAgent m] ->
+  SupervisorTeam supervisorModel m
 newSupervisorTeam model agents =
   SupervisorTeam
     { supervisorModel = model
@@ -84,14 +82,16 @@ newSupervisorTeam model agents =
     }
 
 -- | Run the multi-agent team supervisor loop to complete a goal
-runSupervisorTeam
-  :: (ChatModel supervisorModel, MonadIO m, MonadError LangchainError m)
-  => SupervisorTeam supervisorModel m
-  -> Text
-  -> m Text
+runSupervisorTeam ::
+  (ChatModel supervisorModel, MonadIO m, MonadError LangchainError m) =>
+  SupervisorTeam supervisorModel m ->
+  Text ->
+  m Text
 runSupervisorTeam SupervisorTeam {..} goal = do
   if null specialistAgents
-    then throwError $ agentError "Supervisor team has no specialist agents registered" (Just "SupervisorTeam") Nothing
+    then
+      throwError $
+        agentError "Supervisor team has no specialist agents registered" (Just "SupervisorTeam") Nothing
     else loop 1 []
   where
     agentMap = Map.fromList [(specialistName a, a) | a <- specialistAgents]
@@ -101,7 +101,13 @@ runSupervisorTeam SupervisorTeam {..} goal = do
       | otherwise = do
           let rosterDesc =
                 T.unlines
-                  [ "- " <> specialistName a <> ": " <> specialistDescription a <> " (Capabilities: " <> T.intercalate ", " (specialistCapabilities a) <> ")"
+                  [ "- "
+                      <> specialistName a
+                      <> ": "
+                      <> specialistDescription a
+                      <> " (Capabilities: "
+                      <> T.intercalate ", " (specialistCapabilities a)
+                      <> ")"
                   | a <- specialistAgents
                   ]
               historyDesc =
@@ -109,7 +115,14 @@ runSupervisorTeam SupervisorTeam {..} goal = do
                   then "None yet."
                   else
                     T.unlines
-                      [ "Step " <> T.pack (show delegationStep) <> " [" <> delegatedTo <> "]:\nTask: " <> delegationPrompt <> "\nResult: " <> delegationResult
+                      [ "Step "
+                          <> T.pack (show delegationStep)
+                          <> " ["
+                          <> delegatedTo
+                          <> "]:\nTask: "
+                          <> delegationPrompt
+                          <> "\nResult: "
+                          <> delegationResult
                       | DelegationEvent {..} <- history
                       ]
               decisionPrompt =
@@ -127,24 +140,27 @@ runSupervisorTeam SupervisorTeam {..} goal = do
           let decisionTxt = T.strip (extractMessageText resp)
           if "FINISH:" `T.isPrefixOf` decisionTxt
             then pure $ T.strip (T.drop 7 decisionTxt)
-            else if "DELEGATE:" `T.isPrefixOf` decisionTxt
-              then do
-                let afterPrefix = T.strip (T.drop 9 decisionTxt)
-                    (targetAgentName, taskDesc) = case T.breakOn "|" afterPrefix of
-                      (name, rest) | not (T.null rest) -> (T.strip name, T.strip (T.drop 1 rest))
-                      _ -> (T.strip afterPrefix, goal)
-                case Map.lookup targetAgentName agentMap of
-                  Just agent -> do
-                    res <- specialistAction agent taskDesc
-                    let event = DelegationEvent turn targetAgentName taskDesc res
-                    loop (turn + 1) (history ++ [event])
-                  Nothing -> do
-                    -- Fallback to first agent if supervisor hallucinated a name
-                    let fallbackAgent = head specialistAgents
-                    res <- specialistAction fallbackAgent taskDesc
-                    let event = DelegationEvent turn (specialistName fallbackAgent) taskDesc res
-                    loop (turn + 1) (history ++ [event])
-              else synthesizeFinalResult history
+            else
+              if "DELEGATE:" `T.isPrefixOf` decisionTxt
+                then do
+                  let afterPrefix = T.strip (T.drop 9 decisionTxt)
+                      (targetAgentName, taskDesc) = case T.breakOn "|" afterPrefix of
+                        (name, rest) | not (T.null rest) -> (T.strip name, T.strip (T.drop 1 rest))
+                        _ -> (T.strip afterPrefix, goal)
+                  case Map.lookup targetAgentName agentMap of
+                    Just agent -> do
+                      res <- specialistAction agent taskDesc
+                      let event = DelegationEvent turn targetAgentName taskDesc res
+                      loop (turn + 1) (history ++ [event])
+                    Nothing -> do
+                      -- Fallback to first agent if supervisor hallucinated a name
+                      fallbackAgent <- case listToMaybe specialistAgents of
+                        Just res -> pure res
+                        Nothing -> throwError $ agentError "supervisor agent is empty" Nothing Nothing
+                      res <- specialistAction fallbackAgent taskDesc
+                      let event = DelegationEvent turn (specialistName fallbackAgent) taskDesc res
+                      loop (turn + 1) (history ++ [event])
+                else synthesizeFinalResult history
 
     synthesizeFinalResult history = do
       let summaryPrompt =

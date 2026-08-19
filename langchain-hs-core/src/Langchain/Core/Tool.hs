@@ -19,7 +19,7 @@ module Langchain.Core.Tool
 import Data.Aeson
 import Data.Text (Text)
 
-import Langchain.Core.Error (LangchainError, toolError)
+import Langchain.Core.Error (LangchainError)
 
 -- | Effect-polymorphic Tool abstraction
 data Tool m = Tool
@@ -37,12 +37,12 @@ instance Show (Tool m) where
   show t = "Tool { toolName = " ++ show (toolName t) ++ " }"
 
 -- | Helper to create a Tool from a name, description, schema, and execution function
-createTool
-  :: Text
-  -> Text
-  -> Value
-  -> (Value -> m (Either LangchainError Text))
-  -> Tool m
+createTool ::
+  Text ->
+  Text ->
+  Value ->
+  (Value -> m (Either LangchainError Text)) ->
+  Tool m
 createTool name desc schema execFn =
   Tool
     { toolName = name

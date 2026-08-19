@@ -36,7 +36,8 @@ test_generateQueries = do
       numQueriesToGenerate = 2
       includeOriginal = True
       queryPrompt = defaultQueryGenerationPrompt
-  result <- runExceptT $ generateQueries dummyLLM queryPrompt query numQueriesToGenerate includeOriginal
+  result <-
+    runExceptT $ generateQueries dummyLLM queryPrompt query numQueriesToGenerate includeOriginal
   case result of
     Left err -> assertFailure ("generateQueries failed with error: " ++ show err)
     Right qs -> do

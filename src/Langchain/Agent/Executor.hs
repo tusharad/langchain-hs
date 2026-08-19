@@ -24,9 +24,9 @@ import Langchain.Core.Error (LangchainError)
 import Langchain.Core.Model (ChatModel, Message, userMessage)
 
 -- | Run ReAct agent on a text input prompt
-runAgent
-  :: (ChatModel model, MonadIO m, MonadError LangchainError m)
-  => ReActAgent model m
-  -> Text
-  -> m Message
+runAgent ::
+  (ChatModel model, MonadIO m, MonadError LangchainError m) =>
+  ReActAgent model m ->
+  Text ->
+  m Message
 runAgent agent input = runReActAgent agent [userMessage input]

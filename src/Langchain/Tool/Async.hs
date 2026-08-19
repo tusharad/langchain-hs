@@ -5,7 +5,7 @@
 {- |
 Module      : Langchain.Tool.Async
 Description : Asynchronous tool execution with timeout, cancellation, and concurrency control
-Copyright   : (c) 2025-2026 Tushar Adhatrao
+Copyright   : (c) 2026 Tushar Adhatrao
 License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
@@ -19,8 +19,8 @@ module Langchain.Tool.Async
   , executeToolBatchConcurrently
   ) where
 
-import Control.Concurrent.Async (Async, async, cancel, mapConcurrently, race)
 import Control.Concurrent (threadDelay)
+import Control.Concurrent.Async (Async, async, mapConcurrently, race)
 import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Aeson (Value)
@@ -31,21 +31,21 @@ import Langchain.Core.Error (LangchainError, toolError)
 import Langchain.Tool.Core (Tool (..))
 
 -- | Spawn tool execution in an asynchronous background thread
-executeToolAsync
-  :: (MonadIO m)
-  => Tool IO
-  -> Value
-  -> m (Async (Either LangchainError Text))
+executeToolAsync ::
+  (MonadIO m) =>
+  Tool IO ->
+  Value ->
+  m (Async (Either LangchainError Text))
 executeToolAsync Tool {..} args = liftIO $ do
   async (toolExecute args)
 
 -- | Execute a tool with a strict timeout limit in microseconds
-executeToolWithTimeout
-  :: (MonadIO m, MonadError LangchainError m)
-  => Tool IO
-  -> Value
-  -> Int
-  -> m Text
+executeToolWithTimeout ::
+  (MonadIO m, MonadError LangchainError m) =>
+  Tool IO ->
+  Value ->
+  Int ->
+  m Text
 executeToolWithTimeout Tool {..} args timeoutMicros = do
   res <- liftIO $ race (threadDelay timeoutMicros) (toolExecute args)
   case res of
@@ -59,10 +59,10 @@ executeToolWithTimeout Tool {..} args timeoutMicros = do
     Right (Right output) -> pure output
 
 -- | Execute a batch of tool calls concurrently in parallel
-executeToolBatchConcurrently
-  :: (MonadIO m, MonadError LangchainError m)
-  => [(Tool IO, Value)]
-  -> m [Text]
+executeToolBatchConcurrently ::
+  (MonadIO m, MonadError LangchainError m) =>
+  [(Tool IO, Value)] ->
+  m [Text]
 executeToolBatchConcurrently toolCalls = do
   results <- liftIO $ mapConcurrently (\(t, args) -> toolExecute t args) toolCalls
   case sequence results of

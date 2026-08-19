@@ -25,11 +25,11 @@ import Langchain.VectorStore.Core (VectorStore, similaritySearch)
 
 -- | Effect-polymorphic Retriever typeclass
 class Retriever a where
-  getRelevantDocuments
-    :: (MonadIO m, MonadError LangchainError m)
-    => a
-    -> Text
-    -> m [Document]
+  getRelevantDocuments ::
+    (MonadIO m, MonadError LangchainError m) =>
+    a ->
+    Text ->
+    m [Document]
 
 -- | Vector store-backed retriever
 newtype VectorStore a => VectorStoreRetriever a = VectorStoreRetriever {vs :: a}

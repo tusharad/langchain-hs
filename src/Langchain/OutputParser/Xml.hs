@@ -2,6 +2,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
+-- TODO: instead of writing parser from scratch, we should use some package
+
 {- |
 Module      : Langchain.OutputParser.Xml
 Description : Tag-based XML output parser for extracting structured elements
@@ -20,14 +22,9 @@ module Langchain.OutputParser.Xml
   , parseXmlOutput
   ) where
 
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Text.HTML.TagSoup as TS
-
-import Langchain.Core.Error (LangchainError, parsingError)
-import Langchain.OutputParser.Core (OutputParser (..))
 
 -- | Represents a parsed XML tag with its textual content
 data XmlElement = XmlElement

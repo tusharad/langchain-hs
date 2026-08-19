@@ -93,7 +93,8 @@ instance BaseLoader JsonLoader where
               (Just "JsonLoader")
               Nothing
         Just (Array arr) ->
-          pure [valueToDocument filePath mbKey (Just idx) v | (idx, v) <- zip [1 :: Int ..] (foldr (:) [] arr)]
+          pure
+            [valueToDocument filePath mbKey (Just idx) v | (idx, v) <- zip [1 :: Int ..] (foldr (:) [] arr)]
         Just obj@(Object _) ->
           pure [valueToDocument filePath mbKey Nothing obj]
         Just otherVal ->
@@ -106,7 +107,9 @@ instance BaseLoader JsonLoader where
           Nothing -> splitText defaultCharacterSplitterOps
     pure $ concatMap (splitter . pageContent) docs
 
-parseJsonLine :: (MonadIO m, MonadError LangchainError m) => FilePath -> Maybe TS.Text -> (Int, LBS.ByteString) -> m Document
+parseJsonLine ::
+  (MonadIO m, MonadError LangchainError m) =>
+  FilePath -> Maybe TS.Text -> (Int, LBS.ByteString) -> m Document
 parseJsonLine filePath mbKey (lineNum, bs) =
   case decode bs of
     Nothing ->

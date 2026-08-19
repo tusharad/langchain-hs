@@ -4,10 +4,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
+-- TODO: we must use hs-telemetry instead of writing it from scratch
+
 {- |
 Module      : Langchain.Trace.Core
 Description : Agent execution tracing, step timing, and token telemetry
-Copyright   : (c) 2025-2026 Tushar Adhatrao
+Copyright   : (c) 2026 Tushar Adhatrao
 License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
@@ -34,7 +36,6 @@ import Data.Aeson (FromJSON, ToJSON)
 import Data.List (maximumBy)
 import Data.Ord (comparing)
 import Data.Text (Text)
-import qualified Data.Text as T
 import Data.Time.Clock
 import GHC.Generics (Generic)
 
@@ -77,14 +78,14 @@ newTracer sessId = liftIO $ do
   pure $ Tracer sessId var
 
 -- | Record a step in the tracer
-recordStep
-  :: MonadIO m
-  => Tracer
-  -> ActionType
-  -> Text
-  -> Text
-  -> Int
-  -> m TraceStep
+recordStep ::
+  MonadIO m =>
+  Tracer ->
+  ActionType ->
+  Text ->
+  Text ->
+  Int ->
+  m TraceStep
 recordStep Tracer {..} actType input output duration = liftIO $ do
   now <- getCurrentTime
   atomically $ do

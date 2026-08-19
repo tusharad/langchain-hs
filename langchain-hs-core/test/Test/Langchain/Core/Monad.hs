@@ -2,8 +2,6 @@
 
 module Test.Langchain.Core.Monad (tests) where
 
-import Control.Monad.Except (throwError)
-import Control.Monad.Reader (ask)
 import Test.Tasty
 import Test.Tasty.HUnit
 
@@ -21,7 +19,7 @@ tests =
         res <- runLangchainT defaultConfig $ do
           throwLangchainError (internalError "test fail" Nothing Nothing)
         case res of
-          Left err -> pure ()
+          Left _ -> pure ()
           Right _ -> assertFailure "Expected error"
     , testCase "askConfig retrieves default configuration" $ do
         res <- runLangchainT defaultConfig $ do

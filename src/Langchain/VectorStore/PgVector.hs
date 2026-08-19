@@ -4,6 +4,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
+-- TODO: This needs to be tested
+
 {- |
 Module      : Langchain.VectorStore.PgVector
 Description : PostgreSQL pgvector extension vector store configuration and client
@@ -20,15 +22,9 @@ module Langchain.VectorStore.PgVector
   , pgVectorSchemaSql
   ) where
 
-import Control.Monad.Except (MonadError)
-import Control.Monad.IO.Class (MonadIO)
-import Data.Int (Int64)
 import Data.Text (Text)
 import qualified Data.Text as TS
-import qualified Data.Text.Lazy as TL
 
-import Langchain.Core.Error (LangchainError)
-import Langchain.DocumentLoader.Core (Document (..))
 import Langchain.Embeddings.Core (Embeddings (..))
 import Langchain.VectorStore.Core (VectorStore (..))
 

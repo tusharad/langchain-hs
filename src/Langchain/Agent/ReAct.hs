@@ -20,13 +20,9 @@ module Langchain.Agent.ReAct
   , runReActAgent
   ) where
 
-import Control.Monad (when)
 import Control.Monad.Except (MonadError, throwError)
-import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.Aeson (Value)
+import Control.Monad.IO.Class (MonadIO)
 import Data.List (find)
-import Data.Text (Text)
-import qualified Data.Text as T
 
 import Langchain.Core.Error (LangchainError, agentError, toolError)
 import Langchain.Core.Model
@@ -56,24 +52,24 @@ createReActAgent model tools =
     }
 
 -- | Run a single step of ReAct reasoning using ChatModel
-reactStep
-  :: (ChatModel model, MonadIO m, MonadError LangchainError m)
-  => model
-  -> [Tool m]
-  -> [Message]
-  -> m AgentStep
-reactStep model tools history = do
+reactStep ::
+  (ChatModel model, MonadIO m, MonadError LangchainError m) =>
+  model ->
+  [Tool m] ->
+  [Message] ->
+  m AgentStep
+reactStep model _ history = do
   responseMsg <- invoke model history Nothing
   case messageToolCalls responseMsg of
     Just (tc : _) -> pure $ AgentAction tc
     _ -> pure $ AgentFinish responseMsg
 
 -- | Execute the full ReAct reasoning loop until AgentFinish or max iterations reached
-runReActAgent
-  :: (ChatModel model, MonadIO m, MonadError LangchainError m)
-  => ReActAgent model m
-  -> [Message]
-  -> m Message
+runReActAgent ::
+  (ChatModel model, MonadIO m, MonadError LangchainError m) =>
+  ReActAgent model m ->
+  [Message] ->
+  m Message
 runReActAgent agent initialHistory = go initialHistory (agentMaxIterations agent)
   where
     go history maxIter

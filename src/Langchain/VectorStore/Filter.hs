@@ -23,14 +23,11 @@ module Langchain.VectorStore.Filter
   , orFilter
   ) where
 
-import Data.Aeson (FromJSON (..), ToJSON (..), Value (..), object, withObject, (.=))
-import qualified Data.Aeson.Key as Key
-import qualified Data.Aeson.KeyMap as KeyMap
+import Data.Aeson (FromJSON (..), ToJSON (..), Value (..))
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Scientific (toRealFloat)
 import Data.Text (Text)
-import qualified Data.Text as T
 import GHC.Generics (Generic)
 
 import Langchain.DocumentLoader.Core (Document (..))

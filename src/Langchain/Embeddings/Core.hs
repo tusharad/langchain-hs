@@ -24,15 +24,15 @@ import Langchain.DocumentLoader.Core (Document)
 -- | Effect-polymorphic Embeddings typeclass
 class Embeddings embed where
   -- | Convert documents to embedding vectors
-  embedDocuments
-    :: (MonadIO m, MonadError LangchainError m)
-    => embed
-    -> [Document]
-    -> m [[Float]]
+  embedDocuments ::
+    (MonadIO m, MonadError LangchainError m) =>
+    embed ->
+    [Document] ->
+    m [[Float]]
 
   -- | Convert query text to embedding vector
-  embedQuery
-    :: (MonadIO m, MonadError LangchainError m)
-    => embed
-    -> Text
-    -> m [Float]
+  embedQuery ::
+    (MonadIO m, MonadError LangchainError m) =>
+    embed ->
+    Text ->
+    m [Float]

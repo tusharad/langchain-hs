@@ -2,7 +2,6 @@
 
 module Test.Langchain.Diagnostics.HealthCheckSpec (tests) where
 
-import qualified Data.Map.Strict as Map
 import Database.SQLite.Simple
 import System.FilePath ((</>))
 import System.IO.Temp (withSystemTempDirectory)

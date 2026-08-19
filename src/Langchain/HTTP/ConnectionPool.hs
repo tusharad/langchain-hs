@@ -25,7 +25,14 @@ module Langchain.HTTP.ConnectionPool
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Aeson (FromJSON, ToJSON)
 import GHC.Generics (Generic)
-import Network.HTTP.Client (Manager, defaultManagerSettings, managerIdleConnectionCount, managerResponseTimeout, newManager, responseTimeoutMicro)
+import Network.HTTP.Client
+  ( Manager
+  , defaultManagerSettings
+  , managerIdleConnectionCount
+  , managerResponseTimeout
+  , newManager
+  , responseTimeoutMicro
+  )
 
 -- | Configuration settings for HTTP connection pool
 data ConnectionPoolConfig = ConnectionPoolConfig

@@ -4,6 +4,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
+-- TODO: Need benchmarking and qualitify of these retrievals
+
 {- |
 Module      : Langchain.Retriever.ContextualCompression
 Description : Contextual compression retriever for extracting relevant document content
@@ -21,14 +23,11 @@ module Langchain.Retriever.ContextualCompression
   , defaultCompressionPrompt
   ) where
 
-import Control.Monad.Except (MonadError, throwError)
-import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.Except (throwError)
 import qualified Data.Map.Strict as Map
-import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 
-import Langchain.Core.Error (LangchainError)
 import Langchain.Core.Model
   ( ChatModel (..)
   , extractMessageText
@@ -57,16 +56,16 @@ defaultCompressionPrompt =
     )
 
 -- | Construct a new ContextualCompressionRetriever with default prompt
-newContextualCompressionRetriever
-  :: retriever
-  -> model
-  -> ContextualCompressionRetriever retriever model
+newContextualCompressionRetriever ::
+  retriever ->
+  model ->
+  ContextualCompressionRetriever retriever model
 newContextualCompressionRetriever r m =
   ContextualCompressionRetriever r m defaultCompressionPrompt
 
 instance
-  (Retriever retriever, ChatModel model)
-  => Retriever (ContextualCompressionRetriever retriever model)
+  (Retriever retriever, ChatModel model) =>
+  Retriever (ContextualCompressionRetriever retriever model)
   where
   getRelevantDocuments ContextualCompressionRetriever {..} query = do
     rawDocs <- getRelevantDocuments baseRetriever query

@@ -4,7 +4,6 @@ module Test.Langchain.Graph.HITLSpec (tests) where
 
 import Control.Monad.Except (ExceptT, runExceptT)
 import Data.Text (Text)
-import qualified Data.Text as T
 import Langchain.Core.Error (LangchainError)
 import Langchain.Graph.Checkpointer
 import Langchain.Graph.HITL
@@ -25,7 +24,8 @@ tests =
         -- Manually test hitlNode action directly
         res <- nodeAction node1 ("initial-state" :: Text)
         case res of
-          Left err -> assertBool "Is HITL Interrupt" (case isHITLInterrupt err of Just "approvalNode" -> True; _ -> False)
+          Left err ->
+            assertBool "Is HITL Interrupt" (case isHITLInterrupt err of Just "approvalNode" -> True; _ -> False)
           Right _ -> assertFailure "Expected HITL Interrupt error"
     , testCase "resumeGraph resumes execution from saved state" $ do
         cp <- newMemoryCheckpointer
@@ -41,6 +41,7 @@ tests =
                   emptyStateGraph replaceFieldReducer
             Right compiled = compileGraph g
 
-        res <- runExceptT $ resumeGraph compiled cp threadId "node2" "node2" (\s -> s <> " [human-reviewed]")
+        res <-
+          runExceptT $ resumeGraph compiled cp threadId "node2" "node2" (\s -> s <> " [human-reviewed]")
         res @?= Right "draft-content [human-reviewed] -> approved"
     ]

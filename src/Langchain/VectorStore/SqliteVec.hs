@@ -7,7 +7,7 @@
 {- |
 Module      : Langchain.VectorStore.SqliteVec
 Description : SQLite-backed vector store with persistent storage and cosine distance
-Copyright   : (c) 2025-2026 Tushar Adhatrao
+Copyright   : (c) 2026 Tushar Adhatrao
 License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
@@ -28,7 +28,6 @@ import qualified Data.ByteString.Lazy as LBS
 import Data.Int (Int64)
 import Data.List (sortOn)
 import Data.Ord (Down (..))
-import Data.Text (Text)
 import qualified Data.Text as TS
 import qualified Data.Text.Encoding as TE
 import qualified Data.Text.Lazy as TL
@@ -47,12 +46,11 @@ data SqliteVecStore e = SqliteVecStore
   }
 
 -- | Construct a new SqliteVecStore and initialize schema
-newSqliteVecStore
-  :: (MonadIO m, MonadError LangchainError m, Embeddings e)
-  => FilePath
-  -> e
-  -> m (SqliteVecStore e)
-  {--}
+newSqliteVecStore ::
+  (MonadIO m, MonadError LangchainError m) =>
+  FilePath ->
+  e ->
+  m (SqliteVecStore e)
 newSqliteVecStore dbPath emb = do
   initSqliteVecSchema dbPath
   pure $ SqliteVecStore dbPath emb
@@ -84,14 +82,14 @@ instance (Embeddings e) => VectorStore (SqliteVecStore e) where
     eRes <- liftIO $ try $ withConnection (sqliteDbPath store) $ \conn -> do
       withTransaction conn $ do
         mapM_
-          (\(doc, vec) -> do
-            let cTxt = TL.unpack (pageContent doc)
-                mJson = TE.decodeUtf8 $ LBS.toStrict $ encode (metadata doc)
-                vBytes = LBS.toStrict $ encode (vec :: [Float])
-            execute
-              conn
-              "INSERT INTO langchain_vectors (content, metadata, vector) VALUES (?, ?, ?)"
-              (cTxt, TS.unpack mJson, vBytes)
+          ( \(doc, vec) -> do
+              let cTxt = TL.unpack (pageContent doc)
+                  mJson = TE.decodeUtf8 $ LBS.toStrict $ encode (metadata doc)
+                  vBytes = LBS.toStrict $ encode (vec :: [Float])
+              execute
+                conn
+                "INSERT INTO langchain_vectors (content, metadata, vector) VALUES (?, ?, ?)"
+                (cTxt, TS.unpack mJson, vBytes)
           )
           (zip docs vectors)
     case eRes of
@@ -118,13 +116,14 @@ instance (Embeddings e) => VectorStore (SqliteVecStore e) where
             Nothing
       Right () -> pure store
 
-  similaritySearch store query k = do
-    qVec <- embedQuery (sqliteEmbeddings store) query
+  similaritySearch store query0 k = do
+    qVec <- embedQuery (sqliteEmbeddings store) query0
     similaritySearchByVector store qVec k
 
   similaritySearchByVector store qVec k = do
     rowsRes <- liftIO $ try $ withConnection (sqliteDbPath store) $ \conn -> do
-      query_ conn "SELECT id, content, metadata, vector FROM langchain_vectors" :: IO [(Int64, String, String, LBS.ByteString)]
+      query_ conn "SELECT id, content, metadata, vector FROM langchain_vectors" ::
+        IO [(Int64, String, String, LBS.ByteString)]
     rows <- case rowsRes of
       Left err ->
         throwError $

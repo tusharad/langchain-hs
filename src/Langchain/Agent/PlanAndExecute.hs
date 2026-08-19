@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -29,7 +30,6 @@ module Langchain.Agent.PlanAndExecute
 import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.IO.Class (MonadIO)
 import Data.Aeson (FromJSON, ToJSON)
-import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import qualified Data.Text as T
 import GHC.Generics (Generic)
@@ -37,9 +37,7 @@ import GHC.Generics (Generic)
 import Langchain.Core.Error (LangchainError, agentError)
 import Langchain.Core.Model
   ( ChatModel (..)
-  , Message (..)
   , extractMessageText
-  , systemMessage
   , userMessage
   )
 
@@ -54,7 +52,8 @@ data PlanStep = PlanStep
 newtype Plan = Plan
   { planSteps :: [PlanStep]
   }
-  deriving (Show, Eq, Generic, ToJSON, FromJSON)
+  deriving stock (Show, Eq, Generic)
+  deriving anyclass (ToJSON, FromJSON)
 
 -- | Plan-and-Execute agent container
 data PlanAndExecuteAgent planner executor = PlanAndExecuteAgent
@@ -64,18 +63,35 @@ data PlanAndExecuteAgent planner executor = PlanAndExecuteAgent
   }
 
 -- | Construct a new PlanAndExecuteAgent
-newPlanAndExecuteAgent
-  :: planner
-  -> executor
-  -> Maybe Text
-  -> PlanAndExecuteAgent planner executor
+newPlanAndExecuteAgent ::
+  planner ->
+  executor ->
+  Maybe Text ->
+  PlanAndExecuteAgent planner executor
 newPlanAndExecuteAgent = PlanAndExecuteAgent
 
 -- | Parse numbered plan steps from LLM text output
 parsePlanFromText :: Text -> Plan
 parsePlanFromText rawTxt =
   let rawLines = map T.strip (T.lines rawTxt)
-      validLines = filter (\l -> not (T.null l) && (T.isPrefixOf "1." l || T.isPrefixOf "2." l || T.isPrefixOf "3." l || T.isPrefixOf "4." l || T.isPrefixOf "5." l || T.isPrefixOf "6." l || T.isPrefixOf "7." l || T.isPrefixOf "8." l || T.isPrefixOf "9." l || T.isPrefixOf "-" l || T.isPrefixOf "*" l)) rawLines
+      validLines =
+        filter
+          ( \l ->
+              not (T.null l)
+                && ( T.isPrefixOf "1." l
+                       || T.isPrefixOf "2." l
+                       || T.isPrefixOf "3." l
+                       || T.isPrefixOf "4." l
+                       || T.isPrefixOf "5." l
+                       || T.isPrefixOf "6." l
+                       || T.isPrefixOf "7." l
+                       || T.isPrefixOf "8." l
+                       || T.isPrefixOf "9." l
+                       || T.isPrefixOf "-" l
+                       || T.isPrefixOf "*" l
+                   )
+          )
+          rawLines
       steps =
         if null validLines
           then [PlanStep 1 rawTxt]
@@ -90,11 +106,11 @@ parsePlanFromText rawTxt =
           _ -> t
 
 -- | Execute a goal using the Plan-and-Execute workflow
-runPlanAndExecute
-  :: (ChatModel planner, ChatModel executor, MonadIO m, MonadError LangchainError m)
-  => PlanAndExecuteAgent planner executor
-  -> Text
-  -> m Text
+runPlanAndExecute ::
+  (ChatModel planner, ChatModel executor, MonadIO m, MonadError LangchainError m) =>
+  PlanAndExecuteAgent planner executor ->
+  Text ->
+  m Text
 runPlanAndExecute PlanAndExecuteAgent {..} userGoal = do
   let planPrompt = case planPromptTemplate of
         Just p -> p <> "\nGoal: " <> userGoal
@@ -114,17 +130,18 @@ runPlanAndExecute PlanAndExecuteAgent {..} userGoal = do
             "Goal: "
               <> userGoal
               <> "\n\nStep Execution History:\n"
-              <> T.unlines [T.pack (show num) <> ". " <> desc <> " -> " <> out | (PlanStep num desc, out) <- stepOutputs]
+              <> T.unlines
+                [T.pack (show num) <> ". " <> desc <> " -> " <> out | (PlanStep num desc, out) <- stepOutputs]
               <> "\n\nProvide the final synthesized answer:"
       finalMsg <- invoke executorModel [userMessage synthesisPrompt] Nothing
       pure $ extractMessageText finalMsg
-
     executeSteps (currStep : restSteps) prevOutputs = do
       let stepPrompt =
             "Goal: "
               <> userGoal
               <> "\n\nPrevious Steps Completed:\n"
-              <> T.unlines [T.pack (show num) <> ". " <> desc <> " -> " <> out | (PlanStep num desc, out) <- prevOutputs]
+              <> T.unlines
+                [T.pack (show num) <> ". " <> desc <> " -> " <> out | (PlanStep num desc, out) <- prevOutputs]
               <> "\n\nCurrent Step To Execute: "
               <> stepDescription currStep
               <> "\nExecute this step and provide the result:"

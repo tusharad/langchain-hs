@@ -22,20 +22,18 @@ module Langchain.Pipeline.DSL
   , runPipeline
   ) where
 
-import Control.Monad ((>=>))
-import Control.Monad.Except (MonadError, runExceptT, throwError)
-import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.Except (MonadError, throwError)
+import Control.Monad.IO.Class (MonadIO)
 import Data.Text (Text)
-import qualified Data.Text as T
 
 import Langchain.Core.Error (LangchainError)
 
 -- | Compose two monadic fallible transformations
-pipe
-  :: Monad m
-  => (a -> m (Either LangchainError b))
-  -> (b -> m (Either LangchainError c))
-  -> (a -> m (Either LangchainError c))
+pipe ::
+  Monad m =>
+  (a -> m (Either LangchainError b)) ->
+  (b -> m (Either LangchainError c)) ->
+  (a -> m (Either LangchainError c))
 pipe f g input = do
   resA <- f input
   case resA of
@@ -43,21 +41,21 @@ pipe f g input = do
     Right valA -> g valA
 
 -- | Infix operator for 'pipe'
-(>>>#)
-  :: Monad m
-  => (a -> m (Either LangchainError b))
-  -> (b -> m (Either LangchainError c))
-  -> (a -> m (Either LangchainError c))
+(>>>#) ::
+  Monad m =>
+  (a -> m (Either LangchainError b)) ->
+  (b -> m (Either LangchainError c)) ->
+  (a -> m (Either LangchainError c))
 (>>>#) = pipe
 
 infixr 1 >>>#
 
 -- | Execute two pipeline steps in parallel on the same input
-pipeParallel
-  :: Monad m
-  => (a -> m (Either LangchainError b))
-  -> (a -> m (Either LangchainError c))
-  -> (a -> m (Either LangchainError (b, c)))
+pipeParallel ::
+  Monad m =>
+  (a -> m (Either LangchainError b)) ->
+  (a -> m (Either LangchainError c)) ->
+  (a -> m (Either LangchainError (b, c)))
 pipeParallel f g input = do
   resB <- f input
   case resB of
@@ -79,11 +77,11 @@ mkStep :: Text -> (a -> m (Either LangchainError b)) -> PipelineStep m a b
 mkStep = PipelineStep
 
 -- | Execute a sequence of named steps
-runPipeline
-  :: (MonadIO m, MonadError LangchainError m)
-  => PipelineStep m a b
-  -> a
-  -> m b
+runPipeline ::
+  (MonadIO m, MonadError LangchainError m) =>
+  PipelineStep m a b ->
+  a ->
+  m b
 runPipeline PipelineStep {..} input = do
   res <- stepAction input
   case res of

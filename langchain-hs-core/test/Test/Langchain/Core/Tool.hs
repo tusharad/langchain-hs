@@ -6,7 +6,6 @@ module Test.Langchain.Core.Tool (tests) where
 import Data.Aeson
 import Data.Aeson.Types (parseEither)
 import Data.Text (Text)
-import qualified Data.Text as T
 import Langchain.Core.Error
 import Langchain.Core.Tool
 import Test.Tasty

@@ -59,11 +59,11 @@ defaultQAPrompt =
     )
 
 -- | Execute RetrievalQA chain on a user question
-runRetrievalQA
-  :: (ChatModel model, Retriever retriever, MonadIO m, MonadError LangchainError m)
-  => RetrievalQA model retriever
-  -> Text
-  -> m Message
+runRetrievalQA ::
+  (ChatModel model, Retriever retriever, MonadIO m, MonadError LangchainError m) =>
+  RetrievalQA model retriever ->
+  Text ->
+  m Message
 runRetrievalQA RetrievalQA {..} question = do
   docs <- getRelevantDocuments retriever question
   let contextText = T.intercalate "\n\n" $ map (TL.toStrict . pageContent) docs

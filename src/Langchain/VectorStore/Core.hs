@@ -27,31 +27,31 @@ import Langchain.DocumentLoader.Core (Document)
 -- | Effect-polymorphic VectorStore typeclass
 class VectorStore vs where
   -- | Add documents with generated embeddings
-  addDocuments
-    :: (MonadIO m, MonadError LangchainError m)
-    => vs
-    -> [Document]
-    -> m vs
+  addDocuments ::
+    (MonadIO m, MonadError LangchainError m) =>
+    vs ->
+    [Document] ->
+    m vs
 
   -- | Delete documents by unique integer ID
-  delete
-    :: (MonadIO m, MonadError LangchainError m)
-    => vs
-    -> [Int64]
-    -> m vs
+  delete ::
+    (MonadIO m, MonadError LangchainError m) =>
+    vs ->
+    [Int64] ->
+    m vs
 
   -- | Semantic similarity search using text query
-  similaritySearch
-    :: (MonadIO m, MonadError LangchainError m)
-    => vs
-    -> Text
-    -> Int
-    -> m [Document]
+  similaritySearch ::
+    (MonadIO m, MonadError LangchainError m) =>
+    vs ->
+    Text ->
+    Int ->
+    m [Document]
 
   -- | Direct similarity search using embedding vector
-  similaritySearchByVector
-    :: (MonadIO m, MonadError LangchainError m)
-    => vs
-    -> [Float]
-    -> Int
-    -> m [Document]
+  similaritySearchByVector ::
+    (MonadIO m, MonadError LangchainError m) =>
+    vs ->
+    [Float] ->
+    Int ->
+    m [Document]

@@ -5,7 +5,7 @@
 {- |
 Module      : Langchain.OutputParser.Enum
 Description : Fuzzy enum output parser for constrained categorical classifications
-Copyright   : (c) 2025-2026 Tushar Adhatrao
+Copyright   : (c) 2026 Tushar Adhatrao
 License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
@@ -19,14 +19,10 @@ module Langchain.OutputParser.Enum
   , parseEnumFuzzy
   ) where
 
-import Data.Char (toLower)
 import Data.List (find)
 import Data.Proxy (Proxy (..))
 import Data.Text (Text)
 import qualified Data.Text as T
-
-import Langchain.Core.Error (LangchainError, parsingError)
-import Langchain.OutputParser.Core (OutputParser (..))
 
 -- | Enum parser container
 data EnumParser a = EnumParser

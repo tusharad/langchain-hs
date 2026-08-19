@@ -26,14 +26,14 @@ import Langchain.Core.Model (ChatModel (..), extractMessageText, userMessage)
 import Langchain.Graph.StateGraph (CompiledGraph, Node (..), NodeId, runGraph, startNodeId)
 
 -- | Construct a supervisor routing node that uses an LLM to select the target sub-agent NodeId
-supervisorNode
-  :: (ChatModel model, MonadIO m, MonadError LangchainError m)
-  => model
-  -> NodeId
-  -> [(Text, NodeId)]
-  -> (s -> Text)
-  -> (Text -> s -> s)
-  -> Node s m
+supervisorNode ::
+  (ChatModel model, MonadIO m, MonadError LangchainError m) =>
+  model ->
+  NodeId ->
+  [(Text, NodeId)] ->
+  (s -> Text) ->
+  (Text -> s -> s) ->
+  Node s m
 supervisorNode model name routes extractPrompt updateState =
   Node
     { nodeId = name
@@ -50,17 +50,18 @@ supervisorNode model name routes extractPrompt updateState =
           Just targetId -> pure $ Right $ updateState targetId state
           Nothing -> case routes of
             ((_, fallbackId) : _) -> pure $ Right $ updateState fallbackId state
-            [] -> throwError $ agentError "No routes configured in supervisor node" (Just "supervisorNode") Nothing
+            [] ->
+              throwError $ agentError "No routes configured in supervisor node" (Just "supervisorNode") Nothing
     }
 
 -- | Embed a compiled sub-graph into a parent graph node with input/output adapters
-embedSubGraphNode
-  :: (MonadIO m, MonadError LangchainError m)
-  => NodeId
-  -> CompiledGraph subState m
-  -> (parentState -> subState)
-  -> (parentState -> subState -> parentState)
-  -> Node parentState m
+embedSubGraphNode ::
+  (MonadIO m, MonadError LangchainError m) =>
+  NodeId ->
+  CompiledGraph subState m ->
+  (parentState -> subState) ->
+  (parentState -> subState -> parentState) ->
+  Node parentState m
 embedSubGraphNode name subGraph toSubState mergeState =
   Node
     { nodeId = name

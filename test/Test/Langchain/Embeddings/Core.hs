@@ -24,7 +24,10 @@ tests =
               Left err ->
                 assertBool
                   "Error message contains error or failure"
-                  (T.isInfixOf "error" (showText err) || T.isInfixOf "Error" (showText err) || T.isInfixOf "Connect" (showText err))
+                  ( T.isInfixOf "error" (showText err)
+                      || T.isInfixOf "Error" (showText err)
+                      || T.isInfixOf "Connect" (showText err)
+                  )
               Right _ -> assertFailure "Expected API error propagation"
         ]
     ]

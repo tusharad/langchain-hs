@@ -26,7 +26,6 @@ module Langchain.Graph.TimeTravel
 import Control.Concurrent.STM
 import Control.Monad.Except (MonadError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.Aeson (FromJSON, ToJSON)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)
@@ -57,13 +56,13 @@ newTimeTravelHistory = liftIO $ do
   pure $ TimeTravelHistory var
 
 -- | Record a new state snapshot into the history
-recordSnapshot
-  :: MonadIO m
-  => TimeTravelHistory s
-  -> Text
-  -> NodeId
-  -> s
-  -> m (StateSnapshot s)
+recordSnapshot ::
+  MonadIO m =>
+  TimeTravelHistory s ->
+  Text ->
+  NodeId ->
+  s ->
+  m (StateSnapshot s)
 recordSnapshot TimeTravelHistory {..} threadId nId st = liftIO $ do
   now <- getCurrentTime
   atomically $ do
@@ -81,12 +80,12 @@ getSnapshots TimeTravelHistory {..} threadId = liftIO $ do
   pure $ Map.findWithDefault [] threadId histMap
 
 -- | Retrieve a specific snapshot by step index
-getSnapshotAtStep
-  :: MonadIO m
-  => TimeTravelHistory s
-  -> Text
-  -> Int
-  -> m (Maybe (StateSnapshot s))
+getSnapshotAtStep ::
+  MonadIO m =>
+  TimeTravelHistory s ->
+  Text ->
+  Int ->
+  m (Maybe (StateSnapshot s))
 getSnapshotAtStep hist threadId targetStep = do
   snaps <- getSnapshots hist threadId
   pure $ case filter (\s -> snapshotStep s == targetStep) snaps of
@@ -94,10 +93,10 @@ getSnapshotAtStep hist threadId targetStep = do
     [] -> Nothing
 
 -- | Resume compiled graph execution starting from a historical snapshot
-resumeFromSnapshot
-  :: (MonadIO m, MonadError LangchainError m)
-  => CompiledGraph s m
-  -> StateSnapshot s
-  -> m s
+resumeFromSnapshot ::
+  (MonadIO m, MonadError LangchainError m) =>
+  CompiledGraph s m ->
+  StateSnapshot s ->
+  m s
 resumeFromSnapshot compiledGraph StateSnapshot {..} =
   runGraph compiledGraph snapshotNodeId snapshotState

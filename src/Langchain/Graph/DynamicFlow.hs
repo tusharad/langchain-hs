@@ -29,17 +29,17 @@ module Langchain.Graph.DynamicFlow
 import Control.Monad (foldM)
 import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.IO.Class (MonadIO)
-import Data.Aeson (FromJSON (..), ToJSON (..), Value (..), object, withObject, (.!=), (.:), (.:?), (.=))
-import Data.List (find, foldl', nub, partition)
+import Data.Aeson
+  ( FromJSON (..)
+  , ToJSON (..)
+  , Value (..)
+  )
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
-import Data.Set (Set)
-import qualified Data.Set as Set
 import Data.Text (Text)
-import qualified Data.Text as T
 import GHC.Generics (Generic)
 
-import Langchain.Core.Error (LangchainError, agentError, internalError)
+import Langchain.Core.Error (LangchainError, agentError)
 
 -- | Declarative node in a dynamic flow graph
 data FlowNode = FlowNode
@@ -106,7 +106,7 @@ topologicalSortFlow DynamicFlow {..} =
     countInDegrees acc edge = Map.insertWith (+) (edgeTarget edge) 1 acc
     buildAdj acc edge = Map.insertWith (++) (edgeSource edge) [edgeTarget edge] acc
 
-    kahnLoop [] inDegs _ order total
+    kahnLoop [] _ _ order total
       | length order == total = Right (reverse order)
       | otherwise = Left "Cycle detected in dynamic flow graph"
     kahnLoop (cur : rest) inDegs adj order total =
@@ -123,12 +123,13 @@ topologicalSortFlow DynamicFlow {..} =
             else (updatedMap, zeroes)
 
 -- | Execute a dynamic flow graph sequentially in topological order
-executeDynamicFlow
-  :: (MonadIO m, MonadError LangchainError m)
-  => ComponentRegistry m
-  -> DynamicFlow
-  -> Map Text Value              -- ^ Initial global/flow inputs
-  -> m FlowExecutionResult
+executeDynamicFlow ::
+  (MonadIO m, MonadError LangchainError m) =>
+  ComponentRegistry m ->
+  DynamicFlow ->
+  -- | Initial global/flow inputs
+  Map Text Value ->
+  m FlowExecutionResult
 executeDynamicFlow registry flow@DynamicFlow {..} initialInputs = do
   order <- case topologicalSortFlow flow of
     Left err -> throwError $ agentError ("Dynamic flow validation failed: " <> err) (Just flowId) Nothing
@@ -137,12 +138,14 @@ executeDynamicFlow registry flow@DynamicFlow {..} initialInputs = do
   let nodeLookup = Map.fromList [(nodeId n, n) | n <- flowNodes]
   let incomingEdgesLookup = foldl' (\m e -> Map.insertWith (++) (edgeTarget e) [e] m) Map.empty flowEdges
 
-  (finalOutputs, _) <- foldM (executeStep nodeLookup incomingEdgesLookup) (Map.empty, initialInputs) order
+  (finalOutputs, _) <-
+    foldM (executeStep nodeLookup incomingEdgesLookup) (Map.empty, initialInputs) order
 
-  pure FlowExecutionResult
-    { flowOutputs = finalOutputs
-    , flowExecutionOrder = order
-    }
+  pure
+    FlowExecutionResult
+      { flowOutputs = finalOutputs
+      , flowExecutionOrder = order
+      }
   where
     executeStep nodeLookup inEdges (outputAcc, curEnv) nId = do
       node <- case Map.lookup nId nodeLookup of
@@ -150,7 +153,8 @@ executeDynamicFlow registry flow@DynamicFlow {..} initialInputs = do
         Just n -> pure n
 
       executor <- case Map.lookup (nodeType node) registry of
-        Nothing -> throwError $ agentError ("Unknown node component type: " <> nodeType node) (Just flowId) (Just nId)
+        Nothing ->
+          throwError $ agentError ("Unknown node component type: " <> nodeType node) (Just flowId) (Just nId)
         Just ex -> pure ex
 
       -- Resolve inputs from upstream connected nodes

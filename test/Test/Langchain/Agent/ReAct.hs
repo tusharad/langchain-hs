@@ -3,14 +3,12 @@
 module Test.Langchain.Agent.ReAct (tests) where
 
 import Control.Monad.Except (runExceptT)
-import Data.Text (Text)
 import qualified Data.Text as T
 import Test.Tasty
 import Test.Tasty.HUnit
 
 import Langchain.Agent.ReAct
 import Langchain.Core.Model
-import Langchain.Core.Tool
 import Langchain.Tool.Calculator (calculatorTool)
 
 tests :: TestTree

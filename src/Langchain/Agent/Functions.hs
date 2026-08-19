@@ -23,24 +23,21 @@ module Langchain.Agent.Functions
 
 import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.IO.Class (MonadIO)
-import Data.Aeson (Value)
-import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import qualified Data.Text as T
 
 import Langchain.Core.Error (LangchainError, agentError)
-import qualified Langchain.Core.Model as Model
 import Langchain.Core.Model
   ( ChatModel (..)
   , ContentBlock (..)
   , Message (..)
-  , Role (..)
   , ToolCall (..)
   , extractMessageText
   , systemMessage
   , userMessage
   )
+import qualified Langchain.Core.Model as Model
 import Langchain.Tool.Core (Tool (..))
 
 -- | Functions / Tool Calling agent container
@@ -62,11 +59,11 @@ newFunctionsAgent model tools sysPrompt =
     }
 
 -- | Execute a user query through the tool calling agent loop
-runFunctionsAgent
-  :: (ChatModel model, MonadIO m, MonadError LangchainError m)
-  => FunctionsAgent model m
-  -> Text
-  -> m Text
+runFunctionsAgent ::
+  (ChatModel model, MonadIO m, MonadError LangchainError m) =>
+  FunctionsAgent model m ->
+  Text ->
+  m Text
 runFunctionsAgent FunctionsAgent {..} query = do
   let initMsgs = case agentSystemPrompt of
         Just sys -> [systemMessage sys, userMessage query]

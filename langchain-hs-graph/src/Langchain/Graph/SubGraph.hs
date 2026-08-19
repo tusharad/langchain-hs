@@ -22,10 +22,8 @@ module Langchain.Graph.SubGraph
 import Control.Concurrent (threadDelay)
 import Control.Monad.Except (MonadError, catchError, throwError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.Text (Text)
-import qualified Data.Text as T
 
-import Langchain.Core.Error (LangchainError, internalError)
+import Langchain.Core.Error (LangchainError)
 import Langchain.Graph.StateGraph
 
 -- | Configuration options for sub-graph execution
@@ -46,14 +44,14 @@ defaultSubGraphOptions =
     }
 
 -- | Embed a compiled sub-graph into a parent graph node with options
-embedSubGraphWithOptions
-  :: (MonadIO m, MonadError LangchainError m)
-  => NodeId
-  -> CompiledGraph subState m
-  -> SubGraphOptions
-  -> (parentState -> subState)
-  -> (parentState -> subState -> parentState)
-  -> Node parentState m
+embedSubGraphWithOptions ::
+  (MonadIO m, MonadError LangchainError m) =>
+  NodeId ->
+  CompiledGraph subState m ->
+  SubGraphOptions ->
+  (parentState -> subState) ->
+  (parentState -> subState -> parentState) ->
+  Node parentState m
 embedSubGraphWithOptions name subGraph SubGraphOptions {..} toSubState mergeState =
   Node
     { nodeId = name

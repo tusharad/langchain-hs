@@ -4,6 +4,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
+-- TODO: replace this with hs-telemetry
+
 {- |
 Module      : Langchain.Observability.OpenTelemetry
 Description : OpenTelemetry-compatible tracing, spans, and attributes exporter
@@ -34,7 +36,6 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Aeson (FromJSON, ToJSON, encode)
 import qualified Data.ByteString.Lazy.Char8 as LBSC
 import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime)
@@ -96,14 +97,14 @@ getSpans :: MonadIO m => OTelTracer -> m [Span]
 getSpans OTelTracer {..} = liftIO $ readTVarIO tracerSpansVar
 
 -- | Start a new OpenTelemetry span
-startSpan
-  :: MonadIO m
-  => OTelTracer
-  -> Text
-  -> Maybe Text
-  -> SpanKind
-  -> Map Text Text
-  -> m Span
+startSpan ::
+  MonadIO m =>
+  OTelTracer ->
+  Text ->
+  Maybe Text ->
+  SpanKind ->
+  Map Text Text ->
+  m Span
 startSpan OTelTracer {..} name parentId kind attrs = liftIO $ do
   now <- getCurrentTime
   randSpan <- randomRIO (10000000 :: Integer, 99999999 :: Integer)
@@ -141,20 +142,21 @@ endSpan OTelTracer {..} targetSpanId status = liftIO $ do
       | otherwise = sp
 
 -- | Wrap a monadic computation within an OpenTelemetry span
-withSpan
-  :: (MonadIO m, MonadError LangchainError m)
-  => OTelTracer
-  -> Text
-  -> Maybe Text
-  -> SpanKind
-  -> Map Text Text
-  -> m a
-  -> m a
+withSpan ::
+  (MonadIO m, MonadError LangchainError m) =>
+  OTelTracer ->
+  Text ->
+  Maybe Text ->
+  SpanKind ->
+  Map Text Text ->
+  m a ->
+  m a
 withSpan tracer name parentId kind attrs action = do
   sp <- startSpan tracer name parentId kind attrs
-  res <- action `catchError` \err -> do
-    endSpan tracer (spanId sp) (StatusError (T.pack (show err)))
-    throwError err
+  res <-
+    action `catchError` \err -> do
+      endSpan tracer (spanId sp) (StatusError (T.pack (show err)))
+      throwError err
   endSpan tracer (spanId sp) StatusOk
   pure res
 

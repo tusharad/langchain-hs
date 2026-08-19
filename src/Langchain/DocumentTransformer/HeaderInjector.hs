@@ -5,7 +5,7 @@
 {- |
 Module      : Langchain.DocumentTransformer.HeaderInjector
 Description : Chunk Header Injection Transformer
-Copyright   : (c) 2025-2026 Tushar Adhatrao
+Copyright   : (c) 2026 Tushar Adhatrao
 License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
@@ -21,7 +21,6 @@ module Langchain.DocumentTransformer.HeaderInjector
   , injectChunkHeaders
   ) where
 
-import Control.Monad.IO.Class (MonadIO)
 import Data.Aeson (Value (..))
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)

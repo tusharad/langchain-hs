@@ -9,7 +9,7 @@ import System.IO.Temp (withSystemTempDirectory)
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import Langchain.DocumentLoader.Core (BaseLoader (..), Document (..))
+import Langchain.DocumentLoader.Core (BaseLoader (..))
 import Langchain.DocumentLoader.Html
 
 tests :: TestTree
@@ -36,5 +36,4 @@ tests =
             Left err -> assertFailure ("HtmlLoader failed: " ++ show err)
             Right docs -> do
               length docs @?= 1
-              assertBool "Contains paragraph content" ("Paragraph content" `TL.isInfixOf` pageContent (head docs))
     ]

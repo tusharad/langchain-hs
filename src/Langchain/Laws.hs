@@ -1,9 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+-- TODO: this shall not be part of the package
+
 {- |
 Module      : Langchain.Laws
 Description : Formal algebraic law verification suite for Langchain abstractions
-Copyright   : (c) 2025-2026 Tushar Adhatrao
+Copyright   : (c) 2026 Tushar Adhatrao
 License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
@@ -27,7 +29,6 @@ module Langchain.Laws
 
 import Control.Monad.Except (runExceptT)
 import Data.Aeson (decode, encode)
-import Data.Text (Text)
 import qualified Data.Text as T
 import Test.QuickCheck
 

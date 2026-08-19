@@ -49,15 +49,16 @@ newSummarizationChain model strategy =
   SummarizationChain
     { summarizationModel = model
     , summarizationStrategy = strategy
-    , summarizationSystemPrompt = Just "You are a concise expert summarizer. Provide a well-structured summary of the provided text."
+    , summarizationSystemPrompt =
+        Just "You are a concise expert summarizer. Provide a well-structured summary of the provided text."
     }
 
 -- | Execute summarization over a list of documents
-runSummarizationChain
-  :: (ChatModel model, MonadIO m, MonadError LangchainError m)
-  => SummarizationChain model
-  -> [Document]
-  -> m Text
+runSummarizationChain ::
+  (ChatModel model, MonadIO m, MonadError LangchainError m) =>
+  SummarizationChain model ->
+  [Document] ->
+  m Text
 runSummarizationChain SummarizationChain {..} docs = do
   let combinedText = T.intercalate "\n\n" [TL.toStrict (pageContent d) | d <- docs]
       sysPrompt = case summarizationSystemPrompt of

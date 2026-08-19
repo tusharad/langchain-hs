@@ -22,14 +22,16 @@ tests =
           Left err -> assertFailure $ "Expected Right: " ++ show err
           Right msg -> extractMessageText msg @?= "pong"
     , testCase "prelude exports RunnableTree composition" $ do
-        let pipeline = runLambda (\x -> pure $ Right (x + (1 :: Int)))
-                  |>> runLambda (\x -> pure $ Right (x * 2))
+        let pipeline =
+              runLambda (\x -> pure $ Right (x + (1 :: Int)))
+                |>> runLambda (\x -> pure $ Right (x * 2))
         res <- runExceptT $ interpret pipeline 5
         res @?= Right 12
     , testCase "prelude exports StateGraph" $ do
-        let g = addEdge "n1" endNodeId
-              $ addNode "n1" (\s -> pure $ Right (s <> ("!" :: String)))
-              $ emptyStateGraph replaceFieldReducer
+        let g =
+              addEdge "n1" endNodeId $
+                addNode "n1" (\s -> pure $ Right (s <> ("!" :: String))) $
+                  emptyStateGraph replaceFieldReducer
         case compileGraph g of
           Left _ -> assertFailure "Graph compilation failed"
           Right cg -> do

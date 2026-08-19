@@ -100,7 +100,12 @@ mergeChunksWithOverlap maxLen overlapLen sep pieces = go [] 0 [] pieces
                   overlapLenActual = sum (map T.length overlapPieces) + fromIntegral (max 0 (length overlapPieces - 1)) * sepLen
                in if pieceLen > maxLen
                     then go (p : newAcc) 0 [] ps
-                    else go newAcc (overlapLenActual + pieceLen + if null overlapPieces then 0 else sepLen) (p : reverse overlapPieces) ps
+                    else
+                      go
+                        newAcc
+                        (overlapLenActual + pieceLen + if null overlapPieces then 0 else sepLen)
+                        (p : reverse overlapPieces)
+                        ps
 
     joinPieces :: Text -> [Text] -> Text
     joinPieces s ps = T.intercalate s ps

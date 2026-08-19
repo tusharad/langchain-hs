@@ -12,7 +12,6 @@ import Test.Tasty.HUnit
 import Langchain.Agent.Functions
 import Langchain.Agent.PlanAndExecute
 import Langchain.Agent.Supervisor
-import qualified Langchain.Core.Model as Model
 import Langchain.Core.Model
   ( ChatModel (..)
   , ContentBlock (..)
@@ -20,10 +19,9 @@ import Langchain.Core.Model
   , Role (..)
   , ToolCall (..)
   , assistantMessage
-  , extractMessageText
   , newMockModel
-  , userMessage
   )
+import qualified Langchain.Core.Model as Model
 import Langchain.Tool.Core (createTool)
 
 tests :: TestTree

@@ -15,7 +15,8 @@ tests =
     [ testCase "Empty text returns empty chunk list" $ do
         splitTextRecursive defaultRecursiveCharacterSplitterOps "" @?= []
     , testCase "Splits on paragraph separators first" $ do
-        let text = "Paragraph 1 is about Haskell.\n\nParagraph 2 is about pure functions.\n\nParagraph 3 is about types."
+        let text =
+              "Paragraph 1 is about Haskell.\n\nParagraph 2 is about pure functions.\n\nParagraph 3 is about types."
             ops = defaultRecursiveCharacterSplitterOps {chunkSize = 40, chunkOverlap = 0}
             chunks = splitTextRecursive ops text
         assertBool "Multiple chunks produced" (length chunks >= 3)

@@ -36,12 +36,12 @@ import GHC.Generics
 -- | Typeclass for deriving tool JSON schema parameters
 class DeriveToolSchema a where
   deriveToolSchema :: Proxy a -> Value
-  default deriveToolSchema :: (Generic a, GToolRecordSchema (Rep a)) => Proxy a -> Value
+  default deriveToolSchema :: (GToolRecordSchema (Rep a)) => Proxy a -> Value
   deriveToolSchema _ = deriveToolParametersSchema (Proxy :: Proxy a)
 
 -- | Derive OpenAI tool parameter schema object
-deriveToolParametersSchema
-  :: forall a. (Generic a, GToolRecordSchema (Rep a)) => Proxy a -> Value
+deriveToolParametersSchema ::
+  forall a. (GToolRecordSchema (Rep a)) => Proxy a -> Value
 deriveToolParametersSchema _ =
   let (props, reqs) = gToolRecordSchema (Proxy :: Proxy (Rep a))
    in object
