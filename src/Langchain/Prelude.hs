@@ -453,8 +453,6 @@ module Langchain.Prelude
   , newAnthropic
   , Gemini
   , newGemini
-  , DeepSeek
-  , newDeepSeek
   ) where
 
 import Langchain.Accounting.Cost
@@ -524,7 +522,6 @@ import Langchain.Pipeline.DSL
 import Langchain.PromptTemplate.FewShot
 import Langchain.PromptTemplate.Prompt
 import Langchain.Provider.Anthropic (Anthropic, newAnthropic)
-import Langchain.Provider.DeepSeek (DeepSeek, newDeepSeek)
 import Langchain.Provider.Gemini (Gemini, newGemini)
 import Langchain.Provider.Ollama (Ollama, newOllama)
 import Langchain.Provider.OpenAI (OpenAI, newOpenAI)

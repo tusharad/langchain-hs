@@ -47,21 +47,26 @@ data PromptTemplate = PromptTemplate
   }
   deriving (Show, Eq, Generic, ToJSON, FromJSON)
 
+-- | Options for building a prompt template, currently only partial variables.
 newtype PromptTemplateOptions = PromptTemplateOptions
   { partialVariables :: Map.Map Text Text
   }
   deriving (Show, Eq, Generic, ToJSON, FromJSON)
 
+-- | Default prompt template options with no partial variables.
 defaultPromptTemplateOptions :: PromptTemplateOptions
 defaultPromptTemplateOptions = PromptTemplateOptions mempty
 
+-- | Build a string prompt template using the default FString format.
 fromTemplate :: Text -> PromptTemplate
 fromTemplate source = fromTemplateWithOptions source defaultPromptTemplateOptions
 
+-- | Build a string prompt template with pre-bound partial variables.
 fromTemplateWithOptions :: Text -> PromptTemplateOptions -> PromptTemplate
 fromTemplateWithOptions source (PromptTemplateOptions partials) =
   fromTemplateWithFormat source FString partials
 
+-- | Build a prompt template from raw text, format, and partial variables.
 fromTemplateWithFormat :: Text -> TemplateFormat -> Map.Map Text Text -> PromptTemplate
 fromTemplateWithFormat source format partials =
   PromptTemplate
@@ -72,6 +77,7 @@ fromTemplateWithFormat source format partials =
     , templateFormat = format
     }
 
+-- | Apply additional partial variables to an existing prompt template.
 partialPromptTemplate :: PromptTemplate -> Map.Map Text Text -> PromptTemplate
 partialPromptTemplate (PromptTemplate source _ existingPartials format) partials =
   fromTemplateWithFormat source format (partials `Map.union` existingPartials)
