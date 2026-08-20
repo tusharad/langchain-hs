@@ -64,30 +64,31 @@ splitTextRecursive
 
       mergeWithOverlap :: Text -> [Text] -> [Text]
       mergeWithOverlap _ [] = []
-      mergeWithOverlap sep parts = go [] 0 [] parts
+      mergeWithOverlap sep parts = reverse $ go [] 0 [] parts
         where
           sepLen = T.length sep
           toText = T.intercalate sep . reverse
 
           go :: [Text] -> Int64 -> [Text] -> [Text] -> [Text]
-          go acc _ [] [] = reverse acc
-          go acc _ chunkParts [] = reverse (toText chunkParts : acc)
+          go acc _ chunkParts [] = toText chunkParts : acc
           go acc chunkLen chunkParts (part : restParts)
             | chunkLen' <= maxSize = go acc chunkLen' (part : chunkParts) restParts
             | partLen > maxSize = go (part : acc') 0 [] restParts
             | otherwise =
                 let (overlapParts, overlapLen) = takeWhileOverlap chunkParts 0 []
-                    sepBefore = if null overlapParts then 0 else sepLen
-                    carryLen = overlapLen + sepBefore + partLen
+                    carryLen = overlapLen + sepBefore overlapParts + partLen
                  in go acc' carryLen (part : reverse overlapParts) restParts
             where
               partLen = T.length part
-              chunkLen' = chunkLen + partLen + if null chunkParts then 0 else sepLen
+              chunkLen' = chunkLen + sepBefore chunkParts + partLen
               acc' = toText chunkParts : acc
+
+              sepBefore ps = if null ps then 0 else sepLen
 
               takeWhileOverlap [] overlapLen overlapAcc = (overlapAcc, overlapLen)
               takeWhileOverlap (overlapPart : restOverlap) overlapLen overlapAcc
                 | overlapLen' > maxOverlap = (overlapAcc, overlapLen)
                 | otherwise = takeWhileOverlap restOverlap overlapLen' (overlapPart : overlapAcc)
                 where
-                  overlapLen' = overlapLen + T.length overlapPart + if null overlapAcc then 0 else sepLen
+                  overlapLen' = overlapLen + sepBefore overlapAcc + T.length overlapPart
+
