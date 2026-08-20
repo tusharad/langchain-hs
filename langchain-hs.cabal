@@ -101,6 +101,7 @@ library
       Langchain.PromptTemplate.Prompt
       Langchain.PromptTemplate.String
       Langchain.Provider.Anthropic
+      Langchain.Provider.DeepSeek
       Langchain.Provider.Gemini
       Langchain.Provider.Ollama
       Langchain.Provider.OpenAI

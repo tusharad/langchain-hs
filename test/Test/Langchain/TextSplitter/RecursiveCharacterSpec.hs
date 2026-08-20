@@ -12,24 +12,43 @@ tests :: TestTree
 tests =
   testGroup
     "Langchain.TextSplitter.RecursiveCharacterSpec"
-    [ testCase "Empty text returns empty chunk list" $ do
+    [ testCase "Empty text returns empty chunk list" $
         splitTextRecursive defaultRecursiveCharacterSplitterOps "" @?= []
-    , testCase "Splits on paragraph separators first" $ do
-        let text =
-              "Paragraph 1 is about Haskell.\n\nParagraph 2 is about pure functions.\n\nParagraph 3 is about types."
-            ops = defaultRecursiveCharacterSplitterOps {chunkSize = 40, chunkOverlap = 0}
-            chunks = splitTextRecursive ops text
-        assertBool "Multiple chunks produced" (length chunks >= 3)
-        assertBool "No chunk exceeds max length" (all (\c -> TL.length c <= 40) chunks)
-    , testCase "Respects chunk overlap" $ do
-        let text = "First sentence here.\n\nSecond sentence here.\n\nThird sentence here."
-            ops = defaultRecursiveCharacterSplitterOps {chunkSize = 45, chunkOverlap = 15}
-            chunks = splitTextRecursive ops text
-        assertBool "Produced chunks" (length chunks >= 2)
-    , testCase "Fallback to character splitting when no separators match" $ do
-        let text = TL.replicate 100 "a"
-            ops = defaultRecursiveCharacterSplitterOps {chunkSize = 25, chunkOverlap = 0}
-            chunks = splitTextRecursive ops text
-        length chunks @?= 4
-        assertBool "All chunks equal length 25" (all (\c -> TL.length c == 25) chunks)
+    , testCase "Keeps text as a single chunk when it fits chunkSize" $ do
+        let text = "short text"
+            ops = defaultRecursiveCharacterSplitterOps {chunkSize = 100, chunkOverlap = 0}
+        splitTextRecursive ops text @?= [text]
+    , testCase "Prefers paragraph separator before line separator" $ do
+        let text = "aa\n\nbb\n\ncc"
+            ops = defaultRecursiveCharacterSplitterOps {chunkSize = 8, chunkOverlap = 0}
+        splitTextRecursive ops text @?= ["aa\n\nbb", "cc"]
+    , testCase "Falls back to line separator when paragraph separator is absent" $ do
+        let text = "aa\nbb\ncc"
+            ops = defaultRecursiveCharacterSplitterOps {chunkSize = 6, chunkOverlap = 0}
+        splitTextRecursive ops text @?= ["aa\nbb", "cc"]
+    , testCase "Falls back to space separator when no newline separators match" $ do
+        let text = "aa bb cc"
+            ops = defaultRecursiveCharacterSplitterOps {chunkSize = 5, chunkOverlap = 0}
+        splitTextRecursive ops text @?= ["aa bb", "cc"]
+    , testCase "Falls back to character splitting when no separators match" $ do
+        let text = TL.replicate 7 "a"
+            ops = defaultRecursiveCharacterSplitterOps {chunkSize = 3, chunkOverlap = 0}
+        splitTextRecursive ops text @?= ["aaa", "aaa", "a"]
+    , testCase "Uses split-by-length fallback when separators list is empty" $ do
+        let text = "abcdefgh"
+            ops = defaultRecursiveCharacterSplitterOps {chunkSize = 3, chunkOverlap = 0, separators = []}
+        splitTextRecursive ops text @?= ["abc", "def", "gh"]
+    , testCase "Drops empty chunks caused by adjacent and edge separators" $ do
+        let text = "\n\nA\n\n\n\nB\n\n"
+            ops = defaultRecursiveCharacterSplitterOps {chunkSize = 3, chunkOverlap = 0}
+        splitTextRecursive ops text @?= ["A", "B"]
+    , testCase "Respects overlap with deterministic expected chunks" $ do
+        let text = "ab|cd|ef|gh"
+            ops =
+              defaultRecursiveCharacterSplitterOps
+                { chunkSize = 5
+                , chunkOverlap = 2
+                , separators = ["|", ""]
+                }
+        splitTextRecursive ops text @?= ["ab|cd", "cd|ef", "ef|gh"]
     ]
