@@ -26,10 +26,15 @@ module Langchain.Tool.GenericSchema
 
 import Data.Aeson (Value (..), object, (.=))
 import qualified Data.Aeson.Key as Key
+import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Kind (Type)
+import qualified Data.Map.Strict as Map
 import Data.Proxy (Proxy (..))
+import Data.Scientific (Scientific)
 import Data.Text (Text)
 import qualified Data.Text as TS
+import Data.Time (Day, UTCTime)
+import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.Generics
 
 -- | Typeclass for deriving tool JSON schema parameters
@@ -74,13 +79,52 @@ instance (Selector s, ToolFieldSchema a) => GToolRecordSchema (M1 S s (K1 R a)) 
 
 class ToolFieldSchema a where
   toolFieldSchema :: Proxy a -> Value
+  default toolFieldSchema :: (GToolRecordSchema (Rep a)) => Proxy a -> Value
+  toolFieldSchema _ = deriveToolParametersSchema (Proxy :: Proxy a)
+
   isOptionalField :: Proxy a -> Bool
   isOptionalField _ = False
 
 instance ToolFieldSchema Text where
   toolFieldSchema _ = object ["type" .= ("string" :: Text)]
 
+instance ToolFieldSchema String where
+  toolFieldSchema _ = object ["type" .= ("string" :: Text)]
+
+instance ToolFieldSchema Char where
+  toolFieldSchema _ = object ["type" .= ("string" :: Text)]
+
 instance ToolFieldSchema Int where
+  toolFieldSchema _ = object ["type" .= ("integer" :: Text)]
+
+instance ToolFieldSchema Int8 where
+  toolFieldSchema _ = object ["type" .= ("integer" :: Text)]
+
+instance ToolFieldSchema Int16 where
+  toolFieldSchema _ = object ["type" .= ("integer" :: Text)]
+
+instance ToolFieldSchema Int32 where
+  toolFieldSchema _ = object ["type" .= ("integer" :: Text)]
+
+instance ToolFieldSchema Int64 where
+  toolFieldSchema _ = object ["type" .= ("integer" :: Text)]
+
+instance ToolFieldSchema Integer where
+  toolFieldSchema _ = object ["type" .= ("integer" :: Text)]
+
+instance ToolFieldSchema Word where
+  toolFieldSchema _ = object ["type" .= ("integer" :: Text)]
+
+instance ToolFieldSchema Word8 where
+  toolFieldSchema _ = object ["type" .= ("integer" :: Text)]
+
+instance ToolFieldSchema Word16 where
+  toolFieldSchema _ = object ["type" .= ("integer" :: Text)]
+
+instance ToolFieldSchema Word32 where
+  toolFieldSchema _ = object ["type" .= ("integer" :: Text)]
+
+instance ToolFieldSchema Word64 where
   toolFieldSchema _ = object ["type" .= ("integer" :: Text)]
 
 instance ToolFieldSchema Double where
@@ -89,8 +133,35 @@ instance ToolFieldSchema Double where
 instance ToolFieldSchema Float where
   toolFieldSchema _ = object ["type" .= ("number" :: Text)]
 
+instance ToolFieldSchema Scientific where
+  toolFieldSchema _ = object ["type" .= ("number" :: Text)]
+
 instance ToolFieldSchema Bool where
   toolFieldSchema _ = object ["type" .= ("boolean" :: Text)]
+
+instance ToolFieldSchema UTCTime where
+  toolFieldSchema _ =
+    object
+      [ "type" .= ("string" :: Text)
+      , "format" .= ("date-time" :: Text)
+      ]
+
+instance ToolFieldSchema Day where
+  toolFieldSchema _ =
+    object
+      [ "type" .= ("string" :: Text)
+      , "format" .= ("date" :: Text)
+      ]
+
+instance ToolFieldSchema Value where
+  toolFieldSchema _ = object ["type" .= ("object" :: Text)]
+
+instance (ToolFieldSchema a) => ToolFieldSchema (Map.Map Text a) where
+  toolFieldSchema _ =
+    object
+      [ "type" .= ("object" :: Text)
+      , "additionalProperties" .= toolFieldSchema (Proxy :: Proxy a)
+      ]
 
 instance (ToolFieldSchema a) => ToolFieldSchema (Maybe a) where
   toolFieldSchema _ = toolFieldSchema (Proxy :: Proxy a)

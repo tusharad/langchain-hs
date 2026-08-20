@@ -8,6 +8,17 @@ and this project adheres to the
 
 ## Unreleased
 
+### Added
+
+- Upgraded to `ollama-haskell` `0.4.0.0` with support for native JSON schema grammar constraints (`Format`, `SchemaFormat`, `ToSchema`, `ToJsonType`).
+- Added native Ollama structured output execution: `structuredOllamaInvoke`, `structuredOllamaInvokeWithSchema`, `withStructuredOutput`, `withSchemaFormat`, `withJsonFormat`.
+- Enhanced generic JSON Schema derivation in `Langchain.OutputParser.Structured` and `Langchain.Tool.GenericSchema`:
+  - Automatic recursive derivation for nested composite record types.
+  - Automatic omission of optional (`Maybe a`) fields from JSON Schema `"required"` arrays.
+  - Rich type coverage for `Integer`, `Word8..64`, `Int8..64`, `UTCTime`, `Day`, `Scientific`, and collections.
+  - Bidirectional schema conversion bridges: `toOllamaSchema` and `fromOllamaSchema`.
+- Project hygiene: Weeder dead code detection configuration (`weeder.toml`, `make weeder`), removed unsupported Anthropic and DeepSeek providers, and pruned unused dependencies.
+
 ## 0.0.3.0 - 2025-11-16
 
 ### Added
