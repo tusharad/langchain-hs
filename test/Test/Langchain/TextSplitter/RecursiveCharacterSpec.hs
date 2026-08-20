@@ -117,7 +117,12 @@ tests =
         let ops = defaultRecursiveCharacterSplitterOps {chunkSize = 3, chunkOverlap = 0, separators = [""]}
         legacyEqCase ops "abcdefgh"
     , testCase "Legacy eq: fallback to rest separators when first separator absent" $ do
-        let ops = defaultRecursiveCharacterSplitterOps {chunkSize = 6, chunkOverlap = 0, separators = ["@@", "\n", " ", ""]}
+        let ops =
+              defaultRecursiveCharacterSplitterOps
+                { chunkSize = 6
+                , chunkOverlap = 0
+                , separators = ["@@", "\n", " ", ""]
+                }
         legacyEqCase ops "aa bb cc"
     , testCase "Legacy eq: drops empties from adjacent and edge separators" $ do
         let ops = defaultRecursiveCharacterSplitterOps {chunkSize = 3, chunkOverlap = 0}
@@ -138,7 +143,12 @@ tests =
         let ops = defaultRecursiveCharacterSplitterOps {chunkSize = 4, chunkOverlap = 2, separators = ["|", ""]}
         legacyEqCase ops "abcdefgh|ij|kl"
     , testCase "Legacy eq: mixed separators and recursive fallback" $ do
-        let ops = defaultRecursiveCharacterSplitterOps {chunkSize = 10, chunkOverlap = 2, separators = ["\n\n", "\n", " ", ""]}
+        let ops =
+              defaultRecursiveCharacterSplitterOps
+                { chunkSize = 10
+                , chunkOverlap = 2
+                , separators = ["\n\n", "\n", " ", ""]
+                }
         legacyEqCase ops "p1 line1\n\np2 has many words\nline2"
     , testCase "Invariant: no chunk exceeds chunkSize for valid config" $ do
         let ops = defaultRecursiveCharacterSplitterOps {chunkSize = 7, chunkOverlap = 2}
@@ -147,5 +157,5 @@ tests =
     , testCase "Invariant: all chunks are non-empty" $ do
         let ops = defaultRecursiveCharacterSplitterOps {chunkSize = 4, chunkOverlap = 1}
             chunks = splitTextRecursive ops "\n\nA\n\n\n\nB\n\n"
-        assertBool "No empty chunks" (all (not . TL.null) chunks)
+        assertBool "No empty chunks" ((not . any TL.null) chunks)
     ]

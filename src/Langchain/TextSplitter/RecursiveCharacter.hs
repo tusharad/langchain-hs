@@ -1,19 +1,20 @@
 {-# LANGUAGE OverloadedStrings #-}
 
--- |
--- Module      : Langchain.TextSplitter.RecursiveCharacter
--- Description : Hierarchical recursive character text splitting with chunk overlap
--- Copyright   : (c) 2025-2026 Tushar Adhatrao
--- License     : MIT
--- Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
--- Stability   : experimental
---
--- Recursively splits text by trying different separators in order (paragraphs, lines, spaces, characters)
--- to keep semantically related pieces of text together.
+{- |
+Module      : Langchain.TextSplitter.RecursiveCharacter
+Description : Hierarchical recursive character text splitting with chunk overlap
+Copyright   : (c) 2025-2026 Tushar Adhatrao
+License     : MIT
+Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
+Stability   : experimental
+
+Recursively splits text by trying different separators in order (paragraphs, lines, spaces, characters)
+to keep semantically related pieces of text together.
+-}
 module Langchain.TextSplitter.RecursiveCharacter
-  ( RecursiveCharacterSplitterOps (..),
-    defaultRecursiveCharacterSplitterOps,
-    splitTextRecursive,
+  ( RecursiveCharacterSplitterOps (..)
+  , defaultRecursiveCharacterSplitterOps
+  , splitTextRecursive
   )
 where
 
@@ -23,9 +24,9 @@ import qualified Data.Text.Lazy as T
 
 -- | Configuration options for recursive character text splitter
 data RecursiveCharacterSplitterOps = RecursiveCharacterSplitterOps
-  { chunkSize :: Int64,
-    chunkOverlap :: Int64,
-    separators :: [Text]
+  { chunkSize :: Int64
+  , chunkOverlap :: Int64
+  , separators :: [Text]
   }
   deriving (Show, Eq)
 
@@ -33,9 +34,9 @@ data RecursiveCharacterSplitterOps = RecursiveCharacterSplitterOps
 defaultRecursiveCharacterSplitterOps :: RecursiveCharacterSplitterOps
 defaultRecursiveCharacterSplitterOps =
   RecursiveCharacterSplitterOps
-    { chunkSize = 1000,
-      chunkOverlap = 200,
-      separators = ["\n\n", "\n", " ", ""]
+    { chunkSize = 1000
+    , chunkOverlap = 200
+    , separators = ["\n\n", "\n", " ", ""]
     }
 
 -- | Split text recursively using the specified separators hierarchy
@@ -43,9 +44,9 @@ splitTextRecursive :: RecursiveCharacterSplitterOps -> Text -> [Text]
 splitTextRecursive _ "" = []
 splitTextRecursive
   RecursiveCharacterSplitterOps
-    { chunkSize = maxSize,
-      chunkOverlap = maxOverlap,
-      separators = ss
+    { chunkSize = maxSize
+    , chunkOverlap = maxOverlap
+    , separators = ss
     }
   text = splitRecursive ss text
     where
