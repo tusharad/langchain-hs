@@ -19,8 +19,7 @@ At this moment, following integrations available,
 
  - Ollama
  - OpenAI
- - HuggingFace
- - Deepseek
+ - Google Gemini
  - OpenAI compatible
  - More to come...
 
@@ -72,7 +71,7 @@ The `Message` type represents a single message in the chat conversation. It has 
 
 ## Writing your own LLM
 
-Let's take an example of writing an instance for Deepseek LLM.
+Let's take an example of writing an instance for a Custom LLM.
 
 ```haskell
 {-# LANGUAGE TypeFamilies #-}
@@ -82,33 +81,33 @@ module LangchainLib (runApp) where
 import Langchain.LLM.Core
 import Data.Text (Text)
 
-data Deepseek = Deepseek
-  { dsApiKey    :: Text      -- ^ Your Deepseek API key
-  , dsEndpoint  :: Text      -- ^ Base URL of the Deepseek API
-  , dsModel     :: Text      -- ^ Model name, e.g. "deepseek-base"
+data CustomLLM = CustomLLM
+  { apiKey    :: Text      -- ^ Your API key
+  , endpoint  :: Text      -- ^ Base URL of the API
+  , model     :: Text      -- ^ Model name
   }
 
-data DeepseekParams = DeepseekParams
-  { dsTemperature :: Maybe Double  -- ^ Sampling temperature
-  , dsMaxTokens   :: Maybe Int     -- ^ Maximum tokens in output
+data CustomLLMParams = CustomLLMParams
+  { temperature :: Maybe Double  -- ^ Sampling temperature
+  , maxTokens   :: Maybe Int     -- ^ Maximum tokens in output
   }
 
-instance LLM Deepseek where
-  type LLMParams Deepseek = DeepseekParams
+instance LLM CustomLLM where
+  type LLMParams CustomLLM = CustomLLMParams
  
-  generate Deepseek{..} prompt mParams = do
-    let params = fromMaybe defaultDeepseekParams mParams
-        req    = makeRequest dsEndpoint prompt params
+  generate CustomLLM{..} prompt mParams = do
+    let params = fromMaybe defaultCustomLLMParams mParams
+        req    = makeRequest endpoint prompt params
     response <- httpBS req
     let status = getResponseStatusCode response
         body   = TE.decodeUtf8 $ getResponseBody response
     return $ if status >= 200 && status < 300
       then Right body
-      else Left $ "Deepseek error: HTTP " ++ show status ++ "; " ++ show body
+      else Left $ "Custom LLM error: HTTP " ++ show status ++ "; " ++ show body
 ```
 
-In this example, we define a `Deepseek` data type that represents the Deepseek LLM. We also define a `DeepseekParams` data type for optional parameters. The `generate` function constructs an HTTP request to the Deepseek API and handles the response.
-The `LLM` typeclass is implemented for the `Deepseek` type, allowing it to be used with the unified interface provided by langchain-hs. 
+In this example, we define a `CustomLLM` data type that represents the custom LLM. We also define a `CustomLLMParams` data type for optional parameters. The `generate` function constructs an HTTP request to the API and handles the response.
+The `LLM` typeclass is implemented for the `CustomLLM` type, allowing it to be used with the unified interface provided by langchain-hs. 
 
 ```note
 LLM typeclass takes ChatMessage as input for chat and stream functions. Where Message takes Role, Text and MessageData as input. The LLM client may take different Role or MessageData as input. For example, Ollama does not take Developer or Function role. Hence, it is recommended to convert the Message/Role to the LLM client specific type before calling the LLM client.

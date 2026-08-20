@@ -10,7 +10,7 @@ License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
 
-First-class Haskell client implementation for Anthropic's Model Context Protocol (MCP).
+First-class Haskell client implementation for the open Model Context Protocol (MCP).
 Supports stdio process and HTTP/SSE JSON-RPC 2.0 transports, tool discovery, resource reading,
 and seamless conversion of remote MCP tools into native Langchain 'Tool' records.
 -}

@@ -54,8 +54,6 @@ library
     , stm ==2.5.*
     , text >=1.2 && <3
     , time >=1.9 && <1.15
-    , transformers >=0.5 && <0.7
-    , unliftio ==0.2.*
   default-language: Haskell2010
 
 test-suite langchain-hs-graph-test
@@ -102,6 +100,4 @@ test-suite langchain-hs-graph-test
     , temporary
     , text >=1.2 && <3
     , time >=1.9 && <1.15
-    , transformers >=0.5 && <0.7
-    , unliftio ==0.2.*
   default-language: Haskell2010

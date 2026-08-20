@@ -16,7 +16,7 @@ tests =
         model p @?= "gpt-4o"
         baseUrl p @?= "https://api.openai.com/v1/chat/completions"
     , testCase "openAICompatible initializes custom endpoint" $ do
-        let p = openAICompatible "sk-test" "deepseek-chat" "https://api.deepseek.com/v1/chat/completions"
-        model p @?= "deepseek-chat"
-        baseUrl p @?= "https://api.deepseek.com/v1/chat/completions"
+        let p = openAICompatible "sk-test" "custom-llm" "https://custom-ai.example.com/v1/chat/completions"
+        model p @?= "custom-llm"
+        baseUrl p @?= "https://custom-ai.example.com/v1/chat/completions"
     ]

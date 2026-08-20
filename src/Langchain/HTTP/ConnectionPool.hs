@@ -12,7 +12,7 @@ Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
 
 Provides connection reuse, socket pooling, and connection manager configuration for HTTP-based
-provider clients (OpenAI, Anthropic, Gemini, DeepSeek, Ollama).
+provider clients (OpenAI, Gemini, Ollama).
 -}
 module Langchain.HTTP.ConnectionPool
   ( ConnectionPoolConfig (..)

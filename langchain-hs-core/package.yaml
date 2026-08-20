@@ -18,11 +18,8 @@ dependencies:
 - containers >= 0.6 && < 0.9
 - deepseq >= 1.4 && < 1.6
 - mtl >= 2.2 && < 2.4
-- stm >= 2.5 && < 2.6
 - text >= 1.2 && < 3
 - time >= 1.9 && < 1.15
-- transformers >= 0.5 && < 0.7
-- unliftio >= 0.2 && < 0.3
 
 default-extensions:
   - MultiParamTypeClasses

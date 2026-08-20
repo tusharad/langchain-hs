@@ -50,7 +50,7 @@
 |---|---|---|
 | [`langchain-hs-core`](./langchain-hs-core) | `0.2.0.0` | Pure AST pipeline (`RunnableTree`), `ChatModel`, `ContentBlock`, `Tool m`, `StreamEvent`. Zero HTTP deps. |
 | [`langchain-hs-graph`](./langchain-hs-graph) | `0.5.0.0` | `StateGraph s m`, `StateReducer s`, Checkpointers, HITL, TimeTravel, Parallel execution, DOT export. |
-| [`langchain-hs`](./) | `0.5.0.0` | Providers (Ollama, OpenAI, Anthropic, Gemini, DeepSeek), Memory, Vector Stores, Chains, MCP, Observability. |
+| [`langchain-hs`](./) | `0.5.0.0` | Providers (Ollama, OpenAI, Gemini), Memory, Vector Stores, Chains, MCP, Observability. |
 
 ---
 
@@ -77,7 +77,7 @@ flowchart TB
     end
 
     subgraph HighLevel ["langchain-hs (Ecosystem & Production)"]
-        PR["Providers: Ollama, OpenAI, Claude, Gemini, DeepSeek"]
+        PR["Providers: Ollama, OpenAI, Gemini"]
         AG["Agents: ReAct, Plan-and-Execute, Supervisor, Debate, Blackboard"]
         MCP["MCP Client (Stdio & HTTP JSON-RPC 2.0)"]
         VS["Vector Stores: SQLite-vec, InMemory, PgVector, Qdrant"]

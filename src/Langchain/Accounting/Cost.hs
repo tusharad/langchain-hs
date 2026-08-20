@@ -60,11 +60,8 @@ getStandardPricing :: Text -> ModelPricing
 getStandardPricing modelName
   | "gpt-4o-mini" `T.isInfixOf` lower = ModelPricing 0.15 0.60
   | "gpt-4o" `T.isInfixOf` lower = ModelPricing 2.50 10.00
-  | "claude-3-5-sonnet" `T.isInfixOf` lower = ModelPricing 3.00 15.00
-  | "claude-3-haiku" `T.isInfixOf` lower = ModelPricing 0.25 1.25
-  | "deepseek-chat" `T.isInfixOf` lower || "deepseek-v3" `T.isInfixOf` lower = ModelPricing 0.14 0.28
-  | "deepseek-reasoner" `T.isInfixOf` lower || "deepseek-r1" `T.isInfixOf` lower =
-      ModelPricing 0.55 2.19
+  | "gemini-1.5-flash" `T.isInfixOf` lower = ModelPricing 0.075 0.30
+  | "gemini-1.5-pro" `T.isInfixOf` lower = ModelPricing 1.25 5.00
   | otherwise = ModelPricing 0.0 0.0 -- Local models like Ollama are free
   where
     lower = T.toLower modelName

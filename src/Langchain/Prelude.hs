@@ -310,6 +310,13 @@ module Langchain.Prelude
 
     -- * Prompt Templates & Example Selectors
   , PromptTemplate (..)
+  , PromptTemplateOptions (..)
+  , TemplateFormat (..)
+  , defaultPromptTemplateOptions
+  , fromTemplate
+  , fromTemplateWithOptions
+  , fromTemplateWithFormat
+  , partialPromptTemplate
   , FewShotPromptTemplate (..)
   , renderPrompt
   , renderFewShotPrompt
@@ -394,9 +401,6 @@ module Langchain.Prelude
   , newEnumParser
   , parseEnum
 
-    -- * Algebraic Laws Verification
-  , verifyAllLaws
-
     -- * Agents & Execution
   , ReActAgent (ReActAgent)
   , AgentStep (..)
@@ -458,8 +462,6 @@ module Langchain.Prelude
   , newOllama
   , OpenAI
   , newOpenAI
-  , Anthropic
-  , newAnthropic
   , Gemini
   , newGemini
   ) where
@@ -516,7 +518,6 @@ import Langchain.Graph.Visualization
 import Langchain.Graph.Voting
 import Langchain.Guardrail.Core
 import Langchain.HTTP.ConnectionPool
-import Langchain.Laws
 import Langchain.Logging.Structured
 import Langchain.MCP.Client
 import Langchain.Memory.Core
@@ -530,7 +531,6 @@ import Langchain.OutputParser.Xml
 import Langchain.Pipeline.DSL
 import Langchain.PromptTemplate.FewShot
 import Langchain.PromptTemplate.Prompt
-import Langchain.Provider.Anthropic (Anthropic, newAnthropic)
 import Langchain.Provider.Gemini (Gemini, newGemini)
 import Langchain.Provider.Ollama (Ollama, newOllama)
 import Langchain.Provider.OpenAI (OpenAI, newOpenAI)

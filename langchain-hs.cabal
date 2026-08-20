@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.39.6.
+-- This file has been generated from package.yaml by hpack version 0.38.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -75,7 +75,6 @@ library
       Langchain.Graph.Voting
       Langchain.Guardrail.Core
       Langchain.HTTP.ConnectionPool
-      Langchain.Laws
       Langchain.Logging.Structured
       Langchain.MCP.Client
       Langchain.Memory.Core
@@ -98,8 +97,6 @@ library
       Langchain.PromptTemplate.FewShot
       Langchain.PromptTemplate.Prompt
       Langchain.PromptTemplate.String
-      Langchain.Provider.Anthropic
-      Langchain.Provider.DeepSeek
       Langchain.Provider.Gemini
       Langchain.Provider.Ollama
       Langchain.Provider.OpenAI
@@ -142,8 +139,7 @@ library
       src
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
-      QuickCheck >=2.14
-    , aeson ==2.*
+      aeson ==2.*
     , async <3
     , base >=4.7 && <5
     , base64-bytestring ==1.2.*
@@ -161,7 +157,6 @@ library
     , mtl >=2.2 && <2.4
     , ollama-haskell >=0.3.0.0
     , openai >=2.2.1
-    , parsec <4
     , pdf-toolbox-document ==0.1.4
     , process ==1.6.*
     , pystrformat
@@ -185,8 +180,7 @@ executable big-showcase
       examples
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      QuickCheck >=2.14
-    , aeson ==2.*
+      aeson ==2.*
     , async <3
     , base >=4.7 && <5
     , base64-bytestring ==1.2.*
@@ -205,7 +199,6 @@ executable big-showcase
     , mtl >=2.2 && <2.4
     , ollama-haskell >=0.3.0.0
     , openai >=2.2.1
-    , parsec <4
     , pdf-toolbox-document ==0.1.4
     , process ==1.6.*
     , pystrformat
@@ -341,7 +334,6 @@ test-suite langchain-hs-test
     , mtl >=2.2 && <2.4
     , ollama-haskell >=0.3.0.0
     , openai >=2.2.1
-    , parsec <4
     , pdf-toolbox-document ==0.1.4
     , process ==1.6.*
     , pystrformat
@@ -370,8 +362,7 @@ benchmark langchain-hs-bench
       bench
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N -Wall
   build-depends:
-      QuickCheck >=2.14
-    , aeson
+      aeson
     , async <3
     , base >=4.7 && <5
     , base64-bytestring ==1.2.*
@@ -390,7 +381,6 @@ benchmark langchain-hs-bench
     , mtl >=2.2 && <2.4
     , ollama-haskell >=0.3.0.0
     , openai >=2.2.1
-    , parsec <4
     , pdf-toolbox-document ==0.1.4
     , process ==1.6.*
     , pystrformat
