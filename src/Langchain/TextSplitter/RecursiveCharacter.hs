@@ -70,17 +70,19 @@ splitTextRecursive
           toText = T.intercalate sep . reverse
 
           go :: [Text] -> Int64 -> [Text] -> [Text] -> [Text]
-          go acc _ chunkParts [] = toText chunkParts : acc
-          go acc chunkLen chunkParts (part : restParts)
-            | chunkLen' <= maxSize = go acc chunkLen' (part : chunkParts) restParts
-            | partLen > maxSize = go (part : acc') 0 [] restParts
-            | otherwise =
-                let (overlapParts, overlapLen) = takeWhileOverlap chunkParts 0 []
-                    carryLen = overlapLen + sepBefore overlapParts + partLen
-                 in go acc' carryLen (part : reverse overlapParts) restParts
+          go acc chunkLen chunkParts pss =
+            case pss of
+              [] -> acc'
+              (part : restParts) ->
+                let partLen = T.length part
+                    chunkLen' = chunkLen + sepBefore chunkParts + partLen
+                 in if chunkLen' <= maxSize
+                      then go acc chunkLen' (part : chunkParts) restParts
+                      else
+                        let (overlapParts, overlapLen) = takeWhileOverlap chunkParts 0 []
+                            carryLen = overlapLen + sepBefore overlapParts + partLen
+                         in go acc' carryLen (part : reverse overlapParts) restParts
             where
-              partLen = T.length part
-              chunkLen' = chunkLen + sepBefore chunkParts + partLen
               acc' = toText chunkParts : acc
 
               sepBefore ps = if null ps then 0 else sepLen
@@ -91,4 +93,3 @@ splitTextRecursive
                 | otherwise = takeWhileOverlap restOverlap overlapLen' (overlapPart : overlapAcc)
                 where
                   overlapLen' = overlapLen + sepBefore overlapAcc + T.length overlapPart
-
