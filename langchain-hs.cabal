@@ -155,7 +155,7 @@ library
     , langchain-hs-core
     , langchain-hs-graph
     , mtl >=2.2 && <2.4
-    , ollama-haskell >=0.3.0.0
+    , ollama-haskell >=0.4.0.0
     , openai >=2.2.1
     , pdf-toolbox-document ==0.1.4
     , process ==1.6.*
@@ -197,7 +197,7 @@ executable big-showcase
     , langchain-hs-core
     , langchain-hs-graph
     , mtl >=2.2 && <2.4
-    , ollama-haskell >=0.3.0.0
+    , ollama-haskell >=0.4.0.0
     , openai >=2.2.1
     , pdf-toolbox-document ==0.1.4
     , process ==1.6.*
@@ -332,7 +332,7 @@ test-suite langchain-hs-test
     , langchain-hs-core
     , langchain-hs-graph
     , mtl >=2.2 && <2.4
-    , ollama-haskell >=0.3.0.0
+    , ollama-haskell >=0.4.0.0
     , openai >=2.2.1
     , pdf-toolbox-document ==0.1.4
     , process ==1.6.*
@@ -379,7 +379,7 @@ benchmark langchain-hs-bench
     , langchain-hs-core
     , langchain-hs-graph
     , mtl >=2.2 && <2.4
-    , ollama-haskell >=0.3.0.0
+    , ollama-haskell >=0.4.0.0
     , openai >=2.2.1
     , pdf-toolbox-document ==0.1.4
     , process ==1.6.*

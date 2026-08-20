@@ -389,7 +389,16 @@ module Langchain.Prelude
 
     -- * Structured Output, Routers, and Advanced Parsers
   , StructuredOutput (..)
+  , TypeSchema (..)
+  , toOllamaSchema
+  , fromOllamaSchema
   , structuredInvoke
+  , structuredInvokeWithRetries
+  , structuredOllamaInvoke
+  , structuredOllamaInvokeWithSchema
+  , withJsonFormat
+  , withSchemaFormat
+  , withStructuredOutput
   , SemanticRouter (..)
   , newSemanticRouter
   , Route (..)
@@ -532,7 +541,15 @@ import Langchain.Pipeline.DSL
 import Langchain.PromptTemplate.FewShot
 import Langchain.PromptTemplate.Prompt
 import Langchain.Provider.Gemini (Gemini, newGemini)
-import Langchain.Provider.Ollama (Ollama, newOllama)
+import Langchain.Provider.Ollama
+  ( Ollama
+  , newOllama
+  , structuredOllamaInvoke
+  , structuredOllamaInvokeWithSchema
+  , withJsonFormat
+  , withSchemaFormat
+  , withStructuredOutput
+  )
 import Langchain.Provider.OpenAI (OpenAI, newOpenAI)
 import Langchain.Resilience.CircuitBreaker
 import Langchain.Resilience.Retry

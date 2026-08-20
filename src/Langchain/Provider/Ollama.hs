@@ -1,5 +1,9 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
 {- |
@@ -10,7 +14,8 @@ License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
 
-Ollama provider using 'ollama-haskell' 0.3.0.0.
+Ollama provider using 'ollama-haskell' 0.4.0.0. Supports native structured outputs
+via JSON Schema grammar sampling, streaming, tool calling, and embeddings.
 -}
 module Langchain.Provider.Ollama
   ( Ollama (..)
@@ -23,28 +28,52 @@ module Langchain.Provider.Ollama
   , fromOllamaRole
   , toOllamaMessage
   , fromOllamaMessage
+  , withJsonFormat
+  , withSchemaFormat
+  , withStructuredOutput
+  , structuredOllamaInvoke
+  , structuredOllamaInvokeWithSchema
+
+    -- * Re-exports from ollama-haskell format & schema
+  , OFormat.Format (..)
+  , OSB.Schema (..)
+  , OSB.Property (..)
+  , OSB.JsonType (..)
+  , OSD.ToSchema (..)
+  , OSD.ToJsonType (..)
   ) where
 
-import Control.Monad.Except (throwError)
+import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.Aeson (Result (..), fromJSON, toJSON)
+import Data.Aeson (FromJSON, Result (..), decode, fromJSON, toJSON)
+import qualified Data.ByteString.Lazy.Char8 as LBSC
 import Data.Conduit (yield)
 import qualified Data.List.NonEmpty as NonEmpty
+import Data.Proxy (Proxy (..))
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as TE
 import qualified Data.Text.Lazy as TL
 
-import Langchain.Core.Error (llmError)
+import Langchain.Core.Error (LangchainError, llmError, parsingError)
 import Langchain.Core.Model
 import Langchain.Core.Stream (StreamEvent (..))
 import Langchain.DocumentLoader.Core (Document (..))
 import Langchain.Embeddings.Core (Embeddings (..))
+import Langchain.OutputParser.Structured
+  ( StructuredOutput (..)
+  , extractJsonFromMarkdown
+  , toOllamaSchema
+  )
 import Langchain.Utils (showText)
 
 import qualified Ollama.API.Chat as OllamaChat
 import Ollama.API.Embed (EmbedRequest (..), EmbedResponse (..), embed)
 import Ollama.Client (OllamaClient, defaultClient)
 import Ollama.Types.Common (Base64Image (..), ModelName (..))
+import qualified Ollama.Types.Format as OFormat
+import qualified Ollama.Types.Format.SchemaBuilder as OSB
+import qualified Ollama.Types.Format.SchemaDerive as OSD
 import qualified Ollama.Types.Message as O
 import qualified Ollama.Types.Tool as OTool
 
@@ -218,3 +247,75 @@ instance Embeddings OllamaEmbeddings where
       Right resp -> case erEmbeddings resp of
         (vec : _) -> pure $ map realToFrac vec
         [] -> throwError $ llmError "Empty embeddings vector" (Just "OllamaEmbeddings") Nothing
+
+-- | Attach generic JSON format constraint to Ollama ChatRequest
+withJsonFormat :: OllamaChat.ChatRequest -> OllamaChat.ChatRequest
+withJsonFormat req = req {OllamaChat.chatFormat = Just OFormat.JsonFormat}
+
+-- | Attach specific Schema format constraint to Ollama ChatRequest
+withSchemaFormat :: OSB.Schema -> OllamaChat.ChatRequest -> OllamaChat.ChatRequest
+withSchemaFormat schema req = req {OllamaChat.chatFormat = Just (OFormat.SchemaFormat schema)}
+
+-- | Attach automatic ToSchema derived format constraint to Ollama ChatRequest
+withStructuredOutput ::
+  forall a.
+  (OSD.ToSchema a) =>
+  OllamaChat.ChatRequest ->
+  OllamaChat.ChatRequest
+withStructuredOutput req =
+  req {OllamaChat.chatFormat = Just (OFormat.SchemaFormat (OSD.toSchema @a))}
+
+-- | Directly invoke Ollama with structured output constrained by automatic ToSchema derivation
+structuredOllamaInvoke ::
+  forall a m.
+  (OSD.ToSchema a, FromJSON a, MonadIO m, MonadError LangchainError m) =>
+  Ollama ->
+  [Message] ->
+  m a
+structuredOllamaInvoke model inputMsgs = do
+  let oMsgs = case inputMsgs of
+        [] -> O.userMessage "" NonEmpty.:| []
+        (m : ms) -> NonEmpty.map toOllamaMessage (m NonEmpty.:| ms)
+      baseReq = OllamaChat.chatRequest (ModelName (ollamaModelName model)) oMsgs
+      req = withStructuredOutput @a baseReq
+  respMsg <- invoke model inputMsgs (Just req)
+  let rawText = extractMessageText respMsg
+      cleanJson = extractJsonFromMarkdown rawText
+      bs = LBSC.fromStrict (TE.encodeUtf8 cleanJson)
+  case decode bs of
+    Just val -> pure val
+    Nothing ->
+      throwError $
+        parsingError
+          ("Failed to parse Ollama structured response into typed value: " <> rawText)
+          (Just "structuredOllamaInvoke")
+          Nothing
+
+-- | Directly invoke Ollama with structured output constrained by a Langchain StructuredOutput instance
+structuredOllamaInvokeWithSchema ::
+  forall a m.
+  (StructuredOutput a, MonadIO m, MonadError LangchainError m) =>
+  Ollama ->
+  [Message] ->
+  m a
+structuredOllamaInvokeWithSchema model inputMsgs = do
+  let oMsgs = case inputMsgs of
+        [] -> O.userMessage "" NonEmpty.:| []
+        (m : ms) -> NonEmpty.map toOllamaMessage (m NonEmpty.:| ms)
+      baseReq = OllamaChat.chatRequest (ModelName (ollamaModelName model)) oMsgs
+      valSchema = outputSchema (Proxy :: Proxy a)
+      req = case toOllamaSchema valSchema of
+        Just s -> withSchemaFormat s baseReq
+        Nothing -> withJsonFormat baseReq
+  respMsg <- invoke model inputMsgs (Just req)
+  let rawText = extractMessageText respMsg
+      cleanJson = extractJsonFromMarkdown rawText
+      bs = LBSC.fromStrict (TE.encodeUtf8 cleanJson)
+  case decode bs of
+    Just val -> pure val
+    Nothing ->
+      throwError $
+        parsingError
+          ("Failed to parse Ollama structured response into typed value: " <> rawText)
+          (Just "structuredOllamaInvokeWithSchema")
+          Nothing
