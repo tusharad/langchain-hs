@@ -1,169 +1,92 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 {- |
 Module      : Langchain.Agent.ReAct
-Description : ReAct (Reasoning + Acting) agent implementation
-Copyright   : (c) 2025 Tushar Adhatrao
+Description : Effect-polymorphic ReAct (Reasoning + Acting) Agent engine
+Copyright   : (c) 2025-2026 Tushar Adhatrao
 License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
 
-This module implements the ReAct (Reasoning + Acting) agent pattern.
-ReAct combines reasoning traces and task-specific actions in an interleaved manner.
+Modernized ReAct agent operating over ChatModel, Tool m, and multi-modal Message history.
 -}
 module Langchain.Agent.ReAct
-  ( -- * Agent Creation
-    ReActAgent (..)
+  ( AgentStep (..)
+  , ReActAgent (..)
   , createReActAgent
-  , createReActAgentWithPrompt
-
-    -- * Prompt Templates
-  , reActSystemPrompt
+  , reactStep
+  , runReActAgent
   ) where
 
-import Control.Monad.Trans.Except
+import Control.Monad.Except (MonadError, throwError)
+import Control.Monad.IO.Class (MonadIO)
 import Data.List (find)
-import qualified Data.Map as Map
-import Data.Text (Text)
-import qualified Data.Text as T
-import Langchain.Agent.Core
-import qualified Langchain.Error as Error
-import Langchain.LLM.Core
-import Langchain.Memory.Core (BaseMemory (..))
-import Langchain.Tool.Core
 
-{- | ReAct agent.
+import Langchain.Core.Error (LangchainError, agentError, toolError)
+import Langchain.Core.Model
+import qualified Langchain.Core.Model.Types as M
+import Langchain.Core.Tool
 
-Arguments:
-- llm: The language model
-- llmParams: The language model parameters
-- systemPrompt: The system prompt
-- maxThinkingSteps: The maximum number of thinking steps before forcing action
-- tools: The tools available to the agent.
--}
-data ReActAgent llm = ReActAgent
-  { reactLLM :: llm
-  -- ^ The language model for reasoning
-  , reactLLMParams :: Maybe (LLMParams llm)
-  -- ^ the llm params for language model
-  , reactSystemPrompt :: Text
-  -- ^ System prompt template
-  , reactMaxThinkingSteps :: Int
-  -- ^ Maximum consecutive thinking steps before forcing action (default: 3)
-  , reactTools :: [ToolAcceptingToolCall]
+-- | Step result of ReAct reasoning iteration
+data AgentStep
+  = AgentAction ToolCall
+  | AgentFinish Message
+  deriving (Eq, Show)
+
+-- | Effect-polymorphic ReAct Agent configuration
+data ReActAgent model m = ReActAgent
+  { agentModel :: model
+  , agentTools :: [Tool m]
+  , agentMaxIterations :: Int
   }
 
-{- | Create a ReAct agent.
-
-Arguments:
-- llm: The language model
-- llmParams: The language model parameters
-- tools: The tools available to the agent
-
-Important:
-- It is user's responsibility to wrap the tools into ToolAcceptingToolCall.
-- It is user's responsibility to pass tool_calls as part of LLMParams.
-- The tool_calls shall be same as the reactTools (ToolAcceptingToolCall) list.
--}
-createReActAgent ::
-  -- | The language model
-  llm ->
-  -- | The language model parameters
-  Maybe (LLMParams llm) ->
-  -- | The tools available to the agent
-  [ToolAcceptingToolCall] ->
-  -- | The ReAct agent
-  ReActAgent llm
-createReActAgent llm mbLlmParams tools =
+-- | Construct a ReAct Agent instance
+createReActAgent :: model -> [Tool m] -> ReActAgent model m
+createReActAgent model tools =
   ReActAgent
-    { reactLLM = llm
-    , reactLLMParams = mbLlmParams
-    , reactSystemPrompt = reActSystemPrompt
-    , reactMaxThinkingSteps = 3
-    , reactTools = tools
+    { agentModel = model
+    , agentTools = tools
+    , agentMaxIterations = 10
     }
 
--- | Create a ReAct agent with a custom system prompt.
-createReActAgentWithPrompt ::
-  -- | The language model
-  llm ->
-  -- | The language model parameters
-  Maybe (LLMParams llm) ->
-  -- | The tools available to the agent
-  [ToolAcceptingToolCall] ->
-  -- | The custom system prompt
-  Text ->
-  -- | The ReAct agent
-  ReActAgent llm
-createReActAgentWithPrompt llm mbLlmParams tools prompt =
-  ReActAgent
-    { reactLLM = llm
-    , reactLLMParams = mbLlmParams
-    , reactSystemPrompt = prompt
-    , reactMaxThinkingSteps = 3
-    , reactTools = tools
-    }
+-- | Run a single step of ReAct reasoning using ChatModel
+reactStep ::
+  (ChatModel model, MonadIO m, MonadError LangchainError m) =>
+  model ->
+  [Tool m] ->
+  [Message] ->
+  m AgentStep
+reactStep model _ history = do
+  responseMsg <- invoke model history Nothing
+  case messageToolCalls responseMsg of
+    Just (tc : _) -> pure $ AgentAction tc
+    _ -> pure $ AgentFinish responseMsg
 
--- | Default system prompt for the ReAct agent.
-reActSystemPrompt :: Text
-reActSystemPrompt =
-  "You are a helpful AI assistant that uses tools to answer user questions."
-
-instance LLM llm => Agent (ReActAgent llm) where
-  plan agent state = do
-    let llm = reactLLM agent
-        mbParams = reactLLMParams agent
-    -- Get messages from memory - use case to handle existential type
-    case agentMemory state of
-      SomeMemory mem -> runExceptT $ do
-        msgs <- ExceptT $ messages mem
-        respMsg <- ExceptT $ chat llm msgs mbParams
-        case toolCalls (messageData respMsg) of
-          Nothing -> do
-            -- No tool calls requested. Assume content as the final result
-            pure $
-              Done $
-                AgentFinish
-                  { agentOutput = content respMsg
-                  , finishMetadata = Map.empty -- TODO: Add stuff from state
-                  , finishLog = content respMsg
-                  }
-          Just toolCallList -> do
-            pure $
-              Continue
-                AgentAction
-                  { actionToolCall = toolCallList
-                  , actionLog = content respMsg
-                  , actionMetadata = Map.empty -- TODO: what to add here?
-                  }
-
-  getTools = reactTools
-
-  executeTool agent toolCall = do
-    let tools = getTools agent
-    let inputFunctionName = toolFunctionName (toolCallFunction toolCall)
-    case find (\(ToolAcceptingToolCall t) -> toolName t == inputFunctionName) tools of
-      Nothing ->
-        pure $
-          Left $
-            Error.fromString $
-              "Cannot find tool with name: "
-                <> T.unpack inputFunctionName
-      Just (ToolAcceptingToolCall selectedTool) -> Right <$> runTool selectedTool toolCall
-
-  initialize agent state = do
-    let sysPrompt = reactSystemPrompt agent
-        userInput = agentInput state
-        sysMsg = defaultMessage {role = System, content = sysPrompt}
-        userMsg = defaultMessage {role = User, content = userInput}
-    case agentMemory state of
-      SomeMemory mem -> runExceptT $ do
-        memWithSys <- ExceptT $ addMessage mem sysMsg
-        memWithUser <- ExceptT $ addMessage memWithSys userMsg
-        pure
-          AgentState
-            { agentMemory = SomeMemory memWithUser
-            , agentInput = userInput
-            , agentIterations = 0
-            }
+-- | Execute the full ReAct reasoning loop until AgentFinish or max iterations reached
+runReActAgent ::
+  (ChatModel model, MonadIO m, MonadError LangchainError m) =>
+  ReActAgent model m ->
+  [Message] ->
+  m Message
+runReActAgent agent initialHistory = go initialHistory (agentMaxIterations agent)
+  where
+    go history maxIter
+      | maxIter <= 0 = throwError $ agentError "ReAct Agent exceeded maximum iterations" Nothing Nothing
+      | otherwise = do
+          step <- reactStep (agentModel agent) (agentTools agent) history
+          case step of
+            AgentFinish finalMsg -> pure finalMsg
+            AgentAction tc -> do
+              let tName = toolCallName tc
+              case find (\t -> toolName t == tName) (agentTools agent) of
+                Nothing -> throwError $ toolError ("Tool not found: " <> tName) (Just tName) Nothing
+                Just tool -> do
+                  eOut <- toolExecute tool (toolCallArguments tc)
+                  case eOut of
+                    Left err -> throwError err
+                    Right outTxt -> do
+                      let obsMsg = textMessage M.Tool outTxt
+                          newHistory = history ++ [assistantMessage "", obsMsg]
+                      go newHistory (maxIter - 1)

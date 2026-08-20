@@ -1,130 +1,83 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeFamilies #-}
 
 {- |
 Module      : Langchain.Memory.TokenBufferMemory
-Description : Token based Memory management for LangChain Haskell
-Copyright   : (c) 2025 Tushar Adhatrao
+Description : Token-based memory management for LangChain Haskell
+Copyright   : (c) 2025-2026 Tushar Adhatrao
 License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
 
-Implementation of LangChain's Conversation token buffer.
-https://python.langchain.com/v0.1/docs/modules/memory/types/token_buffer/
+Thread-safe token buffer memory maintaining conversation history within a token budget.
 -}
 module Langchain.Memory.TokenBufferMemory
   ( TokenBufferMemory (..)
+  , newTokenBufferMemory
   , countTokens
   ) where
 
-import qualified Data.List.NonEmpty as NE
+import Control.Concurrent.STM (TVar, atomically, modifyTVar', newTVarIO, readTVarIO, writeTVar)
+import Control.Monad.Except (throwError)
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Data.Text as T
-import Langchain.Error (llmError)
-import Langchain.LLM.Core
-  ( ChatHistory
-  , Message (..)
+
+import Langchain.Core.Error (memoryError)
+import Langchain.Core.Model
+  ( Message (..)
   , Role (..)
-  , defaultMessageData
+  , extractMessageText
+  , systemMessage
   )
 import Langchain.Memory.Core
-import Langchain.Runnable.Core (Runnable (..))
 
--- | Token based sliding window memory type
+-- | Token-based sliding window memory type
 data TokenBufferMemory = TokenBufferMemory
-  { maxTokens :: Int
-  -- ^ Max number of tokens. 4 characters = 1 Token
-  , tokenBufferMessages :: ChatHistory
-  -- ^ Chat history (Nonempty List of Message)
+  { maxTokens :: !Int
+  , memVar :: !(TVar [Message])
   }
-  deriving (Eq, Show)
 
-{- | Function for counting tokens for the given list of messages
-| 1 token = 4 characters
--}
+instance Show TokenBufferMemory where
+  show (TokenBufferMemory maxT _) = "TokenBufferMemory { maxTokens = " ++ show maxT ++ " }"
+
+instance Eq TokenBufferMemory where
+  (TokenBufferMemory t1 tv1) == (TokenBufferMemory t2 tv2) =
+    t1 == t2 && tv1 == tv2
+
+-- | Construct a new TokenBufferMemory
+newTokenBufferMemory :: MonadIO m => Int -> [Message] -> m TokenBufferMemory
+newTokenBufferMemory maxT initMsgs = liftIO $ do
+  tv <- newTVarIO initMsgs
+  pure $ TokenBufferMemory maxT tv
+
+-- | Approximate token count: 4 characters ≈ 1 token
 countTokens :: [Message] -> Int
-countTokens = sum . map go
-  where
-    go :: Message -> Int
-    go (Message _ content _) =
-      ceiling @Double
-        (fromIntegral (T.length content) / 4.0)
+countTokens = sum . map (\m -> ceiling (fromIntegral (T.length (extractMessageText m)) / (4.0 :: Double)))
 
 instance BaseMemory TokenBufferMemory where
-  messages TokenBufferMemory {..} = pure $ Right tokenBufferMessages
-  addMessage t@TokenBufferMemory {..} newMsg = do
-    let newMsgTokenCount = countTokens [newMsg]
-        currentMsgsTokenCount = countTokens $ NE.toList tokenBufferMessages
-    if newMsgTokenCount > maxTokens
+  messages (TokenBufferMemory _ tv) = liftIO $ readTVarIO tv
+
+  addMessage (TokenBufferMemory maxT tv) newMsg = do
+    let newMsgTokens = countTokens [newMsg]
+    if newMsgTokens > maxT
       then
-        pure (Left (llmError "New message is exceeding limit" Nothing Nothing))
-      else
-        if newMsgTokenCount + currentMsgsTokenCount <= maxTokens
-          then
-            pure
-              ( Right $
-                  t
-                    { tokenBufferMessages =
-                        tokenBufferMessages <> NE.fromList [newMsg]
-                    }
-              )
-          else
-            trimNonSystemMsgs
-              (NE.toList tokenBufferMessages)
-              newMsgTokenCount
+        throwError $
+          memoryError "New message exceeds maximum token limit" (Just "TokenBufferMemory") Nothing
+      else liftIO $ atomically $ modifyTVar' tv $ \currMsgs ->
+        trimToLimit currMsgs newMsgTokens [newMsg]
     where
-      trimNonSystemMsgs msgs newMsgTokenCount = do
-        let trimmedMsgs = removeOldestNonSystem msgs
-        if trimmedMsgs == msgs -- If no more non sys msg left
-          then
-            pure
-              ( Left $
-                  llmError
-                    ( "Cannot add new message since system"
-                        <> " message and new message exceeds limit"
-                    )
-                    Nothing
-                    Nothing
-              )
-          else
-            if countTokens trimmedMsgs + newMsgTokenCount <= maxTokens
-              then
-                pure
-                  ( Right $
-                      t
-                        { tokenBufferMessages =
-                            NE.fromList $ trimmedMsgs <> [newMsg]
-                        }
-                  )
-              else trimNonSystemMsgs trimmedMsgs newMsgTokenCount
+      trimToLimit currMsgs newMsgToks acc =
+        let candidate = currMsgs ++ acc
+         in if countTokens candidate <= maxT
+              then candidate
+              else case removeOldestNonSystem currMsgs of
+                Just trimmed -> trimToLimit trimmed newMsgToks acc
+                Nothing -> [newMsg]
 
-      removeOldestNonSystem = go
-        where
-          go [] = []
-          go (m : ms)
-            | isSystem m = m : go ms
-            | otherwise = ms
+      removeOldestNonSystem [] = Nothing
+      removeOldestNonSystem (m : ms)
+        | messageRole m == System = fmap (m :) (removeOldestNonSystem ms)
+        | otherwise = Just ms
 
-      isSystem (Message role _ _) = role == System
-
-  addUserMessage tokBuffMem uMsg =
-    addMessage tokBuffMem (Message User uMsg defaultMessageData)
-
-  addAiMessage tokBuffMem uMsg =
-    addMessage tokBuffMem (Message Assistant uMsg defaultMessageData)
-
-  clear tokBuffMem =
-    pure $
-      Right $
-        tokBuffMem
-          { tokenBufferMessages =
-              NE.singleton $
-                Message System "You are an AI model" defaultMessageData
-          }
-
-instance Runnable TokenBufferMemory where
-  type RunnableInput TokenBufferMemory = T.Text
-  type RunnableOutput TokenBufferMemory = TokenBufferMemory
-
-  invoke = addUserMessage
+  clear (TokenBufferMemory _ tv) = liftIO $ do
+    atomically $ writeTVar tv [systemMessage "You are a helpful AI assistant"]

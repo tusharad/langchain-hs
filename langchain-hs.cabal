@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.39.6.
+-- This file has been generated from package.yaml by hpack version 0.38.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -22,8 +22,6 @@ tested-with:
   , GHC == 9.8.4
   , GHC == 9.6.6
   , GHC == 9.4.8
-  , GHC == 9.2.8
-  , GHC == 9.0.2
 extra-source-files:
     README.md
     CHANGELOG.md
@@ -34,51 +32,107 @@ source-repository head
 
 library
   exposed-modules:
+      Langchain.Accounting.Cost
       Langchain.Agent.Core
       Langchain.Agent.Executor
+      Langchain.Agent.Functions
       Langchain.Agent.Middleware
+      Langchain.Agent.PlanAndExecute
       Langchain.Agent.ReAct
+      Langchain.Agent.Supervisor
+      Langchain.Cache.Core
       Langchain.Callback
+      Langchain.Callback.Manager
+      Langchain.Chain.Conversational
+      Langchain.Chain.ConversationalRetrievalQA
+      Langchain.Chain.MapReduce
       Langchain.Chain.RetrievalQA
+      Langchain.Chain.Sequential
+      Langchain.Chain.SqlDatabase
+      Langchain.Chain.StuffDocuments
+      Langchain.Chain.Summarization
+      Langchain.Config.Validation
+      Langchain.Diagnostics.HealthCheck
       Langchain.DocumentLoader.Core
+      Langchain.DocumentLoader.Csv
       Langchain.DocumentLoader.DirectoryLoader
       Langchain.DocumentLoader.FileLoader
+      Langchain.DocumentLoader.Html
+      Langchain.DocumentLoader.Json
       Langchain.DocumentLoader.PdfLoader
+      Langchain.DocumentLoader.WebPage
+      Langchain.DocumentTransformer.HeaderInjector
+      Langchain.DocumentTransformer.MetadataEnricher
       Langchain.Embeddings.Core
       Langchain.Embeddings.Gemini
       Langchain.Embeddings.Ollama
       Langchain.Embeddings.OpenAI
       Langchain.Error
-      Langchain.LLM.Core
-      Langchain.LLM.Deepseek
-      Langchain.LLM.Gemini
-      Langchain.LLM.Huggingface
-      Langchain.LLM.Internal.Huggingface
-      Langchain.LLM.Ollama
-      Langchain.LLM.OpenAI
-      Langchain.LLM.OpenAICompatible
+      Langchain.ExampleSelector.Similarity
+      Langchain.Graph.Blackboard
+      Langchain.Graph.Debate
+      Langchain.Graph.DynamicFlow
+      Langchain.Graph.Voting
+      Langchain.Guardrail.Core
+      Langchain.HTTP.ConnectionPool
+      Langchain.Logging.Structured
+      Langchain.MCP.Client
       Langchain.Memory.Core
+      Langchain.Memory.Entity
+      Langchain.Memory.Summary
       Langchain.Memory.TokenBufferMemory
+      Langchain.Observability.OpenTelemetry
+      Langchain.Observability.StreamProtocol
       Langchain.OutputParser.Core
-      Langchain.PromptTemplate
+      Langchain.OutputParser.Enum
+      Langchain.OutputParser.Structured
+      Langchain.OutputParser.Xml
+      Langchain.Pipeline.DSL
+      Langchain.Prelude
+      Langchain.PromptTemplate.Chat
+      Langchain.PromptTemplate.Chat.ChatMessagePromptTemplate
+      Langchain.PromptTemplate.Chat.ChatPromptTemplate
+      Langchain.PromptTemplate.Chat.HumanMessagePromptTemplate
+      Langchain.PromptTemplate.Chat.MessagesPlaceholder
+      Langchain.PromptTemplate.FewShot
+      Langchain.PromptTemplate.Prompt
+      Langchain.PromptTemplate.String
+      Langchain.Provider.Gemini
+      Langchain.Provider.Ollama
+      Langchain.Provider.OpenAI
+      Langchain.Resilience.CircuitBreaker
+      Langchain.Resilience.Retry
+      Langchain.Retriever.BM25
+      Langchain.Retriever.ContextualCompression
       Langchain.Retriever.Core
+      Langchain.Retriever.Hybrid
       Langchain.Retriever.MultiQueryRetriever
-      Langchain.Runnable.Chain
-      Langchain.Runnable.ConversationChain
-      Langchain.Runnable.Core
-      Langchain.Runnable.Utils
-      Langchain.TextSplitters.CharacterTextSplitter
-      Langchain.TextSplitters.RecursiveCharacterTextSplitter
-      Langchain.TextSplitters.TextSplitter
+      Langchain.Retriever.ParentDocument
+      Langchain.Retriever.Reranker
+      Langchain.Router.Semantic
+      Langchain.Runnable
+      Langchain.TextSplitter.Character
+      Langchain.TextSplitter.Code
+      Langchain.TextSplitter.Markdown
+      Langchain.TextSplitter.RecursiveCharacter
+      Langchain.TextSplitter.Token
+      Langchain.Tool.Async
       Langchain.Tool.Calculator
       Langchain.Tool.Core
       Langchain.Tool.DuckDuckGo
+      Langchain.Tool.FileSystem
+      Langchain.Tool.GenericSchema
       Langchain.Tool.Utils
       Langchain.Tool.WebScraper
       Langchain.Tool.WikipediaTool
+      Langchain.Trace.Core
       Langchain.Utils
       Langchain.VectorStore.Core
+      Langchain.VectorStore.Filter
       Langchain.VectorStore.InMemory
+      Langchain.VectorStore.PgVector
+      Langchain.VectorStore.Qdrant
+      Langchain.VectorStore.SqliteVec
   other-modules:
       Paths_langchain_hs
   hs-source-dirs:
@@ -94,13 +148,23 @@ library
     , containers >=0.6 && <0.9
     , directory >=1.3.6 && <1.4
     , filepath <2
+    , ginger >=0.10.6 && <0.11
+    , http-client
     , http-conduit ==2.*
     , http-types >=0.11 && <0.13
-    , ollama-haskell >=0.2.1
+    , langchain-hs-core
+    , langchain-hs-graph
+    , mtl >=2.2 && <2.4
+    , ollama-haskell >=0.3.0.0
     , openai >=2.2.1
-    , parsec <4
-    , pcre2 >=2.2 && <2.4
     , pdf-toolbox-document ==0.1.4
+    , process ==1.6.*
+    , pystrformat
+    , random >=1.2
+    , scientific
+    , sqlite-simple >=0.4.18 && <0.5
+    , stache >=2.3 && <2.5
+    , stm ==2.5.*
     , tagsoup <0.15
     , text >=1.2 && <3
     , time >=1.9 && <1.15
@@ -108,33 +172,12 @@ library
     , vector <0.14
   default-language: Haskell2010
 
-test-suite langchain-hs-test
-  type: exitcode-stdio-1.0
-  main-is: Spec.hs
+executable big-showcase
+  main-is: BigGraphShowcase.hs
   other-modules:
-      Test.Langchain.Agent.ReAct
-      Test.Langchain.DocumentLoader.Core
-      Test.Langchain.DocumentLoader.DirectoryLoader
-      Test.Langchain.Embeddings.Core
-      Test.Langchain.LLM.Core
-      Test.Langchain.LLM.Ollama
-      Test.Langchain.Memory.Core
-      Test.Langchain.Memory.TokenBufferMemory
-      Test.Langchain.OutputParser.Core
-      Test.Langchain.PromptTemplate
-      Test.Langchain.Retriever.Core
-      Test.Langchain.Runnable.Chains
-      Test.Langchain.Runnable.ConversationChains
-      Test.Langchain.Runnable.Core
-      Test.Langchain.Runnable.Utils
-      Test.Langchain.TextSplitters.CharacterTextSplitter
-      Test.Langchain.TextSplitters.RecursiveCharacterTextSplitter
-      Test.Langchain.TextSplitters.TextSplitter
-      Test.Langchain.Tool.Core
-      Test.Langchain.VectorStore.Core
       Paths_langchain_hs
   hs-source-dirs:
-      test
+      examples
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson ==2.*
@@ -145,19 +188,209 @@ test-suite langchain-hs-test
     , conduit >=1.2 && <1.4
     , containers >=0.6 && <0.9
     , directory >=1.3.6 && <1.4
-    , filepath
+    , filepath <2
+    , ginger >=0.10.6 && <0.11
+    , http-client
     , http-conduit ==2.*
     , http-types >=0.11 && <0.13
     , langchain-hs
-    , ollama-haskell >=0.2.1
+    , langchain-hs-core
+    , langchain-hs-graph
+    , mtl >=2.2 && <2.4
+    , ollama-haskell >=0.3.0.0
     , openai >=2.2.1
-    , parsec <4
-    , pcre2 >=2.2 && <2.4
     , pdf-toolbox-document ==0.1.4
+    , process ==1.6.*
+    , pystrformat
+    , random >=1.2
+    , scientific
+    , sqlite-simple >=0.4.18 && <0.5
+    , stache >=2.3 && <2.5
+    , stm ==2.5.*
+    , tagsoup <0.15
+    , temporary
+    , text >=1.2 && <3
+    , time >=1.9 && <1.15
+    , transformers
+    , vector <0.14
+  default-language: Haskell2010
+
+test-suite langchain-hs-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Test.Langchain.Accounting.CostSpec
+      Test.Langchain.Agent.AdvancedAgentsSpec
+      Test.Langchain.Agent.MiddlewareSpec
+      Test.Langchain.Agent.ReAct
+      Test.Langchain.Cache.CacheSpec
+      Test.Langchain.Callback.CallbackManagerSpec
+      Test.Langchain.Chain.AdvancedChainsSpec
+      Test.Langchain.Chain.ChainsSpec
+      Test.Langchain.Chain.RetrievalQASpec
+      Test.Langchain.Chain.SummarizationSpec
+      Test.Langchain.Config.ValidationSpec
+      Test.Langchain.Diagnostics.HealthCheckSpec
+      Test.Langchain.DocumentLoader.Core
+      Test.Langchain.DocumentLoader.CsvSpec
+      Test.Langchain.DocumentLoader.DirectoryLoader
+      Test.Langchain.DocumentLoader.HtmlSpec
+      Test.Langchain.DocumentLoader.JsonSpec
+      Test.Langchain.DocumentLoader.WebPageSpec
+      Test.Langchain.DocumentTransformer.HeaderInjectorSpec
+      Test.Langchain.DocumentTransformer.MetadataEnricherSpec
+      Test.Langchain.Embeddings.Core
+      Test.Langchain.Error
+      Test.Langchain.ExampleSelector.ExampleSelectorSpec
+      Test.Langchain.Graph.AdvancedGraphSpec
+      Test.Langchain.Graph.CompilationSpec
+      Test.Langchain.Graph.DynamicFlowSpec
+      Test.Langchain.Graph.MultiAgentPatternsSpec
+      Test.Langchain.Guardrail.GuardrailSpec
+      Test.Langchain.HTTP.ConnectionPoolSpec
+      Test.Langchain.Integration.FullRagE2ESpec
+      Test.Langchain.Integration.MultiAgentGraphE2ESpec
+      Test.Langchain.Integration.OllamaChatSpec
+      Test.Langchain.Integration.OllamaEmbeddingSpec
+      Test.Langchain.Integration.OllamaStreamSpec
+      Test.Langchain.Integration.OllamaToolSpec
+      Test.Langchain.Integration.ReActAgentE2ESpec
+      Test.Langchain.Integration.StateGraphE2ESpec
+      Test.Langchain.Integration.StreamingCachingRetryE2ESpec
+      Test.Langchain.Logging.StructuredLoggingSpec
+      Test.Langchain.MCP.McpSpec
+      Test.Langchain.Memory.Core
+      Test.Langchain.Memory.EntitySpec
+      Test.Langchain.Memory.SummarySpec
+      Test.Langchain.Memory.TokenBufferMemory
+      Test.Langchain.Observability.OpenTelemetrySpec
+      Test.Langchain.Observability.StreamProtocolSpec
+      Test.Langchain.OutputParser.AdvancedParsersSpec
+      Test.Langchain.OutputParser.Core
+      Test.Langchain.Pipeline.PipelineDSLSpec
+      Test.Langchain.PreludeSpec
+      Test.Langchain.PromptTemplate.Chat.ChatMessagePromptTemplateSpec
+      Test.Langchain.PromptTemplate.Chat.ChatPromptTemplateSpec
+      Test.Langchain.PromptTemplate.Chat.MessagesPlaceholderSpec
+      Test.Langchain.PromptTemplate.FewShotSpec
+      Test.Langchain.PromptTemplate.PromptSpec
+      Test.Langchain.Property.CheckpointerSpec
+      Test.Langchain.Property.ErrorSpec
+      Test.Langchain.Property.MessageSpec
+      Test.Langchain.Property.OutputParserSpec
+      Test.Langchain.Property.PromptTemplateSpec
+      Test.Langchain.Property.RunnableSpec
+      Test.Langchain.Property.StateReducerSpec
+      Test.Langchain.Property.TextSplitterSpec
+      Test.Langchain.Provider.FixturesSpec
+      Test.Langchain.Provider.Gemini
+      Test.Langchain.Provider.Ollama
+      Test.Langchain.Provider.OllamaConversionSpec
+      Test.Langchain.Provider.OpenAI
+      Test.Langchain.Pure.PurePipelineSpec
+      Test.Langchain.RegressionSpec
+      Test.Langchain.Resilience.CircuitBreakerSpec
+      Test.Langchain.Resilience.RetrySpec
+      Test.Langchain.Retriever.AdvancedRetrieversSpec
+      Test.Langchain.Retriever.BM25Spec
+      Test.Langchain.Retriever.Core
+      Test.Langchain.Retriever.HybridSpec
+      Test.Langchain.TestHelpers
+      Test.Langchain.TextSplitter.Character
+      Test.Langchain.TextSplitter.CodeSpec
+      Test.Langchain.TextSplitter.MarkdownSpec
+      Test.Langchain.TextSplitter.RecursiveCharacterSpec
+      Test.Langchain.TextSplitter.TokenSpec
+      Test.Langchain.Tool.AdvancedToolsSpec
+      Test.Langchain.Tool.Calculator
+      Test.Langchain.Tool.Core
+      Test.Langchain.Tool.FileSystem
+      Test.Langchain.Trace.TraceSpec
+      Test.Langchain.VectorStore.Core
+      Test.Langchain.VectorStore.FilterSpec
+      Test.Langchain.VectorStore.SqliteVecSpec
+      Paths_langchain_hs
+  hs-source-dirs:
+      test
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      QuickCheck
+    , aeson
+    , async
+    , base >=4.7 && <5
+    , base64-bytestring ==1.2.*
+    , bytestring
+    , conduit >=1.2 && <1.4
+    , containers
+    , directory
+    , filepath
+    , ginger >=0.10.6 && <0.11
+    , http-client
+    , http-conduit
+    , http-types >=0.11 && <0.13
+    , langchain-hs
+    , langchain-hs-core
+    , langchain-hs-graph
+    , mtl >=2.2 && <2.4
+    , ollama-haskell >=0.3.0.0
+    , openai >=2.2.1
+    , pdf-toolbox-document ==0.1.4
+    , process ==1.6.*
+    , pystrformat
+    , random >=1.2
+    , scientific
+    , sqlite-simple >=0.4.18 && <0.5
+    , stache >=2.3 && <2.5
+    , stm ==2.5.*
     , tagsoup <0.15
     , tasty
     , tasty-hunit
+    , tasty-quickcheck
     , temporary
+    , text
+    , time >=1.9 && <1.15
+    , transformers
+    , vector <0.14
+  default-language: Haskell2010
+
+benchmark langchain-hs-bench
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      Paths_langchain_hs
+  hs-source-dirs:
+      bench
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N -Wall
+  build-depends:
+      aeson
+    , async <3
+    , base >=4.7 && <5
+    , base64-bytestring ==1.2.*
+    , bytestring >=0.10
+    , conduit >=1.2 && <1.4
+    , containers >=0.6 && <0.9
+    , directory >=1.3.6 && <1.4
+    , filepath <2
+    , ginger >=0.10.6 && <0.11
+    , http-client
+    , http-conduit ==2.*
+    , http-types >=0.11 && <0.13
+    , langchain-hs
+    , langchain-hs-core
+    , langchain-hs-graph
+    , mtl >=2.2 && <2.4
+    , ollama-haskell >=0.3.0.0
+    , openai >=2.2.1
+    , pdf-toolbox-document ==0.1.4
+    , process ==1.6.*
+    , pystrformat
+    , random >=1.2
+    , scientific
+    , sqlite-simple >=0.4.18 && <0.5
+    , stache >=2.3 && <2.5
+    , stm ==2.5.*
+    , tagsoup <0.15
+    , tasty-bench
     , text
     , time >=1.9 && <1.15
     , transformers

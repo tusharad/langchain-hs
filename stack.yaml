@@ -1,9 +1,11 @@
 resolver: nightly-2025-10-31
 packages:
 - .
+- ./langchain-hs-core
+- ./langchain-hs-graph
 extra-deps:
   - git: https://github.com/tusharad/ollama-haskell
-    commit: 33807a3a5a507e99d92b26e245c0aed582fde581
+    commit: f110772552b450856b2eaed6f3c7800c402d0a42
 
   - git: https://github.com/MercuryTechnologies/openai
     commit: 2031a05135b892a82b461558d19b813ab67cfb8f
@@ -21,3 +23,12 @@ extra-deps:
   - servant-multipart-client-0.12.2@sha256:e8105783e7dbef178a38dcfd05f4d12a8229eac88cfe49319f272dcb544e7365,2276
 
   - random-1.2.1.3@sha256:117541ba0a177397a3333f94870f789ef050dca31b0688a19824b2bc401b8823,6237
+
+  - git: https://github.com/lbobylev/pystrformat.git
+    commit: f603a296800ed3fb488eb9ba8976812bca4bb983
+
+  - mcp-server-0.2.0.1@sha256:7b09ac83c868f7a5b453aefd68c769e9cac5c5b60a0bac3cc418df1ba9587945,6795
+
+  - http-types-0.12.5@sha256:cb708ff8d2001dc7bcff615350a835a6dc1b2488829acfcc6d8bc7e13d423153,2927
+
+allow-newer: true

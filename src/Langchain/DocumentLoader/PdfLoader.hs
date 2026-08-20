@@ -1,47 +1,36 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 {- |
 Module      : Langchain.DocumentLoader.PdfLoader
 Description : A PDF loader that extracts documents from PDF files.
-Copyright   : (C) 2025 Tushar Adhatrao
+Copyright   : (C) 2025-2026 Tushar Adhatrao
 License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
 
-This module provides a loader for loading PDF files.
+PDF loader using pdf-toolbox-document.
 -}
 module Langchain.DocumentLoader.PdfLoader
   ( PdfLoader (..)
   ) where
 
-import Data.Aeson
+import Control.Exception (SomeException, try)
+import Control.Monad.Except (throwError)
+import Control.Monad.IO.Class (liftIO)
+import Data.Aeson (Value (..))
 import Data.Map (fromList)
+import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
-import Langchain.DocumentLoader.Core
-import Langchain.Error (llmError)
-import Langchain.TextSplitters.CharacterTextSplitter
-import Langchain.Utils (showText)
 import Pdf.Document hiding (Document)
 import System.Directory (doesFileExist)
 
--- TODO: Need some error handling for this function
+import Langchain.Core.Error (documentLoaderError)
+import Langchain.DocumentLoader.Core
+import Langchain.TextSplitter.Character
 
-{- |
-An internal function
-Reads a PDF file and extracts a list of 'Document's, one per page.
-
-This function opens the PDF file at the specified 'FilePath' and uses
-the Pdf.Document library to extract the text from each page. Each page's
-content is wrapped in a 'Document' along with metadata indicating the page number.
-
-Note: This function currently has minimal error handling. Improvements may be
-required to properly handle various PDF parsing errors.
-
-@param fPath The file path to the PDF file.
-@return An IO action yielding a list of 'Document's extracted from the PDF.
--}
-readPdf :: FilePath -> IO [Document]
-readPdf fPath = do
+readPdf :: FilePath -> IO (Either SomeException [Document])
+readPdf fPath = try $ do
   withPdfFile fPath $ \pdf -> do
     doc <- document pdf
     catalog <- documentCatalog doc
@@ -49,8 +38,7 @@ readPdf fPath = do
     count <- pageNodeNKids rootNode
     textList <-
       sequence
-        [ pageExtractText
-            =<< pageNodePageByNum rootNode i
+        [ pageExtractText =<< pageNodePageByNum rootNode i
         | i <- [0 .. count - 1]
         ]
     pure $
@@ -67,59 +55,31 @@ readPdf fPath = do
         (map TL.fromStrict textList)
         [1 .. count]
 
-{- |
-A loader for PDF files.
-
-The 'PdfLoader' data type encapsulates a 'FilePath' pointing to a PDF document.
-It implements the 'BaseLoader' interface to provide methods for loading and
-splitting PDF content.
--}
+-- | PDF file loader
 newtype PdfLoader = PdfLoader FilePath
+  deriving (Eq, Show)
 
 instance BaseLoader PdfLoader where
-  -- \|
-  --  Loads all pages from the PDF file specified by the 'PdfLoader'.
-  --
-  --  This function first checks whether the file exists. If it does, it uses
-  --  'readPdf' to extract the content of each page as a separate 'Document'. If
-  --  the file is not found, an appropriate error message is returned.
-  --
-  --  @param loader A 'PdfLoader' containing the file path to the PDF.
-  --  @return An IO action yielding either an error message or a list of 'Document's.
-  --
   load (PdfLoader path) = do
-    exists <- doesFileExist path
+    exists <- liftIO $ doesFileExist path
     if exists
       then do
-        content <- readPdf path
-        return $ Right content
+        eRes <- liftIO $ readPdf path
+        case eRes of
+          Left err ->
+            throwError $
+              documentLoaderError
+                (T.pack $ "Failed to parse PDF " ++ path ++ ": " ++ show err)
+                (Just "PdfLoader")
+                (Just $ T.pack path)
+          Right docs -> pure docs
       else
-        return $
-          Left $
-            llmError (showText $ "File not found: " ++ path) Nothing Nothing
+        throwError $
+          documentLoaderError
+            (T.pack $ "File not found: " ++ path)
+            (Just "PdfLoader")
+            (Just $ T.pack path)
 
-  -- \|
-  --  Loads the raw content of the PDF file and splits it using a character splitter.
-  --
-  --  This method reads the entire pdf as text and applies
-  --  'splitText' with default recursive character options to divide the text into chunks.
-  --  This approach is useful when only a simple text split is required rather than structured
-  --  page extraction.
-  --
-  --  @param loader A 'PdfLoader' containing the file path to the PDF.
-  --  @return An IO action yielding either an error message or a list of text chunks.
-  --
   loadAndSplit (PdfLoader path) = do
-    exists <- doesFileExist path
-    if exists
-      then do
-        documents <- readPdf path
-        return $
-          Right $
-            splitText
-              defaultCharacterSplitterOps
-              (pageContent $ mconcat documents)
-      else
-        return $
-          Left $
-            llmError (showText $ "File not found: " ++ path) Nothing Nothing
+    docs <- load (PdfLoader path)
+    pure $ splitText defaultCharacterSplitterOps (pageContent $ mconcat docs)

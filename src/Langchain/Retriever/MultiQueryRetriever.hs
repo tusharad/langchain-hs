@@ -1,36 +1,21 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeFamilies #-}
 
 {- |
 Module      : Langchain.Retriever.MultiQueryRetriever
 Description : Multi-query retrieval implementation for LangChain Haskell
-Copyright   : (c) 2025 Tushar Adhatrao
+Copyright   : (c) 2025-2026 Tushar Adhatrao
 License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
 
 Advanced retriever implementation that generates multiple queries from a single
-input to improve document retrieval. Integrates with LLMs for query expansion
-and vector stores for document retrieval
-
-Example usage:
-
-@
--- Create components
-ollamaLLM = Ollama "llama3" []
-vs = VectorStoreRetriever (createVectorStore ...)
-
--- Create retriever with default config
-mqRetriever = newMultiQueryRetriever vs ollamaLLM
-
--- Retrieve documents
-docs <- _get_relevant_documents mqRetriever "Haskell features"
--- Returns combined results from multiple generated queries
-@
+input using a ChatModel to improve document recall.
 -}
 module Langchain.Retriever.MultiQueryRetriever
   ( MultiQueryRetriever (..)
   , QueryGenerationPrompt (..)
+  , MultiQueryRetrieverConfig (..)
   , newMultiQueryRetriever
   , defaultQueryGenerationPrompt
   , newMultiQueryRetrieverWithConfig
@@ -38,53 +23,41 @@ module Langchain.Retriever.MultiQueryRetriever
   , generateQueries
   ) where
 
-import Langchain.DocumentLoader.Core (Document)
-import Langchain.LLM.Core (LLM (..))
-import Langchain.OutputParser.Core (NumberSeparatedList (..), OutputParser (..))
-import Langchain.PromptTemplate (PromptTemplate (..), renderPrompt)
-import Langchain.Retriever.Core (Retriever (..))
-import qualified Langchain.Runnable.Core as Run
-
-import Data.Either (rights)
+import Control.Monad.Except (MonadError, throwError)
+import Control.Monad.IO.Class (MonadIO)
 import Data.List (nub)
 import qualified Data.Map.Strict as HM
 import Data.Text (Text)
 import qualified Data.Text as T
-import Langchain.Error (LangchainError, llmError)
 
-{- | Query generation prompt template
-Controls how the LLM generates multiple query variants from the original query.
+import Langchain.Core.Error (LangchainError, vectorStoreError)
+import Langchain.Core.Model (ChatModel (..), extractMessageText, userMessage)
+import Langchain.DocumentLoader.Core (Document)
+import Langchain.OutputParser.Core (NumberSeparatedList (..), OutputParser (..))
+import Langchain.PromptTemplate.Prompt (PromptTemplate, fromTemplate, renderPrompt)
+import Langchain.Retriever.Core (Retriever (..))
 
-Example prompt structure:
-
-@
-"You are an AI assistant... Original query: {query}... Generate {num_queries} versions..."
-@
--}
+-- | Query generation prompt template
 newtype QueryGenerationPrompt = QueryGenerationPrompt PromptTemplate
   deriving (Show, Eq)
 
-{- | Default query generation prompt
-Generates 3 query variants in numbered list format. Includes instructions for
-query diversity and formatting.
--}
+-- | Default query generation prompt
 defaultQueryGenerationPrompt :: QueryGenerationPrompt
 defaultQueryGenerationPrompt =
   QueryGenerationPrompt $
-    PromptTemplate
-      { templateString =
-          T.unlines
-            [ "You are an AI language model assistant that helps users by generating multiple search queries based on their initial query."
-            , "These queries should help retrieve relevant documents or information from a vector database."
-            , ""
-            , "Original query: {query}"
-            , ""
-            , "Please generate {num_queries} different versions of this query that will help the user find the most relevant information."
-            , "The queries should be different but related to the original query."
-            , "Return these queries in the following format: 1. query 1 \n 2. query 2 \n 3. query 3"
-            , "Only return queries and nothing else"
-            ]
-      }
+    fromTemplate
+      ( T.unlines
+          [ "You are an AI language model assistant that helps users by generating multiple search queries based on their initial query."
+          , "These queries should help retrieve relevant documents or information from a vector database."
+          , ""
+          , "Original query: {query}"
+          , ""
+          , "Please generate {num_queries} different versions of this query that will help the user find the most relevant information."
+          , "The queries should be different but related to the original query."
+          , "Return these queries in the following format: 1. query 1 \n 2. query 2 \n 3. query 3"
+          , "Only return queries and nothing else"
+          ]
+      )
 
 -- | Configuration for multi-query retrieval
 data MultiQueryRetrieverConfig = MultiQueryRetrieverConfig
@@ -97,12 +70,9 @@ data MultiQueryRetrieverConfig = MultiQueryRetrieverConfig
   , includeOriginalQuery :: Bool
   -- ^ Whether to include results from original query
   }
+  deriving (Show, Eq)
 
-{- | Default configuration
-- 3 generated queries
-- Includes original query results
-- Uses default query generation prompt
--}
+-- | Default configuration
 defaultMultiQueryRetrieverConfig :: MultiQueryRetrieverConfig
 defaultMultiQueryRetrieverConfig =
   MultiQueryRetrieverConfig
@@ -112,177 +82,85 @@ defaultMultiQueryRetrieverConfig =
     , includeOriginalQuery = True
     }
 
-{- | Multi-query retriever implementation
-Generates multiple queries using an LLM, retrieves documents for each query,
-and combines results. Improves recall by exploring different query formulations.
-
-Example instance:
-
-@
-mqRetriever = MultiQueryRetriever
-  { retriever = vectorStoreRetriever
-  , llm = ollamaLLM
-  , config = defaultMultiQueryRetrieverConfig
-  }
-@
--}
-data (Retriever a, LLM m) => MultiQueryRetriever a m = MultiQueryRetriever
+-- | Multi-query retriever struct
+data MultiQueryRetriever a model = MultiQueryRetriever
   { retriever :: a
-  -- ^ The base retriever
-  , llm :: m
-  -- ^ The language model for generating queries
+  , model :: model
   , config :: MultiQueryRetrieverConfig
-  -- ^ Configuration
   }
 
-{- | Create retriever with default settings
-Example:
-
->>> newMultiQueryRetriever vsRetriever ollamaLLM
-MultiQueryRetriever {numQueries = 3, ...}
--}
-newMultiQueryRetriever :: (Retriever a, LLM m) => a -> m -> MultiQueryRetriever a m
-newMultiQueryRetriever r l =
+-- | Create retriever with default settings
+newMultiQueryRetriever :: a -> model -> MultiQueryRetriever a model
+newMultiQueryRetriever r m =
   MultiQueryRetriever
     { retriever = r
-    , llm = l
+    , model = m
     , config = defaultMultiQueryRetrieverConfig
     }
 
-{- | Create retriever with custom configuration
-Example:
-
->>> let customCfg = defaultMultiQueryRetrieverConfig { numQueries = 5 }
->>> newMultiQueryRetrieverWithConfig vsRetriever ollamaLLM customCfg
-MultiQueryRetriever {numQueries = 5, ...}
--}
+-- | Create retriever with custom configuration
 newMultiQueryRetrieverWithConfig ::
-  (Retriever a, LLM m) =>
   a ->
-  m ->
+  model ->
   MultiQueryRetrieverConfig ->
-  MultiQueryRetriever a m
-newMultiQueryRetrieverWithConfig r l c =
+  MultiQueryRetriever a model
+newMultiQueryRetrieverWithConfig r m c =
   MultiQueryRetriever
     { retriever = r
-    , llm = l
+    , model = m
     , config = c
     }
 
-{- | Generate multiple query variants using LLM
-Example:
-
->>> generateQueries ollamaLLM prompt "Haskell" 3 True
-Right ["Haskell", "Haskell features", "Haskell applications"]
--}
+-- | Generate multiple query variants using ChatModel
 generateQueries ::
-  LLM m => m -> QueryGenerationPrompt -> Text -> Int -> Bool -> IO (Either LangchainError [Text])
-generateQueries model (QueryGenerationPrompt promptTemplate) query n includeOriginal = do
+  (ChatModel model, MonadIO m, MonadError LangchainError m) =>
+  model ->
+  QueryGenerationPrompt ->
+  Text ->
+  Int ->
+  Bool ->
+  m [Text]
+generateQueries mdl (QueryGenerationPrompt promptTemplate) query n includeOriginal = do
   let vars = HM.fromList [("query", query), ("num_queries", T.pack $ show n)]
   case renderPrompt promptTemplate vars of
-    Left err -> return $ Left err
+    Left err -> throwError err
     Right prompt -> do
-      result <- generate model prompt Nothing
-      case result of
-        Left err -> return $ Left err
-        Right response -> do
-          case parse response :: Either LangchainError NumberSeparatedList of
-            Left err -> return $ Left err
-            Right (NumberSeparatedList queries) -> do
-              let uniqueQueries = nub $ filter (not . T.null) queries
-              return $
-                Right $
-                  if includeOriginal
-                    then query : uniqueQueries
-                    else uniqueQueries
+      msg <- invoke mdl [userMessage prompt] Nothing
+      let rawText = extractMessageText msg
+      case parse rawText :: Either LangchainError NumberSeparatedList of
+        Left err -> throwError err
+        Right (NumberSeparatedList queries) -> do
+          let uniqueQueries = nub $ filter (not . T.null) queries
+          pure $
+            if includeOriginal
+              then query : uniqueQueries
+              else uniqueQueries
 
-{- | Combine documents from multiple queries
-Removes duplicates while maintaining order (simplified approach).
--}
+-- | Combine documents from multiple queries
 combineDocuments :: [[Document]] -> [Document]
-combineDocuments docLists =
-  -- This is a simplified approach. In a production system, you'd want a more
-  -- sophisticated way to identify and rank duplicate documents
-  nub $ concat docLists
+combineDocuments = nub . concat
 
-{- | Retriever instance implementation
-1. Generates multiple queries using LLM
-2. Retrieves documents for each query
-3. Combines and deduplicates results
-
-Example retrieval:
-
->>> _get_relevant_documents mqRetriever "Haskell"
-Right [Document "Haskell is...", Document "Functional programming...", ...]
--}
-instance (Retriever a, LLM m) => Retriever (MultiQueryRetriever a m) where
-  _get_relevant_documents r query = do
+instance (Retriever a, ChatModel model) => Retriever (MultiQueryRetriever a model) where
+  getRelevantDocuments r query = do
     let baseRetriever = retriever r
-        model = llm r
+        mdl = model r
         cfg = config r
 
-    -- Generate multiple queries
-    queriesResult <-
+    queries <-
       generateQueries
-        model
+        mdl
         (queryGenerationPrompt cfg)
         query
         (numQueries cfg)
         (includeOriginalQuery cfg)
 
-    case queriesResult of
-      Left err -> return $ Left err
-      Right queries -> do
-        -- Get documents for each query
-        results <- mapM (_get_relevant_documents baseRetriever) queries
-
-        -- Filter successful results
-        let validResults = rights results
-
-        if null validResults
-          then return $ Left (llmError "No valid results from any query" Nothing Nothing)
-          else return $ Right $ combineDocuments validResults
-
-{-
- ghci> :set -XOverloadedStrings
- ghci> let ollamaEmbed = OllamaEmbeddings "nomic-embed-text:latest" Nothing Nothing
- ghci> let vs = emptyInMemoryVectorStore ollamaEmbed
- ghci> import Data.Map (empty)
- ghci> import Data.Either
- ghci> newVs <- addDocuments vs [Document "Tushar is 25 years old." empty]
- ghci> let newVs_ = fromRight vs newVs
- ghci> let vRet = VectorStoreRetriever newVs_
- ghci> let ollamLLM = Ollama "llama3.2" []
- ghci> let mqRet = newMultiQueryRetriever vRet ollamLLM
- ghci> documents <- _get_relevant_documents mqRet "How old is Tushar?"
- ghci> documents
-    Right [Document {pageContent = "Tushar is 25 years old.", metadata = fromList []}]
- -}
-
-{- | Runnable interface implementation
-Allows integration with LangChain workflows:
-
->>> invoke mqRetriever "AI applications"
-Right [Document "Machine learning...", ...]
--}
-instance (Retriever a, LLM m) => Run.Runnable (MultiQueryRetriever a m) where
-  type RunnableInput (MultiQueryRetriever a m) = Text
-  type RunnableOutput (MultiQueryRetriever a m) = [Document]
-
-  invoke = _get_relevant_documents
-
-{- $examples
-Test case patterns:
-1. Query generation
-   >>> generateQueries ollamaLLM prompt "Test" 2 False
-   Right ["Test case", "Test example"]
-
-2. Full retrieval flow
-   >>> _get_relevant_documents mqRetriever "Haskell"
-   Right [Document "Functional...", Document "Type system..."]
-
-3. Configuration variants
-   >>> let cfg = defaultMultiQueryRetrieverConfig { numQueries = 5 }
-   >>> newMultiQueryRetrieverWithConfig vsRetriever ollamaLLM cfg
-   MultiQueryRetriever {numQueries = 5, ...}
--}
+    docLists <- mapM (getRelevantDocuments baseRetriever) queries
+    let combined = combineDocuments docLists
+    if null combined
+      then
+        throwError $
+          vectorStoreError
+            "No valid results returned from any query variant"
+            (Just "MultiQueryRetriever")
+            Nothing
+      else pure combined

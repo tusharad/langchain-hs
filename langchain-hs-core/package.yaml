@@ -1,0 +1,61 @@
+name:                langchain-hs-core
+version:             0.2.0.0
+synopsis:            Core typeclasses and pure AST primitives for langchain-hs
+description:         Zero HTTP dependency core package containing ChatModel, RunnableTree, ContentBlock, and StreamEvent primitives.
+category:            Web, AI, Control
+author:              Tushar Adhatrao
+maintainer:          tusharadhatrao@gmail.com
+copyright:           2025-2026 Tushar Adhatrao
+license:             MIT
+
+dependencies:
+- aeson >= 2.0 && < 3
+- async >= 2.2 && < 2.3
+- base >= 4.17 && < 5
+- base64-bytestring >= 1.2 && < 1.3
+- bytestring >= 0.10 && < 0.13
+- conduit >= 1.3 && < 1.4
+- containers >= 0.6 && < 0.9
+- deepseq >= 1.4 && < 1.6
+- mtl >= 2.2 && < 2.4
+- text >= 1.2 && < 3
+- time >= 1.9 && < 1.15
+
+default-extensions:
+  - MultiParamTypeClasses
+  - FunctionalDependencies
+  - TypeFamilies
+  - TypeOperators
+  - DataKinds
+  - GADTs
+  - OverloadedStrings
+  - DeriveGeneric
+  - DeriveAnyClass
+  - RecordWildCards
+  - FlexibleContexts
+
+library:
+  source-dirs: src
+  exposed-modules:
+    - Langchain.Core.Error
+    - Langchain.Core.Model
+    - Langchain.Core.Model.Types
+    - Langchain.Core.Monad
+    - Langchain.Core.Stream
+    - Langchain.Core.Runnable
+    - Langchain.Core.Tool
+
+tests:
+  langchain-hs-core-test:
+    main: Spec.hs
+    source-dirs: test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - langchain-hs-core
+    - QuickCheck >= 2.14
+    - tasty >= 1.4
+    - tasty-hunit >= 0.10
+    - tasty-quickcheck >= 0.10

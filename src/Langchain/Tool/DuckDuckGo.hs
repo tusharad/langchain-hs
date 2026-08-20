@@ -1,27 +1,35 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeFamilies #-}
 
 {- |
 Module      : Langchain.Tool.DuckDuckGo
 Description : Tool for extracting DuckDuckGo search content
-Copyright   : (c) 2025 Tushar Adhatrao
+Copyright   : (c) 2025-2026 Tushar Adhatrao
 License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
 
-Please note: DuckDuckGo Tool only returns result if the search term has a abstract card
+DuckDuckGo search tool built with effect-polymorphic 'Tool m'.
 -}
-module Langchain.Tool.DuckDuckGo (DuckDuckGo (..)) where
+module Langchain.Tool.DuckDuckGo
+  ( duckDuckGoTool
+  , searchDuckDuckGo
+  , DuckDuckGoResponse (..)
+  ) where
 
 import Control.Exception (SomeException, catch)
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Aeson
+import Data.Aeson.Types (parseEither)
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 import GHC.Generics (Generic)
-import Langchain.Tool.Core
 import Network.HTTP.Simple
+
+import Langchain.Core.Error (toolError)
+import Langchain.Core.Tool (Tool (..), createTool)
 
 -- | Icon data within related topics
 newtype Icon = Icon
@@ -31,8 +39,7 @@ newtype Icon = Icon
 
 instance FromJSON Icon where
   parseJSON = withObject "Icon" $ \v ->
-    Icon
-      <$> v .:? "URL"
+    Icon <$> v .:? "URL"
 
 -- | A single related topic
 data RelatedTopic = RelatedTopic
@@ -127,7 +134,7 @@ data DuckDuckGoResponse = DuckDuckGoResponse
   , redirect :: Text
   , relatedTopics :: [RelatedTopic]
   , results :: [Value]
-  , resultType :: Text -- Called "Type" in the API
+  , resultType :: Text
   , meta :: Maybe Meta
   }
   deriving (Show, Eq, Generic)
@@ -157,64 +164,51 @@ instance FromJSON DuckDuckGoResponse where
       <*> v .: "Type"
       <*> v .:? "meta"
 
-{-
--- | Error type for DuckDuckGo API calls
-data DuckDuckGoError
-  = NetworkError Text
-  | ParseError Text
-  | OtherError Text
-  deriving (Show, Eq, Generic)
+-- | Search DuckDuckGo given a query string
+searchDuckDuckGo :: MonadIO m => Text -> m (Either Text Text)
+searchDuckDuckGo queryData = liftIO $ do
+  let searchTerm = T.replace " " "+" (T.strip queryData)
+      urlString = "https://duckduckgo.com/?q=" <> T.unpack searchTerm <> "&format=json"
+  eResult <-
+    ( do
+        request <- parseRequest urlString
+        response <- httpLbs request
+        let body = getResponseBody response
+        case eitherDecode body of
+          Left err -> pure $ Left $ T.pack $ show err
+          Right ddgResponse_ -> pure $ Right ddgResponse_
+    )
+      `catch` \e -> pure $ Left $ T.pack $ show (e :: SomeException)
+  case eResult of
+    Left err -> pure $ Left err
+    Right r -> pure $ Right $ ddgToText r
 
-instance ToJSON DuckDuckGoError where
-  toJSON (NetworkError msg) = object ["type" .= ("network" :: Text), "message" .= msg]
-  toJSON (ParseError msg) = object ["type" .= ("parse" :: Text), "message" .= msg]
-  toJSON (OtherError msg) = object ["type" .= ("other" :: Text), "message" .= msg]
-  -}
-
--- | Query parameter for DuckDuckGo search
-newtype DuckDuckGoQuery = DuckDuckGoQuery
-  { query :: Text
-  }
-  deriving (Show, Eq, Generic)
-
-instance ToJSON DuckDuckGoQuery where
-  toJSON q = object ["query" .= query q]
-
--- | The DuckDuckGo tool data type
-data DuckDuckGo = DuckDuckGo
-  deriving (Show, Eq)
-
--- | Tool instance for DuckDuckGo
-instance Tool DuckDuckGo where
-  type Input DuckDuckGo = Text
-  type Output DuckDuckGo = Text
-
-  toolName _ = "duckduckgo"
-
-  toolDescription _ =
+-- | Effect-polymorphic DuckDuckGo Tool
+duckDuckGoTool :: MonadIO m => Tool m
+duckDuckGoTool =
+  createTool
+    "duckduckgo"
     "Performs web searches using DuckDuckGo and returns structured information about results"
+    ( object
+        [ "type" .= ("object" :: Text)
+        , "properties"
+            .= object
+              ["query" .= object ["type" .= ("string" :: Text)]]
+        , "required" .= (["query"] :: [Text])
+        ]
+    )
+    ( \case
+        Object o -> case parseEither (.:? "query") o of
+          Right (Just q) -> do
+            eRes <- searchDuckDuckGo q
+            case eRes of
+              Left err -> pure $ Left $ toolError err (Just "duckduckgo") Nothing
+              Right txt -> pure $ Right txt
+          _ -> pure $ Left $ toolError "Missing 'query' field" (Just "duckduckgo") Nothing
+        _ -> pure $ Left $ toolError "Invalid arguments object" (Just "duckduckgo") Nothing
+    )
 
-  runTool _ queryData = do
-    let searchTerm = T.replace " " "+" (T.strip queryData)
-    let urlString =
-          "https://duckduckgo.com/?q="
-            <> T.unpack searchTerm
-            <> "&format=json"
-    eResult <-
-      ( do
-          request <- parseRequest urlString
-          response <- httpLbs request
-          let body = getResponseBody response
-          case eitherDecode body of
-            Left err -> pure $ Left $ T.pack $ show err
-            Right ddgResponse_ -> pure $ Right ddgResponse_
-      )
-        `catch` \e -> pure $ Left $ T.pack $ show (e :: SomeException)
-    case eResult of
-      Left err -> pure err
-      Right r -> pure $ ddgToText r
-
--- | Converts a DuckDuckGoResponse into a concise textual summary suitable for LLM input.
+-- | Converts a DuckDuckGoResponse into a concise textual summary.
 ddgToText :: DuckDuckGoResponse -> Text
 ddgToText resp =
   T.intercalate "\n\n" $
@@ -243,8 +237,7 @@ definitionSection resp = do
   def <- if T.null (definition resp) then Nothing else Just (definition resp)
   url <-
     if T.null (definitionURL resp)
-      then
-        Nothing
+      then Nothing
       else Just (definitionURL resp)
   Just $ "Definition: " <> def <> "\nSource: " <> url
 
@@ -256,10 +249,8 @@ relatedTopicsSection rts =
 processRelatedTopic :: RelatedTopic -> [Text]
 processRelatedTopic rt =
   case (topicName rt, topicTopics rt) of
-    -- Handle categorized group
     (Just name, Just subtopics) ->
       ("*" <> name <> "*") : concatMap processRelatedTopic subtopics
-    -- Handle individual topic
     _ ->
       case (topicText rt, topicFirstURL rt) of
         (Just text, Just url) -> ["- [" <> text <> "](" <> url <> ")"]

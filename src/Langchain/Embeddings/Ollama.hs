@@ -1,119 +1,76 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
 {- |
 Module      : Langchain.Embeddings.Ollama
 Description : Ollama integration for text embeddings in LangChain Haskell
-Copyright   : (c) 2025 Tushar Adhatrao
+Copyright   : (c) 2025-2026 Tushar Adhatrao
 License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
 
-Ollama implementation of LangChain's embedding interface. Supports document and query
-embedding generation through Ollama's API.
-
-Example usage:
-
-@
--- Create Ollama embeddings configuration
-ollamaEmb = OllamaEmbeddings
-  { model = "nomic-embed-text:latest"
-  , defaultTruncate = Just True
-  , defaultKeepAlive = Just "5m"
-  }
-
--- Embed query text
-queryVec <- embedQuery ollamaEmb "What is Haskell?"
--- Right [0.12, 0.34, ...]
-
--- Embed document collection
-doc <- Document "Haskell is a functional programming language" mempty
-docsVec <- embedDocuments ollamaEmb [doc]
--- Right [[0.56, 0.78, ...]]
-@
+Ollama implementation of LangChain's embedding interface using ollama-haskell 0.3.0.0.
 -}
 module Langchain.Embeddings.Ollama
   ( OllamaEmbeddings (..)
   , module Langchain.DocumentLoader.Core
   ) where
 
-import Data.Maybe
-import Data.Ollama.Embeddings
-import qualified Data.Ollama.Embeddings as O
+import Control.Monad.Except (throwError)
+import Control.Monad.IO.Class (liftIO)
 import Data.Text (Text)
 import qualified Data.Text.Lazy as T
+import Langchain.Core.Error (llmError)
 import Langchain.DocumentLoader.Core
 import Langchain.Embeddings.Core
-import Langchain.Error (llmError)
 import Langchain.Utils (showText)
 
-{- | Ollama-specific embedding configuration
-Contains parameters for controlling:
+import Ollama.API.Embed (EmbedRequest (..), EmbedResponse (..), embed)
+import Ollama.Client (defaultClient)
+import Ollama.Types.Common (ModelName (..))
+import Ollama.Types.Options (ModelOptions)
 
-- Model selection
-- Input truncation behavior
-- Model caching via keep-alive
-
-Example configuration:
-
->>> OllamaEmbeddings "nomic-embed" (Just False) (Just 3600) Nothing
-OllamaEmbeddings {model = "nomic-embed", ...}
--}
 data OllamaEmbeddings = OllamaEmbeddings
   { model :: Text
-  -- ^ The name of the Ollama model to use for embeddings
   , defaultTruncate :: Maybe Bool
-  -- ^ Optional flag to truncate input if supported by the API
-  , defaultKeepAlive :: Maybe Int
-  -- ^ Keep model loaded for specified duration in seconds (e.g., 300 for 5 minutes)
-  , modelOptions :: Maybe O.ModelOptions
-  -- ^ Optional model parameters (e.g., temperature) as specified in the Modelfile.
+  , defaultKeepAlive :: Maybe Text
+  , modelOptions :: Maybe ModelOptions
   }
   deriving (Show, Eq)
 
 instance Embeddings OllamaEmbeddings where
-  -- \| Document embedding implementation:
-  --  Processes each document individually through Ollama's API.
-  --
-  --  Example:
-  --  >>> let doc = Document "Test content" mempty
-  --  >>> embedDocuments ollamaEmb [doc]
-  --  Right [[0.1, 0.2, ...], ...]
   embedDocuments (OllamaEmbeddings {..}) docs = do
-    -- For each input text, make an individual API call
-    eRes <-
-      embeddingOps
-        model
-        (map (T.toStrict . pageContent) docs)
-        defaultTruncate
-        defaultKeepAlive
-        modelOptions
-        Nothing
-        Nothing
+    client <- liftIO defaultClient
+    let inputs = map (T.toStrict . pageContent) docs
+        req =
+          EmbedRequest
+            { embModel = ModelName model
+            , embInput = Right inputs
+            , embTruncate = defaultTruncate
+            , embOptions = modelOptions
+            , embKeepAlive = defaultKeepAlive
+            , embDimensions = Nothing
+            }
+    eRes <- liftIO $ embed client req
     case eRes of
-      Left ollamaErr -> return $ Left $ llmError (showText ollamaErr) Nothing Nothing
-      Right r -> return $ Right $ respondedEmbeddings r
+      Left ollamaErr -> throwError $ llmError (showText ollamaErr) (Just "OllamaEmbeddings") Nothing
+      Right resp -> pure $ map (map realToFrac) (erEmbeddings resp)
 
-  -- \| Query embedding implementation:
-  --  Generates vector representation for search queries.
-  --
-  --  Example:
-  --  >>> embedQuery ollamaEmb "Explain monads"
-  --  Right [0.3, 0.4, ...]
-  --
   embedQuery (OllamaEmbeddings {..}) query = do
-    res <-
-      embeddingOps
-        model
-        [query]
-        defaultTruncate
-        defaultKeepAlive
-        modelOptions
-        Nothing
-        Nothing
-    case fmap respondedEmbeddings res of
-      Left err -> pure $ Left (llmError (showText err) Nothing Nothing)
-      Right lst ->
-        case listToMaybe lst of
-          Nothing -> pure $ Left (llmError "Embeddings are empty" Nothing Nothing)
-          Just x -> pure $ Right x
+    client <- liftIO defaultClient
+    let req =
+          EmbedRequest
+            { embModel = ModelName model
+            , embInput = Left query
+            , embTruncate = defaultTruncate
+            , embOptions = modelOptions
+            , embKeepAlive = defaultKeepAlive
+            , embDimensions = Nothing
+            }
+    eRes <- liftIO $ embed client req
+    case eRes of
+      Left err -> throwError $ llmError (showText err) (Just "OllamaEmbeddings") Nothing
+      Right resp -> case erEmbeddings resp of
+        (vec : _) -> pure $ map realToFrac vec
+        [] -> throwError $ llmError "Embeddings are empty" (Just "OllamaEmbeddings") Nothing

@@ -44,17 +44,17 @@ It is also possible to create your own type and implement Embeddings typeclass.
 for e.g
 
 ```haskell
-data DeepseekEmbedding = DeepseekEmbedding {
+data CustomEmbedding = CustomEmbedding {
   apiKey :: Text,
   apiUrl :: Text,
   model :: Text
 }
 
-instance Embeddings DeepseekEmbedding where
-  embedDocuments DeepseekEmbedding{..} docs = do
+instance Embeddings CustomEmbedding where
+  embedDocuments CustomEmbedding{..} docs = do
     -- Your implementation here
     return $ Right []
-  embedQuery DeepseekEmbedding{..} query = do
+  embedQuery CustomEmbedding{..} query = do
     -- Your implementation here
     return $ Right []
 ```

@@ -1,50 +1,208 @@
-import qualified Test.Langchain.Agent.ReAct as ReActTest
+module Main (main) where
 
--- import qualified Test.Langchain.Agent.ReactAgent as ReactAgentTest
-import qualified Test.Langchain.DocumentLoader.Core as DocumentLoaderTest
-import qualified Test.Langchain.DocumentLoader.DirectoryLoader as DirectoryLoaderTest
-import qualified Test.Langchain.Embeddings.Core as EmbeddingsTest
-import qualified Test.Langchain.LLM.Core as LLMCoreTest
-import qualified Test.Langchain.LLM.Ollama as OllamaLLMTest
-import qualified Test.Langchain.Memory.Core as MemoryTest
-import qualified Test.Langchain.Memory.TokenBufferMemory as TokenBufferMemoryTest
-import qualified Test.Langchain.OutputParser.Core as OutputParserTest
-import qualified Test.Langchain.PromptTemplate as PromptTemplateTest
-import qualified Test.Langchain.Retriever.Core as RetrieverTest
-import qualified Test.Langchain.Runnable.Chains as RunnableChainsTest
-import qualified Test.Langchain.Runnable.ConversationChains as ConverationChainsTest
-import qualified Test.Langchain.Runnable.Core as RunnableTest
-import qualified Test.Langchain.Runnable.Utils as RunnableUtilsTest
-import qualified Test.Langchain.TextSplitters.CharacterTextSplitter as TextSplitterTest
-import qualified Test.Langchain.TextSplitters.RecursiveCharacterTextSplitter as RecursiveTextSplitterTest
-import qualified Test.Langchain.TextSplitters.TextSplitter as TextSplitterCoreTest
-import qualified Test.Langchain.Tool.Core as ToolTest
-import qualified Test.Langchain.VectorStore.Core as VectorStoreTest
 import Test.Tasty
+
+-- Unit Test Modules
+import qualified Test.Langchain.Accounting.CostSpec as CostTest
+import qualified Test.Langchain.Agent.AdvancedAgentsSpec as AdvancedAgentsTest
+import qualified Test.Langchain.Agent.MiddlewareSpec as MiddlewareTest
+import qualified Test.Langchain.Agent.ReAct as ReActTest
+import qualified Test.Langchain.Cache.CacheSpec as CacheTest
+import qualified Test.Langchain.Callback.CallbackManagerSpec as CallbackTest
+import qualified Test.Langchain.Chain.AdvancedChainsSpec as AdvancedChainsTest
+import qualified Test.Langchain.Chain.ChainsSpec as ChainsTest
+import qualified Test.Langchain.Chain.RetrievalQASpec as RetrievalQATest
+import qualified Test.Langchain.Chain.SummarizationSpec as SummarizationChainTest
+import qualified Test.Langchain.Config.ValidationSpec as ConfigValidationTest
+import qualified Test.Langchain.Diagnostics.HealthCheckSpec as HealthCheckTest
+import qualified Test.Langchain.DocumentLoader.Core as DocumentLoaderTest
+import qualified Test.Langchain.DocumentLoader.CsvSpec as CsvLoaderTest
+import qualified Test.Langchain.DocumentLoader.DirectoryLoader as DirectoryLoaderTest
+import qualified Test.Langchain.DocumentLoader.HtmlSpec as HtmlLoaderTest
+import qualified Test.Langchain.DocumentLoader.JsonSpec as JsonLoaderTest
+import qualified Test.Langchain.DocumentLoader.WebPageSpec as WebPageLoaderTest
+import qualified Test.Langchain.DocumentTransformer.HeaderInjectorSpec as HeaderInjectorTest
+import qualified Test.Langchain.DocumentTransformer.MetadataEnricherSpec as MetadataEnricherTest
+import qualified Test.Langchain.Embeddings.Core as EmbeddingsTest
+import qualified Test.Langchain.Error as ErrorTest
+import qualified Test.Langchain.ExampleSelector.ExampleSelectorSpec as ExampleSelectorTest
+import qualified Test.Langchain.Graph.AdvancedGraphSpec as AdvancedGraphTest
+import qualified Test.Langchain.Graph.CompilationSpec as GraphCompilationTest
+import qualified Test.Langchain.Graph.DynamicFlowSpec as DynamicFlowTest
+import qualified Test.Langchain.Graph.MultiAgentPatternsSpec as MultiAgentPatternsTest
+import qualified Test.Langchain.Guardrail.GuardrailSpec as GuardrailTest
+import qualified Test.Langchain.HTTP.ConnectionPoolSpec as ConnectionPoolTest
+import qualified Test.Langchain.Logging.StructuredLoggingSpec as StructuredLoggingTest
+import qualified Test.Langchain.MCP.McpSpec as McpTest
+import qualified Test.Langchain.Memory.Core as MemoryTest
+import qualified Test.Langchain.Memory.EntitySpec as EntityMemoryTest
+import qualified Test.Langchain.Memory.SummarySpec as SummaryMemoryTest
+import qualified Test.Langchain.Memory.TokenBufferMemory as TokenBufferMemoryTest
+import qualified Test.Langchain.Observability.OpenTelemetrySpec as OTelTest
+import qualified Test.Langchain.Observability.StreamProtocolSpec as StreamProtocolTest
+import qualified Test.Langchain.OutputParser.AdvancedParsersSpec as AdvancedParsersTest
+import qualified Test.Langchain.OutputParser.Core as OutputParserTest
+import qualified Test.Langchain.Pipeline.PipelineDSLSpec as PipelineDSLTest
+import qualified Test.Langchain.PreludeSpec as PreludeTest
+import qualified Test.Langchain.PromptTemplate.Chat.ChatMessagePromptTemplateSpec as ChatMessagePromptTemplateTest
+import qualified Test.Langchain.PromptTemplate.Chat.ChatPromptTemplateSpec as ChatPromptTemplateTest
+import qualified Test.Langchain.PromptTemplate.Chat.MessagesPlaceholderSpec as MessagesPlaceholderTest
+import qualified Test.Langchain.PromptTemplate.FewShotSpec as FewShotPromptTemplateTest
+import qualified Test.Langchain.PromptTemplate.PromptSpec as PromptTemplateTest
+import qualified Test.Langchain.Provider.FixturesSpec as FixturesTest
+import qualified Test.Langchain.Provider.Gemini as GeminiProviderTest
+import qualified Test.Langchain.Provider.Ollama as OllamaProviderTest
+import qualified Test.Langchain.Provider.OllamaConversionSpec as OllamaConversionTest
+import qualified Test.Langchain.Provider.OpenAI as OpenAIProviderTest
+import qualified Test.Langchain.Pure.PurePipelineSpec as PurePipelineTest
+import qualified Test.Langchain.Resilience.CircuitBreakerSpec as CircuitBreakerTest
+import qualified Test.Langchain.Resilience.RetrySpec as RetryTest
+import qualified Test.Langchain.Retriever.AdvancedRetrieversSpec as AdvancedRetrieversTest
+import qualified Test.Langchain.Retriever.BM25Spec as BM25Test
+import qualified Test.Langchain.Retriever.Core as RetrieverTest
+import qualified Test.Langchain.Retriever.HybridSpec as HybridRetrieverTest
+import qualified Test.Langchain.TextSplitter.Character as TextSplitterTest
+import qualified Test.Langchain.TextSplitter.CodeSpec as CodeSplitterTest
+import qualified Test.Langchain.TextSplitter.MarkdownSpec as MarkdownSplitterTest
+import qualified Test.Langchain.TextSplitter.RecursiveCharacterSpec as RecursiveSplitterTest
+import qualified Test.Langchain.TextSplitter.TokenSpec as TokenSplitterTest
+import qualified Test.Langchain.Tool.AdvancedToolsSpec as AdvancedToolsTest
+import qualified Test.Langchain.Tool.Calculator as CalculatorToolTest
+import qualified Test.Langchain.Tool.Core as ToolTest
+import qualified Test.Langchain.Tool.FileSystem as FileSystemToolTest
+import qualified Test.Langchain.Trace.TraceSpec as TraceTest
+import qualified Test.Langchain.VectorStore.Core as VectorStoreTest
+import qualified Test.Langchain.VectorStore.FilterSpec as VectorFilterTest
+import qualified Test.Langchain.VectorStore.SqliteVecSpec as SqliteVecStoreTest
+
+-- Property Test Modules (QuickCheck Laws & Invariants)
+import qualified Test.Langchain.Property.CheckpointerSpec as CheckpointerPropTest
+import qualified Test.Langchain.Property.ErrorSpec as ErrorPropTest
+import qualified Test.Langchain.Property.MessageSpec as MessagePropTest
+import qualified Test.Langchain.Property.OutputParserSpec as OutputParserPropTest
+import qualified Test.Langchain.Property.PromptTemplateSpec as PromptTemplatePropTest
+import qualified Test.Langchain.Property.RunnableSpec as RunnablePropTest
+import qualified Test.Langchain.Property.StateReducerSpec as StateReducerPropTest
+import qualified Test.Langchain.Property.TextSplitterSpec as TextSplitterPropTest
+
+-- Regression Test Modules
+import qualified Test.Langchain.RegressionSpec as RegressionTest
+
+-- Live Integration & E2E Test Modules (Ollama)
+import qualified Test.Langchain.Integration.FullRagE2ESpec as FullRagE2ETest
+import qualified Test.Langchain.Integration.MultiAgentGraphE2ESpec as MultiAgentGraphE2ETest
+import qualified Test.Langchain.Integration.OllamaChatSpec as OllamaChatE2ETest
+import qualified Test.Langchain.Integration.OllamaEmbeddingSpec as OllamaEmbedE2ETest
+import qualified Test.Langchain.Integration.OllamaStreamSpec as OllamaStreamE2ETest
+import qualified Test.Langchain.Integration.OllamaToolSpec as OllamaToolE2ETest
+import qualified Test.Langchain.Integration.ReActAgentE2ESpec as ReActE2ETest
+import qualified Test.Langchain.Integration.StateGraphE2ESpec as StateGraphE2ETest
+import qualified Test.Langchain.Integration.StreamingCachingRetryE2ESpec as StreamingCachingRetryE2ETest
 
 main :: IO ()
 main =
   defaultMain $
     testGroup
-      "Langchain"
-      [ LLMCoreTest.tests
-      , OllamaLLMTest.tests
-      , PromptTemplateTest.tests
-      , OutputParserTest.tests
-      , TextSplitterTest.tests
-      , TextSplitterCoreTest.tests
-      , RecursiveTextSplitterTest.tests
-      , DocumentLoaderTest.tests
-      , DirectoryLoaderTest.tests
-      , MemoryTest.tests
-      , VectorStoreTest.tests
-      , EmbeddingsTest.tests
-      , RetrieverTest.tests
-      , ToolTest.tests
-      , ReActTest.tests
-      , RunnableTest.tests
-      , RunnableUtilsTest.tests
-      , RunnableChainsTest.tests
-      , ConverationChainsTest.tests
-      , TokenBufferMemoryTest.tests
+      "Langchain Test Suite"
+      [ testGroup
+          "Unit Tests"
+          [ ErrorTest.tests
+          , PromptTemplateTest.tests
+          , FewShotPromptTemplateTest.tests
+          , ChatPromptTemplateTest.tests
+          , ChatMessagePromptTemplateTest.tests
+          , MessagesPlaceholderTest.tests
+          , OutputParserTest.tests
+          , AdvancedParsersTest.tests
+          , TextSplitterTest.tests
+          , RecursiveSplitterTest.tests
+          , MarkdownSplitterTest.tests
+          , TokenSplitterTest.tests
+          , CodeSplitterTest.tests
+          , DocumentLoaderTest.tests
+          , DirectoryLoaderTest.tests
+          , CsvLoaderTest.tests
+          , JsonLoaderTest.tests
+          , HtmlLoaderTest.tests
+          , WebPageLoaderTest.tests
+          , MetadataEnricherTest.tests
+          , ExampleSelectorTest.tests
+          , MemoryTest.tests
+          , SummaryMemoryTest.tests
+          , EntityMemoryTest.tests
+          , VectorStoreTest.tests
+          , VectorFilterTest.tests
+          , SqliteVecStoreTest.tests
+          , EmbeddingsTest.tests
+          , RetrieverTest.tests
+          , AdvancedRetrieversTest.tests
+          , BM25Test.tests
+          , HybridRetrieverTest.tests
+          , HeaderInjectorTest.tests
+          , RetrievalQATest.tests
+          , ChainsTest.tests
+          , AdvancedChainsTest.tests
+          , SummarizationChainTest.tests
+          , PipelineDSLTest.tests
+          , DynamicFlowTest.tests
+          , StreamProtocolTest.tests
+          , CacheTest.tests
+          , RetryTest.tests
+          , CircuitBreakerTest.tests
+          , ToolTest.tests
+          , AdvancedToolsTest.tests
+          , ReActTest.tests
+          , AdvancedAgentsTest.tests
+          , MultiAgentPatternsTest.tests
+          , GuardrailTest.tests
+          , McpTest.tests
+          , TraceTest.tests
+          , StructuredLoggingTest.tests
+          , OTelTest.tests
+          , CallbackTest.tests
+          , HealthCheckTest.tests
+          , ConfigValidationTest.tests
+          , CostTest.tests
+          , ConnectionPoolTest.tests
+          , TokenBufferMemoryTest.tests
+          , OllamaProviderTest.tests
+          , OllamaConversionTest.tests
+          , OpenAIProviderTest.tests
+          , GeminiProviderTest.tests
+          , FixturesTest.tests
+          , CalculatorToolTest.tests
+          , FileSystemToolTest.tests
+          , GraphCompilationTest.tests
+          , AdvancedGraphTest.tests
+          , MiddlewareTest.tests
+          , PurePipelineTest.tests
+          , PreludeTest.tests
+          ]
+      , testGroup
+          "Property Tests (Laws & Invariants)"
+          [ MessagePropTest.tests
+          , PromptTemplatePropTest.tests
+          , TextSplitterPropTest.tests
+          , RunnablePropTest.tests
+          , StateReducerPropTest.tests
+          , CheckpointerPropTest.tests
+          , ErrorPropTest.tests
+          , OutputParserPropTest.tests
+          ]
+      , testGroup
+          "Regression Tests"
+          [ RegressionTest.tests
+          ]
+      , testGroup
+          "Integration & E2E Tests (Live Ollama)"
+          [ OllamaChatE2ETest.tests
+          , OllamaStreamE2ETest.tests
+          , OllamaToolE2ETest.tests
+          , ReActE2ETest.tests
+          , OllamaEmbedE2ETest.tests
+          , StateGraphE2ETest.tests
+          , FullRagE2ETest.tests
+          , MultiAgentGraphE2ETest.tests
+          , StreamingCachingRetryE2ETest.tests
+          ]
       ]
