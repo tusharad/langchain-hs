@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>$if(title)$$title$ | $endif$langchain-hs Documentation</title>
+  <meta name="description" content="$if(description)$$description$$else$Functional Programming First AI Agent, Multi-Agent Graph & Production Orchestration Engine in Haskell$endif$">
+  <link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/syntax.css">
+  <!-- Mermaid for vector workflow diagrams -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+</head>
+<body>
+
+  <!-- Top Header Navigation -->
+  <header class="site-header">
+    <div class="brand-wrapper">
+      <button class="mobile-menu-toggle btn-icon" id="mobile-toggle" aria-label="Toggle navigation">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+      </button>
+      <a href="/" class="brand-wrapper" style="text-decoration:none;">
+        <div class="brand-logo">
+          <img src="/images/logo.svg" alt="langchain-hs" width="34" height="34">
+        </div>
+        <span class="brand-title">
+          langchain-hs
+          <span class="brand-badge">v0.5.0</span>
+        </span>
+      </a>
+    </div>
+
+    <nav class="nav-center">
+      <a href="/getting-started/quickstart.html" class="nav-link">Get Started</a>
+      <a href="/concepts/architecture.html" class="nav-link">Concepts</a>
+      <a href="/guides/local-models-ollama.html" class="nav-link">Guides</a>
+      <a href="/api/cheat-sheet.html" class="nav-link">Cheat Sheet</a>
+      <a href="https://hackage.haskell.org/package/langchain-hs" target="_blank" rel="noopener noreferrer" class="nav-link">Hackage ↗</a>
+    </nav>
+
+    <div class="header-actions">
+      <button class="search-button" id="search-btn" aria-label="Search documentation">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <span>Search</span>
+        <kbd class="search-kbd">⌘K</kbd>
+      </button>
+
+      <button class="btn-icon" id="theme-toggle" aria-label="Toggle dark/light theme" title="Toggle theme">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+      </button>
+
+      <a href="https://github.com/tusharad/langchain-hs" target="_blank" rel="noopener noreferrer" class="btn-icon" aria-label="GitHub Repository" title="GitHub Repository">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Body Content -->
+  $body$
+
+  <!-- Instant Search Modal -->
+  <div class="search-modal-backdrop" id="search-modal">
+    <div class="search-modal">
+      <div class="search-input-wrapper">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--text-dim);"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input type="text" class="search-input" id="search-input" placeholder="Search documentation, concepts, guides..." autocomplete="off">
+        <kbd class="search-kbd">ESC</kbd>
+      </div>
+      <div class="search-results" id="search-results">
+        <!-- Injected via JavaScript -->
+      </div>
+      <div class="search-footer">
+        <span>Press <kbd class="search-kbd">↑</kbd> <kbd class="search-kbd">↓</kbd> to navigate</span>
+        <span><kbd class="search-kbd">ESC</kbd> to close</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-text">
+        <strong>langchain-hs</strong> &copy; 2025–2026 Tushar Adhatrao. Released under the MIT License.
+      </div>
+      <div class="footer-links">
+        <a href="/getting-started/quickstart.html">Quickstart</a>
+        <a href="/concepts/architecture.html">Architecture</a>
+        <a href="/api/cheat-sheet.html">Cheat Sheet</a>
+        <a href="https://discord.gg/swpKq59RJA" target="_blank" rel="noopener noreferrer">Discord</a>
+        <a href="https://github.com/tusharad/langchain-hs" target="_blank" rel="noopener noreferrer">GitHub</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/js/main.js"></script>
+</body>
+</html>

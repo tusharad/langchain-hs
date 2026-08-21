@@ -1,0 +1,265 @@
+---
+title: Functional AI & Multi-Agent Graphs
+description: Purely functional, effect-polymorphic, zero-unsafePerformIO AI agent framework in Haskell.
+---
+
+<section class="hero-section">
+  <div class="hero-badge">
+    <span>✨ Pure AST Pipelines &amp; LangGraph in Haskell</span>
+  </div>
+  
+  <h1 class="hero-title">
+    Type-Safe AI Agents &amp; Multi-Agent Graphs in <span class="gradient-text">Haskell</span>
+  </h1>
+
+  <p class="hero-description">
+    <code>langchain-hs</code> is a zero-<code>unsafePerformIO</code>, effect-polymorphic Haskell ecosystem built on pure GADT pipelines, state graphs, algebraic laws, Model Context Protocol (MCP), and production OpenTelemetry.
+  </p>
+
+  <div class="hero-cta">
+    <a href="/getting-started/quickstart.html" class="btn-primary">
+      <span>Get Started in 5 Min</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+    </a>
+    <a href="/concepts/architecture.html" class="btn-secondary">
+      <span>Architecture &amp; Laws</span>
+    </a>
+    <a href="/api/cheat-sheet.html" class="btn-secondary">
+      <span>Prelude Cheat Sheet</span>
+    </a>
+  </div>
+</section>
+
+<!-- Interactive Tabbed Code Showcase -->
+<section class="showcase-section">
+  <div class="showcase-header">
+    <h2>Built For Pure Mathematical Precision</h2>
+    <p style="color: var(--text-muted);">Explore the core abstractions that make langchain-hs uniquely reliable.</p>
+  </div>
+
+  <div class="tabs-nav">
+    <button class="tab-btn active" data-tab="runnable">Pure AST Pipeline</button>
+    <button class="tab-btn" data-tab="graph">StateGraph (LangGraph)</button>
+    <button class="tab-btn" data-tab="mcp">Model Context Protocol (MCP)</button>
+    <button class="tab-btn" data-tab="multiagent">Supervisor Teams</button>
+    <button class="tab-btn" data-tab="otel">OpenTelemetry Spans</button>
+  </div>
+
+  <!-- Tab 1: Runnable AST Pipeline -->
+  <div class="tab-pane active" id="tab-runnable">
+    <div class="code-block-wrapper">
+      <div class="code-header">
+        <span class="code-lang">haskell</span>
+      </div>
+      <pre><code class="language-haskell">{-# LANGUAGE OverloadedStrings #-}
+import Langchain.Prelude
+
+-- Compose pure AST pipelines with (|>>) and (&>&)
+ragPipeline :: RunnableTree IO Text Text
+ragPipeline =
+      runLambda (\q -> (q, q))                      -- duplicate query
+  |>> (fetchDocuments &>& generateFollowup)          -- parallel branch
+  |>> runLambda (\(docs, fup) -> renderPrompt docs fup)
+  |>> invokeLLM model
+  |>> parseStructuredOutput
+
+-- Zero IO during construction. Full AST introspection & optimization before interpretation!
+main :: IO ()
+main = do
+  output <- interpret ragPipeline "Explain Monads in 3 sentences"
+  print output</code></pre>
+    </div>
+  </div>
+
+  <!-- Tab 2: StateGraph -->
+  <div class="tab-pane" id="tab-graph">
+    <div class="code-block-wrapper">
+      <div class="code-header">
+        <span class="code-lang">haskell</span>
+      </div>
+      <pre><code class="language-haskell">-- Define pure state reducer with Monoid associativity
+data AgentState = AgentState { messages :: [Message], currentPhase :: Text }
+
+-- Construct cyclic workflow with STM TVar checkpointing and SQLite persistence
+workflow :: StateGraph AgentState IO
+workflow = emptyStateGraph appendMessagesReducer
+  & addNode "planner" plannerNode
+  & addNode "executor" executorNode
+  & addNode "reviewer" reviewerNode
+  & addEdge startNodeId "planner"
+  & addEdge "planner" "executor"
+  & addConditionalEdge "executor" shouldReview 
+      [ ("continue", "reviewer"), ("done", endNodeId) ]
+  & addEdge "reviewer" "planner" -- cyclic feedback loop!
+
+compiled = compileGraph workflow (Just memoryCheckpointer)</code></pre>
+    </div>
+  </div>
+
+  <!-- Tab 3: Model Context Protocol (MCP) -->
+  <div class="tab-pane" id="tab-mcp">
+    <div class="code-block-wrapper">
+      <div class="code-header">
+        <span class="code-lang">haskell</span>
+      </div>
+      <pre><code class="language-haskell">import Langchain.Prelude
+
+mcpAgentWorkflow :: IO ()
+mcpAgentWorkflow = do
+  -- Connect to any MCP server via stdio or HTTP JSON-RPC 2.0
+  client <- newStdioMcpClient "npx" ["-y", "@modelcontextprotocol/server-everything"]
+  
+  -- Introspect server tools and automatically convert to native Tool definitions
+  mcpTools <- listMcpTools client
+  let nativeTools = map mcpToolToLangchainTool mcpTools
+  
+  -- Bind tools to your ReAct or Plan-and-Execute Agent
+  let agent = createReActAgent model nativeTools defaultAgentConfig
+  res <- runReActAgent agent "Inspect the current filesystem and count .hs files"
+  print res</code></pre>
+    </div>
+  </div>
+
+  <!-- Tab 4: Multi-Agent Teams -->
+  <div class="tab-pane" id="tab-multiagent">
+    <div class="code-block-wrapper">
+      <div class="code-header">
+        <span class="code-lang">haskell</span>
+      </div>
+      <pre><code class="language-haskell">import Langchain.Prelude
+
+-- Construct capability-based specialist agents
+researcher = SpecialistAgent "researcher" "Web & document retrieval" [searchTool]
+coder      = SpecialistAgent "coder" "Haskell implementation & types" [ghcTool]
+tester     = SpecialistAgent "tester" "QuickCheck property verification" [testTool]
+
+-- Supervisor automatically delegates turns based on capabilities
+supervisor = newSupervisorTeam model [researcher, coder, tester] 10
+
+main :: IO ()
+main = do
+  result <- runSupervisorTeam supervisor "Implement a thread-safe LRU cache with tests"
+  print result</code></pre>
+    </div>
+  </div>
+
+  <!-- Tab 5: OpenTelemetry -->
+  <div class="tab-pane" id="tab-otel">
+    <div class="code-block-wrapper">
+      <div class="code-header">
+        <span class="code-lang">haskell</span>
+      </div>
+      <pre><code class="language-haskell">import Langchain.Prelude
+import qualified Data.Map.Strict as Map
+
+observeAgent :: IO ()
+observeAgent = do
+  tracer <- newOTelTracer Nothing
+  
+  -- Trace multi-agent execution with OpenTelemetry Spans
+  _ <- withSpan tracer "agent_execution" Nothing ClientSpan 
+                (Map.singleton "session_id" "session-42") $$ do
+    runSupervisorTeam supervisor "Summarize Q3 earnings"
+    
+  -- Export trace data to JSON or OTLP collector
+  spansJson <- exportSpansJson tracer
+  putStrLn spansJson</code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- Features Grid -->
+<div class="features-grid">
+  <div class="feature-card">
+    <div class="feature-icon">🛡️</div>
+    <div class="feature-title">Pure Zero-Dependency Core</div>
+    <div class="feature-desc">
+      <code>langchain-hs-core</code> defines AST pipelines (<code>RunnableTree</code>), multi-modal <code>ContentBlock</code>, and streaming without ANY HTTP dependencies.
+    </div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-icon">🕸️</div>
+    <div class="feature-title">LangGraph in Haskell</div>
+    <div class="feature-desc">
+      Cyclic state machines with pure state reducers, STM <code>TVar</code> &amp; SQLite checkpointers, Human-in-the-Loop interrupts, time-travel history replay, and Graphviz DOT export.
+    </div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-icon">🔌</div>
+    <div class="feature-title">Model Context Protocol (MCP)</div>
+    <div class="feature-desc">
+      Native client supporting stdio and HTTP JSON-RPC 2.0 transports with automatic schema discovery and conversion to native <code>Tool m</code> instances.
+    </div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-icon">👥</div>
+    <div class="feature-title">Advanced Multi-Agent Architectures</div>
+    <div class="feature-desc">
+      Plan-and-Execute, ReAct, Supervisor teams with capability routing, multi-agent debate with convergence checking, majority voting, and STM shared blackboards.
+    </div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-icon">🔍</div>
+    <div class="feature-title">Hybrid Retrieval &amp; RAG</div>
+    <div class="feature-desc">
+      Reciprocal Rank Fusion (RRF) combining BM25 keyword search and dense vector embeddings (SQLite-vec, InMemory, PgVector, Qdrant) with LLM rerankers.
+    </div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-icon">📊</div>
+    <div class="feature-title">Production Observability</div>
+    <div class="feature-desc">
+      OpenTelemetry spans (<code>withSpan</code>), structured JSON logs, three-state Circuit Breaker, exponential backoff retries, connection pooling, and token cost calculation.
+    </div>
+  </div>
+</div>
+
+<!-- Architecture Diagram -->
+<section class="showcase-section" style="margin-top: 2rem;">
+  <div class="showcase-header">
+    <h2>3-Tier Monorepo Architecture</h2>
+    <p style="color: var(--text-muted);">Strict separation of pure domain logic, graph workflows, and high-level integrations.</p>
+  </div>
+
+  <div class="mermaid-wrapper">
+    <pre class="mermaid">
+flowchart TB
+    subgraph Core ["langchain-hs-core (Zero HTTP Dependencies)"]
+        RT["RunnableTree (Pure GADT AST)"]
+        CM["ChatModel (Effect-Polymorphic)"]
+        CB["ContentBlock (Multi-Modal)"]
+        TL["Tool m (Typed Schema & Exec)"]
+        SE["StreamEvent (Conduit Streaming)"]
+    end
+
+    subgraph Graph ["langchain-hs-graph (Workflow & Multi-Agent)"]
+        SG["StateGraph s m"]
+        SR["StateReducer (Pure Monoid)"]
+        CP["Checkpointer (STM TVar & SQLite)"]
+        HT["HITL Interrupt & Resume"]
+        TT["TimeTravel History & Replay"]
+        DOT["Graphviz DOT Visualization"]
+        PN["Parallel Concurrent Nodes"]
+    end
+
+    subgraph HighLevel ["langchain-hs (Ecosystem & Production)"]
+        PR["Providers: Ollama, OpenAI, Gemini"]
+        AG["Agents: ReAct, Plan-and-Execute, Supervisor, Debate, Blackboard"]
+        MCP["MCP Client (Stdio & HTTP JSON-RPC 2.0)"]
+        VS["Vector Stores: SQLite-vec, InMemory, PgVector, Qdrant"]
+        CH["Chains: Conversational RAG, MapReduce, SQL Database"]
+        OB["Observability: OpenTelemetry, Structured Logging, Tracer"]
+        RES["Resilience: Circuit Breaker, Retries, Connection Pool"]
+    end
+
+    HighLevel --> Graph
+    HighLevel --> Core
+    Graph --> Core
+    </pre>
+  </div>
+</section>
