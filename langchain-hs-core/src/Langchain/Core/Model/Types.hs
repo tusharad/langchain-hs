@@ -25,6 +25,7 @@ module Langchain.Core.Model.Types
   , assistantMessage
   , imageMessage
   , extractMessageText
+  , countTokensBPE
   , roleLabel
   , formatMessageString
   ) where
@@ -187,3 +188,9 @@ roleLabel Function = "Function"
 formatMessageString :: Message -> Text
 formatMessageString chatMessage =
   roleLabel (messageRole chatMessage) <> ": " <> extractMessageText chatMessage
+
+-- | Count approximate BPE tokens for a Text string (roughly 4 characters per token or word-based heuristic).
+countTokensBPE :: Text -> Int
+countTokensBPE t
+  | T.null t = 0
+  | otherwise = max 1 (ceiling (fromIntegral (T.length t) / (4.0 :: Double)))
