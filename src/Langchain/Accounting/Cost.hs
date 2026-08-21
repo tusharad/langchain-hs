@@ -55,8 +55,9 @@ estimateTokenCount txt =
       wordEst = (wordLen * 4) `div` 3
    in max 1 (max charEst wordEst)
 
--- | Lookup standard pricing rates for widely used commercial and local models
--- TODO: Remove standard pricing
+{- | Lookup standard pricing rates for widely used commercial and local models
+TODO: Remove standard pricing
+-}
 getStandardPricing :: Text -> ModelPricing
 getStandardPricing modelName
   | "gpt-4o-mini" `T.isInfixOf` lower = ModelPricing 0.15 0.60
