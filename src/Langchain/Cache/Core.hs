@@ -32,7 +32,6 @@ import Control.Concurrent.STM
 import Control.Exception (SomeException, try)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Aeson (ToJSON, Value, decode, encode, object, (.=))
-import Data.Aeson.RFC8785 (encodeCanonical)
 import qualified Data.ByteString.Lazy as LBS
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
@@ -149,9 +148,9 @@ The wrapped model uses the provider-specific identity supplied by
 withCaching :: model -> cache -> CachedModel model cache
 withCaching = CachedModel
 
--- | Encode a value as canonical JSON suitable for a deterministic cache key.
-toCanonicalJson :: (ToJSON a) => a -> Text
-toCanonicalJson = TE.decodeUtf8 . LBS.toStrict . encodeCanonical
+-- | Encode a value as JSON text suitable for a cache key.
+toJsonText :: (ToJSON a) => a -> Text
+toJsonText = TE.decodeUtf8 . LBS.toStrict . encode
 
 {- | Provider-specific data that distinguishes cacheable model invocations.
 
@@ -210,7 +209,7 @@ tool calls cannot collide with text-only requests.
 computeCacheKey ::
   (CacheableChatModel model) => model -> Maybe (ModelConfig model) -> [Message] -> Text
 computeCacheKey model cfg msgs =
-  toCanonicalJson $
+  toJsonText $
     object
       [ "model" .= cacheModelIdentity model cfg
       , "messages" .= msgs
