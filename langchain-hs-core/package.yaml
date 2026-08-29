@@ -1,5 +1,5 @@
 name:                langchain-hs-core
-version:             0.2.0.0
+version:             0.1.0.0
 synopsis:            Core typeclasses and pure AST primitives for langchain-hs
 description:         Zero HTTP dependency core package containing ChatModel, RunnableTree, ContentBlock, and StreamEvent primitives.
 category:            Web, AI, Control
