@@ -9,10 +9,10 @@ import qualified Data.Text.Lazy as TL
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import Langchain.Chain.ConversationalRetrievalQA
+import Langchain.Chain.RetrievalQA
+import Langchain.Core.Model (extractMessageText)
 import Langchain.DocumentLoader.Core (Document (..))
 import qualified Langchain.Embeddings.Ollama as Embed
-import Langchain.Memory.Core (newWindowBufferMemory)
 import Langchain.Provider.Ollama
 import Langchain.Retriever.Core
 import Langchain.TextSplitter.RecursiveCharacter
@@ -44,13 +44,12 @@ tests =
               putStrLn ("Notice: Embeddings skipped in E2E: " ++ show err)
             Right populatedStore -> do
               let retriever = VectorStoreRetriever populatedStore
-              mem <- newWindowBufferMemory 5 []
-              let qaChain = newConversationalRetrievalQA model retriever mem
+                  qaChain = newRetrievalQA model retriever
 
               res <-
-                runExceptT $ runConversationalRetrievalQA qaChain "What enables safe effect sequencing in Haskell?"
+                runExceptT $ runRetrievalQA qaChain "What enables safe effect sequencing in Haskell?"
               case res of
                 Left err -> assertFailure ("RAG QA failed: " ++ show err)
-                Right outcome -> do
-                  assertBool "Answer is non-empty" (not $ T.null (qaAnswer outcome))
+                Right answer -> do
+                  assertBool "Answer is non-empty" (not $ T.null (extractMessageText answer))
     ]

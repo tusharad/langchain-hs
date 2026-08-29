@@ -23,7 +23,7 @@ import qualified Data.Text as T
 
 import Langchain.Core.Error (LangchainError, agentError)
 import Langchain.Core.Model (ChatModel (..), extractMessageText, userMessage)
-import Langchain.Graph.StateGraph (CompiledGraph, Node (..), NodeId, runGraph, startNodeId)
+import Langchain.Graph.StateGraph (StateGraph, Node (..), NodeId, runGraph, startNodeId)
 
 -- | Construct a supervisor routing node that uses an LLM to select the target sub-agent NodeId
 supervisorNode ::
@@ -58,7 +58,7 @@ supervisorNode model name routes extractPrompt updateState =
 embedSubGraphNode ::
   (MonadIO m, MonadError LangchainError m) =>
   NodeId ->
-  CompiledGraph subState m ->
+  StateGraph subState m ->
   (parentState -> subState) ->
   (parentState -> subState -> parentState) ->
   Node parentState m

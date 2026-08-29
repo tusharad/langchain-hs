@@ -27,8 +27,16 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 
-import Langchain.Accounting.Cost (estimateTokenCount)
 import Langchain.DocumentLoader.Core (Document (..))
+
+-- | Heuristic estimation of token count from raw text (~4 characters per token average)
+estimateTokenCount :: T.Text -> Int
+estimateTokenCount txt =
+  let charLen = T.length txt
+      wordLen = length (T.words txt)
+      charEst = (charLen + 3) `div` 4
+      wordEst = (wordLen * 4) `div` 3
+   in max 1 (max charEst wordEst)
 
 -- | Typeclass for transforming collections of documents
 class DocumentTransformer t where
