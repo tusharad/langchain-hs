@@ -1,0 +1,33 @@
+<div class="doc-layout">
+  <!-- Left Navigation Sidebar -->
+  $partial("templates/sidebar.html")$
+
+  <!-- Center Content Column -->
+  <main class="doc-main-container">
+    <article class="doc-content">
+      <div class="doc-breadcrumb">
+        <a href="/">Docs</a>
+        <span>/</span>
+        <span>$if(category)$$category$$else$General$endif$</span>
+        <span>/</span>
+        <span>$title$</span>
+      </div>
+
+      <h1>$title$</h1>
+
+      $if(description)$
+      <p class="doc-lead">$description$</p>
+      $endif$
+
+      $body$
+    </article>
+  </main>
+
+  <!-- Right Table of Contents -->
+  <aside class="doc-toc-container">
+    <div class="toc-title">On this page</div>
+    <ul class="toc-list">
+      <!-- Generated dynamically by main.js -->
+    </ul>
+  </aside>
+</div>
