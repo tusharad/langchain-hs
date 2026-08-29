@@ -9,8 +9,7 @@ import Test.Tasty.HUnit
 
 import Langchain.Agent.Supervisor
 import Langchain.Core.Model
-import Langchain.Provider.Ollama
-import Test.Langchain.TestHelpers (defaultTestModel, withOllamaModel)
+import Test.Langchain.TestHelpers (defaultTestModel, newTestOllama, withOllamaModel)
 
 tests :: TestTree
 tests =
@@ -18,7 +17,7 @@ tests =
     "Langchain.Integration.MultiAgentGraphE2ESpec"
     [ testCase "Multi-Agent Supervisor Team coordinates specialists with live Ollama" $ do
         withOllamaModel defaultTestModel $ \modelName -> do
-          model <- newOllama modelName
+          model <- newTestOllama modelName
           let researcher =
                 SpecialistAgent
                   { specialistName = "Researcher"

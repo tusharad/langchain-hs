@@ -82,15 +82,13 @@ import qualified Test.Langchain.RegressionSpec as RegressionTest
 
 -- Live Integration & E2E Test Modules (Ollama)
 import qualified Test.Langchain.Integration.FullRagE2ESpec as FullRagE2ETest
-
--- import qualified Test.Langchain.Integration.MultiAgentGraphE2ESpec as MultiAgentGraphE2ETest
+import qualified Test.Langchain.Integration.MultiAgentGraphE2ESpec as MultiAgentGraphE2ETest
 import qualified Test.Langchain.Integration.OllamaChatSpec as OllamaChatE2ETest
 import qualified Test.Langchain.Integration.OllamaEmbeddingSpec as OllamaEmbedE2ETest
 import qualified Test.Langchain.Integration.OllamaStreamSpec as OllamaStreamE2ETest
 import qualified Test.Langchain.Integration.OllamaToolSpec as OllamaToolE2ETest
 import qualified Test.Langchain.Integration.ReActAgentE2ESpec as ReActE2ETest
-
--- import qualified Test.Langchain.Integration.StateGraphE2ESpec as StateGraphE2ETest
+import qualified Test.Langchain.Integration.StateGraphE2ESpec as StateGraphE2ETest
 import qualified Test.Langchain.Integration.StreamingCachingRetryE2ESpec as StreamingCachingRetryE2ETest
 
 main :: IO ()
@@ -186,9 +184,9 @@ main =
           , OllamaToolE2ETest.tests
           , ReActE2ETest.tests
           , OllamaEmbedE2ETest.tests
-          , -- , StateGraphE2ETest.tests TODO: removing due to timeout issue
-            FullRagE2ETest.tests
-          , -- , MultiAgentGraphE2ETest.tests TODO: removing due to timeout issue
-            StreamingCachingRetryE2ETest.tests
+          , StateGraphE2ETest.tests
+          , FullRagE2ETest.tests
+          , MultiAgentGraphE2ETest.tests
+          , StreamingCachingRetryE2ETest.tests
           ]
       ]

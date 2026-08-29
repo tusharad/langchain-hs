@@ -410,7 +410,12 @@ module Langchain.Prelude
 
     -- * Providers
   , Ollama
+  , OllamaConfig (..)
   , newOllama
+  , newOllamaWithConfig
+  , newOllamaWithTimeout
+  , newOllamaWithEndpoint
+  , newOllamaWithClient
   , OpenAI
   , newOpenAI
   , Gemini
@@ -472,7 +477,12 @@ import Langchain.PromptTemplate.Prompt
 import Langchain.Provider.Gemini (Gemini, newGemini)
 import Langchain.Provider.Ollama
   ( Ollama
+  , OllamaConfig (..)
   , newOllama
+  , newOllamaWithClient
+  , newOllamaWithConfig
+  , newOllamaWithEndpoint
+  , newOllamaWithTimeout
   , structuredOllamaInvoke
   , structuredOllamaInvokeWithSchema
   , withJsonFormat

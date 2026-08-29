@@ -8,8 +8,7 @@ import Test.Tasty.HUnit
 
 import Langchain.Core.Model
 import Langchain.Core.Stream
-import Langchain.Provider.Ollama (newOllama)
-import Test.Langchain.TestHelpers (defaultTestModel, withOllamaModel)
+import Test.Langchain.TestHelpers (defaultTestModel, newTestOllama, withOllamaModel)
 
 tests :: TestTree
 tests =
@@ -17,7 +16,7 @@ tests =
     "Langchain.Integration.OllamaStreamSpec"
     [ testCase "Ollama live streaming emits valid StreamEvent sequence" $ do
         withOllamaModel defaultTestModel $ \mName -> do
-          provider <- newOllama mName
+          provider <- newTestOllama mName
           let prompt = [userMessage "Count from 1 to 3 separated by spaces."]
           res <- runExceptT $ collectEvents (stream provider prompt Nothing)
           case res of

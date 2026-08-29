@@ -19,6 +19,10 @@ via JSON Schema grammar sampling, streaming, tool calling, and embeddings.
 module Langchain.Provider.Ollama
   ( Ollama (..)
   , newOllama
+  , newOllamaWithConfig
+  , newOllamaWithTimeout
+  , newOllamaWithEndpoint
+  , newOllamaWithClient
   , defaultOllama
   , OllamaConfig (..)
   , defaultConfig
@@ -48,6 +52,7 @@ import Data.Aeson (FromJSON, Result (..), decode, fromJSON, toJSON)
 import qualified Data.ByteString.Lazy.Char8 as LBSC
 import Data.Conduit (yield)
 import qualified Data.List.NonEmpty as NonEmpty
+import Data.Maybe (fromMaybe)
 import Data.Proxy (Proxy (..))
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -63,7 +68,8 @@ import Langchain.OutputParser.Structured
   )
 
 import qualified Ollama.API.Chat as OllamaChat
-import Ollama.Client (OllamaClient, defaultClient)
+import Ollama.Client (OllamaClient, defaultClient, newClient)
+import qualified Ollama.Client.Config as OConfig
 import Ollama.Types.Common (Base64Image (..), ModelName (..))
 import qualified Ollama.Types.Format as OFormat
 import qualified Ollama.Types.Format.SchemaBuilder as OSB
@@ -74,12 +80,22 @@ import qualified Ollama.Types.Tool as OTool
 -- | Configuration options for Ollama provider
 data OllamaConfig = OllamaConfig
   { configModelName :: Text
+  , configBaseUrl :: Maybe Text
+  , configTimeout :: Maybe Int
   , configKeepAlive :: Maybe Text
+  , configApiKey :: Maybe Text
   }
   deriving (Eq, Show)
 
 defaultConfig :: OllamaConfig
-defaultConfig = OllamaConfig "gemma3:latest" Nothing
+defaultConfig =
+  OllamaConfig
+    { configModelName = "gemma3:latest"
+    , configBaseUrl = Nothing
+    , configTimeout = Nothing
+    , configKeepAlive = Nothing
+    , configApiKey = Nothing
+    }
 
 defaultOllamaConfig :: OllamaConfig
 defaultOllamaConfig = defaultConfig
@@ -98,6 +114,43 @@ newOllama :: MonadIO m => Text -> m Ollama
 newOllama model = do
   c <- liftIO defaultClient
   pure $ Ollama model c
+
+-- | Create a new Ollama provider with custom OllamaConfig
+newOllamaWithConfig :: MonadIO m => OllamaConfig -> m Ollama
+newOllamaWithConfig cfg = do
+  let baseClientCfg = OConfig.defaultConfig
+      clientCfg =
+        baseClientCfg
+          { OConfig.configBaseUrl = fromMaybe (OConfig.configBaseUrl baseClientCfg) (configBaseUrl cfg)
+          , OConfig.configTimeout = fromMaybe (OConfig.configTimeout baseClientCfg) (configTimeout cfg)
+          , OConfig.configApiKey = configApiKey cfg
+          }
+  c <- liftIO $ newClient clientCfg
+  pure $ Ollama (configModelName cfg) c
+
+-- | Create a new Ollama provider with a custom timeout (in seconds)
+newOllamaWithTimeout :: MonadIO m => Text -> Int -> m Ollama
+newOllamaWithTimeout model timeoutSecs = do
+  let clientCfg =
+        OConfig.defaultConfig
+          { OConfig.configTimeout = timeoutSecs
+          }
+  c <- liftIO $ newClient clientCfg
+  pure $ Ollama model c
+
+-- | Create a new Ollama provider with a custom base URL endpoint
+newOllamaWithEndpoint :: MonadIO m => Text -> Text -> m Ollama
+newOllamaWithEndpoint model endpoint = do
+  let clientCfg =
+        OConfig.defaultConfig
+          { OConfig.configBaseUrl = endpoint
+          }
+  c <- liftIO $ newClient clientCfg
+  pure $ Ollama model c
+
+-- | Create an Ollama provider using an existing OllamaClient handle
+newOllamaWithClient :: Text -> OllamaClient -> Ollama
+newOllamaWithClient = Ollama
 
 -- | Default Ollama instance
 defaultOllama :: MonadIO m => m Ollama

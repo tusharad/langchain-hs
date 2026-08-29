@@ -9,9 +9,8 @@ import Test.Tasty.HUnit
 
 import Langchain.Cache.Core
 import Langchain.Core.Model
-import Langchain.Provider.Ollama
 import Langchain.Resilience.Retry
-import Test.Langchain.TestHelpers (defaultTestModel, withOllamaModel)
+import Test.Langchain.TestHelpers (defaultTestModel, newTestOllama, withOllamaModel)
 
 tests :: TestTree
 tests =
@@ -19,7 +18,7 @@ tests =
     "Langchain.Integration.StreamingCachingRetryE2ESpec"
     [ testCase "Live Ollama model wrapped in Caching and Retry policies" $ do
         withOllamaModel defaultTestModel $ \modelName -> do
-          baseModel <- newOllama modelName
+          baseModel <- newTestOllama modelName
           cache <- newInMemoryCache
           let cachedModel = withCaching baseModel cache
               msgs = [userMessage "Respond with the single word 'OK'."]
