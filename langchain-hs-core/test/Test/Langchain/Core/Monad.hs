@@ -23,7 +23,7 @@ tests =
           Right _ -> assertFailure "Expected error"
     , testCase "askConfig retrieves default configuration" $ do
         res <- runLangchainT defaultConfig $ defaultModelName <$> askConfig
-        res @?= Right "qwen3.5:9b"
+        res @?= Right "qwen2.5:7b"
     , testCase "withConfig modifies configuration locally" $ do
         res <- runLangchainT defaultConfig $ do
           withConfig (\c -> c {defaultModelName = "custom-model"}) $

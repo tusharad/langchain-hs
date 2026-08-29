@@ -18,6 +18,7 @@ module Langchain.Provider.Gemini
   ( Gemini (..)
   , GeminiConfig (..)
   , defaultConfig
+  , defaultGeminiConfig
   , newGemini
   , GeminiEmbeddings (..)
   , parseGeminiResponse
@@ -25,6 +26,7 @@ module Langchain.Provider.Gemini
   , parseGeminiBatchEmbedResponse
   ) where
 
+import Control.Exception (SomeException, try)
 import Control.Monad (forM)
 import Control.Monad.Except (throwError)
 import Control.Monad.IO.Class (liftIO)
@@ -53,6 +55,9 @@ data GeminiConfig = GeminiConfig
 
 defaultConfig :: Text -> GeminiConfig
 defaultConfig key = GeminiConfig key "gemini-1.5-pro"
+
+defaultGeminiConfig :: Text -> GeminiConfig
+defaultGeminiConfig = defaultConfig
 
 -- | Gemini ChatModel provider
 data Gemini = Gemini
@@ -213,10 +218,12 @@ instance Embeddings GeminiEmbeddings where
 -- Helper for HTTP requests
 safeHttpRequest :: Request -> IO (Either Text Value)
 safeHttpRequest req = do
-  res <- httpJSONEither req
-  case getResponseBody res of
-    Left err -> pure $ Left (T.pack $ show err)
-    Right val -> pure $ Right val
+  eRes <- try (httpJSONEither req) :: IO (Either SomeException (Response (Either JSONException Value)))
+  case eRes of
+    Left ex -> pure $ Left (T.pack $ show ex)
+    Right res -> case getResponseBody res of
+      Left err -> pure $ Left (T.pack $ show err)
+      Right val -> pure $ Right val
 
 -- Parse Gemini response JSON
 parseGeminiResponse :: Value -> Either String Message

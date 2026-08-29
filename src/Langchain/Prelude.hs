@@ -326,6 +326,10 @@ module Langchain.Prelude
   , runMapReduceChain
 
     -- * Structured Output, Routers, and Advanced Parsers
+  , OutputParser (..)
+  , CommaSeparatedList (..)
+  , JSONOutputStructure (..)
+  , NumberSeparatedList (..)
   , StructuredOutput (..)
   , TypeSchema (..)
   , toOllamaSchema
@@ -413,10 +417,10 @@ module Langchain.Prelude
   , newGemini
   ) where
 
-import Langchain.Agent.Core
 import Langchain.Agent.Functions
 import Langchain.Agent.Middleware
 import Langchain.Agent.PlanAndExecute
+import Langchain.Agent.ReAct
 import Langchain.Agent.Supervisor
 import Langchain.Cache.Core
 import Langchain.Callback.Manager
@@ -441,7 +445,6 @@ import Langchain.DocumentLoader.WebPage
 import Langchain.DocumentTransformer.HeaderInjector
 import Langchain.DocumentTransformer.MetadataEnricher
 import Langchain.Embeddings.Core
-import Langchain.Error (LangchainResult)
 import Langchain.Graph.Blackboard
 import Langchain.Graph.Checkpointer
 import Langchain.Graph.Debate
@@ -459,6 +462,7 @@ import Langchain.Memory.Entity
 import Langchain.Memory.Summary
 import Langchain.Observability.OpenTelemetry
 import Langchain.Observability.StreamProtocol
+import Langchain.OutputParser.Core
 import Langchain.OutputParser.Enum
 import Langchain.OutputParser.Structured
 import Langchain.OutputParser.Xml

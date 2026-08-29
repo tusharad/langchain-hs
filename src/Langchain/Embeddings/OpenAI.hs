@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 {- |
 Module      : Langchain.Embeddings.OpenAI
@@ -22,9 +23,11 @@ module Langchain.Embeddings.OpenAI
   , EncodingFormat (..)
   ) where
 
+import Control.Exception (SomeException, try)
 import Control.Monad.Except (throwError)
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson
+import qualified Data.ByteString.Lazy as LBS
 import Data.Maybe
 import Data.Text (Text, unpack)
 import qualified Data.Text as T
@@ -43,7 +46,6 @@ import Network.HTTP.Simple
   , setRequestBodyJSON
   , setRequestHeader
   , setRequestMethod
-  , setRequestSecure
   )
 import Network.HTTP.Types.Status (statusCode)
 
@@ -141,43 +143,46 @@ instance Show OpenAIEmbeddings where
 openAIEmbeddingsRequest ::
   OpenAIEmbeddings -> [Text] -> IO (Either String OpenAIEmbeddingsResponse)
 openAIEmbeddingsRequest OpenAIEmbeddings {..} txts = do
-  request_ <-
-    parseRequest $
-      fromMaybe "https://api.openai.com/v1" baseUrl <> "/embeddings"
-  manager <-
-    newManager
-      tlsManagerSettings
-        { managerResponseTimeout =
-            responseTimeoutMicro (fromMaybe 60 timeout * 1000000)
-        }
-  let req =
-        setRequestMethod "POST" $
-          setRequestSecure True $
-            setRequestHeader "Content-Type" ["application/json"] $
-              setRequestHeader "Authorization" ["Bearer " <> encodeUtf8 apiKey] $
-                setRequestBodyJSON
-                  ( OpenAIEmbeddingsRequest
-                      { inputReq = TextList txts
-                      , modelReq = model
-                      , dimensionsReq = dimensions
-                      , encodingFormatReq = encodingFormat
-                      }
-                  )
-                  request_
+  eReq <- try $ parseRequest $ fromMaybe "https://api.openai.com/v1" baseUrl <> "/embeddings"
+  case eReq of
+    Left (err :: SomeException) -> pure $ Left $ "Invalid URL: " ++ show err
+    Right request_ -> do
+      manager <-
+        newManager
+          tlsManagerSettings
+            { managerResponseTimeout =
+                responseTimeoutMicro (fromMaybe 60 timeout * 1000000)
+            }
+      let req =
+            setRequestMethod "POST" $
+              setRequestHeader "Content-Type" ["application/json"] $
+                setRequestHeader "Authorization" ["Bearer " <> encodeUtf8 apiKey] $
+                  setRequestBodyJSON
+                    ( OpenAIEmbeddingsRequest
+                        { inputReq = TextList txts
+                        , modelReq = model
+                        , dimensionsReq = dimensions
+                        , encodingFormatReq = encodingFormat
+                        }
+                    )
+                    request_
 
-  response <- httpLbs req manager
-  let status = statusCode $ getResponseStatus response
-  if status >= 200 && status < 300
-    then case eitherDecode (getResponseBody response) of
-      Left err -> return $ Left $ "JSON parse error: " <> err
-      Right completionResponse -> return $ Right completionResponse
-    else
-      return $
-        Left $
-          "API error: "
-            <> show status
-            <> " "
-            <> show (getResponseBody response)
+      eResponse <- try (httpLbs req manager) :: IO (Either SomeException (Response LBS.ByteString))
+      case eResponse of
+        Left err -> pure $ Left $ "Network error: " ++ show err
+        Right response -> do
+          let status = statusCode $ getResponseStatus response
+          if status >= 200 && status < 300
+            then case eitherDecode (getResponseBody response) of
+              Left err -> return $ Left $ "JSON parse error: " <> err
+              Right completionResponse -> return $ Right completionResponse
+            else
+              return $
+                Left $
+                  "API error: "
+                    <> show status
+                    <> " "
+                    <> show (getResponseBody response)
 
 instance Embeddings OpenAIEmbeddings where
   embedDocuments openAIEmbeddings docs = do

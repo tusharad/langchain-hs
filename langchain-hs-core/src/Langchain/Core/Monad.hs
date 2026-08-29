@@ -44,7 +44,7 @@ data LangchainConfig = LangchainConfig
 defaultConfig :: LangchainConfig
 defaultConfig =
   LangchainConfig
-    { defaultModelName = "qwen3.5:9b"
+    { defaultModelName = "qwen2.5:7b"
     , defaultTimeoutSeconds = 60
     , maxRetries = 3
     , configMetadata = Map.empty

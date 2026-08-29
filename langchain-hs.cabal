@@ -32,7 +32,6 @@ source-repository head
 
 library
   exposed-modules:
-      Langchain.Agent.Core
       Langchain.Agent.Functions
       Langchain.Agent.Middleware
       Langchain.Agent.PlanAndExecute

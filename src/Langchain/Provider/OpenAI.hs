@@ -17,16 +17,19 @@ module Langchain.Provider.OpenAI
   ( OpenAI (..)
   , OpenAIConfig (..)
   , defaultConfig
+  , defaultOpenAIConfig
   , newOpenAI
   , openAICompatible
   , parseOpenAIResponse
   ) where
 
+import Control.Exception (SomeException, try)
 import Control.Monad (forM)
 import Control.Monad.Except (throwError)
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson
 import Data.Aeson.Types (parseEither)
+import qualified Data.ByteString.Lazy as LBS
 import Data.Conduit (yield)
 import qualified Data.List.NonEmpty as NonEmpty
 import Data.Text (Text)
@@ -50,6 +53,9 @@ data OpenAIConfig = OpenAIConfig
 
 defaultConfig :: Text -> OpenAIConfig
 defaultConfig key = OpenAIConfig key "gpt-4o" Nothing (Just 0.7)
+
+defaultOpenAIConfig :: Text -> OpenAIConfig
+defaultOpenAIConfig = defaultConfig
 
 -- | OpenAI ChatModel implementation
 data OpenAI = OpenAI
@@ -177,10 +183,12 @@ instance ChatModel OpenAI where
 -- Helper for HTTP requests
 safeHttpRequest :: Request -> IO (Either Text Value)
 safeHttpRequest req = do
-  res <- httpJSONEither req
-  case getResponseBody res of
-    Left err -> pure $ Left (T.pack $ show err)
-    Right val -> pure $ Right val
+  eRes <- try (httpJSONEither req) :: IO (Either SomeException (Response (Either JSONException Value)))
+  case eRes of
+    Left ex -> pure $ Left (T.pack $ show ex)
+    Right res -> case getResponseBody res of
+      Left err -> pure $ Left (T.pack $ show err)
+      Right val -> pure $ Right val
 
 -- Helper for parsing OpenAI response JSON
 parseOpenAIResponse :: Value -> Either String (Message, Maybe TokenUsage)
@@ -207,7 +215,13 @@ parseOpenAIResponse = parseEither $ withObject "OpenAIResponse" $ \o -> do
             tcId <- tcObj .:? "id" .!= ""
             fnObj <- tcObj .: "function"
             fnName <- fnObj .: "name"
-            fnArgs <- fnObj .:? "arguments" .!= object []
+            fnArgsVal <- fnObj .:? "arguments"
+            let fnArgs = case fnArgsVal of
+                  Just (String s) -> case decode (LBS.fromStrict (TE.encodeUtf8 s)) of
+                    Just val -> val
+                    Nothing -> object []
+                  Just obj@(Object _) -> obj
+                  _ -> object []
             pure $ ToolCall tcId "function" fnName fnArgs
           pure (Just calls)
       let msg = (assistantMessage contentTxt) {messageToolCalls = cToolCalls}

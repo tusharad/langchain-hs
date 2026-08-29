@@ -23,7 +23,7 @@ module Langchain.Provider.Ollama
   , defaultOllama
   , OllamaConfig (..)
   , defaultConfig
-  , OllamaEmbeddings (..)
+  , defaultOllamaConfig
   , toOllamaRole
   , fromOllamaRole
   , toOllamaMessage
@@ -53,22 +53,17 @@ import Data.Proxy (Proxy (..))
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
-import qualified Data.Text.Lazy as TL
 
 import Langchain.Core.Error (LangchainError, llmError, parsingError)
 import Langchain.Core.Model
 import Langchain.Core.Stream (StreamEvent (..))
-import Langchain.DocumentLoader.Core (Document (..))
-import Langchain.Embeddings.Core (Embeddings (..))
 import Langchain.OutputParser.Structured
   ( StructuredOutput (..)
   , extractJsonFromMarkdown
   , toOllamaSchema
   )
-import Langchain.Utils (showText)
 
 import qualified Ollama.API.Chat as OllamaChat
-import Ollama.API.Embed (EmbedRequest (..), EmbedResponse (..), embed)
 import Ollama.Client (OllamaClient, defaultClient)
 import Ollama.Types.Common (Base64Image (..), ModelName (..))
 import qualified Ollama.Types.Format as OFormat
@@ -86,6 +81,9 @@ data OllamaConfig = OllamaConfig
 
 defaultConfig :: OllamaConfig
 defaultConfig = OllamaConfig "gemma3:latest" Nothing
+
+defaultOllamaConfig :: OllamaConfig
+defaultOllamaConfig = defaultConfig
 
 -- | Ollama provider data type
 data Ollama = Ollama
@@ -207,46 +205,6 @@ instance ChatModel Ollama where
           let finalMsg = fromOllamaMessage oMsg
           yield $ LLMChunk runId_ (extractMessageText finalMsg) Nothing
           yield $ LLMEnd runId_ finalMsg Nothing
-
--- | Ollama Embeddings Provider
-data OllamaEmbeddings = OllamaEmbeddings
-  { embedModelName :: Text
-  , embedClient :: OllamaClient
-  }
-
-instance Embeddings OllamaEmbeddings where
-  embedDocuments OllamaEmbeddings {..} docs = do
-    let inputs = map (TL.toStrict . pageContent) docs
-        req =
-          EmbedRequest
-            { embModel = ModelName embedModelName
-            , embInput = Right inputs
-            , embTruncate = Nothing
-            , embOptions = Nothing
-            , embKeepAlive = Nothing
-            , embDimensions = Nothing
-            }
-    eRes <- liftIO $ embed embedClient req
-    case eRes of
-      Left err -> throwError $ llmError (showText err) (Just "OllamaEmbeddings") Nothing
-      Right resp -> pure $ map (map realToFrac) (erEmbeddings resp)
-
-  embedQuery OllamaEmbeddings {..} query = do
-    let req =
-          EmbedRequest
-            { embModel = ModelName embedModelName
-            , embInput = Left query
-            , embTruncate = Nothing
-            , embOptions = Nothing
-            , embKeepAlive = Nothing
-            , embDimensions = Nothing
-            }
-    eRes <- liftIO $ embed embedClient req
-    case eRes of
-      Left err -> throwError $ llmError (showText err) (Just "OllamaEmbeddings") Nothing
-      Right resp -> case erEmbeddings resp of
-        (vec : _) -> pure $ map realToFrac vec
-        [] -> throwError $ llmError "Empty embeddings vector" (Just "OllamaEmbeddings") Nothing
 
 -- | Attach generic JSON format constraint to Ollama ChatRequest
 withJsonFormat :: OllamaChat.ChatRequest -> OllamaChat.ChatRequest
