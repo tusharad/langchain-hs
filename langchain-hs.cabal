@@ -5,15 +5,15 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           langchain-hs
-version:        0.0.3.0
+version:        0.0.5.0
 synopsis:       Haskell implementation of Langchain
 description:    Build LLM-powered applications in Haskell.
 category:       Web, AI
 homepage:       https://github.com/tusharad/langchain-hs#readme
 bug-reports:    https://github.com/tusharad/langchain-hs/issues
-author:         tushar
+author:         Tushar Adhatrao
 maintainer:     tusharadhatrao@gmail.com
-copyright:      2025 tushar
+copyright:      2026 tushar
 license:        MIT
 license-file:   LICENSE
 build-type:     Simple

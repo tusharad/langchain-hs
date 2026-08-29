@@ -1,4 +1,4 @@
-resolver: nightly-2025-10-31
+resolver: nightly-2026-08-27
 packages:
 - .
 - ./langchain-hs-core

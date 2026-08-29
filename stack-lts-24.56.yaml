@@ -1,4 +1,4 @@
-resolver: lts-24.52
+resolver: lts-24.56
 packages:
 - .
 - ./langchain-hs-core
