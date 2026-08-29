@@ -26,7 +26,7 @@ import qualified Data.Text as T
 
 import Langchain.Core.Error (LangchainError (..), agentError, errorMessage)
 import Langchain.Graph.Checkpointer (Checkpointer (..))
-import Langchain.Graph.StateGraph (StateGraph, Node (..), NodeId, runGraph)
+import Langchain.Graph.StateGraph (Node (..), NodeId, StateGraph, runGraph)
 
 -- | Construct a special HITL Interrupt LangchainError
 hitlInterruptError :: NodeId -> LangchainError

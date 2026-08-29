@@ -218,7 +218,8 @@ instance Embeddings GeminiEmbeddings where
 -- Helper for HTTP requests
 safeHttpRequest :: Request -> IO (Either Text Value)
 safeHttpRequest req = do
-  eRes <- try (httpJSONEither req) :: IO (Either SomeException (Response (Either JSONException Value)))
+  eRes <-
+    try (httpJSONEither req) :: IO (Either SomeException (Response (Either JSONException Value)))
   case eRes of
     Left ex -> pure $ Left (T.pack $ show ex)
     Right res -> case getResponseBody res of

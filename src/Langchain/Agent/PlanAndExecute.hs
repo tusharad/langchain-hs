@@ -98,9 +98,10 @@ parsePlanFromText rawTxt =
           let (_, rest) = T.span (`elem` ['0' .. '9']) t
            in if T.isPrefixOf ". " rest || T.isPrefixOf ") " rest
                 then T.drop 2 rest
-                else if T.isPrefixOf "." rest || T.isPrefixOf ")" rest
-                  then T.stripStart (T.drop 1 rest)
-                  else t
+                else
+                  if T.isPrefixOf "." rest || T.isPrefixOf ")" rest
+                    then T.stripStart (T.drop 1 rest)
+                    else t
 
 -- | Execute a goal using the Plan-and-Execute workflow
 runPlanAndExecute ::
