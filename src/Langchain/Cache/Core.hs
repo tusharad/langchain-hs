@@ -22,14 +22,16 @@ module Langchain.Cache.Core
   , SQLiteCache (..)
   , newSQLiteCache
   , CachedModel (..)
+  , CacheableChatModel (..)
   , withCaching
   , computeCacheKey
-  ) where
+  )
+where
 
 import Control.Concurrent.STM
 import Control.Exception (SomeException, try)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.Aeson (decode, encode)
+import Data.Aeson (ToJSON, Value, decode, encode, object, (.=))
 import qualified Data.ByteString.Lazy as LBS
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
@@ -37,18 +39,23 @@ import Data.Text (Text)
 import qualified Data.Text as TS
 import qualified Data.Text.Encoding as TE
 import Database.SQLite.Simple
-
 import Langchain.Core.Model
   ( ChatModel (..)
   , Message (..)
-  , extractMessageText
+  , MockModel (..)
   )
+import Langchain.Provider.Gemini (Gemini (..))
+import Langchain.Provider.Ollama (Ollama (..))
+import Langchain.Provider.OpenAI (OpenAI (..))
+import qualified Ollama.API.Chat as OllamaChat
+import Ollama.Client (OllamaClient (..))
+import Ollama.Client.Config (OllamaClientConfig (..))
 
 -- | Effect-polymorphic cache backend typeclass
 class CacheBackend cb where
-  getCache :: MonadIO m => cb -> Text -> m (Maybe Message)
-  putCache :: MonadIO m => cb -> Text -> Message -> m ()
-  clearCache :: MonadIO m => cb -> m ()
+  getCache :: (MonadIO m) => cb -> Text -> m (Maybe Message)
+  putCache :: (MonadIO m) => cb -> Text -> Message -> m ()
+  clearCache :: (MonadIO m) => cb -> m ()
 
 -- | Thread-safe in-memory cache backed by STM TVar
 newtype InMemoryCache = InMemoryCache
@@ -56,7 +63,7 @@ newtype InMemoryCache = InMemoryCache
   }
 
 -- | Construct a new InMemoryCache
-newInMemoryCache :: MonadIO m => m InMemoryCache
+newInMemoryCache :: (MonadIO m) => m InMemoryCache
 newInMemoryCache = liftIO $ do
   var <- newTVarIO Map.empty
   pure $ InMemoryCache var
@@ -78,7 +85,7 @@ newtype SQLiteCache = SQLiteCache
   }
 
 -- | Construct a new SQLiteCache and create cache table
-newSQLiteCache :: MonadIO m => FilePath -> m SQLiteCache
+newSQLiteCache :: (MonadIO m) => FilePath -> m SQLiteCache
 newSQLiteCache dbPath = liftIO $ do
   _ <-
     ( try $ withConnection dbPath $ \conn -> do
@@ -133,20 +140,86 @@ data CachedModel model cache = CachedModel
   , modelCache :: cache
   }
 
--- | Helper to wrap any ChatModel with a CacheBackend
+{- | Wrap a cacheable chat model with a cache backend.
+
+The wrapped model uses the provider-specific identity supplied by
+'CacheableChatModel' when looking up responses.
+-}
 withCaching :: model -> cache -> CachedModel model cache
 withCaching = CachedModel
 
--- | Compute a deterministic cache key from input messages
-computeCacheKey :: [Message] -> Text
-computeCacheKey msgs =
-  TS.intercalate "|" [TS.pack (show (messageRole m)) <> ":" <> extractMessageText m | m <- msgs]
+-- | Encode a value as JSON text suitable for a cache key.
+toJsonText :: (ToJSON a) => a -> Text
+toJsonText = TE.decodeUtf8 . LBS.toStrict . encode
 
-instance (ChatModel model, CacheBackend cache) => ChatModel (CachedModel model cache) where
+{- | Provider-specific data that distinguishes cacheable model invocations.
+
+Implementations should include every model property and effective invocation
+parameter that can affect a response, but must not include credentials.
+-}
+class (ChatModel model) => CacheableChatModel model where
+  -- | Return the JSON identity used to distinguish this model's cache entries.
+  cacheModelIdentity :: model -> Maybe (ModelConfig model) -> Value
+
+instance CacheableChatModel OpenAI where
+  cacheModelIdentity OpenAI {..} _ =
+    object
+      [ "provider" .= ("openai" :: Text)
+      , "model" .= model
+      , "baseUrl" .= baseUrl
+      , "temperature" .= temperature
+      ]
+
+instance CacheableChatModel Ollama where
+  cacheModelIdentity (Ollama modelName ollamaClient) cfg =
+    object
+      [ "provider" .= ("ollama" :: Text)
+      , "baseUrl" .= configBaseUrl (clientConfig ollamaClient)
+      , "model" .= modelName
+      , "config"
+          .= object
+            [ "tools" .= (OllamaChat.chatTools <$> cfg)
+            , "format" .= (OllamaChat.chatFormat <$> cfg)
+            , "options" .= (OllamaChat.chatOptions <$> cfg)
+            , "keep_alive" .= (OllamaChat.chatKeepAlive <$> cfg)
+            , "think" .= (OllamaChat.chatThink <$> cfg)
+            ]
+      ]
+
+instance CacheableChatModel Gemini where
+  cacheModelIdentity (Gemini _ modelName) _ =
+    object
+      [ "provider" .= ("gemini" :: Text)
+      , "model" .= modelName
+      ]
+
+instance CacheableChatModel MockModel where
+  cacheModelIdentity (MockModel response modelName) _ =
+    object
+      [ "provider" .= ("mock" :: Text)
+      , "model" .= modelName
+      , "response" .= response
+      ]
+
+{- | Compute a canonical cache key from a model identity and complete input messages.
+
+The key includes all fields of each 'Message', so multi-modal content and
+tool calls cannot collide with text-only requests.
+-}
+computeCacheKey ::
+  (CacheableChatModel model) => model -> Maybe (ModelConfig model) -> [Message] -> Text
+computeCacheKey model cfg msgs =
+  toJsonText $
+    object
+      [ "model" .= cacheModelIdentity model cfg
+      , "messages" .= msgs
+      ]
+
+instance (CacheableChatModel model, CacheBackend cache) => ChatModel (CachedModel model cache) where
   type ModelConfig (CachedModel model cache) = ModelConfig model
 
   invoke CachedModel {..} msgs mbCfg = do
-    let key = computeCacheKey msgs
+    let key = computeCacheKey underlyingModel mbCfg msgs
     mbCached <- getCache modelCache key
     case mbCached of
       Just cachedMsg -> pure cachedMsg
