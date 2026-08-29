@@ -26,7 +26,7 @@ tests =
     "Langchain.Integration.FullRagE2ESpec"
     [ testCase "Full RAG Pipeline end-to-end with live Ollama" $ do
         withOllamaModel defaultTestModel $ \modelName -> do
-          model <- newOllama modelName
+          ollamaModel <- newOllama modelName
           let longText =
                 "Haskell features pure functions, lazy evaluation, and static typing.\n\n"
                   <> "Typeclasses in Haskell provide ad-hoc polymorphism.\n\n"
@@ -43,8 +43,8 @@ tests =
             Left err -> do
               putStrLn ("Notice: Embeddings skipped in E2E: " ++ show err)
             Right populatedStore -> do
-              let retriever = VectorStoreRetriever populatedStore
-                  qaChain = newRetrievalQA model retriever
+              let vsRetriever = VectorStoreRetriever populatedStore
+                  qaChain = newRetrievalQA ollamaModel vsRetriever
 
               res <-
                 runExceptT $ runRetrievalQA qaChain "What enables safe effect sequencing in Haskell?"

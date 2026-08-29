@@ -33,7 +33,6 @@ source-repository head
 library
   exposed-modules:
       Langchain.Agent.Core
-      Langchain.Agent.Executor
       Langchain.Agent.Functions
       Langchain.Agent.Middleware
       Langchain.Agent.PlanAndExecute
@@ -99,7 +98,6 @@ library
       Langchain.Retriever.ParentDocument
       Langchain.Retriever.Reranker
       Langchain.Router.Semantic
-      Langchain.Runnable
       Langchain.TextSplitter.Character
       Langchain.TextSplitter.Code
       Langchain.TextSplitter.Markdown
