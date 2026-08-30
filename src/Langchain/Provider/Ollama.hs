@@ -254,43 +254,45 @@ instance ChatModel Ollama where
     where
       processChunks rId = loop [] Nothing Nothing
         where
-          loop accChunks mbLastUsage mbLastTools = await >>= \case
-            Nothing -> do
-              let fullText = T.concat (reverse accChunks)
-                  finalMsg =
-                    (assistantMessage fullText)
-                      { messageToolCalls = mbLastTools
-                      }
-              yield $ LLMEnd rId finalMsg mbLastUsage
-            Just resp -> do
-              let mbMsg = OllamaChat.crMessage resp
-                  chunkTxt = maybe "" O.messageContent mbMsg
-                  mbTools = mbMsg >>= O.messageToolCalls
-                  toolCalls = case mbTools of
-                    Nothing -> Nothing
-                    Just tcs ->
-                      Just
-                        [ ToolCall
-                            { toolCallId = ""
-                            , toolCallType = "function"
-                            , toolCallName = OTool.tcfName (OTool.tcFunction tc)
-                            , toolCallArguments = toJSON (OTool.tcfArguments (OTool.tcFunction tc))
-                            }
-                        | tc <- tcs
-                        ]
-                  toolDelta = case toolCalls of
-                    Just (tc : _) -> Just tc
-                    _ -> Nothing
-                  newAccChunks = if T.null chunkTxt then accChunks else chunkTxt : accChunks
-                  newTools = case toolCalls of
-                    Just tcs -> Just $ maybe tcs (++ tcs) mbLastTools
-                    Nothing -> mbLastTools
-                  newUsage = case (OllamaChat.crPromptEvalCount resp, OllamaChat.crEvalCount resp) of
-                    (Just p, Just c) -> Just $ TokenUsage p c (p + c)
-                    _ -> mbLastUsage
-              when (not (T.null chunkTxt) || isJust toolDelta) $
-                yield $ LLMChunk rId chunkTxt toolDelta
-              loop newAccChunks newUsage newTools
+          loop accChunks mbLastUsage mbLastTools =
+            await >>= \case
+              Nothing -> do
+                let fullText = T.concat (reverse accChunks)
+                    finalMsg =
+                      (assistantMessage fullText)
+                        { messageToolCalls = mbLastTools
+                        }
+                yield $ LLMEnd rId finalMsg mbLastUsage
+              Just resp -> do
+                let mbMsg = OllamaChat.crMessage resp
+                    chunkTxt = maybe "" O.messageContent mbMsg
+                    mbTools = mbMsg >>= O.messageToolCalls
+                    toolCalls = case mbTools of
+                      Nothing -> Nothing
+                      Just tcs ->
+                        Just
+                          [ ToolCall
+                              { toolCallId = ""
+                              , toolCallType = "function"
+                              , toolCallName = OTool.tcfName (OTool.tcFunction tc)
+                              , toolCallArguments = toJSON (OTool.tcfArguments (OTool.tcFunction tc))
+                              }
+                          | tc <- tcs
+                          ]
+                    toolDelta = case toolCalls of
+                      Just (tc : _) -> Just tc
+                      _ -> Nothing
+                    newAccChunks = if T.null chunkTxt then accChunks else chunkTxt : accChunks
+                    newTools = case toolCalls of
+                      Just tcs -> Just $ maybe tcs (++ tcs) mbLastTools
+                      Nothing -> mbLastTools
+                    newUsage = case (OllamaChat.crPromptEvalCount resp, OllamaChat.crEvalCount resp) of
+                      (Just p, Just c) -> Just $ TokenUsage p c (p + c)
+                      _ -> mbLastUsage
+                when (not (T.null chunkTxt) || isJust toolDelta) $
+                  yield $
+                    LLMChunk rId chunkTxt toolDelta
+                loop newAccChunks newUsage newTools
 
 -- | Attach generic JSON format constraint to Ollama ChatRequest
 withJsonFormat :: OllamaChat.ChatRequest -> OllamaChat.ChatRequest

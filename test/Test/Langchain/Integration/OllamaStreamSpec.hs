@@ -1,4 +1,3 @@
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Test.Langchain.Integration.OllamaStreamSpec (tests) where
@@ -29,7 +28,9 @@ tests =
                   (LLMEnd _ finalMsg _ : revMiddle) -> do
                     let chunks = [c | LLMChunk _ c _ <- reverse revMiddle]
                         accumulated = T.concat chunks
-                    assertBool ("Emitted multiple streaming chunks. Got " ++ show (length chunks) ++ " chunks: " ++ show chunks) (length chunks > 1)
+                    assertBool
+                      ("Emitted multiple streaming chunks. Got " ++ show (length chunks) ++ " chunks: " ++ show chunks)
+                      (length chunks > 1)
                     assertBool "Stream produced non-empty output" (not (T.null accumulated))
                     extractMessageText finalMsg @?= accumulated
                   _ -> assertFailure ("Expected LLMEnd as last event. Got: " ++ show events)
