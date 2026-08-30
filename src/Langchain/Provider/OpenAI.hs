@@ -33,17 +33,17 @@ import Control.Monad (forM)
 import Control.Monad.Except (throwError)
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson (Value (..), object)
-import Data.Aeson.Types (parseEither)
 import qualified Data.Aeson as Aeson
+import Data.Aeson.Types (parseEither)
 import qualified Data.ByteString.Lazy as LBS
 import Data.Conduit (yield)
 import qualified Data.List.NonEmpty as NonEmpty
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import qualified Data.Vector as V
 import GHC.Generics (Generic)
-
 
 import qualified OpenAI.V1 as OAI
 import qualified OpenAI.V1.Chat.Completions as CC
@@ -75,8 +75,9 @@ data OpenAI = OpenAI
   { apiKey :: Text
   , model :: Text
   , baseUrl :: Text
-  -- ^ Base URL (e.g. @"https://api.openai.com"@). The @openai@ package
-  -- automatically appends @\/v1\/chat\/completions@.
+  {- ^ Base URL (e.g. @"https://api.openai.com"@). The @openai@ package
+  automatically appends @\/v1\/chat\/completions@.
+  -}
   , temperature :: Maybe Double
   }
   deriving (Eq, Show)
@@ -91,11 +92,12 @@ newOpenAI key mName =
     , temperature = Just 0.7
     }
 
--- | Create OpenAICompatible provider instance for OpenRouter/Fireworks/Together.
---
--- The @endpoint@ should be the __base URL__ only (e.g.
--- @"https://openrouter.ai/api"@), not the full chat completions path.
--- The @openai@ package appends @\/v1\/chat\/completions@ automatically.
+{- | Create OpenAICompatible provider instance for OpenRouter/Fireworks/Together.
+
+The @endpoint@ should be the __base URL__ only (e.g.
+@"https://openrouter.ai/api"@), not the full chat completions path.
+The @openai@ package appends @\/v1\/chat\/completions@ automatically.
+-}
 openAICompatible :: Text -> Text -> Text -> OpenAI
 openAICompatible key mName endpoint =
   OpenAI
@@ -111,10 +113,10 @@ openAICompatible key mName endpoint =
 
 -- | Convert a langchain 'ContentBlock' to an openai 'CC.Content'.
 contentBlockToOAI :: ContentBlock -> CC.Content
-contentBlockToOAI (TextBlock t) = CC.Text{CC.text = t}
-contentBlockToOAI (ImageBlock ImageContent{imageSource = ImageUrl url}) =
-  CC.Image_URL{CC.image_url = CC.ImageURL{CC.url = url, CC.detail = Nothing}}
-contentBlockToOAI (ImageBlock ImageContent{imageSource = ImageBase64 (Just mime) b64}) =
+contentBlockToOAI (TextBlock t) = CC.Text {CC.text = t}
+contentBlockToOAI (ImageBlock ImageContent {imageSource = ImageUrl url}) =
+  CC.Image_URL {CC.image_url = CC.ImageURL {CC.url = url, CC.detail = Nothing}}
+contentBlockToOAI (ImageBlock ImageContent {imageSource = ImageBase64 (Just mime) b64}) =
   CC.Image_URL
     { CC.image_url =
         CC.ImageURL
@@ -122,7 +124,7 @@ contentBlockToOAI (ImageBlock ImageContent{imageSource = ImageBase64 (Just mime)
           , CC.detail = Nothing
           }
     }
-contentBlockToOAI (ImageBlock ImageContent{imageSource = ImageBase64 Nothing b64}) =
+contentBlockToOAI (ImageBlock ImageContent {imageSource = ImageBase64 Nothing b64}) =
   CC.Image_URL
     { CC.image_url =
         CC.ImageURL
@@ -132,9 +134,9 @@ contentBlockToOAI (ImageBlock ImageContent{imageSource = ImageBase64 Nothing b64
     }
 contentBlockToOAI (AudioBlock _mime _b64) =
   -- Audio blocks are represented as text placeholders in the request
-  CC.Text{CC.text = "[Audio content]"}
+  CC.Text {CC.text = "[Audio content]"}
 contentBlockToOAI (DataBlock _) =
-  CC.Text{CC.text = "[Data block]"}
+  CC.Text {CC.text = "[Data block]"}
 
 -- | Convert a langchain 'Message' to an openai package 'CC.Message'.
 toLangchainOAIMessage :: Message -> CC.Message (V.Vector CC.Content)
@@ -142,9 +144,9 @@ toLangchainOAIMessage msg =
   let contents = V.fromList $ map contentBlockToOAI (NonEmpty.toList (messageContents msg))
    in case messageRole msg of
         System ->
-          CC.System{CC.content = contents, CC.name = messageName msg}
+          CC.System {CC.content = contents, CC.name = messageName msg}
         User ->
-          CC.User{CC.content = contents, CC.name = messageName msg}
+          CC.User {CC.content = contents, CC.name = messageName msg}
         Assistant ->
           CC.Assistant
             { CC.assistant_content = Just contents
@@ -156,13 +158,13 @@ toLangchainOAIMessage msg =
         Tool ->
           CC.Tool
             { CC.content = contents
-            , CC.tool_call_id = maybe "" Prelude.id (messageToolId msg)
+            , CC.tool_call_id = fromMaybe "" (messageToolId msg)
             }
         -- Developer and Function map to System for the openai package
         Developer ->
-          CC.System{CC.content = contents, CC.name = messageName msg}
+          CC.System {CC.content = contents, CC.name = messageName msg}
         Function ->
-          CC.System{CC.content = contents, CC.name = messageName msg}
+          CC.System {CC.content = contents, CC.name = messageName msg}
 
 -- ---------------------------------------------------------------------------
 -- Conversion: openai package response -> langchain-hs Message
@@ -171,26 +173,26 @@ toLangchainOAIMessage msg =
 -- | Convert an openai package 'CC.Choice' response message to a langchain 'Message'.
 fromOAIMessage :: CC.Message Text -> Message
 fromOAIMessage oaiMsg = case oaiMsg of
-  CC.Assistant{CC.assistant_content, CC.tool_calls = oaiToolCalls, CC.name = nm} ->
-    let contentText = maybe "" Prelude.id assistant_content
-        baseMsg = (assistantMessage contentText){messageName = nm}
+  CC.Assistant {CC.assistant_content, CC.tool_calls = oaiToolCalls, CC.name = nm} ->
+    let contentText = fromMaybe "" assistant_content
+        baseMsg = (assistantMessage contentText) {messageName = nm}
         tcList = case oaiToolCalls of
           Nothing -> Nothing
           Just tcs ->
             Just $
               map
-                ( \(OTC.ToolCall_Function{OTC.id = tcId, OTC.function = fn}) ->
+                ( \(OTC.ToolCall_Function {OTC.id = tcId, OTC.function = fn}) ->
                     let argVal = case Aeson.decode (LBS.fromStrict (TE.encodeUtf8 (OTC.arguments fn))) of
                           Just v -> v
                           Nothing -> object []
                      in ToolCall tcId "function" (OTC.name fn) argVal
                 )
                 (V.toList tcs)
-     in baseMsg{messageToolCalls = tcList}
-  CC.System{CC.content = c} -> systemMessage c
-  CC.User{CC.content = c} -> userMessage c
-  CC.Tool{CC.content = c} ->
-    (textMessage Tool c)
+     in baseMsg {messageToolCalls = tcList}
+  CC.System {CC.content = c} -> systemMessage c
+  CC.User {CC.content = c} -> userMessage c
+  CC.Tool {CC.content = c} ->
+    textMessage Tool c
 
 -- | Convert openai 'OU.Usage' to langchain 'TokenUsage'.
 fromOAIUsage :: OU.Usage ctd ptd -> TokenUsage
@@ -220,13 +222,13 @@ instance ChatModel OpenAI where
     eRes <- liftIO $ callOpenAI provider reqBody
     case eRes of
       Left err -> throwError $ llmError err Nothing Nothing
-      Right (CC.ChatCompletionObject{CC.choices = choicesVec, CC.usage = oaiUsage}) -> do
+      Right (CC.ChatCompletionObject {CC.choices = choicesVec, CC.usage = oaiUsage}) -> do
         case V.toList choicesVec of
           [] -> throwError $ llmError "Empty choices array in OpenAI response" Nothing Nothing
           (choice : _) -> do
             let respMsg = fromOAIMessage (CC.message choice)
                 _usage = fromOAIUsage oaiUsage
-            pure respMsg{messageToolCalls = messageToolCalls respMsg}
+            pure respMsg {messageToolCalls = messageToolCalls respMsg}
 
   stream provider inputMsgs _ = do
     let rId = "openai-stream-run"
@@ -242,7 +244,7 @@ instance ChatModel OpenAI where
     eRes <- liftIO $ callOpenAI provider reqBody
     case eRes of
       Left err -> yield $ LLMChunk rId err Nothing
-      Right (CC.ChatCompletionObject{CC.choices = choicesVec, CC.usage = oaiUsage}) -> do
+      Right (CC.ChatCompletionObject {CC.choices = choicesVec, CC.usage = oaiUsage}) -> do
         case V.toList choicesVec of
           [] -> yield $ LLMChunk rId "Empty choices array in OpenAI response" Nothing
           (choice : _) -> do
@@ -251,19 +253,22 @@ instance ChatModel OpenAI where
             yield $ LLMChunk rId (extractMessageText respMsg) Nothing
             yield $ LLMEnd rId respMsg mbUsage
 
--- | Normalize base URL to ensure compatibility with the @openai@ package.
--- Strips any trailing @/v1/chat/completions@, @/chat/completions@, or @/v1@
--- so that Servant's route constructs the expected URL path.
+{- | Normalize base URL to ensure compatibility with the @openai@ package.
+Strips any trailing @/v1/chat/completions@, @/chat/completions@, or @/v1@
+so that Servant's route constructs the expected URL path.
+-}
 normalizeBaseUrl :: Text -> Text
 normalizeBaseUrl rawUrl =
   let u0 = T.dropWhileEnd (== '/') rawUrl
-      u1 = if "/v1/chat/completions" `T.isSuffixOf` u0
-             then T.dropEnd (T.length "/v1/chat/completions") u0
-             else if "/chat/completions" `T.isSuffixOf` u0
-               then T.dropEnd (T.length "/chat/completions") u0
-               else if "/v1" `T.isSuffixOf` u0
-                 then T.dropEnd (T.length "/v1") u0
-                 else u0
+      u1
+        | "/v1/chat/completions" `T.isSuffixOf` u0 =
+            T.dropEnd (T.length "/v1/chat/completions") u0
+        | "/chat/completions" `T.isSuffixOf` u0 =
+            T.dropEnd (T.length "/chat/completions") u0
+        | "/v1" `T.isSuffixOf` u0 =
+            T.dropEnd (T.length "/v1") u0
+        | otherwise =
+            u0
    in T.dropWhileEnd (== '/') u1
 
 -- | Internal helper to perform the chat completion call via the @openai@ package.
@@ -276,7 +281,7 @@ callOpenAI provider reqBody = do
   where
     go = do
       clientEnv <- OAI.getClientEnv (normalizeBaseUrl (baseUrl provider))
-      let OAI.Methods{OAI.createChatCompletion} =
+      let OAI.Methods {OAI.createChatCompletion} =
             OAI.makeMethods clientEnv (apiKey provider) Nothing Nothing
       createChatCompletion reqBody
 
@@ -284,11 +289,12 @@ callOpenAI provider reqBody = do
 -- Backward-compatible parseOpenAIResponse
 -- ---------------------------------------------------------------------------
 
--- | Parse a raw OpenAI JSON response 'Value' into a langchain 'Message'
--- and optional 'TokenUsage'.
---
--- This function is provided for backward compatibility. New code should use
--- the typed @openai@ package types directly.
+{- | Parse a raw OpenAI JSON response 'Value' into a langchain 'Message'
+and optional 'TokenUsage'.
+
+This function is provided for backward compatibility. New code should use
+the typed @openai@ package types directly.
+-}
 parseOpenAIResponse :: Value -> Either String (Message, Maybe TokenUsage)
 parseOpenAIResponse = parseEither $ Aeson.withObject "OpenAIResponse" $ \o -> do
   choices <- o Aeson..: "choices"
@@ -322,5 +328,5 @@ parseOpenAIResponse = parseEither $ Aeson.withObject "OpenAIResponse" $ \o -> do
                   _ -> object []
             pure $ ToolCall tcId "function" fnName fnArgs
           pure (Just calls)
-      let msg = (assistantMessage contentTxt){messageToolCalls = cToolCalls}
+      let msg = (assistantMessage contentTxt) {messageToolCalls = cToolCalls}
       pure (msg, mbUsage)
