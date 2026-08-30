@@ -26,6 +26,7 @@ dependencies:
 - aeson
 - bytestring
 - mtl
+- conduit
 
 
 ghc-options:
@@ -43,9 +44,19 @@ library:
   source-dirs: src
 
 executables:
-  simple-ollama:
-    main:                SimpleOllama.hs
-    source-dirs:         app
+  simpleollama:
+    main:                Main.hs
+    source-dirs:         app/simpleollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  streamollama:
+    main:                Main.hs
+    source-dirs:         app/streamollama
     ghc-options:
     - -threaded
     - -rtsopts
