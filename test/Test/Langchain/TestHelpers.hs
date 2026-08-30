@@ -11,8 +11,6 @@ Stability   : experimental
 -}
 module Test.Langchain.TestHelpers
   ( TestLevel (..)
-  , getTestLevel
-  , testAtLevel
   , isOllamaRunning
   , isModelAvailable
   , ollamaModelName
@@ -20,7 +18,6 @@ module Test.Langchain.TestHelpers
   , defaultEmbedModel
   , defaultIntegrationTimeout
   , newTestOllama
-  , skipIfNoOllama
   , withOllamaModel
   ) where
 
@@ -37,8 +34,6 @@ import Network.HTTP.Simple
   , parseRequest_
   , setRequestCheckStatus
   )
-import System.Environment (lookupEnv)
-import Test.Tasty (TestTree, testGroup)
 
 -- | Test categorization levels configured via LANGCHAIN_TEST_LEVEL environment variable
 data TestLevel
@@ -47,27 +42,6 @@ data TestLevel
   | IntegrationLevel
   | E2ELevel
   deriving (Eq, Ord, Show, Read)
-
--- | Read the current test level from LANGCHAIN_TEST_LEVEL (default: UnitLevel)
-getTestLevel :: IO TestLevel
-getTestLevel = do
-  mbEnv <- lookupEnv "LANGCHAIN_TEST_LEVEL"
-  pure $ case mbEnv of
-    Just "property" -> PropertyLevel
-    Just "integration" -> IntegrationLevel
-    Just "e2e" -> E2ELevel
-    Just "all" -> E2ELevel
-    _ -> UnitLevel
-
--- | Wrap a test tree so it only executes when the configured test level >= required level
-testAtLevel :: TestLevel -> String -> TestTree -> IO TestTree
-testAtLevel requiredLevel name tree = do
-  currentLevel <- getTestLevel
-  pure $
-    if currentLevel >= requiredLevel
-      then tree
-      else
-        testGroup (name ++ " (SKIPPED - requires LANGCHAIN_TEST_LEVEL=" ++ show requiredLevel ++ ")") []
 
 -- | Default primary LLM model for integration and E2E tests
 defaultTestModel :: Text
@@ -122,14 +96,6 @@ withOllamaModel preferredModel action = do
                   ++ " nor fallback "
                   ++ T.unpack ollamaModelName
                   ++ " is available in Ollama."
-
--- | Helper for integration tests that require Ollama
-skipIfNoOllama :: IO () -> IO ()
-skipIfNoOllama action = do
-  running <- isOllamaRunning
-  if running
-    then action
-    else putStrLn " [SKIPPED] Ollama daemon not reachable on localhost:11434"
 
 -- | Default timeout in seconds for Ollama integration tests
 defaultIntegrationTimeout :: Int
