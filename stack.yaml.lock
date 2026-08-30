@@ -5,15 +5,15 @@
 
 packages:
 - completed:
-    commit: e38a92529d83303c5d05c38b73d73a278721700e
+    commit: 408d6790dcd46e55293a983df47ca1988d2051ce
     git: https://github.com/tusharad/ollama-haskell
     name: ollama-haskell
     pantry-tree:
-      sha256: b0f04da28ada7fcbb8f031299124585cc4ababaf800bc645c6742fe4dac8734f
-      size: 6999
-    version: 0.4.0.0
+      sha256: 1f7cd76690a2778c25de3f39bd1cdb4a3da150231211f8f10ade49b7f2618f7a
+      size: 6882
+    version: 0.4.1.0
   original:
-    commit: e38a92529d83303c5d05c38b73d73a278721700e
+    commit: 408d6790dcd46e55293a983df47ca1988d2051ce
     git: https://github.com/tusharad/ollama-haskell
 - completed:
     commit: 2031a05135b892a82b461558d19b813ab67cfb8f

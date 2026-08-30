@@ -13,8 +13,8 @@ import System.IO (hFlush, stdout)
 
 runApp :: IO ()
 runApp = do
-  o <- newOllama "qwen3.5:9b"
-  let msgs = [userMessage "Give me the list of last 5 pres of US"]
+  o <- newOllama "gemma3"
+  let msgs = [userMessage "What is the meaning of life"]
   res <- runExceptT $ runConduit $ stream o msgs Nothing .| CL.mapM_ onStreamEvent
   case res of
     Left err -> T.putStrLn $ "\nError: " <> errorMessage err

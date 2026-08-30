@@ -9,7 +9,7 @@ extra-deps:
   - ../langchain-hs-core
   - ../langchain-hs-graph
   - git: https://github.com/tusharad/ollama-haskell
-    commit: e38a92529d83303c5d05c38b73d73a278721700e
+    commit: 408d6790dcd46e55293a983df47ca1988d2051ce
   - git: https://github.com/MercuryTechnologies/openai
     commit: 2031a05135b892a82b461558d19b813ab67cfb8f
   - git: https://github.com/lbobylev/pystrformat.git
