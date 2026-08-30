@@ -25,6 +25,7 @@ dependencies:
 - text
 - aeson
 - bytestring
+- mtl
 
 
 ghc-options:
@@ -42,8 +43,8 @@ library:
   source-dirs: src
 
 executables:
-  examples-exe:
-    main:                Main.hs
+  simple-ollama:
+    main:                SimpleOllama.hs
     source-dirs:         app
     ghc-options:
     - -threaded
