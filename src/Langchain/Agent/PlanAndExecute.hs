@@ -73,36 +73,35 @@ newPlanAndExecuteAgent = PlanAndExecuteAgent
 parsePlanFromText :: Text -> Plan
 parsePlanFromText rawTxt =
   let rawLines = map T.strip (T.lines rawTxt)
-      validLines =
-        filter
-          ( \l ->
-              not (T.null l)
-                && ( T.isPrefixOf "1." l
-                       || T.isPrefixOf "2." l
-                       || T.isPrefixOf "3." l
-                       || T.isPrefixOf "4." l
-                       || T.isPrefixOf "5." l
-                       || T.isPrefixOf "6." l
-                       || T.isPrefixOf "7." l
-                       || T.isPrefixOf "8." l
-                       || T.isPrefixOf "9." l
-                       || T.isPrefixOf "-" l
-                       || T.isPrefixOf "*" l
-                   )
-          )
-          rawLines
+      validLines = filter isPlanLine rawLines
       steps =
         if null validLines
           then [PlanStep 1 rawTxt]
           else zipWith PlanStep [1 ..] (map cleanBullet validLines)
    in Plan steps
   where
+    isPlanLine l
+      | T.null l = False
+      | T.isPrefixOf "- " l || T.isPrefixOf "* " l = True
+      | otherwise =
+          let (digits, rest) = T.span (`elem` ['0' .. '9']) l
+           in not (T.null digits)
+                && ( T.isPrefixOf ". " rest
+                       || T.isPrefixOf "." rest
+                       || T.isPrefixOf ") " rest
+                   )
+
     cleanBullet t
       | T.isPrefixOf "- " t = T.drop 2 t
       | T.isPrefixOf "* " t = T.drop 2 t
-      | otherwise = case T.breakOn ". " t of
-          (_, rest) | not (T.null rest) -> T.drop 2 rest
-          _ -> t
+      | otherwise =
+          let (_, rest) = T.span (`elem` ['0' .. '9']) t
+           in if T.isPrefixOf ". " rest || T.isPrefixOf ") " rest
+                then T.drop 2 rest
+                else
+                  if T.isPrefixOf "." rest || T.isPrefixOf ")" rest
+                    then T.stripStart (T.drop 1 rest)
+                    else t
 
 -- | Execute a goal using the Plan-and-Execute workflow
 runPlanAndExecute ::

@@ -31,7 +31,7 @@ import Langchain.Core.Tool
 
 -- | Step result of ReAct reasoning iteration
 data AgentStep
-  = AgentAction ToolCall
+  = AgentAction Message ToolCall
   | AgentFinish Message
   deriving (Eq, Show)
 
@@ -61,7 +61,7 @@ reactStep ::
 reactStep model _ history = do
   responseMsg <- invoke model history Nothing
   case messageToolCalls responseMsg of
-    Just (tc : _) -> pure $ AgentAction tc
+    Just (tc : _) -> pure $ AgentAction responseMsg tc
     _ -> pure $ AgentFinish responseMsg
 
 -- | Execute the full ReAct reasoning loop until AgentFinish or max iterations reached
@@ -78,7 +78,7 @@ runReActAgent agent initialHistory = go initialHistory (agentMaxIterations agent
           step <- reactStep (agentModel agent) (agentTools agent) history
           case step of
             AgentFinish finalMsg -> pure finalMsg
-            AgentAction tc -> do
+            AgentAction respMsg tc -> do
               let tName = toolCallName tc
               case find (\t -> toolName t == tName) (agentTools agent) of
                 Nothing -> throwError $ toolError ("Tool not found: " <> tName) (Just tName) Nothing
@@ -87,6 +87,10 @@ runReActAgent agent initialHistory = go initialHistory (agentMaxIterations agent
                   case eOut of
                     Left err -> throwError err
                     Right outTxt -> do
-                      let obsMsg = textMessage M.Tool outTxt
-                          newHistory = history ++ [assistantMessage "", obsMsg]
+                      let obsMsg =
+                            (textMessage M.Tool outTxt)
+                              { M.messageName = Just tName
+                              , M.messageToolId = Just (toolCallId tc)
+                              }
+                          newHistory = history ++ [respMsg, obsMsg]
                       go newHistory (maxIter - 1)

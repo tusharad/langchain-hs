@@ -15,6 +15,7 @@ Structured error handling without String-based error dropping.
 module Langchain.Core.Error
   ( LangchainError (..)
   , ErrorContext (..)
+  , LangchainResult
   , errorMessage
   , mkContext
   , mkContextIO
@@ -79,6 +80,9 @@ data LangchainError
   | ValidationError Text (Maybe ErrorContext)
   | InternalError Text (Maybe ErrorContext)
   deriving (Show, Eq, Generic, ToJSON, FromJSON, NFData)
+
+-- | Type alias for Either LangchainError a
+type LangchainResult a = Either LangchainError a
 
 -- | Extract human-readable error message text from a LangchainError
 errorMessage :: LangchainError -> Text

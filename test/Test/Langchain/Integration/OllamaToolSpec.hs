@@ -17,9 +17,9 @@ import Langchain.Core.Error
 import Langchain.Core.Model
 import Langchain.Core.Tool (Tool (..), toolExecute)
 import Langchain.OutputParser.Structured (StructuredOutput)
-import Langchain.Provider.Ollama (newOllama, structuredOllamaInvokeWithSchema)
+import Langchain.Provider.Ollama (structuredOllamaInvokeWithSchema)
 import Langchain.Tool.Calculator (calculatorTool)
-import Test.Langchain.TestHelpers (defaultTestModel, withOllamaModel)
+import Test.Langchain.TestHelpers (defaultTestModel, newTestOllama, withOllamaModel)
 
 data TestMathResult = TestMathResult
   { answer :: Double
@@ -33,7 +33,7 @@ tests =
     "Langchain.Integration.OllamaToolSpec"
     [ testCase "Ollama tool calling or direct evaluation with live model" $ do
         withOllamaModel defaultTestModel $ \modelName -> do
-          provider <- newOllama modelName
+          provider <- newTestOllama modelName
           let prompt =
                 [ systemMessage "You are a math helper. Solve: 15 * 4."
                 , userMessage "What is 15 * 4?"
@@ -52,7 +52,7 @@ tests =
               assertBool "Response contains 60 or answer" ("60" `T.isInfixOf` txt || not (T.null txt))
     , testCase "Ollama structured output with SchemaFormat extraction" $ do
         withOllamaModel defaultTestModel $ \modelName -> do
-          provider <- newOllama modelName
+          provider <- newTestOllama modelName
           let prompt =
                 [ systemMessage "You are a helpful math extractor."
                 , userMessage "Calculate 25 + 75 and explain briefly."

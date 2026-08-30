@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.38.1.
+-- This file has been generated from package.yaml by hpack version 0.39.6.
 --
 -- see: https://github.com/sol/hpack
 
@@ -32,27 +32,16 @@ source-repository head
 
 library
   exposed-modules:
-      Langchain.Accounting.Cost
-      Langchain.Agent.Core
-      Langchain.Agent.Executor
       Langchain.Agent.Functions
       Langchain.Agent.Middleware
       Langchain.Agent.PlanAndExecute
       Langchain.Agent.ReAct
       Langchain.Agent.Supervisor
       Langchain.Cache.Core
-      Langchain.Callback
       Langchain.Callback.Manager
-      Langchain.Chain.Conversational
-      Langchain.Chain.ConversationalRetrievalQA
       Langchain.Chain.MapReduce
       Langchain.Chain.RetrievalQA
-      Langchain.Chain.Sequential
-      Langchain.Chain.SqlDatabase
-      Langchain.Chain.StuffDocuments
-      Langchain.Chain.Summarization
       Langchain.Config.Validation
-      Langchain.Diagnostics.HealthCheck
       Langchain.DocumentLoader.Core
       Langchain.DocumentLoader.Csv
       Langchain.DocumentLoader.DirectoryLoader
@@ -68,13 +57,11 @@ library
       Langchain.Embeddings.Ollama
       Langchain.Embeddings.OpenAI
       Langchain.Error
-      Langchain.ExampleSelector.Similarity
       Langchain.Graph.Blackboard
       Langchain.Graph.Debate
       Langchain.Graph.DynamicFlow
       Langchain.Graph.Voting
       Langchain.Guardrail.Core
-      Langchain.HTTP.ConnectionPool
       Langchain.Logging.Structured
       Langchain.MCP.Client
       Langchain.Memory.Core
@@ -110,7 +97,6 @@ library
       Langchain.Retriever.ParentDocument
       Langchain.Retriever.Reranker
       Langchain.Router.Semantic
-      Langchain.Runnable
       Langchain.TextSplitter.Character
       Langchain.TextSplitter.Code
       Langchain.TextSplitter.Markdown
@@ -125,13 +111,11 @@ library
       Langchain.Tool.Utils
       Langchain.Tool.WebScraper
       Langchain.Tool.WikipediaTool
-      Langchain.Trace.Core
       Langchain.Utils
       Langchain.VectorStore.Core
       Langchain.VectorStore.Filter
       Langchain.VectorStore.InMemory
       Langchain.VectorStore.PgVector
-      Langchain.VectorStore.Qdrant
       Langchain.VectorStore.SqliteVec
   other-modules:
       Paths_langchain_hs
@@ -172,65 +156,18 @@ library
     , vector <0.14
   default-language: Haskell2010
 
-executable big-showcase
-  main-is: BigGraphShowcase.hs
-  other-modules:
-      Paths_langchain_hs
-  hs-source-dirs:
-      examples
-  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
-  build-depends:
-      aeson ==2.*
-    , async <3
-    , base >=4.7 && <5
-    , base64-bytestring ==1.2.*
-    , bytestring >=0.10
-    , conduit >=1.2 && <1.4
-    , containers >=0.6 && <0.9
-    , directory >=1.3.6 && <1.4
-    , filepath <2
-    , ginger >=0.10.6 && <0.11
-    , http-client
-    , http-conduit ==2.*
-    , http-types >=0.11 && <0.13
-    , langchain-hs
-    , langchain-hs-core
-    , langchain-hs-graph
-    , mtl >=2.2 && <2.4
-    , ollama-haskell >=0.4.0.0
-    , openai >=2.2.1
-    , pdf-toolbox-document ==0.1.4
-    , process ==1.6.*
-    , pystrformat
-    , random >=1.2
-    , scientific
-    , sqlite-simple >=0.4.18 && <0.5
-    , stache >=2.3 && <2.5
-    , stm ==2.5.*
-    , tagsoup <0.15
-    , temporary
-    , text >=1.2 && <3
-    , time >=1.9 && <1.15
-    , transformers
-    , vector <0.14
-  default-language: Haskell2010
-
 test-suite langchain-hs-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Test.Langchain.Accounting.CostSpec
       Test.Langchain.Agent.AdvancedAgentsSpec
       Test.Langchain.Agent.MiddlewareSpec
       Test.Langchain.Agent.ReAct
       Test.Langchain.Cache.CacheSpec
       Test.Langchain.Callback.CallbackManagerSpec
-      Test.Langchain.Chain.AdvancedChainsSpec
       Test.Langchain.Chain.ChainsSpec
       Test.Langchain.Chain.RetrievalQASpec
-      Test.Langchain.Chain.SummarizationSpec
       Test.Langchain.Config.ValidationSpec
-      Test.Langchain.Diagnostics.HealthCheckSpec
       Test.Langchain.DocumentLoader.Core
       Test.Langchain.DocumentLoader.CsvSpec
       Test.Langchain.DocumentLoader.DirectoryLoader
@@ -241,13 +178,10 @@ test-suite langchain-hs-test
       Test.Langchain.DocumentTransformer.MetadataEnricherSpec
       Test.Langchain.Embeddings.Core
       Test.Langchain.Error
-      Test.Langchain.ExampleSelector.ExampleSelectorSpec
-      Test.Langchain.Graph.AdvancedGraphSpec
       Test.Langchain.Graph.CompilationSpec
       Test.Langchain.Graph.DynamicFlowSpec
       Test.Langchain.Graph.MultiAgentPatternsSpec
       Test.Langchain.Guardrail.GuardrailSpec
-      Test.Langchain.HTTP.ConnectionPoolSpec
       Test.Langchain.Integration.FullRagE2ESpec
       Test.Langchain.Integration.MultiAgentGraphE2ESpec
       Test.Langchain.Integration.OllamaChatSpec
@@ -305,7 +239,6 @@ test-suite langchain-hs-test
       Test.Langchain.Tool.Calculator
       Test.Langchain.Tool.Core
       Test.Langchain.Tool.FileSystem
-      Test.Langchain.Trace.TraceSpec
       Test.Langchain.VectorStore.Core
       Test.Langchain.VectorStore.FilterSpec
       Test.Langchain.VectorStore.SqliteVecSpec

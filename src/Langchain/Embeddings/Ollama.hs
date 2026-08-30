@@ -14,7 +14,6 @@ Ollama implementation of LangChain's embedding interface using ollama-haskell 0.
 -}
 module Langchain.Embeddings.Ollama
   ( OllamaEmbeddings (..)
-  , module Langchain.DocumentLoader.Core
   ) where
 
 import Control.Monad.Except (throwError)
@@ -22,7 +21,7 @@ import Control.Monad.IO.Class (liftIO)
 import Data.Text (Text)
 import qualified Data.Text.Lazy as T
 import Langchain.Core.Error (llmError)
-import Langchain.DocumentLoader.Core
+import Langchain.DocumentLoader.Core (Document (..))
 import Langchain.Embeddings.Core
 import Langchain.Utils (showText)
 

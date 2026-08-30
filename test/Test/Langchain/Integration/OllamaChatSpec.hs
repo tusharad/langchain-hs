@@ -8,8 +8,7 @@ import Test.Tasty
 import Test.Tasty.HUnit
 
 import Langchain.Core.Model
-import Langchain.Provider.Ollama (newOllama)
-import Test.Langchain.TestHelpers (defaultTestModel, withOllamaModel)
+import Test.Langchain.TestHelpers (defaultTestModel, newTestOllama, withOllamaModel)
 
 tests :: TestTree
 tests =
@@ -17,7 +16,7 @@ tests =
     "Langchain.Integration.OllamaChatSpec"
     [ testCase "Ollama basic chat invocation with live model" $ do
         withOllamaModel defaultTestModel $ \modelName -> do
-          provider <- newOllama modelName
+          provider <- newTestOllama modelName
           let prompt = [userMessage "What is 2+2? Reply with just the digit 4 and nothing else."]
           res <- runExceptT $ invoke provider prompt Nothing
           case res of

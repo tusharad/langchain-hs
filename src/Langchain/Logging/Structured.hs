@@ -22,7 +22,6 @@ module Langchain.Logging.Structured
   , newInMemoryLogger
   , getInMemoryLogs
   , stderrLogger
-  , inMemoryToLogger
   , logEvent
   , logDebug
   , logInfo
@@ -81,14 +80,6 @@ newInMemoryLogger minLvl = liftIO $ do
 -- | Retrieve all logged events from an InMemoryLogger
 getInMemoryLogs :: MonadIO m => InMemoryLogger -> m [LogEvent]
 getInMemoryLogs InMemoryLogger {..} = liftIO $ readTVarIO inMemoryVar
-
--- | Convert InMemoryLogger to standard Logger record
-inMemoryToLogger :: InMemoryLogger -> Logger
-inMemoryToLogger InMemoryLogger {..} =
-  Logger
-    { minLevel = inMemoryMinLevel
-    , writeLog = \event -> atomically $ modifyTVar' inMemoryVar (\logs -> logs ++ [event])
-    }
 
 -- | Default stderr logger
 stderrLogger :: LogLevel -> Logger

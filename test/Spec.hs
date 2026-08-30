@@ -3,18 +3,14 @@ module Main (main) where
 import Test.Tasty
 
 -- Unit Test Modules
-import qualified Test.Langchain.Accounting.CostSpec as CostTest
 import qualified Test.Langchain.Agent.AdvancedAgentsSpec as AdvancedAgentsTest
 import qualified Test.Langchain.Agent.MiddlewareSpec as MiddlewareTest
 import qualified Test.Langchain.Agent.ReAct as ReActTest
 import qualified Test.Langchain.Cache.CacheSpec as CacheTest
 import qualified Test.Langchain.Callback.CallbackManagerSpec as CallbackTest
-import qualified Test.Langchain.Chain.AdvancedChainsSpec as AdvancedChainsTest
 import qualified Test.Langchain.Chain.ChainsSpec as ChainsTest
 import qualified Test.Langchain.Chain.RetrievalQASpec as RetrievalQATest
-import qualified Test.Langchain.Chain.SummarizationSpec as SummarizationChainTest
 import qualified Test.Langchain.Config.ValidationSpec as ConfigValidationTest
-import qualified Test.Langchain.Diagnostics.HealthCheckSpec as HealthCheckTest
 import qualified Test.Langchain.DocumentLoader.Core as DocumentLoaderTest
 import qualified Test.Langchain.DocumentLoader.CsvSpec as CsvLoaderTest
 import qualified Test.Langchain.DocumentLoader.DirectoryLoader as DirectoryLoaderTest
@@ -25,13 +21,10 @@ import qualified Test.Langchain.DocumentTransformer.HeaderInjectorSpec as Header
 import qualified Test.Langchain.DocumentTransformer.MetadataEnricherSpec as MetadataEnricherTest
 import qualified Test.Langchain.Embeddings.Core as EmbeddingsTest
 import qualified Test.Langchain.Error as ErrorTest
-import qualified Test.Langchain.ExampleSelector.ExampleSelectorSpec as ExampleSelectorTest
-import qualified Test.Langchain.Graph.AdvancedGraphSpec as AdvancedGraphTest
 import qualified Test.Langchain.Graph.CompilationSpec as GraphCompilationTest
 import qualified Test.Langchain.Graph.DynamicFlowSpec as DynamicFlowTest
 import qualified Test.Langchain.Graph.MultiAgentPatternsSpec as MultiAgentPatternsTest
 import qualified Test.Langchain.Guardrail.GuardrailSpec as GuardrailTest
-import qualified Test.Langchain.HTTP.ConnectionPoolSpec as ConnectionPoolTest
 import qualified Test.Langchain.Logging.StructuredLoggingSpec as StructuredLoggingTest
 import qualified Test.Langchain.MCP.McpSpec as McpTest
 import qualified Test.Langchain.Memory.Core as MemoryTest
@@ -70,7 +63,6 @@ import qualified Test.Langchain.Tool.AdvancedToolsSpec as AdvancedToolsTest
 import qualified Test.Langchain.Tool.Calculator as CalculatorToolTest
 import qualified Test.Langchain.Tool.Core as ToolTest
 import qualified Test.Langchain.Tool.FileSystem as FileSystemToolTest
-import qualified Test.Langchain.Trace.TraceSpec as TraceTest
 import qualified Test.Langchain.VectorStore.Core as VectorStoreTest
 import qualified Test.Langchain.VectorStore.FilterSpec as VectorFilterTest
 import qualified Test.Langchain.VectorStore.SqliteVecSpec as SqliteVecStoreTest
@@ -90,15 +82,13 @@ import qualified Test.Langchain.RegressionSpec as RegressionTest
 
 -- Live Integration & E2E Test Modules (Ollama)
 import qualified Test.Langchain.Integration.FullRagE2ESpec as FullRagE2ETest
-
--- import qualified Test.Langchain.Integration.MultiAgentGraphE2ESpec as MultiAgentGraphE2ETest
+import qualified Test.Langchain.Integration.MultiAgentGraphE2ESpec as MultiAgentGraphE2ETest
 import qualified Test.Langchain.Integration.OllamaChatSpec as OllamaChatE2ETest
 import qualified Test.Langchain.Integration.OllamaEmbeddingSpec as OllamaEmbedE2ETest
 import qualified Test.Langchain.Integration.OllamaStreamSpec as OllamaStreamE2ETest
 import qualified Test.Langchain.Integration.OllamaToolSpec as OllamaToolE2ETest
 import qualified Test.Langchain.Integration.ReActAgentE2ESpec as ReActE2ETest
-
--- import qualified Test.Langchain.Integration.StateGraphE2ESpec as StateGraphE2ETest
+import qualified Test.Langchain.Integration.StateGraphE2ESpec as StateGraphE2ETest
 import qualified Test.Langchain.Integration.StreamingCachingRetryE2ESpec as StreamingCachingRetryE2ETest
 
 main :: IO ()
@@ -128,7 +118,6 @@ main =
           , HtmlLoaderTest.tests
           , WebPageLoaderTest.tests
           , MetadataEnricherTest.tests
-          , ExampleSelectorTest.tests
           , MemoryTest.tests
           , SummaryMemoryTest.tests
           , EntityMemoryTest.tests
@@ -143,8 +132,6 @@ main =
           , HeaderInjectorTest.tests
           , RetrievalQATest.tests
           , ChainsTest.tests
-          , AdvancedChainsTest.tests
-          , SummarizationChainTest.tests
           , PipelineDSLTest.tests
           , DynamicFlowTest.tests
           , StreamProtocolTest.tests
@@ -158,14 +145,10 @@ main =
           , MultiAgentPatternsTest.tests
           , GuardrailTest.tests
           , McpTest.tests
-          , TraceTest.tests
           , StructuredLoggingTest.tests
           , OTelTest.tests
           , CallbackTest.tests
-          , HealthCheckTest.tests
           , ConfigValidationTest.tests
-          , CostTest.tests
-          , ConnectionPoolTest.tests
           , TokenBufferMemoryTest.tests
           , OllamaProviderTest.tests
           , OllamaConversionTest.tests
@@ -175,7 +158,6 @@ main =
           , CalculatorToolTest.tests
           , FileSystemToolTest.tests
           , GraphCompilationTest.tests
-          , AdvancedGraphTest.tests
           , MiddlewareTest.tests
           , PurePipelineTest.tests
           , PreludeTest.tests
@@ -202,9 +184,9 @@ main =
           , OllamaToolE2ETest.tests
           , ReActE2ETest.tests
           , OllamaEmbedE2ETest.tests
-          , -- , StateGraphE2ETest.tests TODO: removing due to timeout issue
-            FullRagE2ETest.tests
-          , -- , MultiAgentGraphE2ETest.tests TODO: removing due to timeout issue
-            StreamingCachingRetryE2ETest.tests
+          , StateGraphE2ETest.tests
+          , FullRagE2ETest.tests
+          , MultiAgentGraphE2ETest.tests
+          , StreamingCachingRetryE2ETest.tests
           ]
       ]

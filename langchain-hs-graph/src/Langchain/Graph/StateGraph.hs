@@ -19,7 +19,6 @@ module Langchain.Graph.StateGraph
   , Node (..)
   , Edge (..)
   , StateGraph (..)
-  , CompiledGraph (..)
   , emptyStateGraph
   , addNode
   , addEdge
@@ -74,13 +73,6 @@ data StateGraph s m = StateGraph
   , graphReducer :: StateReducer s
   }
 
--- | Validated, compiled graph ready for execution
-data CompiledGraph s m = CompiledGraph
-  { compiledNodes :: Map NodeId (Node s m)
-  , compiledEdges :: Map NodeId (Edge s m)
-  , compiledReducer :: StateReducer s
-  }
-
 -- | Construct an empty StateGraph with a given pure StateReducer
 emptyStateGraph :: StateReducer s -> StateGraph s m
 emptyStateGraph reducer =
@@ -107,50 +99,44 @@ addConditionalEdge ::
 addConditionalEdge fromNode condFn g =
   g {graphEdges = Map.insert fromNode (ConditionalEdge condFn) (graphEdges g)}
 
--- | Validate state graph invariants and compile to a CompiledGraph
-compileGraph :: StateGraph s m -> Either LangchainError (CompiledGraph s m)
-compileGraph StateGraph {..} =
-  if Map.null graphNodes
+-- | Validate state graph invariants. Returns the validated StateGraph or an error.
+compileGraph :: StateGraph s m -> Either LangchainError (StateGraph s m)
+compileGraph sg =
+  if Map.null (graphNodes sg)
     then Left $ internalError "StateGraph must contain at least one node" (Just "compileGraph") Nothing
-    else
-      Right
-        CompiledGraph
-          { compiledNodes = graphNodes
-          , compiledEdges = graphEdges
-          , compiledReducer = graphReducer
-          }
+    else Right sg
 
--- | Execute a CompiledGraph from start node or specified currentId to endNodeId
+-- | Execute a StateGraph from start node or specified currentId to endNodeId
 runGraph ::
   (MonadIO m, MonadError LangchainError m) =>
-  CompiledGraph s m ->
+  StateGraph s m ->
   NodeId ->
   s ->
   m s
-runGraph CompiledGraph {..} currentId state
+runGraph sg@StateGraph {..} currentId state
   | currentId == endNodeId = pure state
-  | otherwise = case Map.lookup currentId compiledNodes of
+  | otherwise = case Map.lookup currentId graphNodes of
       Just node -> do
         eNextState <- nodeAction node state
         case eNextState of
           Left err -> throwError err
           Right stepState -> do
-            let mergedState = compiledReducer state stepState
-            case Map.lookup currentId compiledEdges of
+            let mergedState = graphReducer state stepState
+            case Map.lookup currentId graphEdges of
               Nothing -> pure mergedState
-              Just (StaticEdge nextId) -> runGraph CompiledGraph {..} nextId mergedState
+              Just (StaticEdge nextId) -> runGraph sg nextId mergedState
               Just (ConditionalEdge cond) -> do
                 eNextId <- cond mergedState
                 case eNextId of
                   Left err -> throwError err
-                  Right nextId -> runGraph CompiledGraph {..} nextId mergedState
-      Nothing -> case Map.lookup currentId compiledEdges of
-        Just (StaticEdge nextId) -> runGraph CompiledGraph {..} nextId state
+                  Right nextId -> runGraph sg nextId mergedState
+      Nothing -> case Map.lookup currentId graphEdges of
+        Just (StaticEdge nextId) -> runGraph sg nextId state
         Just (ConditionalEdge cond) -> do
           eNextId <- cond state
           case eNextId of
             Left err -> throwError err
-            Right nextId -> runGraph CompiledGraph {..} nextId state
+            Right nextId -> runGraph sg nextId state
         Nothing ->
           throwError $
             internalError ("Node not found in compiled graph: " <> currentId) (Just currentId) Nothing

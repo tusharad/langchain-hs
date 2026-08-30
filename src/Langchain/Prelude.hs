@@ -99,7 +99,6 @@ module Langchain.Prelude
 
     -- * State Graphs & Multi-Agent
   , StateGraph (..)
-  , CompiledGraph (..)
   , Node (Node)
   , Edge (..)
   , NodeId
@@ -123,18 +122,8 @@ module Langchain.Prelude
   , resumeGraph
   , supervisorNode
   , embedSubGraphNode
-  , toDot
-  , StateSnapshot (..)
-  , TimeTravelHistory (..)
-  , newTimeTravelHistory
-  , recordSnapshot
-  , getSnapshots
-  , resumeFromSnapshot
   , parallelNode
   , addParallelNodes
-  , SubGraphOptions (..)
-  , defaultSubGraphOptions
-  , embedSubGraphWithOptions
 
     -- * Advanced Agent Patterns
   , PlanAndExecuteAgent (..)
@@ -181,15 +170,6 @@ module Langchain.Prelude
   , mcpToolToLangchainTool
 
     -- * Telemetry, Logging & OpenTelemetry
-  , ActionType (..)
-  , TraceStep (..)
-  , AgentTrace (..)
-  , Tracer (..)
-  , newTracer
-  , recordStep
-  , getTrace
-  , findSlowestStep
-  , filterByActionType
   , LogLevel (..)
   , LogEvent (..)
   , Logger (..)
@@ -211,7 +191,7 @@ module Langchain.Prelude
   , withSpan
   , exportSpansJson
 
-    -- * Callbacks & Diagnostics
+    -- * Callbacks
   , CallbackEvent (..)
   , CallbackHandler (..)
   , CallbackManager (..)
@@ -220,29 +200,14 @@ module Langchain.Prelude
   , dispatchEvent
   , dispatchEventAsync
   , newLoggingCallbackHandler
-  , HealthStatus (..)
-  , ComponentHealth (..)
-  , HealthReport (..)
-  , checkOllamaHealth
-  , checkSqliteHealth
-  , runFullHealthCheck
 
-    -- * Config Validation & Cost Accounting
+    -- * Config Validation
   , ConfigIssue (..)
   , ValidationResult (..)
   , validateLangchainConfig
   , assertValidConfig
-  , ModelPricing (..)
-  , CostEstimate (..)
-  , estimateTokenCount
-  , getStandardPricing
-  , calculateCost
 
-    -- * HTTP Pooling & Resilience
-  , ConnectionPoolConfig (..)
-  , defaultPoolConfig
-  , PooledHttpManager (..)
-  , newPooledHttpManager
+    -- * Resilience
   , CircuitState (..)
   , CircuitBreakerConfig (..)
   , defaultCircuitConfig
@@ -271,8 +236,6 @@ module Langchain.Prelude
   , newSqliteVecStore
   , PgVectorStore (..)
   , defaultPgVectorStore
-  , QdrantStore (..)
-  , defaultQdrantStore
   , Retriever (..)
   , VectorStoreRetriever (..)
   , MultiQueryRetriever (MultiQueryRetriever)
@@ -308,7 +271,7 @@ module Langchain.Prelude
   , MetadataEnricher (..)
   , newMetadataEnricher
 
-    -- * Prompt Templates & Example Selectors
+    -- * Prompt Templates
   , PromptTemplate (..)
   , PromptTemplateOptions (..)
   , TemplateFormat (..)
@@ -320,11 +283,6 @@ module Langchain.Prelude
   , FewShotPromptTemplate (..)
   , renderPrompt
   , renderFewShotPrompt
-  , Example
-  , ExampleSelector (..)
-  , LengthBasedSelector (..)
-  , newLengthBasedSelector
-  , selectByLength
 
     -- * Text Splitters
   , CharacterSplitterOps (CharacterSplitterOps)
@@ -363,31 +321,15 @@ module Langchain.Prelude
   , RetrievalQA (RetrievalQA)
   , newRetrievalQA
   , runRetrievalQA
-  , SequentialChain (..)
-  , ChainStep (ChainStep)
-  , newSequentialChain
-  , runSequentialChain
-  , ConversationalChain (..)
-  , newConversationalChain
-  , runConversationalChain
-  , StuffDocumentsChain (..)
-  , newStuffDocumentsChain
-  , runStuffDocumentsChain
   , MapReduceChain (..)
   , newMapReduceChain
   , runMapReduceChain
-  , SqlDatabaseChain (..)
-  , newSqlDatabaseChain
-  , runSqlDatabaseChain
-  , ConversationalRetrievalQA (..)
-  , newConversationalRetrievalQA
-  , runConversationalRetrievalQA
-  , SummarizationStrategy (..)
-  , SummarizationChain (..)
-  , newSummarizationChain
-  , runSummarizationChain
 
     -- * Structured Output, Routers, and Advanced Parsers
+  , OutputParser (..)
+  , CommaSeparatedList (..)
+  , JSONOutputStructure (..)
+  , NumberSeparatedList (..)
   , StructuredOutput (..)
   , TypeSchema (..)
   , toOllamaSchema
@@ -468,29 +410,27 @@ module Langchain.Prelude
 
     -- * Providers
   , Ollama
+  , OllamaConfig (..)
   , newOllama
+  , newOllamaWithConfig
+  , newOllamaWithTimeout
+  , newOllamaWithEndpoint
+  , newOllamaWithClient
   , OpenAI
   , newOpenAI
   , Gemini
   , newGemini
   ) where
 
-import Langchain.Accounting.Cost
-import Langchain.Agent.Core
 import Langchain.Agent.Functions
 import Langchain.Agent.Middleware
 import Langchain.Agent.PlanAndExecute
+import Langchain.Agent.ReAct
 import Langchain.Agent.Supervisor
 import Langchain.Cache.Core
 import Langchain.Callback.Manager
-import Langchain.Chain.Conversational
-import Langchain.Chain.ConversationalRetrievalQA
 import Langchain.Chain.MapReduce
 import Langchain.Chain.RetrievalQA
-import Langchain.Chain.Sequential
-import Langchain.Chain.SqlDatabase
-import Langchain.Chain.StuffDocuments
-import Langchain.Chain.Summarization
 import Langchain.Config.Validation
 import Langchain.Core.Error
 import Langchain.Core.Model
@@ -499,7 +439,6 @@ import qualified Langchain.Core.Monad as CoreMonad
 import Langchain.Core.Runnable
 import Langchain.Core.Stream
 import Langchain.Core.Tool
-import Langchain.Diagnostics.HealthCheck
 import Langchain.DocumentLoader.Core
 import Langchain.DocumentLoader.Csv
 import Langchain.DocumentLoader.DirectoryLoader
@@ -511,8 +450,6 @@ import Langchain.DocumentLoader.WebPage
 import Langchain.DocumentTransformer.HeaderInjector
 import Langchain.DocumentTransformer.MetadataEnricher
 import Langchain.Embeddings.Core
-import Langchain.Error (LangchainResult)
-import Langchain.ExampleSelector.Similarity
 import Langchain.Graph.Blackboard
 import Langchain.Graph.Checkpointer
 import Langchain.Graph.Debate
@@ -521,12 +458,8 @@ import Langchain.Graph.HITL
 import Langchain.Graph.MultiAgent
 import Langchain.Graph.Parallel
 import Langchain.Graph.StateGraph
-import Langchain.Graph.SubGraph
-import Langchain.Graph.TimeTravel
-import Langchain.Graph.Visualization
 import Langchain.Graph.Voting
 import Langchain.Guardrail.Core
-import Langchain.HTTP.ConnectionPool
 import Langchain.Logging.Structured
 import Langchain.MCP.Client
 import Langchain.Memory.Core
@@ -534,6 +467,7 @@ import Langchain.Memory.Entity
 import Langchain.Memory.Summary
 import Langchain.Observability.OpenTelemetry
 import Langchain.Observability.StreamProtocol
+import Langchain.OutputParser.Core
 import Langchain.OutputParser.Enum
 import Langchain.OutputParser.Structured
 import Langchain.OutputParser.Xml
@@ -543,7 +477,12 @@ import Langchain.PromptTemplate.Prompt
 import Langchain.Provider.Gemini (Gemini, newGemini)
 import Langchain.Provider.Ollama
   ( Ollama
+  , OllamaConfig (..)
   , newOllama
+  , newOllamaWithClient
+  , newOllamaWithConfig
+  , newOllamaWithEndpoint
+  , newOllamaWithTimeout
   , structuredOllamaInvoke
   , structuredOllamaInvokeWithSchema
   , withJsonFormat
@@ -568,12 +507,10 @@ import Langchain.TextSplitter.RecursiveCharacter
 import Langchain.TextSplitter.Token
 import Langchain.Tool.Async
 import Langchain.Tool.GenericSchema
-import Langchain.Trace.Core
 import Langchain.VectorStore.Core
 import Langchain.VectorStore.Filter
 import Langchain.VectorStore.InMemory
 import Langchain.VectorStore.PgVector
-import Langchain.VectorStore.Qdrant
 import Langchain.VectorStore.SqliteVec
 
 -- | Default runtime configuration alias

@@ -16,7 +16,6 @@ Gemini implementation of LangChain's embedding interface.
 module Langchain.Embeddings.Gemini
   ( GeminiEmbeddings (..)
   , defaultGeminiEmbeddings
-  , module Langchain.Embeddings.Core
   ) where
 
 import Data.Text (Text, unpack)
@@ -30,7 +29,6 @@ data GeminiEmbeddings = GeminiEmbeddings
   , model :: Text
   , dimensions :: Maybe Int
   , encodingFormat :: Maybe EncodingFormat
-  , embeddingsUser :: Maybe Text
   , timeout :: Maybe Int
   }
   deriving (Eq, Generic)
@@ -46,7 +44,6 @@ defaultGeminiEmbeddings =
     , model = "gemini-embedding-001"
     , dimensions = Nothing
     , encodingFormat = Nothing
-    , embeddingsUser = Nothing
     , timeout = Nothing
     }
 

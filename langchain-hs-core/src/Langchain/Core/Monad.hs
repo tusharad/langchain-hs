@@ -20,7 +20,6 @@ module Langchain.Core.Monad
   , runLangchainTIO
   , askConfig
   , withConfig
-  , liftExcept
   , throwLangchainError
   ) where
 
@@ -45,7 +44,7 @@ data LangchainConfig = LangchainConfig
 defaultConfig :: LangchainConfig
 defaultConfig =
   LangchainConfig
-    { defaultModelName = "qwen3.5:9b"
+    { defaultModelName = "qwen2.5:7b"
     , defaultTimeoutSeconds = 60
     , maxRetries = 3
     , configMetadata = Map.empty
@@ -69,11 +68,6 @@ askConfig = ask
 -- | Run with modified configuration
 withConfig :: Monad m => (LangchainConfig -> LangchainConfig) -> LangchainT m a -> LangchainT m a
 withConfig = local
-
--- | Lift an Either LangchainError into the monad
-liftExcept :: MonadError LangchainError m => Either LangchainError a -> m a
-liftExcept (Left err) = throwError err
-liftExcept (Right val) = pure val
 
 -- | Throw a LangchainError
 throwLangchainError :: MonadError LangchainError m => LangchainError -> m a

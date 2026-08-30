@@ -2,6 +2,7 @@
 
 module Test.Langchain.Error (tests) where
 
+import Control.Exception (displayException)
 import qualified Data.Text as T
 import Langchain.Error
 import Test.Tasty
@@ -57,7 +58,7 @@ tests =
         "displayException Formatting"
         [ testCase "displayException includes Component and Operation when context is present" $ do
             let err = llmError "Timeout" (Just "gpt-4o") (Just "chat")
-                str = toString err
+                str = displayException err
             assertBool "Contains component" ("Component: gpt-4o" `T.isInfixOf` T.pack str)
             assertBool "Contains operation" ("Operation: chat" `T.isInfixOf` T.pack str)
         ]

@@ -15,8 +15,7 @@ import Test.Tasty.HUnit
 
 import Langchain.Core.Model
 import Langchain.Graph.StateGraph
-import Langchain.Provider.Ollama (newOllama)
-import Test.Langchain.TestHelpers (defaultTestModel, withOllamaModel)
+import Test.Langchain.TestHelpers (defaultTestModel, newTestOllama, withOllamaModel)
 
 data GraphPipelineTestState = GraphPipelineTestState
   { originalPrompt :: Text
@@ -39,7 +38,7 @@ tests =
     "Langchain.Integration.StateGraphE2ESpec"
     [ testCase "StateGraph multi-node pipeline with live Ollama model" $ do
         withOllamaModel defaultTestModel $ \modelName -> do
-          provider <- newOllama modelName
+          provider <- newTestOllama modelName
           let draftNode s = do
                 let prompt = [userMessage $ "Answer concisely in one sentence: " <> originalPrompt s]
                 res <- invoke provider prompt Nothing

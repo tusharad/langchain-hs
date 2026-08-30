@@ -18,14 +18,18 @@ module Test.Langchain.TestHelpers
   , ollamaModelName
   , defaultTestModel
   , defaultEmbedModel
+  , defaultIntegrationTimeout
+  , newTestOllama
   , skipIfNoOllama
   , withOllamaModel
   ) where
 
 import Control.Exception (SomeException, try)
+import Control.Monad.IO.Class (MonadIO)
 import Data.Aeson (Value, decode)
 import Data.Text (Text)
 import qualified Data.Text as T
+import Langchain.Provider.Ollama (Ollama, newOllamaWithTimeout)
 import Network.HTTP.Simple
   ( getResponseBody
   , getResponseStatusCode
@@ -126,3 +130,11 @@ skipIfNoOllama action = do
   if running
     then action
     else putStrLn " [SKIPPED] Ollama daemon not reachable on localhost:11434"
+
+-- | Default timeout in seconds for Ollama integration tests
+defaultIntegrationTimeout :: Int
+defaultIntegrationTimeout = 600
+
+-- | Helper to create an Ollama test provider with a high timeout (600s)
+newTestOllama :: MonadIO m => Text -> m Ollama
+newTestOllama modelName = newOllamaWithTimeout modelName defaultIntegrationTimeout

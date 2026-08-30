@@ -13,6 +13,9 @@ import Langchain.Core.Model
 import Langchain.Core.Stream (StreamEvent (..), collectEvents)
 import Langchain.Provider.Ollama
 
+import qualified Ollama.Client as OC
+import qualified Ollama.Client.Config as OCC
+
 testModelName :: Text
 testModelName = "gemma3:latest"
 
@@ -22,6 +25,29 @@ tests =
     "Langchain.Provider.Ollama"
     [ testCase "newOllama initializes provider" $ do
         p <- newOllama testModelName
+        ollamaModelName p @?= testModelName
+    , testCase "newOllamaWithTimeout initializes provider with custom timeout" $ do
+        p <- newOllamaWithTimeout testModelName 600
+        ollamaModelName p @?= testModelName
+        OCC.configTimeout (OC.clientConfig (client p)) @?= 600
+    , testCase "newOllamaWithEndpoint initializes provider with custom endpoint" $ do
+        p <- newOllamaWithEndpoint testModelName "http://remote-ollama:11434"
+        ollamaModelName p @?= testModelName
+        OCC.configBaseUrl (OC.clientConfig (client p)) @?= "http://remote-ollama:11434"
+    , testCase "newOllamaWithConfig initializes provider with OllamaConfig" $ do
+        let cfg =
+              defaultConfig
+                { configModelName = "qwen3.5:2b"
+                , configBaseUrl = Just "http://custom-host:11434"
+                , configTimeout = Just 120
+                }
+        p <- newOllamaWithConfig cfg
+        ollamaModelName p @?= "qwen3.5:2b"
+        OCC.configBaseUrl (OC.clientConfig (client p)) @?= "http://custom-host:11434"
+        OCC.configTimeout (OC.clientConfig (client p)) @?= 120
+    , testCase "newOllamaWithClient wraps existing OllamaClient" $ do
+        c <- OC.defaultClient
+        let p = newOllamaWithClient testModelName c
         ollamaModelName p @?= testModelName
     , testCase "invoke returns Assistant message" $ do
         p <- newOllama testModelName
