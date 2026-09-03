@@ -238,10 +238,10 @@ openAIStreamClient = client (Proxy :: Proxy OpenAIStreamApi)
 streamRequestBody :: CC.CreateChatCompletion -> Maybe Value -> Value
 streamRequestBody request options = case Aeson.toJSON request of
   Object fields ->
-    Object
-      $ KeyMap.insert "stream_options" (object ["include_usage" Aeson..= True])
-      $ KeyMap.insert "stream" (Bool True)
-      $ KeyMap.union fields optionFields
+    Object $
+      KeyMap.insert "stream_options" (object ["include_usage" Aeson..= True]) $
+        KeyMap.insert "stream" (Bool True) $
+          KeyMap.union fields optionFields
   value -> value
   where
     optionFields = case options of
