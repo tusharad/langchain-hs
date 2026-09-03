@@ -3,6 +3,7 @@
 module Test.Langchain.Integration.OllamaStreamSpec (tests) where
 
 import Control.Monad.Except (runExceptT)
+import Control.Monad.Trans.Resource (runResourceT)
 import qualified Data.Text as T
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -19,7 +20,7 @@ tests =
         withOllamaModel defaultTestModel $ \mName -> do
           provider <- newTestOllama mName
           let prompt = [userMessage "Count from 1 to 5 separated by spaces."]
-          res <- runExceptT $ collectEvents (stream provider prompt Nothing)
+          res <- runResourceT $ runExceptT $ collectEvents (stream provider prompt Nothing)
           case res of
             Left err -> assertFailure ("Ollama streaming failed: " ++ show err)
             Right events -> do

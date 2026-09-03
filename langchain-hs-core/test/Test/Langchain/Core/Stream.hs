@@ -6,6 +6,7 @@ import Test.Tasty
 import Test.Tasty.HUnit
 
 import Control.Monad.Except (runExceptT)
+import Control.Monad.Trans.Resource (runResourceT)
 
 import Langchain.Core.Model
 import Langchain.Core.Stream
@@ -17,7 +18,7 @@ tests =
     [ testCase "stream emits LLMStart, LLMChunk, LLMEnd events" $ do
         let model = MockModel "Streamed content" "mock-gpt"
             input = [userMessage "Stream test"]
-        res <- runExceptT $ collectEvents (stream model input Nothing)
+        res <- runResourceT $ runExceptT $ collectEvents (stream model input Nothing)
         case res of
           Left err -> assertFailure $ "Unexpected stream error: " ++ show err
           Right events -> do

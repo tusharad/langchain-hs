@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.38.1.
+-- This file has been generated from package.yaml by hpack version 0.39.6.
 --
 -- see: https://github.com/sol/hpack
 
@@ -50,6 +50,7 @@ library
     , containers >=0.6 && <0.9
     , deepseq >=1.4 && <1.6
     , mtl >=2.2 && <2.4
+    , resourcet >=1.2 && <1.4
     , text >=1.2 && <3
     , time >=1.9 && <1.15
   default-language: Haskell2010
@@ -91,6 +92,7 @@ test-suite langchain-hs-core-test
     , deepseq >=1.4 && <1.6
     , langchain-hs-core
     , mtl >=2.2 && <2.4
+    , resourcet
     , tasty >=1.4
     , tasty-hunit >=0.10
     , tasty-quickcheck >=0.10

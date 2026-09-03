@@ -21,13 +21,13 @@ module Langchain.Core.Model
 
 import Control.Monad.Except (MonadError)
 import Control.Monad.IO.Class (MonadIO)
-import Data.Conduit (ConduitT, yield)
+import Data.Conduit (yield)
 import Data.Kind (Type)
 import Data.Text (Text)
 
 import Langchain.Core.Error (LangchainError)
 import Langchain.Core.Model.Types
-import Langchain.Core.Stream (StreamEvent (..))
+import Langchain.Core.Stream (ChatStream, StreamEvent (..))
 
 -- | Effect-polymorphic ChatModel typeclass for LLM providers
 class ChatModel model where
@@ -52,11 +52,10 @@ class ChatModel model where
 
   -- | Streaming invocation yielding structured StreamEvents via Conduit
   stream ::
-    (MonadIO m, MonadError LangchainError m) =>
     model ->
     [Message] ->
     Maybe (ModelConfig model) ->
-    ConduitT () StreamEvent m ()
+    ChatStream
 
 -- | Mock model implementation for pure monadic testing.
 data MockModel = MockModel

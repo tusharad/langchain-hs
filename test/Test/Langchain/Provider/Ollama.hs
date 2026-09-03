@@ -6,6 +6,7 @@ import Test.Tasty
 import Test.Tasty.HUnit
 
 import Control.Monad.Except (runExceptT)
+import Control.Monad.Trans.Resource (runResourceT)
 import Data.Text (Text)
 import qualified Data.Text as T
 
@@ -69,7 +70,7 @@ tests =
     , testCase "stream emits LLMStart, LLMChunk, LLMEnd" $ do
         p <- newOllama testModelName
         let input = [userMessage "Hi"]
-        res <- runExceptT $ collectEvents (stream p input Nothing)
+        res <- runResourceT $ runExceptT $ collectEvents (stream p input Nothing)
         case res of
           Left err -> assertFailure $ "Expected stream success, got error: " ++ show err
           Right events -> do
