@@ -100,6 +100,13 @@ packages:
       size: 1379
   original:
     hackage: http-types-0.12.5@sha256:cb708ff8d2001dc7bcff615350a835a6dc1b2488829acfcc6d8bc7e13d423153,2927
+- completed:
+    hackage: servant-event-stream-0.4.0.1@sha256:c79ef3516626850347f2a92c15de473244539f2211c05d0350f4073d1659c669,1760
+    pantry-tree:
+      sha256: 60b1a777624be4cea3aa39592c9050ea3c8aed3e4b595afcff5b0ea127b32839
+      size: 393
+  original:
+    hackage: servant-event-stream-0.4.0.1@sha256:c79ef3516626850347f2a92c15de473244539f2211c05d0350f4073d1659c669,1760
 snapshots:
 - completed:
     sha256: 5dcfbf35d1c0b13bd4c2ea51df17fac5da59483a2ea6f092f3a89df0665fde68

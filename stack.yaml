@@ -31,4 +31,6 @@ extra-deps:
 
   - http-types-0.12.5@sha256:cb708ff8d2001dc7bcff615350a835a6dc1b2488829acfcc6d8bc7e13d423153,2927
 
+  - servant-event-stream-0.4.0.1@sha256:c79ef3516626850347f2a92c15de473244539f2211c05d0350f4073d1659c669,1760
+
 allow-newer: true
