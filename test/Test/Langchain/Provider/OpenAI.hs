@@ -6,10 +6,19 @@ module Test.Langchain.Provider.OpenAI (tests) where
 
 import Control.Concurrent (newEmptyMVar, putMVar, takeMVar, threadDelay)
 import Control.Concurrent.Async (async, poll, wait)
-import Control.Concurrent.STM (atomically, newTBQueueIO, readTBQueue, writeTBQueue)
+import Control.Concurrent.STM
+  ( atomically
+  , modifyTVar'
+  , newTBQueueIO
+  , newTVarIO
+  , readTBQueue
+  , readTVarIO
+  , writeTBQueue
+  )
 import Control.Exception (SomeException, catch)
 import Control.Monad (forM, void)
 import Control.Monad.Except (runExceptT)
+import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Resource (runResourceT)
 import Data.Aeson (Value)
 import qualified Data.Aeson as Aeson
@@ -99,6 +108,19 @@ cancellationAwareSseServer signalClientClosed _request respond =
       flush
       keepAlive `catch` onDisconnect
 
+gatedSseServer :: IO () -> Application
+gatedSseServer waitForContinuation _request respond =
+  respond $
+    responseStream status200 [(hContentType, "text/event-stream")] $ \write flush -> do
+      let TestSseEvent firstEvent = chunk "Hel"
+          TestSseEvent secondEvent = chunk "lo"
+      write $ "data: " <> Builder.lazyByteString firstEvent <> "\n\n"
+      flush
+      waitForContinuation
+      write $ "data: " <> Builder.lazyByteString secondEvent <> "\n\n"
+      write "data: [DONE]\n\n"
+      flush
+
 withTestProvider :: [TestSseEvent] -> (OpenAI -> IO a) -> IO a
 withTestProvider events action =
   withTestApplication (serve (Proxy :: Proxy TestOpenAIStreamApi) (testStreamServer events)) action
@@ -117,6 +139,10 @@ withRequestCapturingProvider captureRequest =
 withCancellationAwareProvider :: IO () -> (OpenAI -> IO a) -> IO a
 withCancellationAwareProvider signalClientClosed =
   withTestApplication (cancellationAwareSseServer signalClientClosed)
+
+withGatedProvider :: IO () -> (OpenAI -> IO a) -> IO a
+withGatedProvider waitForContinuation =
+  withTestApplication (gatedSseServer waitForContinuation)
 
 withTestApplication :: Application -> (OpenAI -> IO a) -> IO a
 withTestApplication app action =
@@ -274,6 +300,39 @@ tests =
               , LLMEnd _ responseMessage Nothing
               ] -> extractMessageText responseMessage @?= "Hello"
             _ -> assertFailure $ "Unexpected stream events: " ++ show events
+    , testCase "stream delivers a chunk before the response completes" $ do
+        firstChunkReceived <- newEmptyMVar
+        continueResponse <- newEmptyMVar
+        receivedEvents <- newTVarIO []
+        withGatedProvider (takeMVar continueResponse) $ \provider -> do
+          consumer <-
+            async
+              . runResourceT
+              . runExceptT
+              . runConduit
+              $ stream provider [userMessage "Hello"] Nothing
+                .| C.mapM_
+                  ( \event -> do
+                      liftIO . atomically $ modifyTVar' receivedEvents (event :)
+                      case event of
+                        LLMChunk _ "Hel" _ -> liftIO $ putMVar firstChunkReceived ()
+                        _ -> pure ()
+                  )
+          received <- timeout 500000 $ takeMVar firstChunkReceived
+          assertBool "expected first chunk before releasing the response" $ isJust received
+          stillStreaming <- poll consumer
+          assertBool "consumer should wait for the remaining response" $ isNothing stillStreaming
+          putMVar continueResponse ()
+          result <- timeout 500000 $ wait consumer
+          case result of
+            Nothing -> assertFailure "stream did not finish after releasing the response"
+            Just (Left err) -> assertFailure $ "Expected stream success, got: " ++ show err
+            Just (Right ()) -> do
+              events <- reverse <$> readTVarIO receivedEvents
+              case reverse events of
+                LLMEnd _ responseMessage Nothing : _ ->
+                  extractMessageText responseMessage @?= "Hello"
+                _ -> assertFailure $ "Expected a completed stream, got: " ++ show events
     , testCase "stream finishes when the SSE connection closes" $ do
         result <- collectStream [chunk "Hello"]
         case result of
