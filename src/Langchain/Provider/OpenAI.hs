@@ -1,10 +1,13 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 
 {- |
 Module      : Langchain.Provider.OpenAI
@@ -22,23 +25,45 @@ module Langchain.Provider.OpenAI
   , OpenAIConfig (..)
   , defaultConfig
   , defaultOpenAIConfig
+  , OpenAIToolChoice (..)
+  , openAITools
   , newOpenAI
   , openAICompatible
   , normalizeBaseUrl
   , parseOpenAIResponse
   ) where
 
-import Control.Exception (SomeException, try)
+import Control.Applicative ((<|>))
+import Control.Concurrent.Async (AsyncCancelled (..), async, cancel)
+import Control.Concurrent.STM
+  ( atomically
+  , newEmptyTMVarIO
+  , newTBQueueIO
+  , orElse
+  , putTMVar
+  , readTBQueue
+  , readTMVar
+  , writeTBQueue
+  )
+import Control.Exception (SomeException, finally, fromException, throwIO, try)
 import Control.Monad (forM)
 import Control.Monad.Except (throwError)
 import Control.Monad.IO.Class (liftIO)
-import Data.Aeson (Value (..), object)
+import Control.Monad.Trans.Class (lift)
+import qualified Data.Conduit.Combinators as C
+
+import Data.Aeson (Value (..), object, (.=))
 import qualified Data.Aeson as Aeson
-import Data.Aeson.Types (parseEither)
+import qualified Data.Aeson.KeyMap as KeyMap
+import Data.Aeson.Types (Parser, parseEither, parseMaybe)
+import Data.Bifunctor (first)
 import qualified Data.ByteString.Lazy as LBS
-import Data.Conduit (yield)
+import Data.Conduit
+import Data.List (find)
 import qualified Data.List.NonEmpty as NonEmpty
+import qualified Data.Map.Strict as Map
 import Data.Maybe (fromMaybe)
+import Data.Proxy (Proxy (..))
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
@@ -51,9 +76,22 @@ import qualified OpenAI.V1.Models as OM
 import qualified OpenAI.V1.ToolCall as OTC
 import qualified OpenAI.V1.Usage as OU
 
-import Langchain.Core.Error (llmError)
+import Langchain.Core.Error (LangchainError, llmError)
 import Langchain.Core.Model
-import Langchain.Core.Stream (StreamEvent (..), TokenUsage (..))
+import Langchain.Core.Stream (StreamEvent (..), StreamM, TokenUsage (..))
+import Langchain.Core.Tool (Tool, toolToValue)
+import Network.HTTP.Client (newManager)
+import Network.HTTP.Client.TLS (tlsManagerSettings)
+import Servant.API (Header, JSON, ReqBody, (:>))
+import Servant.API.EventStream
+  ( FromServerEvent (fromServerEvent)
+  , PostServerSentEvents
+  , ServerEvent (eventData)
+  , jsonData
+  )
+import Servant.Client.Core.BaseUrl (parseBaseUrl)
+import Servant.Client.Streaming (ClientM, client, mkClientEnv, withClientM)
+import Servant.Conduit ()
 
 -- | Configuration for OpenAI provider
 data OpenAIConfig = OpenAIConfig
@@ -81,6 +119,134 @@ data OpenAI = OpenAI
   , temperature :: Maybe Double
   }
   deriving (Eq, Show)
+
+-- | Controls how OpenAI chooses among request tool definitions.
+data OpenAIToolChoice
+  = OpenAIToolAuto
+  | OpenAIToolNone
+  | OpenAIToolRequired
+  | OpenAIToolFunction Text
+  deriving (Eq, Show)
+
+-- | Build stream request options from langchain tools.
+openAITools :: [Tool m] -> OpenAIToolChoice -> Value
+openAITools tools choice =
+  object
+    [ "tools" .= map toolToValue tools
+    , "tool_choice" .= toolChoiceValue choice
+    ]
+
+toolChoiceValue :: OpenAIToolChoice -> Value
+toolChoiceValue OpenAIToolAuto = String "auto"
+toolChoiceValue OpenAIToolNone = String "none"
+toolChoiceValue OpenAIToolRequired = String "required"
+toolChoiceValue (OpenAIToolFunction name) =
+  object
+    [ "type" .= ("function" :: Text)
+    , "function" .= object ["name" .= name]
+    ]
+
+data OpenAIStreamEvent
+  = OpenAIChunk OpenAIStreamChunk
+  | OpenAIDone
+
+instance FromServerEvent OpenAIStreamEvent where
+  fromServerEvent event
+    | eventData event == "[DONE]" = Right OpenAIDone
+    | otherwise = OpenAIChunk <$> jsonData event
+
+data OpenAIStreamChunk = OpenAIStreamChunk
+  { streamChoices :: [OpenAIStreamChoice]
+  , streamUsage :: Maybe TokenUsage
+  }
+
+instance Aeson.FromJSON OpenAIStreamChunk where
+  parseJSON = Aeson.withObject "OpenAIStreamChunk" $ \obj ->
+    OpenAIStreamChunk
+      <$> obj Aeson..:? "choices" Aeson..!= []
+      <*> (obj Aeson..:? "usage" >>= traverse parseOpenAIStreamUsage)
+
+parseOpenAIStreamUsage :: Value -> Parser TokenUsage
+parseOpenAIStreamUsage = Aeson.withObject "OpenAIStreamUsage" $ \obj ->
+  TokenUsage
+    <$> obj Aeson..: "prompt_tokens"
+    <*> obj Aeson..: "completion_tokens"
+    <*> obj Aeson..: "total_tokens"
+
+data OpenAIStreamChoice = OpenAIStreamChoice
+  { streamChoiceIndex :: Int
+  , streamChoiceDelta :: OpenAIStreamDelta
+  }
+
+instance Aeson.FromJSON OpenAIStreamChoice where
+  parseJSON = Aeson.withObject "OpenAIStreamChoice" $ \obj ->
+    OpenAIStreamChoice
+      <$> obj Aeson..: "index"
+      <*> obj Aeson..: "delta"
+
+data OpenAIStreamDelta = OpenAIStreamDelta
+  { streamContent :: Maybe Text
+  , streamToolCalls :: [OpenAIStreamToolCall]
+  }
+
+instance Aeson.FromJSON OpenAIStreamDelta where
+  parseJSON = Aeson.withObject "OpenAIStreamDelta" $ \obj ->
+    OpenAIStreamDelta
+      <$> obj Aeson..:? "content"
+      <*> obj Aeson..:? "tool_calls" Aeson..!= []
+
+data OpenAIStreamToolCall = OpenAIStreamToolCall
+  { streamToolCallIndex :: Int
+  , streamToolCallId :: Maybe Text
+  , streamToolCallName :: Maybe Text
+  , streamToolCallArguments :: Maybe Text
+  }
+
+instance Aeson.FromJSON OpenAIStreamToolCall where
+  parseJSON = Aeson.withObject "OpenAIStreamToolCall" $ \obj -> do
+    streamToolCallIndex <- obj Aeson..: "index"
+    streamToolCallId <- obj Aeson..:? "id"
+    streamFunction <- obj Aeson..:? "function"
+    let streamToolCallName = streamFunction >>= parseMaybe (Aeson..: "name")
+        streamToolCallArguments = streamFunction >>= parseMaybe (Aeson..: "arguments")
+    pure
+      OpenAIStreamToolCall
+        { streamToolCallIndex
+        , streamToolCallId
+        , streamToolCallName
+        , streamToolCallArguments
+        }
+
+data PartialToolCall = PartialToolCall
+  { partialToolCallId :: Maybe Text
+  , partialToolCallName :: Maybe Text
+  , partialToolCallArguments :: Text
+  }
+
+type OpenAIStreamApi =
+  "v1"
+    :> "chat"
+    :> "completions"
+    :> Header "Authorization" Text
+    :> ReqBody '[JSON] Value
+    :> PostServerSentEvents (ConduitT () OpenAIStreamEvent IO ())
+
+openAIStreamClient ::
+  Maybe Text -> Value -> ClientM (ConduitT () OpenAIStreamEvent IO ())
+openAIStreamClient = client (Proxy :: Proxy OpenAIStreamApi)
+
+streamRequestBody :: CC.CreateChatCompletion -> Maybe Value -> Value
+streamRequestBody request options = case Aeson.toJSON request of
+  Object fields ->
+    Object
+      $ KeyMap.insert "stream_options" (object ["include_usage" Aeson..= True])
+      $ KeyMap.insert "stream" (Bool True)
+      $ KeyMap.union fields optionFields
+  value -> value
+  where
+    optionFields = case options of
+      Just (Object fields) -> fields
+      _ -> mempty
 
 -- | Create standard OpenAI provider instance
 newOpenAI :: Text -> Text -> OpenAI
@@ -153,7 +319,7 @@ toLangchainOAIMessage msg =
             , CC.refusal = Nothing
             , CC.name = messageName msg
             , CC.assistant_audio = Nothing
-            , CC.tool_calls = Nothing
+            , CC.tool_calls = V.fromList . map toOAIToolCall <$> messageToolCalls msg
             }
         Tool ->
           CC.Tool
@@ -165,6 +331,14 @@ toLangchainOAIMessage msg =
           CC.System {CC.content = contents, CC.name = messageName msg}
         Function ->
           CC.System {CC.content = contents, CC.name = messageName msg}
+  where
+    toOAIToolCall toolCall =
+      OTC.ToolCall_Function
+        { OTC.id = toolCallId toolCall
+        , OTC.function = OTC.Function {OTC.name = toolCallName toolCall, OTC.arguments = arguments toolCall}
+        }
+
+    arguments = TE.decodeUtf8 . LBS.toStrict . Aeson.encode . toolCallArguments
 
 -- ---------------------------------------------------------------------------
 -- Conversion: openai package response -> langchain-hs Message
@@ -211,47 +385,160 @@ instance ChatModel OpenAI where
   type ModelConfig OpenAI = Value
 
   invoke provider inputMsgs _ = do
-    let oaiMsgs = V.fromList $ map toLangchainOAIMessage inputMsgs
-        reqBody =
-          CC._CreateChatCompletion
-            { CC.messages = oaiMsgs
-            , CC.model = OM.Model (model provider)
-            , CC.temperature = temperature provider
-            }
-
-    eRes <- liftIO $ callOpenAI provider reqBody
-    case eRes of
-      Left err -> throwError $ llmError err Nothing Nothing
+    resp <- liftIO $ first asText <$> try createComplention
+    case resp of
+      Left err -> throwError $ llmError' err
       Right (CC.ChatCompletionObject {CC.choices = choicesVec, CC.usage = oaiUsage}) -> do
         case V.toList choicesVec of
           [] -> throwError $ llmError "Empty choices array in OpenAI response" Nothing Nothing
           (choice : _) -> do
-            let respMsg = fromOAIMessage (CC.message choice)
+            let respMsg = fromOAIMessage $ CC.message choice
                 _usage = fromOAIUsage oaiUsage
             pure respMsg {messageToolCalls = messageToolCalls respMsg}
+    where
+      createComplention = do
+        methods <- getMethods
+        let body = reqBody provider inputMsgs
+        OAI.createChatCompletion methods body
+      getMethods = do
+        clientEnv <- OAI.getClientEnv (normalizeBaseUrl (baseUrl provider))
+        pure $ OAI.makeMethods clientEnv (apiKey provider) Nothing Nothing
 
-  stream provider inputMsgs _ = do
-    let rId = "openai-stream-run"
+  stream provider inputMsgs options = do
     yield $ LLMStart rId (model provider) inputMsgs
-    let oaiMsgs = V.fromList $ map toLangchainOAIMessage inputMsgs
-        reqBody =
-          CC._CreateChatCompletion
-            { CC.messages = oaiMsgs
-            , CC.model = OM.Model (model provider)
-            , CC.temperature = temperature provider
-            }
 
-    eRes <- liftIO $ callOpenAI provider reqBody
-    case eRes of
-      Left err -> yield $ LLMChunk rId err Nothing
-      Right (CC.ChatCompletionObject {CC.choices = choicesVec, CC.usage = oaiUsage}) -> do
-        case V.toList choicesVec of
-          [] -> yield $ LLMChunk rId "Empty choices array in OpenAI response" Nothing
-          (choice : _) -> do
-            let respMsg = fromOAIMessage (CC.message choice)
-                mbUsage = Just $ fromOAIUsage oaiUsage
-            yield $ LLMChunk rId (extractMessageText respMsg) Nothing
-            yield $ LLMEnd rId respMsg mbUsage
+    (accumulated, toolCalls, usage) <-
+      callbackSource openAIEvents
+        .| receiveChunks "" Map.empty Nothing
+
+    yield $ LLMEnd rId ((assistantMessage accumulated) {messageToolCalls = toolCalls}) usage
+    where
+      rId = "openai-stream-run"
+      receiveChunks accumulated toolCalls usage =
+        await >>= \case
+          Nothing -> finishStream
+          Just (Left err) -> throwError $ llmError' err
+          Just (Right OpenAIDone) -> finishStream
+          Just (Right (OpenAIChunk OpenAIStreamChunk {streamChoices, streamUsage})) -> do
+            let selectedChoice = find ((== 0) . streamChoiceIndex) streamChoices
+                (texts, nextToolCalls) =
+                  case selectedChoice of
+                    Nothing -> ([], toolCalls)
+                    Just OpenAIStreamChoice {streamChoiceDelta = OpenAIStreamDelta {streamContent, streamToolCalls}} ->
+                      (maybe [] pure streamContent, foldl' (flip addToolCall) toolCalls streamToolCalls)
+                nextUsage = streamUsage <|> usage
+            mapM_ (\text -> yield $ LLMChunk rId text Nothing) texts
+            receiveChunks (accumulated <> mconcat texts) nextToolCalls nextUsage
+        where
+          addToolCall
+            OpenAIStreamToolCall
+              { streamToolCallIndex
+              , streamToolCallId
+              , streamToolCallName
+              , streamToolCallArguments
+              } =
+              Map.alter (Just . update) streamToolCallIndex
+              where
+                update curr =
+                  PartialToolCall
+                    { partialToolCallId = streamToolCallId <|> (curr >>= partialToolCallId)
+                    , partialToolCallName = streamToolCallName <|> (curr >>= partialToolCallName)
+                    , partialToolCallArguments =
+                        maybe "" partialToolCallArguments curr <> fromMaybe "" streamToolCallArguments
+                    }
+
+          finishStream = do
+            finalToolCalls <- lift $ traverse toToolCall $ Map.elems toolCalls
+            mapM_ (yield . LLMChunk rId "" . Just) finalToolCalls
+            pure (accumulated, nonEmpty finalToolCalls, usage)
+            where
+              nonEmpty [] = Nothing
+              nonEmpty xs = Just xs
+
+              toToolCall :: PartialToolCall -> StreamM ToolCall
+              toToolCall PartialToolCall {partialToolCallId, partialToolCallName, partialToolCallArguments} = do
+                toolCallId <- mb partialToolCallId "OpenAI stream ended with a tool call missing an id"
+                toolCallName <-
+                  mb partialToolCallName "OpenAI stream ended with a tool call missing a function name"
+                toolCallArguments <- case decode partialToolCallArguments of
+                  Left err -> throw $ "Invalid JSON arguments in OpenAI tool call: " <> T.pack err
+                  Right arguments -> pure arguments
+                pure ToolCall {toolCallId, toolCallType = "function", toolCallName, toolCallArguments}
+
+              throw = throwError . llmError'
+              mb x errMsg = maybe (throw errMsg) pure x
+              decode = Aeson.eitherDecode . LBS.fromStrict . TE.encodeUtf8
+
+      -- \| Internal function to handle streaming events from OpenAI.
+      openAIEvents emit = do
+        result <- try $ do
+          manager <- newManager tlsManagerSettings
+          let baseUrl' = T.unpack $ normalizeBaseUrl $ baseUrl provider
+          clientEnv <- mkClientEnv manager <$> parseBaseUrl baseUrl'
+          let body = reqBody provider inputMsgs
+              bearerToken = Just $ "Bearer " <> apiKey provider
+              request = openAIStreamClient bearerToken $ streamRequestBody body options
+
+          withClientM request clientEnv $ \case
+            Left err ->
+              emit $ Left $ T.pack $ show err
+            Right source ->
+              runConduit $
+                source .| C.mapM_ (emit . Right)
+
+        case result of
+          Left err
+            | Just AsyncCancelled <- fromException err -> throwIO err
+            | otherwise -> emit $ Left $ asText err
+          Right () -> pure ()
+
+-- | A type alias for a streaming callback function that produces values of type @a@.
+type StreamCallback a = (a -> IO ()) -> IO ()
+
+-- | A type alias for a Conduit source that produces values of type @a@ in the 'StreamM' monad.
+type StreamSource a = ConduitT () a StreamM ()
+
+-- | Convert a callback-based streaming function into a Conduit source.
+callbackSource :: StreamCallback a -> StreamSource a
+callbackSource produce = bracketP start (cancel . third) consume
+  where
+    start = do
+      queue <- newTBQueueIO 64
+      finished <- newEmptyTMVarIO
+      worker <-
+        async $ produce (atomically . writeTBQueue queue) `finally` atomically (putTMVar finished ())
+      pure (queue, finished, worker)
+
+    consume (queue, finished, _worker) = loop
+      where
+        loop = do
+          let waitForFinished = Nothing <$ readTMVar finished
+              readEvent = Just <$> readTBQueue queue
+          next <- liftIO . atomically $ readEvent `orElse` waitForFinished
+          case next of
+            Just item -> yield item >> loop
+            Nothing -> pure ()
+
+    third (_, _, worker) = worker
+
+-- | Convert a 'SomeException' to 'Text' for error reporting.
+asText :: SomeException -> Text
+asText ex = T.pack $ show (ex :: SomeException)
+
+-- | Construct a 'LangchainError' for LLM errors with optional details.
+llmError' :: Text -> LangchainError
+llmError' msg = llmError msg Nothing Nothing
+
+-- | Construct the request body for OpenAI chat completion.
+reqBody :: OpenAI -> [Message] -> CC.CreateChatCompletion
+reqBody provider inputMsgs =
+  CC._CreateChatCompletion
+    { CC.messages = toVec inputMsgs
+    , CC.model = OM.Model $ model provider
+    , CC.temperature = temperature provider
+    }
+  where
+    toVec = V.fromList . map toLangchainOAIMessage
 
 {- | Normalize base URL to ensure compatibility with the @openai@ package.
 Strips any trailing @/v1/chat/completions@, @/chat/completions@, or @/v1@
@@ -270,20 +557,6 @@ normalizeBaseUrl rawUrl =
         | otherwise =
             u0
    in T.dropWhileEnd (== '/') u1
-
--- | Internal helper to perform the chat completion call via the @openai@ package.
-callOpenAI :: OpenAI -> CC.CreateChatCompletion -> IO (Either Text CC.ChatCompletionObject)
-callOpenAI provider reqBody = do
-  eRes <- try go :: IO (Either SomeException CC.ChatCompletionObject)
-  case eRes of
-    Left ex -> pure $ Left (T.pack $ show ex)
-    Right obj -> pure $ Right obj
-  where
-    go = do
-      clientEnv <- OAI.getClientEnv (normalizeBaseUrl (baseUrl provider))
-      let OAI.Methods {OAI.createChatCompletion} =
-            OAI.makeMethods clientEnv (apiKey provider) Nothing Nothing
-      createChatCompletion reqBody
 
 -- ---------------------------------------------------------------------------
 -- Backward-compatible parseOpenAIResponse
