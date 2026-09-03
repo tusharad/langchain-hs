@@ -59,7 +59,7 @@ import Data.Aeson.Types (Parser, parseEither, parseMaybe)
 import Data.Bifunctor (first)
 import qualified Data.ByteString.Lazy as LBS
 import Data.Conduit
-import Data.List (find)
+import qualified Data.List as List
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.Map.Strict as Map
 import Data.Maybe (fromMaybe)
@@ -420,12 +420,12 @@ instance ChatModel OpenAI where
           Just (Left err) -> throwError $ llmError' err
           Just (Right OpenAIDone) -> finishStream
           Just (Right (OpenAIChunk OpenAIStreamChunk {streamChoices, streamUsage})) -> do
-            let selectedChoice = find ((== 0) . streamChoiceIndex) streamChoices
+            let selectedChoice = List.find ((== 0) . streamChoiceIndex) streamChoices
                 (texts, nextToolCalls) =
                   case selectedChoice of
                     Nothing -> ([], toolCalls)
                     Just OpenAIStreamChoice {streamChoiceDelta = OpenAIStreamDelta {streamContent, streamToolCalls}} ->
-                      (maybe [] pure streamContent, foldl' (flip addToolCall) toolCalls streamToolCalls)
+                      (maybe [] pure streamContent, List.foldl' (flip addToolCall) toolCalls streamToolCalls)
                 nextUsage = streamUsage <|> usage
             mapM_ (\text -> yield $ LLMChunk rId text Nothing) texts
             receiveChunks (accumulated <> mconcat texts) nextToolCalls nextUsage
