@@ -3,6 +3,7 @@
 module Test.Langchain.RegressionSpec (tests) where
 
 import Control.Monad.Except (runExceptT)
+import Control.Monad.Trans.Resource (runResourceT)
 import Data.Aeson (decode, object, (.=))
 import qualified Data.ByteString.Lazy.Char8 as LBSC
 import Data.Text (Text)
@@ -27,7 +28,7 @@ tests =
     [ testCase "regression_ollama_stream_lifecycle: StreamEvent stream ends with LLMEnd" $ do
         let mockModel = newMockModel "Streaming chunk data"
             input = [userMessage "Ping"]
-        res <- runExceptT $ collectEvents (stream mockModel input Nothing)
+        res <- runResourceT $ runExceptT $ collectEvents (stream mockModel input Nothing)
         case res of
           Left err -> assertFailure ("Stream failed: " ++ show err)
           Right events -> do

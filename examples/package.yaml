@@ -27,6 +27,7 @@ dependencies:
 - bytestring
 - mtl
 - conduit
+- resourcet
 
 
 ghc-options:

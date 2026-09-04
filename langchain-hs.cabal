@@ -134,6 +134,7 @@ library
     , filepath <2
     , ginger >=0.10.6 && <0.11
     , http-client
+    , http-client-tls
     , http-conduit ==2.*
     , http-types >=0.11 && <0.13
     , langchain-hs-core
@@ -145,7 +146,13 @@ library
     , process ==1.6.*
     , pystrformat
     , random >=1.2
+    , resourcet >=1.2 && <1.4
     , scientific
+    , servant ==0.20.*
+    , servant-client ==0.20.*
+    , servant-client-core ==0.20.*
+    , servant-conduit ==0.16.*
+    , servant-event-stream ==0.4.*
     , sqlite-simple >=0.4.18 && <0.5
     , stache >=2.3 && <2.5
     , stm ==2.5.*
@@ -259,8 +266,9 @@ test-suite langchain-hs-test
     , filepath
     , ginger >=0.10.6 && <0.11
     , http-client
+    , http-client-tls
     , http-conduit
-    , http-types >=0.11 && <0.13
+    , http-types
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
@@ -271,7 +279,14 @@ test-suite langchain-hs-test
     , process ==1.6.*
     , pystrformat
     , random >=1.2
+    , resourcet >=1.2 && <1.4
     , scientific
+    , servant
+    , servant-client ==0.20.*
+    , servant-client-core ==0.20.*
+    , servant-conduit ==0.16.*
+    , servant-event-stream
+    , servant-server
     , sqlite-simple >=0.4.18 && <0.5
     , stache >=2.3 && <2.5
     , stm ==2.5.*
@@ -284,6 +299,8 @@ test-suite langchain-hs-test
     , time >=1.9 && <1.15
     , transformers
     , vector <0.14
+    , wai
+    , warp
   default-language: Haskell2010
 
 benchmark langchain-hs-bench
@@ -306,6 +323,7 @@ benchmark langchain-hs-bench
     , filepath <2
     , ginger >=0.10.6 && <0.11
     , http-client
+    , http-client-tls
     , http-conduit ==2.*
     , http-types >=0.11 && <0.13
     , langchain-hs
@@ -318,7 +336,13 @@ benchmark langchain-hs-bench
     , process ==1.6.*
     , pystrformat
     , random >=1.2
+    , resourcet >=1.2 && <1.4
     , scientific
+    , servant ==0.20.*
+    , servant-client ==0.20.*
+    , servant-client-core ==0.20.*
+    , servant-conduit ==0.16.*
+    , servant-event-stream ==0.4.*
     , sqlite-simple >=0.4.18 && <0.5
     , stache >=2.3 && <2.5
     , stm ==2.5.*

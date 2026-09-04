@@ -15,11 +15,16 @@ Structured streaming event protocol for tracking LLM, tool, chain, and graph lif
 module Langchain.Core.Stream
   ( TokenUsage (..)
   , StreamEvent (..)
+  , StreamM
   , EventStream
+  , ChatStream
   , collectEvents
   , printEvents
   ) where
 
+import Control.Monad.Except (ExceptT, runExceptT)
+import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Trans.Resource (ResourceT, runResourceT)
 import Data.Aeson (FromJSON, ToJSON, Value)
 import Data.Conduit (ConduitT, runConduit, (.|))
 import qualified Data.Conduit.List as CL
@@ -105,10 +110,16 @@ data StreamEvent
 -- | Canonical event stream type using Conduit.
 type EventStream m = ConduitT () StreamEvent m ()
 
+-- | Effects used by resource-safe chat model streams.
+type StreamM = ExceptT LangchainError (ResourceT IO)
+
+-- | A resource-safe stream of chat model events.
+type ChatStream = EventStream StreamM
+
 -- | Collect all emitted events from a stream into a list.
 collectEvents :: Monad m => EventStream m -> m [StreamEvent]
 collectEvents streamSrc = runConduit (streamSrc .| CL.consume)
 
 -- | Debug helper: print all stream events to stdout.
-printEvents :: EventStream IO -> IO ()
-printEvents streamSrc = runConduit (streamSrc .| CL.mapM_ print)
+printEvents :: EventStream (ExceptT LangchainError (ResourceT IO)) -> IO (Either LangchainError ())
+printEvents streamSrc = runResourceT $ runExceptT $ runConduit (streamSrc .| CL.mapM_ (liftIO . print))
