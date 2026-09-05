@@ -4,22 +4,18 @@ module Test.Langchain.RegressionSpec (tests) where
 
 import Control.Monad.Except (runExceptT)
 import Control.Monad.Trans.Resource (runResourceT)
-import Data.Aeson (decode, object, (.=))
+import Data.Aeson (decode)
 import qualified Data.ByteString.Lazy.Char8 as LBSC
-import Data.Text (Text)
 import Test.Tasty
 import Test.Tasty.HUnit
 
 import Langchain.Agent.ReAct
-import Langchain.Core.Error
 import Langchain.Core.Model
 import Langchain.Core.Stream
-import Langchain.Core.Tool (Tool (..), toolExecute)
-import Langchain.Memory.Core
-import qualified Langchain.Memory.TokenBufferMemory as TB
+import Langchain.Memory.Core (BaseMemory (..), newWindowBufferMemory)
+import qualified Langchain.Memory.Core as TB
 import Langchain.Provider.OpenAI (parseOpenAIResponse)
 import Langchain.Tool.Calculator (calculatorTool)
-import Langchain.Tool.WebScraper (webScraperTool)
 import Test.Langchain.Provider.Mock (newMockModel)
 
 tests :: TestTree
@@ -75,11 +71,4 @@ tests =
           Left err -> assertFailure ("TokenBuffer failed: " ++ show err)
           Right msgs -> do
             assertBool "Contains system message" (any (\m -> messageRole m == System) msgs)
-    , testCase "regression_webscraper_invalid_url: Fails with structured ToolError" $ do
-        res <-
-          toolExecute webScraperTool (object ["url" .= ("invalid-url-protocol" :: Text)]) ::
-            IO (Either LangchainError Text)
-        case res of
-          Left err -> assertBool "Error is ToolError" (case err of ToolError {} -> True; _ -> False)
-          Right _ -> assertFailure "Expected tool error for invalid URL"
     ]

@@ -22,6 +22,10 @@ module Langchain.PromptTemplate.Prompt
   , fromTemplateWithFormat
   , partialPromptTemplate
   , renderPrompt
+  , renderTemplateWithFormat
+  , renderFStringTemplate
+  , extractTemplateVariables
+  , extractTemplateVariablesWithFormat
   ) where
 
 import Data.Aeson (FromJSON, ToJSON)
@@ -32,7 +36,9 @@ import GHC.Generics (Generic)
 import Langchain.Core.Error (LangchainError)
 import Langchain.PromptTemplate.String
   ( TemplateFormat (..)
+  , extractTemplateVariables
   , extractTemplateVariablesWithFormat
+  , renderFStringTemplate
   , renderTemplateWithFormat
   )
 

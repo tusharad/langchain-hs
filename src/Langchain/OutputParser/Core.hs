@@ -36,7 +36,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Text.Internal.Search (indices)
-import Langchain.Error (LangchainResult, parsingError)
+import Langchain.Core.Error (LangchainResult, parsingError)
 
 {- | Typeclass for parsing output from language models into specific types.
 Instances of this class define how to convert a 'Text' output into a value of type 'a'.

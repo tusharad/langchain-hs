@@ -1,6 +1,5 @@
-{-# LANGUAGE ConstrainedClassMethods #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 {- |
 Module      : Langchain.PromptTemplate.Chat
@@ -13,18 +12,13 @@ Stability   : experimental
 Minimal chat prompt primitives ported from LangChain Python chat prompts.
 -}
 module Langchain.PromptTemplate.Chat
-  ( BaseStringMessagePromptTemplate (..)
-  , BaseMessagePromptTemplate (..)
+  ( BaseMessagePromptTemplate (..)
   , extractTemplateVariables
   ) where
 
 import Langchain.Core.Error (LangchainError)
 import Langchain.Core.Model.Types (Message)
-import Langchain.PromptTemplate.String (extractTemplateVariables)
-
--- | Base class for message prompt templates backed by string prompt templates.
-class BaseStringMessagePromptTemplate template options | template -> options where
-  fromTemplateFile :: FilePath -> options -> IO template
+import Langchain.PromptTemplate.Prompt (extractTemplateVariables)
 
 -- | Base class for message prompt templates.
 class BaseMessagePromptTemplate template input where

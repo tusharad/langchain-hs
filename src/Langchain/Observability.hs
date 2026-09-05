@@ -4,21 +4,33 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
--- TODO: replace this with hs-telemetry
-
 {- |
-Module      : Langchain.Observability.OpenTelemetry
-Description : OpenTelemetry-compatible tracing, spans, and attributes exporter
+Module      : Langchain.Observability
+Description : Unified logging and OpenTelemetry tracing
 Copyright   : (c) 2025-2026 Tushar Adhatrao
 License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
 
-Provides OpenTelemetry-compatible distributed tracing with hierarchical spans,
-rich attribute maps, status codes, and JSON/OTLP exporters.
+Provides unified structured logging and OpenTelemetry-compatible tracing.
 -}
-module Langchain.Observability.OpenTelemetry
-  ( SpanKind (..)
+module Langchain.Observability
+  ( -- * Structured Logging
+    LogLevel (..)
+  , LogEvent (..)
+  , Logger (..)
+  , InMemoryLogger (..)
+  , newInMemoryLogger
+  , getInMemoryLogs
+  , stderrLogger
+  , logEvent
+  , logDebug
+  , logInfo
+  , logWarn
+  , logError
+
+    -- * OpenTelemetry Tracing
+  , SpanKind (..)
   , SpanStatus (..)
   , Span (..)
   , OTelTracer (..)
@@ -31,18 +43,103 @@ module Langchain.Observability.OpenTelemetry
   ) where
 
 import Control.Concurrent.STM
+import Control.Monad (when)
 import Control.Monad.Except (MonadError, catchError, throwError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Aeson (FromJSON, ToJSON, encode)
 import qualified Data.ByteString.Lazy.Char8 as LBSC
 import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime)
 import GHC.Generics (Generic)
+import System.IO (hPutStrLn, stderr)
 import System.Random (randomRIO)
 
 import Langchain.Core.Error (LangchainError)
+
+--------------------------------------------------------------------------------
+-- Structured Logging
+--------------------------------------------------------------------------------
+
+-- | Severity level for log events
+data LogLevel
+  = DebugLevel
+  | InfoLevel
+  | WarnLevel
+  | ErrorLevel
+  deriving (Show, Eq, Ord, Enum, Bounded, Generic, ToJSON, FromJSON)
+
+-- | Structured log event with metadata
+data LogEvent = LogEvent
+  { logLevel :: !LogLevel
+  , logTimestamp :: !UTCTime
+  , logComponent :: !Text
+  , logMessage :: !Text
+  , logMetadata :: !(Map Text Text)
+  }
+  deriving (Show, Eq, Generic, ToJSON, FromJSON)
+
+-- | Pluggable logger backend
+data Logger = Logger
+  { minLevel :: !LogLevel
+  , writeLog :: LogEvent -> IO ()
+  }
+
+-- | In-memory logger storing events in STM TVar
+data InMemoryLogger = InMemoryLogger
+  { inMemoryVar :: !(TVar [LogEvent])
+  , inMemoryMinLevel :: !LogLevel
+  }
+
+-- | Construct a new InMemoryLogger
+newInMemoryLogger :: MonadIO m => LogLevel -> m InMemoryLogger
+newInMemoryLogger minLvl = liftIO $ do
+  var <- newTVarIO []
+  pure $ InMemoryLogger var minLvl
+
+-- | Retrieve all logged events from an InMemoryLogger
+getInMemoryLogs :: MonadIO m => InMemoryLogger -> m [LogEvent]
+getInMemoryLogs InMemoryLogger {..} = liftIO $ readTVarIO inMemoryVar
+
+-- | Default stderr logger
+stderrLogger :: LogLevel -> Logger
+stderrLogger minLvl =
+  Logger
+    { minLevel = minLvl
+    , writeLog = \event -> do
+        let line = LBSC.unpack (encode event)
+        hPutStrLn stderr line
+    }
+
+-- | Log a structured event through a logger
+logEvent :: MonadIO m => Logger -> LogLevel -> Text -> Text -> Map Text Text -> m ()
+logEvent Logger {..} lvl comp msg meta =
+  when (lvl >= minLevel) $ liftIO $ do
+    now <- getCurrentTime
+    let event = LogEvent lvl now comp msg meta
+    writeLog event
+
+-- | Log a debug message
+logDebug :: MonadIO m => Logger -> Text -> Text -> m ()
+logDebug logger comp msg = logEvent logger DebugLevel comp msg Map.empty
+
+-- | Log an info message
+logInfo :: MonadIO m => Logger -> Text -> Text -> m ()
+logInfo logger comp msg = logEvent logger InfoLevel comp msg Map.empty
+
+-- | Log a warning message
+logWarn :: MonadIO m => Logger -> Text -> Text -> m ()
+logWarn logger comp msg = logEvent logger WarnLevel comp msg Map.empty
+
+-- | Log an error message
+logError :: MonadIO m => Logger -> Text -> Text -> m ()
+logError logger comp msg = logEvent logger ErrorLevel comp msg Map.empty
+
+--------------------------------------------------------------------------------
+-- OpenTelemetry Tracing
+--------------------------------------------------------------------------------
 
 -- | OpenTelemetry Span Kind
 data SpanKind

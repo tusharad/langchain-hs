@@ -41,45 +41,27 @@ library
       Langchain.Callback.Manager
       Langchain.Chain.MapReduce
       Langchain.Chain.RetrievalQA
-      Langchain.Config.Validation
       Langchain.DocumentLoader.Core
       Langchain.DocumentLoader.Csv
       Langchain.DocumentLoader.DirectoryLoader
       Langchain.DocumentLoader.FileLoader
       Langchain.DocumentLoader.Html
       Langchain.DocumentLoader.Json
-      Langchain.DocumentLoader.PdfLoader
       Langchain.DocumentLoader.WebPage
-      Langchain.DocumentTransformer.HeaderInjector
-      Langchain.DocumentTransformer.MetadataEnricher
       Langchain.Embeddings.Core
-      Langchain.Embeddings.Gemini
       Langchain.Embeddings.Ollama
       Langchain.Embeddings.OpenAI
-      Langchain.Error
-      Langchain.Graph.Blackboard
-      Langchain.Graph.Debate
-      Langchain.Graph.DynamicFlow
-      Langchain.Graph.Voting
       Langchain.Guardrail.Core
-      Langchain.Logging.Structured
       Langchain.MCP.Client
       Langchain.Memory.Core
       Langchain.Memory.Entity
       Langchain.Memory.Summary
-      Langchain.Memory.TokenBufferMemory
-      Langchain.Observability.OpenTelemetry
-      Langchain.Observability.StreamProtocol
+      Langchain.Observability
       Langchain.OutputParser.Core
-      Langchain.OutputParser.Enum
       Langchain.OutputParser.Structured
-      Langchain.OutputParser.Xml
-      Langchain.Pipeline.DSL
       Langchain.Prelude
       Langchain.PromptTemplate.Chat
-      Langchain.PromptTemplate.Chat.ChatMessagePromptTemplate
       Langchain.PromptTemplate.Chat.ChatPromptTemplate
-      Langchain.PromptTemplate.Chat.HumanMessagePromptTemplate
       Langchain.PromptTemplate.Chat.MessagesPlaceholder
       Langchain.PromptTemplate.FewShot
       Langchain.PromptTemplate.Prompt
@@ -90,13 +72,8 @@ library
       Langchain.Resilience.CircuitBreaker
       Langchain.Resilience.Retry
       Langchain.Retriever.BM25
-      Langchain.Retriever.ContextualCompression
       Langchain.Retriever.Core
       Langchain.Retriever.Hybrid
-      Langchain.Retriever.MultiQueryRetriever
-      Langchain.Retriever.ParentDocument
-      Langchain.Retriever.Reranker
-      Langchain.Router.Semantic
       Langchain.TextSplitter.Character
       Langchain.TextSplitter.Code
       Langchain.TextSplitter.Markdown
@@ -105,17 +82,10 @@ library
       Langchain.Tool.Async
       Langchain.Tool.Calculator
       Langchain.Tool.Core
-      Langchain.Tool.DuckDuckGo
       Langchain.Tool.FileSystem
       Langchain.Tool.GenericSchema
-      Langchain.Tool.Utils
-      Langchain.Tool.WebScraper
-      Langchain.Tool.WikipediaTool
-      Langchain.Utils
       Langchain.VectorStore.Core
-      Langchain.VectorStore.Filter
       Langchain.VectorStore.InMemory
-      Langchain.VectorStore.PgVector
       Langchain.VectorStore.SqliteVec
   other-modules:
       Paths_langchain_hs
@@ -132,7 +102,6 @@ library
     , containers >=0.6 && <0.9
     , directory >=1.3.6 && <1.4
     , filepath <2
-    , ginger >=0.10.6 && <0.11
     , http-client
     , http-client-tls
     , http-conduit ==2.*
@@ -142,7 +111,6 @@ library
     , mtl >=2.2 && <2.4
     , ollama-haskell >=0.4.0.0
     , openai >=2.2.1
-    , pdf-toolbox-document ==0.1.4
     , process ==1.6.*
     , pystrformat
     , random >=1.2
@@ -154,7 +122,6 @@ library
     , servant-conduit ==0.16.*
     , servant-event-stream ==0.4.*
     , sqlite-simple >=0.4.18 && <0.5
-    , stache >=2.3 && <2.5
     , stm ==2.5.*
     , tagsoup <0.15
     , text >=1.2 && <3
@@ -174,20 +141,15 @@ test-suite langchain-hs-test
       Test.Langchain.Callback.CallbackManagerSpec
       Test.Langchain.Chain.ChainsSpec
       Test.Langchain.Chain.RetrievalQASpec
-      Test.Langchain.Config.ValidationSpec
       Test.Langchain.DocumentLoader.Core
       Test.Langchain.DocumentLoader.CsvSpec
       Test.Langchain.DocumentLoader.DirectoryLoader
       Test.Langchain.DocumentLoader.HtmlSpec
       Test.Langchain.DocumentLoader.JsonSpec
       Test.Langchain.DocumentLoader.WebPageSpec
-      Test.Langchain.DocumentTransformer.HeaderInjectorSpec
-      Test.Langchain.DocumentTransformer.MetadataEnricherSpec
       Test.Langchain.Embeddings.Core
       Test.Langchain.Error
       Test.Langchain.Graph.CompilationSpec
-      Test.Langchain.Graph.DynamicFlowSpec
-      Test.Langchain.Graph.MultiAgentPatternsSpec
       Test.Langchain.Guardrail.GuardrailSpec
       Test.Langchain.Integration.FullRagE2ESpec
       Test.Langchain.Integration.MultiAgentGraphE2ESpec
@@ -198,19 +160,15 @@ test-suite langchain-hs-test
       Test.Langchain.Integration.ReActAgentE2ESpec
       Test.Langchain.Integration.StateGraphE2ESpec
       Test.Langchain.Integration.StreamingCachingRetryE2ESpec
-      Test.Langchain.Logging.StructuredLoggingSpec
       Test.Langchain.MCP.McpSpec
       Test.Langchain.Memory.Core
       Test.Langchain.Memory.EntitySpec
       Test.Langchain.Memory.SummarySpec
       Test.Langchain.Memory.TokenBufferMemory
-      Test.Langchain.Observability.OpenTelemetrySpec
-      Test.Langchain.Observability.StreamProtocolSpec
+      Test.Langchain.ObservabilitySpec
       Test.Langchain.OutputParser.AdvancedParsersSpec
       Test.Langchain.OutputParser.Core
-      Test.Langchain.Pipeline.PipelineDSLSpec
       Test.Langchain.PreludeSpec
-      Test.Langchain.PromptTemplate.Chat.ChatMessagePromptTemplateSpec
       Test.Langchain.PromptTemplate.Chat.ChatPromptTemplateSpec
       Test.Langchain.PromptTemplate.Chat.MessagesPlaceholderSpec
       Test.Langchain.PromptTemplate.FewShotSpec
@@ -233,7 +191,6 @@ test-suite langchain-hs-test
       Test.Langchain.RegressionSpec
       Test.Langchain.Resilience.CircuitBreakerSpec
       Test.Langchain.Resilience.RetrySpec
-      Test.Langchain.Retriever.AdvancedRetrieversSpec
       Test.Langchain.Retriever.BM25Spec
       Test.Langchain.Retriever.Core
       Test.Langchain.Retriever.HybridSpec
@@ -248,7 +205,6 @@ test-suite langchain-hs-test
       Test.Langchain.Tool.Core
       Test.Langchain.Tool.FileSystem
       Test.Langchain.VectorStore.Core
-      Test.Langchain.VectorStore.FilterSpec
       Test.Langchain.VectorStore.SqliteVecSpec
       Paths_langchain_hs
   hs-source-dirs:
@@ -265,7 +221,6 @@ test-suite langchain-hs-test
     , containers
     , directory
     , filepath
-    , ginger >=0.10.6 && <0.11
     , http-client
     , http-client-tls
     , http-conduit
@@ -276,7 +231,6 @@ test-suite langchain-hs-test
     , mtl >=2.2 && <2.4
     , ollama-haskell >=0.4.0.0
     , openai >=2.2.1
-    , pdf-toolbox-document ==0.1.4
     , process ==1.6.*
     , pystrformat
     , random >=1.2
@@ -289,7 +243,6 @@ test-suite langchain-hs-test
     , servant-event-stream
     , servant-server
     , sqlite-simple >=0.4.18 && <0.5
-    , stache >=2.3 && <2.5
     , stm ==2.5.*
     , tagsoup <0.15
     , tasty
@@ -322,7 +275,6 @@ benchmark langchain-hs-bench
     , containers >=0.6 && <0.9
     , directory >=1.3.6 && <1.4
     , filepath <2
-    , ginger >=0.10.6 && <0.11
     , http-client
     , http-client-tls
     , http-conduit ==2.*
@@ -333,7 +285,6 @@ benchmark langchain-hs-bench
     , mtl >=2.2 && <2.4
     , ollama-haskell >=0.4.0.0
     , openai >=2.2.1
-    , pdf-toolbox-document ==0.1.4
     , process ==1.6.*
     , pystrformat
     , random >=1.2
@@ -345,7 +296,6 @@ benchmark langchain-hs-bench
     , servant-conduit ==0.16.*
     , servant-event-stream ==0.4.*
     , sqlite-simple >=0.4.18 && <0.5
-    , stache >=2.3 && <2.5
     , stm ==2.5.*
     , tagsoup <0.15
     , tasty-bench

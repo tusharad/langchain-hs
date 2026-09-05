@@ -4,7 +4,7 @@ module Test.Langchain.Error (tests) where
 
 import Control.Exception (displayException)
 import qualified Data.Text as T
-import Langchain.Error
+import Langchain.Core.Error
 import Test.Tasty
 import Test.Tasty.HUnit
 

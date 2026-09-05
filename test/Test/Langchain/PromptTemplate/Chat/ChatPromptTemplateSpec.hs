@@ -41,7 +41,6 @@ import Langchain.PromptTemplate.Chat.ChatPromptTemplate
   , messagesPlaceholderWithOptions
   , partial
   , templateMessage
-  , templateMessageWithFormat
   , toMessages
   , toString
   )
@@ -49,8 +48,7 @@ import Langchain.PromptTemplate.Chat.MessagesPlaceholder
   ( MessagesPlaceholder (..)
   , MessagesPlaceholderOptions (..)
   )
-import Langchain.PromptTemplate.Prompt (PromptTemplateOptions (..))
-import Langchain.PromptTemplate.String (TemplateFormat (..))
+import Langchain.PromptTemplate.Prompt (PromptTemplateOptions (..), TemplateFormat (..))
 
 tests :: TestTree
 tests =
@@ -107,59 +105,6 @@ fromMessagesTests =
           Left err -> assertFailure $ "Expected formatted prompt, got " <> show err
           Right promptValue ->
             last (toMessages promptValue) @?= userMessage "foo"
-    , testCase "formats mustache role messages" $ do
-        let template =
-              fromMessages
-                [ templateMessageWithFormat System Mustache "You are a helpful AI bot. Your name is {{name}}."
-                , templateMessageWithFormat User Mustache "Hello, how are you doing?"
-                , templateMessageWithFormat Assistant Mustache "I'm doing well, thanks!"
-                , templateMessageWithFormat User Mustache "{{user_input}}"
-                ]
-            variables = Map.fromList [("name", "Bob"), ("user_input", "What is your name?")]
-
-        case formatPrompt template variables of
-          Left err -> assertFailure $ "Expected formatted prompt, got " <> show err
-          Right promptValue ->
-            toMessages promptValue
-              @?= [ textMessage System "You are a helpful AI bot. Your name is Bob."
-                  , userMessage "Hello, how are you doing?"
-                  , textMessage Assistant "I'm doing well, thanks!"
-                  , userMessage "What is your name?"
-                  ]
-    , testCase "formats jinja2 role messages" $ do
-        let template =
-              fromMessages
-                [ templateMessageWithFormat System Jinja2 "You are a helpful AI bot. Your name is {{ name }}."
-                , templateMessageWithFormat User Jinja2 "Hello, how are you doing?"
-                , templateMessageWithFormat Assistant Jinja2 "I'm doing well, thanks!"
-                , templateMessageWithFormat User Jinja2 "{{ user_input }}"
-                ]
-            variables = Map.fromList [("name", "Bob"), ("user_input", "What is your name?")]
-
-        case formatPrompt template variables of
-          Left err -> assertFailure $ "Expected formatted prompt, got " <> show err
-          Right promptValue ->
-            toMessages promptValue
-              @?= [ textMessage System "You are a helpful AI bot. Your name is Bob."
-                  , userMessage "Hello, how are you doing?"
-                  , textMessage Assistant "I'm doing well, thanks!"
-                  , userMessage "What is your name?"
-                  ]
-    , testCase "formats mustache typed role messages" $ do
-        let template =
-              fromMessages
-                [ templateMessageWithFormat System Mustache "You are {{name}}."
-                , templateMessageWithFormat User Mustache "{{question}}"
-                ]
-            variables = Map.fromList [("name", "Bob"), ("question", "Hello?")]
-
-        case formatPrompt template variables of
-          Left err -> assertFailure $ "Expected formatted prompt, got " <> show err
-          Right promptValue ->
-            toMessages promptValue
-              @?= [ textMessage System "You are Bob."
-                  , userMessage "Hello?"
-                  ]
     ]
 
 formatPromptTests :: TestTree
@@ -190,12 +135,6 @@ missingVariableTests =
     [ testCase "fails for missing FString variables in chat messages" $ do
         let template = fromMessages [templateMessage User "Hi {foo}"]
         assertMissingVariable "Parameter not found: foo" (formatPrompt template Map.empty)
-    , testCase "fails for missing Mustache variables in chat messages" $ do
-        let template = fromMessages [templateMessageWithFormat User Mustache "Hi {{foo}}"]
-        assertMissingVariable "Missing variable: foo" (formatPrompt template Map.empty)
-    , testCase "fails for missing Jinja2 variables in chat messages" $ do
-        let template = fromMessages [templateMessageWithFormat User Jinja2 "Hi {{ foo }}"]
-        assertMissingVariable "Missing variable: foo" (formatPrompt template Map.empty)
     , testCase "fails for missing FString variables in multipart text blocks" $ do
         let template = fromMessages [contentMessage User [TextPromptBlock FString "Hi {foo}"]]
         assertMissingVariable "Parameter not found: foo" (formatPrompt template Map.empty)
@@ -376,12 +315,6 @@ richContentTests =
         assertFormats
           (templateWith FString (ImageUrl "data:{image_type};base64, {image_data}"))
           (Map.fromList [("image_type", "image/png"), ("image_data", "base64data")])
-        assertFormats
-          (templateWith Mustache (ImageUrl "data:{{image_type}};base64, {{image_data}}"))
-          (Map.fromList [("image_type", "image/png"), ("image_data", "base64data")])
-        assertFormats
-          (templateWith Jinja2 (ImageUrl "data:{{ image_type }};base64, {{ image_data }}"))
-          (Map.fromList [("image_type", "image/png"), ("image_data", "base64data")])
     , testCase "rejects nested f-string replacement fields in image_url blocks" $ do
         let template =
               fromMessages
@@ -426,64 +359,9 @@ richContentTests =
                       Nothing
                       Nothing
                   ]
-    , testCase "formats mustache image data blocks with metadata" $ do
-        let metadata = object ["cache_control" .= object ["type" .= ("{{cache_type}}" :: Text)]]
-            template =
-              fromMessages
-                [ contentMessage
-                    User
-                    [ ImagePromptBlock Mustache $
-                        ImageContent (ImageBase64 Nothing "{{source_data}}") Nothing (Just metadata)
-                    ]
-                ]
-            variables = Map.fromList [("cache_type", "ephemeral"), ("source_data", "base64data")]
-
-        case formatPrompt template variables of
-          Left err -> assertFailure $ "Expected mustache image data prompt, got " <> show err
-          Right promptValue ->
-            toMessages promptValue
-              @?= [ Message
-                      User
-                      ( ImageBlock
-                          ( ImageContent
-                              (ImageBase64 Nothing "base64data")
-                              Nothing
-                              (Just $ object ["cache_control" .= object ["type" .= ("ephemeral" :: Text)]])
-                          )
-                          :| []
-                      )
-                      Nothing
-                      Nothing
-                      Nothing
-                  ]
     , testCase "round-trips rendered image data blocks through json" $ do
         let block = ImageBlock $ ImageContent (ImageUrl "https://example.com/image.png") Nothing Nothing
         decode (encode block) @?= Just block
-    , testCase "rejects jinja2 image data blocks" $ do
-        let template =
-              fromMessages
-                [ contentMessage
-                    User
-                    [ImagePromptBlock Jinja2 $ ImageContent (ImageBase64 Nothing "{{ source_data }}") Nothing Nothing]
-                ]
-        case formatPrompt template (Map.singleton "source_data" "base64data") of
-          Left _ -> pure ()
-          Right promptValue -> assertFailure $ "Expected jinja2 data block validation error, got " <> show promptValue
-    , testCase "drops empty text blocks after mustache conditionals" $ do
-        let template =
-              fromMessages
-                [ contentMessage
-                    User
-                    [ TextPromptBlock Mustache "{{#expectedResponse}}{{expectedResponse}}{{/expectedResponse}}"
-                    , TextPromptBlock Mustache "Always present"
-                    ]
-                ]
-
-        case formatPrompt template Map.empty of
-          Left err -> assertFailure $ "Expected conditional prompt, got " <> show err
-          Right promptValue ->
-            toMessages promptValue
-              @?= [Message User (TextBlock "Always present" :| []) Nothing Nothing Nothing]
     ]
 
 partialTests :: TestTree

@@ -9,7 +9,6 @@ import Test.Tasty.HUnit
 
 import Langchain.Embeddings.Core
 import Langchain.Embeddings.Ollama
-import Langchain.Utils (showText)
 
 tests :: TestTree
 tests =
@@ -24,9 +23,9 @@ tests =
               Left err ->
                 assertBool
                   "Error message contains error or failure"
-                  ( T.isInfixOf "error" (showText err)
-                      || T.isInfixOf "Error" (showText err)
-                      || T.isInfixOf "Connect" (showText err)
+                  ( T.isInfixOf "error" (T.pack (show err))
+                      || T.isInfixOf "Error" (T.pack (show err))
+                      || T.isInfixOf "Connect" (T.pack (show err))
                   )
               Right _ -> assertFailure "Expected API error propagation"
         ]

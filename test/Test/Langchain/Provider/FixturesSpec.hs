@@ -9,7 +9,7 @@ import Test.Tasty.HUnit
 
 import Langchain.Core.Model
 import Langchain.Core.Stream (TokenUsage (..))
-import Langchain.Provider.Gemini (parseGeminiEmbedResponse, parseGeminiResponse)
+import Langchain.Provider.Gemini (parseGeminiResponse)
 import Langchain.Provider.OpenAI (parseOpenAIResponse)
 
 loadFixture :: FilePath -> IO (Either String Value)
@@ -57,13 +57,4 @@ tests =
             Right msg -> do
               messageRole msg @?= Assistant
               extractMessageText msg @?= "Hello! I am Google Gemini 2.5."
-    , testCase "Parse Gemini Embeddings fixture" $ do
-        eVal <- loadFixture "test/fixtures/gemini_embed_response.json"
-        case eVal of
-          Left err -> assertFailure err
-          Right val -> case parseGeminiEmbedResponse val of
-            Left parseErr -> assertFailure ("Gemini embed parser error: " ++ parseErr)
-            Right vec -> do
-              length vec @?= 3
-              vec @?= [0.0123, -0.0456, 0.0789]
     ]

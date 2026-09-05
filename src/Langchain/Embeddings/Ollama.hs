@@ -19,11 +19,11 @@ module Langchain.Embeddings.Ollama
 import Control.Monad.Except (throwError)
 import Control.Monad.IO.Class (liftIO)
 import Data.Text (Text)
-import qualified Data.Text.Lazy as T
+import qualified Data.Text as T
+import qualified Data.Text.Lazy as TL
 import Langchain.Core.Error (llmError)
 import Langchain.DocumentLoader.Core (Document (..))
 import Langchain.Embeddings.Core
-import Langchain.Utils (showText)
 
 import Ollama.API.Embed (EmbedRequest (..), EmbedResponse (..), embed)
 import Ollama.Client (defaultClient)
@@ -41,7 +41,7 @@ data OllamaEmbeddings = OllamaEmbeddings
 instance Embeddings OllamaEmbeddings where
   embedDocuments (OllamaEmbeddings {..}) docs = do
     client <- liftIO defaultClient
-    let inputs = map (T.toStrict . pageContent) docs
+    let inputs = map (TL.toStrict . pageContent) docs
         req =
           EmbedRequest
             { embModel = ModelName model
@@ -53,7 +53,7 @@ instance Embeddings OllamaEmbeddings where
             }
     eRes <- liftIO $ embed client req
     case eRes of
-      Left ollamaErr -> throwError $ llmError (showText ollamaErr) (Just "OllamaEmbeddings") Nothing
+      Left ollamaErr -> throwError $ llmError (T.pack (show ollamaErr)) (Just "OllamaEmbeddings") Nothing
       Right resp -> pure $ map (map realToFrac) (erEmbeddings resp)
 
   embedQuery (OllamaEmbeddings {..}) query = do
@@ -69,7 +69,7 @@ instance Embeddings OllamaEmbeddings where
             }
     eRes <- liftIO $ embed client req
     case eRes of
-      Left err -> throwError $ llmError (showText err) (Just "OllamaEmbeddings") Nothing
+      Left err -> throwError $ llmError (T.pack (show err)) (Just "OllamaEmbeddings") Nothing
       Right resp -> case erEmbeddings resp of
         (vec : _) -> pure $ map realToFrac vec
         [] -> throwError $ llmError "Embeddings are empty" (Just "OllamaEmbeddings") Nothing
