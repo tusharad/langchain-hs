@@ -457,7 +457,7 @@ structuredOllamaInvokeWithOptions ::
   [Message] ->
   m a
 structuredOllamaInvokeWithOptions model opts =
-  structuredOllamaInvoke (withOptions opts model) 
+  structuredOllamaInvoke (withOptions opts model)
 
 -- | Directly invoke Ollama with structured output constrained by a Langchain StructuredOutput instance
 structuredOllamaInvokeWithSchema ::
@@ -494,4 +494,4 @@ structuredOllamaInvokeWithSchemaOptions ::
   [Message] ->
   m a
 structuredOllamaInvokeWithSchemaOptions model opts =
-  structuredOllamaInvokeWithSchema (withOptions opts model) 
+  structuredOllamaInvokeWithSchema (withOptions opts model)

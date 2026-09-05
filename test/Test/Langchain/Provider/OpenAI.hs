@@ -123,7 +123,7 @@ gatedSseServer waitForContinuation _request respond =
 
 withTestProvider :: [TestSseEvent] -> (OpenAI -> IO a) -> IO a
 withTestProvider events =
-  withTestApplication (serve (Proxy :: Proxy TestOpenAIStreamApi) (testStreamServer events)) 
+  withTestApplication (serve (Proxy :: Proxy TestOpenAIStreamApi) (testStreamServer events))
 
 withErrorProvider :: (OpenAI -> IO a) -> IO a
 withErrorProvider =
