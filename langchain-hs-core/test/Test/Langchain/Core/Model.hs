@@ -9,6 +9,7 @@ import Control.Monad.Except (runExceptT)
 import Data.List.NonEmpty (NonEmpty (..))
 
 import Langchain.Core.Model
+import Test.Langchain.Core.TestModel (TestChatModel (..))
 
 tests :: TestTree
 tests =
@@ -34,9 +35,9 @@ tests =
               _ -> assertFailure "Expected ImageBlock"
         ]
     , testGroup
-        "Effect-Polymorphic ChatModel (MockModel)"
+        "Effect-Polymorphic ChatModel"
         [ testCase "invoke returns Assistant response" $ do
-            let model = MockModel "Hello human" "mock-gpt"
+            let model = TestChatModel "Hello human" "mock-gpt"
                 input = [userMessage "Hi"]
             res <- runExceptT $ invoke model input Nothing
             case res of
@@ -45,7 +46,7 @@ tests =
                 messageRole msg @?= Assistant
                 extractMessageText msg @?= "Hello human"
         , testCase "batch processes multiple inputs sequentially" $ do
-            let model = MockModel "Pong" "mock-gpt"
+            let model = TestChatModel "Pong" "mock-gpt"
                 inputs = [[userMessage "Ping 1"], [userMessage "Ping 2"]]
             res <- runExceptT $ batch model inputs Nothing
             case res of

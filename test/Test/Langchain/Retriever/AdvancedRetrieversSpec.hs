@@ -12,7 +12,7 @@ import qualified Data.Text.Lazy as TL
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import Langchain.Core.Model (newMockModel)
+import Langchain.Provider.Mock (newMockModel)
 import Langchain.DocumentLoader.Core (Document (..))
 import Langchain.Embeddings.Core (Embeddings (..))
 import Langchain.Retriever.ContextualCompression

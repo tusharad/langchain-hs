@@ -5,11 +5,21 @@ module Test.Langchain.Graph.MultiAgentSpec (tests) where
 import Control.Monad.Except (ExceptT, runExceptT)
 import Data.Text (Text)
 import Langchain.Core.Error (LangchainError)
-import Langchain.Core.Model (newMockModel)
+import Langchain.Core.Model (ChatModel (..), assistantMessage)
 import Langchain.Graph.MultiAgent
 import Langchain.Graph.StateGraph
 import Test.Tasty
 import Test.Tasty.HUnit
+
+newtype MockModel = MockModel Text
+
+instance ChatModel MockModel where
+  type ModelConfig MockModel = ()
+  invoke (MockModel resp) _ _ = pure $ assistantMessage resp
+  stream = undefined
+
+newMockModel :: Text -> MockModel
+newMockModel = MockModel
 
 tests :: TestTree
 tests =

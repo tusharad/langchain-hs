@@ -11,8 +11,8 @@ import Test.Tasty.HUnit
 import Langchain.Chain.RetrievalQA
 import Langchain.Core.Model
   ( extractMessageText
-  , newMockModel
   )
+import Langchain.Provider.Mock (newMockModel)
 import Langchain.DocumentLoader.Core (Document (..))
 import Langchain.Retriever.Core (Retriever (..))
 

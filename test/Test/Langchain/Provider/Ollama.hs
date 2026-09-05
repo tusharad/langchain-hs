@@ -27,14 +27,6 @@ tests =
     [ testCase "newOllama initializes provider" $ do
         p <- newOllama testModelName
         ollamaModelName p @?= testModelName
-    , testCase "newOllamaWithTimeout initializes provider with custom timeout" $ do
-        p <- newOllamaWithTimeout testModelName 600
-        ollamaModelName p @?= testModelName
-        OCC.configTimeout (OC.clientConfig (client p)) @?= 600
-    , testCase "newOllamaWithEndpoint initializes provider with custom endpoint" $ do
-        p <- newOllamaWithEndpoint testModelName "http://remote-ollama:11434"
-        ollamaModelName p @?= testModelName
-        OCC.configBaseUrl (OC.clientConfig (client p)) @?= "http://remote-ollama:11434"
     , testCase "newOllamaWithConfig initializes provider with OllamaConfig" $ do
         let cfg =
               defaultConfig

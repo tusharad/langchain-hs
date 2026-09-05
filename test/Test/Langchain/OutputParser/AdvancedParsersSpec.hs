@@ -20,12 +20,13 @@ import GHC.Generics (Generic)
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import Langchain.Core.Model (newMockModel, userMessage)
+import Langchain.Core.Model (userMessage)
 import Langchain.DocumentLoader.Core (Document (..))
 import Langchain.Embeddings.Core (Embeddings (..))
 import Langchain.OutputParser.Enum
 import Langchain.OutputParser.Structured
 import Langchain.OutputParser.Xml
+import Langchain.Provider.Mock (newMockModel)
 import Langchain.Router.Semantic
 
 data TestPerson = TestPerson

@@ -19,9 +19,9 @@ import Langchain.Core.Model
   , Role (..)
   , ToolCall (..)
   , assistantMessage
-  , newMockModel
   )
 import qualified Langchain.Core.Model as Model
+import Langchain.Provider.Mock (newMockModel)
 import Langchain.Tool.Core (createTool)
 
 tests :: TestTree

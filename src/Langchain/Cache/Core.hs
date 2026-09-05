@@ -42,9 +42,9 @@ import Database.SQLite.Simple
 import Langchain.Core.Model
   ( ChatModel (..)
   , Message (..)
-  , MockModel (..)
   )
 import Langchain.Provider.Gemini (Gemini (..))
+import Langchain.Provider.Mock (MockModel (..))
 import Langchain.Provider.Ollama (Ollama (..))
 import Langchain.Provider.OpenAI (OpenAI (..))
 import qualified Ollama.API.Chat as OllamaChat

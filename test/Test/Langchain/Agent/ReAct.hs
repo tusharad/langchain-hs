@@ -9,6 +9,7 @@ import Test.Tasty.HUnit
 
 import Langchain.Agent.ReAct
 import Langchain.Core.Model
+import Langchain.Provider.Mock (newMockModel)
 import Langchain.Tool.Calculator (calculatorTool)
 
 tests :: TestTree

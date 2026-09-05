@@ -20,15 +20,14 @@ import Langchain.Core.Model
   , ImageContent (..)
   , ImageSource (..)
   , Message (..)
-  , MockModel (..)
   , Role (..)
   , ToolCall (..)
   , assistantMessage
   , extractMessageText
-  , newMockModel
   , userMessage
   )
 import Langchain.Provider.Gemini (Gemini (Gemini))
+import Langchain.Provider.Mock (MockModel (..), newMockModel)
 import Langchain.Provider.Ollama (Ollama (Ollama))
 import Langchain.Provider.OpenAI (OpenAI (OpenAI))
 import qualified Ollama.API.Chat as OllamaChat

@@ -85,6 +85,7 @@ library
       Langchain.PromptTemplate.Prompt
       Langchain.PromptTemplate.String
       Langchain.Provider.Gemini
+      Langchain.Provider.Mock
       Langchain.Provider.Ollama
       Langchain.Provider.OpenAI
       Langchain.Resilience.CircuitBreaker

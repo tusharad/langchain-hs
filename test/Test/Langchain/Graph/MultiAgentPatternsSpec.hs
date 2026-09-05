@@ -8,7 +8,7 @@ import qualified Data.Text as T
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import Langchain.Core.Model (newMockModel)
+import Langchain.Provider.Mock (newMockModel)
 import Langchain.Graph.Blackboard
 import Langchain.Graph.Debate
 import Langchain.Graph.Voting

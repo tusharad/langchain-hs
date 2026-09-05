@@ -21,8 +21,6 @@ module Langchain.Provider.Ollama
   ( Ollama (..)
   , newOllama
   , newOllamaWithConfig
-  , newOllamaWithTimeout
-  , newOllamaWithEndpoint
   , newOllamaWithClient
   , defaultOllama
   , OllamaConfig (..)
@@ -39,6 +37,8 @@ module Langchain.Provider.Ollama
   , structuredOllamaInvokeWithSchema
 
     -- * Re-exports from ollama-haskell format & schema
+  , module Ollama.API.Chat
+  , module Ollama.Types.Common
   , OFormat.Format (..)
   , OSB.Schema (..)
   , OSB.Property (..)
@@ -70,6 +70,7 @@ import Langchain.OutputParser.Structured
   )
 
 import qualified Ollama.API.Chat as OllamaChat
+import Ollama.API.Chat
 import Ollama.Client (OllamaClient, defaultClient, newClient)
 import qualified Ollama.Client.Config as OConfig
 import Ollama.Types.Common (Base64Image (..), ModelName (..))
@@ -129,26 +130,6 @@ newOllamaWithConfig cfg = do
           }
   c <- liftIO $ newClient clientCfg
   pure $ Ollama (configModelName cfg) c
-
--- | Create a new Ollama provider with a custom timeout (in seconds)
-newOllamaWithTimeout :: MonadIO m => Text -> Int -> m Ollama
-newOllamaWithTimeout model timeoutSecs = do
-  let clientCfg =
-        OConfig.defaultConfig
-          { OConfig.configTimeout = timeoutSecs
-          }
-  c <- liftIO $ newClient clientCfg
-  pure $ Ollama model c
-
--- | Create a new Ollama provider with a custom base URL endpoint
-newOllamaWithEndpoint :: MonadIO m => Text -> Text -> m Ollama
-newOllamaWithEndpoint model endpoint = do
-  let clientCfg =
-        OConfig.defaultConfig
-          { OConfig.configBaseUrl = endpoint
-          }
-  c <- liftIO $ newClient clientCfg
-  pure $ Ollama model c
 
 -- | Create an Ollama provider using an existing OllamaClient handle
 newOllamaWithClient :: Text -> OllamaClient -> Ollama
