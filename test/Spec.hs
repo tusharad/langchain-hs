@@ -10,34 +10,27 @@ import qualified Test.Langchain.Cache.CacheSpec as CacheTest
 import qualified Test.Langchain.Callback.CallbackManagerSpec as CallbackTest
 import qualified Test.Langchain.Chain.ChainsSpec as ChainsTest
 import qualified Test.Langchain.Chain.RetrievalQASpec as RetrievalQATest
-import qualified Test.Langchain.Config.ValidationSpec as ConfigValidationTest
 import qualified Test.Langchain.DocumentLoader.Core as DocumentLoaderTest
 import qualified Test.Langchain.DocumentLoader.CsvSpec as CsvLoaderTest
 import qualified Test.Langchain.DocumentLoader.DirectoryLoader as DirectoryLoaderTest
 import qualified Test.Langchain.DocumentLoader.HtmlSpec as HtmlLoaderTest
 import qualified Test.Langchain.DocumentLoader.JsonSpec as JsonLoaderTest
 import qualified Test.Langchain.DocumentLoader.WebPageSpec as WebPageLoaderTest
-import qualified Test.Langchain.DocumentTransformer.HeaderInjectorSpec as HeaderInjectorTest
-import qualified Test.Langchain.DocumentTransformer.MetadataEnricherSpec as MetadataEnricherTest
 import qualified Test.Langchain.Embeddings.Core as EmbeddingsTest
 import qualified Test.Langchain.Error as ErrorTest
 import qualified Test.Langchain.Graph.CompilationSpec as GraphCompilationTest
-import qualified Test.Langchain.Graph.DynamicFlowSpec as DynamicFlowTest
 import qualified Test.Langchain.Graph.MultiAgentPatternsSpec as MultiAgentPatternsTest
 import qualified Test.Langchain.Guardrail.GuardrailSpec as GuardrailTest
-import qualified Test.Langchain.Logging.StructuredLoggingSpec as StructuredLoggingTest
 import qualified Test.Langchain.MCP.McpSpec as McpTest
 import qualified Test.Langchain.Memory.Core as MemoryTest
 import qualified Test.Langchain.Memory.EntitySpec as EntityMemoryTest
 import qualified Test.Langchain.Memory.SummarySpec as SummaryMemoryTest
 import qualified Test.Langchain.Memory.TokenBufferMemory as TokenBufferMemoryTest
-import qualified Test.Langchain.Observability.OpenTelemetrySpec as OTelTest
-import qualified Test.Langchain.Observability.StreamProtocolSpec as StreamProtocolTest
+import qualified Test.Langchain.ObservabilitySpec as ObservabilityTest
 import qualified Test.Langchain.OutputParser.AdvancedParsersSpec as AdvancedParsersTest
 import qualified Test.Langchain.OutputParser.Core as OutputParserTest
 import qualified Test.Langchain.Pipeline.PipelineDSLSpec as PipelineDSLTest
 import qualified Test.Langchain.PreludeSpec as PreludeTest
-import qualified Test.Langchain.PromptTemplate.Chat.ChatMessagePromptTemplateSpec as ChatMessagePromptTemplateTest
 import qualified Test.Langchain.PromptTemplate.Chat.ChatPromptTemplateSpec as ChatPromptTemplateTest
 import qualified Test.Langchain.PromptTemplate.Chat.MessagesPlaceholderSpec as MessagesPlaceholderTest
 import qualified Test.Langchain.PromptTemplate.FewShotSpec as FewShotPromptTemplateTest
@@ -64,7 +57,6 @@ import qualified Test.Langchain.Tool.Calculator as CalculatorToolTest
 import qualified Test.Langchain.Tool.Core as ToolTest
 import qualified Test.Langchain.Tool.FileSystem as FileSystemToolTest
 import qualified Test.Langchain.VectorStore.Core as VectorStoreTest
-import qualified Test.Langchain.VectorStore.FilterSpec as VectorFilterTest
 import qualified Test.Langchain.VectorStore.SqliteVecSpec as SqliteVecStoreTest
 
 -- Property Test Modules (QuickCheck Laws & Invariants)
@@ -102,7 +94,6 @@ main =
           , PromptTemplateTest.tests
           , FewShotPromptTemplateTest.tests
           , ChatPromptTemplateTest.tests
-          , ChatMessagePromptTemplateTest.tests
           , MessagesPlaceholderTest.tests
           , OutputParserTest.tests
           , AdvancedParsersTest.tests
@@ -117,24 +108,19 @@ main =
           , JsonLoaderTest.tests
           , HtmlLoaderTest.tests
           , WebPageLoaderTest.tests
-          , MetadataEnricherTest.tests
           , MemoryTest.tests
           , SummaryMemoryTest.tests
           , EntityMemoryTest.tests
           , VectorStoreTest.tests
-          , VectorFilterTest.tests
           , SqliteVecStoreTest.tests
           , EmbeddingsTest.tests
           , RetrieverTest.tests
           , AdvancedRetrieversTest.tests
           , BM25Test.tests
           , HybridRetrieverTest.tests
-          , HeaderInjectorTest.tests
           , RetrievalQATest.tests
           , ChainsTest.tests
           , PipelineDSLTest.tests
-          , DynamicFlowTest.tests
-          , StreamProtocolTest.tests
           , CacheTest.tests
           , RetryTest.tests
           , CircuitBreakerTest.tests
@@ -145,10 +131,8 @@ main =
           , MultiAgentPatternsTest.tests
           , GuardrailTest.tests
           , McpTest.tests
-          , StructuredLoggingTest.tests
-          , OTelTest.tests
+          , ObservabilityTest.tests
           , CallbackTest.tests
-          , ConfigValidationTest.tests
           , TokenBufferMemoryTest.tests
           , OllamaProviderTest.tests
           , OllamaConversionTest.tests
@@ -178,15 +162,15 @@ main =
           [ RegressionTest.tests
           ]
       , testGroup
-          "Integration & E2E Tests (Live Ollama)"
+          "Live E2E Integration Tests (Ollama)"
           [ OllamaChatE2ETest.tests
           , OllamaStreamE2ETest.tests
           , OllamaToolE2ETest.tests
-          , ReActE2ETest.tests
           , OllamaEmbedE2ETest.tests
-          , StateGraphE2ETest.tests
           , FullRagE2ETest.tests
+          , ReActE2ETest.tests
           , MultiAgentGraphE2ETest.tests
+          , StateGraphE2ETest.tests
           , StreamingCachingRetryE2ETest.tests
           ]
       ]

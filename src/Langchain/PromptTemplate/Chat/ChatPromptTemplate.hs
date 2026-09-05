@@ -59,7 +59,6 @@ import Langchain.Core.Model.Types
   , userMessage
   )
 import Langchain.PromptTemplate.Chat (BaseMessagePromptTemplate (formatMessages))
-import Langchain.PromptTemplate.Chat.HumanMessagePromptTemplate (HumanMessagePromptTemplate (..))
 import Langchain.PromptTemplate.Chat.MessagesPlaceholder
   ( MessagesPlaceholder (..)
   , messagesPlaceholderVariableName
@@ -72,7 +71,7 @@ import qualified Langchain.PromptTemplate.String as String
 
 -- | A single chat message template inside a chat prompt.
 data ChatPromptMessage
-  = HumanMessagePrompt HumanMessagePromptTemplate
+  = HumanMessagePrompt Prompt.PromptTemplate
   | SystemMessagePrompt Prompt.PromptTemplate
   | AIMessagePrompt Prompt.PromptTemplate
   | ChatMessagePrompt Role Prompt.PromptTemplate
@@ -271,7 +270,7 @@ toString (ChatPromptValue promptMessages) =
   T.intercalate "\n" $ map formatMessageString promptMessages
 
 messageInputVariables :: ChatPromptMessage -> [Text]
-messageInputVariables (HumanMessagePrompt promptMessage) = Prompt.inputVariables . prompt $ promptMessage
+messageInputVariables (HumanMessagePrompt promptTemplate) = Prompt.inputVariables promptTemplate
 messageInputVariables (SystemMessagePrompt promptTemplate) = Prompt.inputVariables promptTemplate
 messageInputVariables (AIMessagePrompt promptTemplate) = Prompt.inputVariables promptTemplate
 messageInputVariables (ChatMessagePrompt _ promptTemplate) = Prompt.inputVariables promptTemplate
@@ -289,11 +288,9 @@ messageInputVariables
 messageInputVariables (StaticMessage _) = []
 
 partialMessage :: ChatPromptMessage -> Map.Map Text PartialValue -> ChatPromptMessage
-partialMessage (HumanMessagePrompt HumanMessagePromptTemplate {prompt = promptTemplate}) partialVariables =
+partialMessage (HumanMessagePrompt promptTemplate) partialVariables =
   HumanMessagePrompt $
-    HumanMessagePromptTemplate
-      { prompt = Prompt.partialPromptTemplate promptTemplate (textPartialVariables partialVariables)
-      }
+    Prompt.partialPromptTemplate promptTemplate (textPartialVariables partialVariables)
 partialMessage (SystemMessagePrompt promptTemplate) partialVariables =
   SystemMessagePrompt $
     Prompt.partialPromptTemplate promptTemplate (textPartialVariables partialVariables)
@@ -331,8 +328,8 @@ formatPromptWithMessages promptMessages variables messageVariables =
 
 formatMessage ::
   ChatPromptMessage -> Map.Map Text Text -> Map.Map Text [Message] -> Either LangchainError [Message]
-formatMessage (HumanMessagePrompt promptMessage) variables _ =
-  (: []) . userMessage <$> Prompt.renderPrompt (prompt promptMessage) variables
+formatMessage (HumanMessagePrompt promptTemplate) variables _ =
+  (: []) . userMessage <$> Prompt.renderPrompt promptTemplate variables
 formatMessage (SystemMessagePrompt promptTemplate) variables _ =
   (: []) . textMessage System <$> Prompt.renderPrompt promptTemplate variables
 formatMessage (AIMessagePrompt promptTemplate) variables _ =
@@ -402,12 +399,6 @@ partialImageSource templateFormat partials (ImageUrl url) =
 
 renderImageContent ::
   TemplateFormat -> Map.Map Text Text -> ImageContent -> Either LangchainError ImageContent
-renderImageContent Jinja2 _ ImageContent {imageSource = ImageBase64 _ _} =
-  Left $
-    validationError
-      "Jinja2 is not supported for image data prompt blocks"
-      (Just "ChatPromptTemplate")
-      (Just "contentMessage")
 renderImageContent templateFormat variables ImageContent {imageSource = source, imageDetail = detail, imageMetadata = metadata} = do
   renderedSource <- renderImageSource templateFormat variables source
   renderedDetail <- traverse (renderTemplate templateFormat variables) detail

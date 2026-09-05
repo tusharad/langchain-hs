@@ -1,18 +1,17 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
 
 {- |
 Module      : Langchain.Provider.Gemini
-Description : Google Gemini provider implementing ChatModel and Embeddings
+Description : Google Gemini provider implementing ChatModel
 Copyright   : (c) 2025-2026 Tushar Adhatrao
 License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
 
-Gemini provider with multi-modal content parts and embeddings support.
+Gemini provider with multi-modal content parts support.
 -}
 module Langchain.Provider.Gemini
   ( Gemini (..)
@@ -20,10 +19,7 @@ module Langchain.Provider.Gemini
   , defaultConfig
   , defaultGeminiConfig
   , newGemini
-  , GeminiEmbeddings (..)
   , parseGeminiResponse
-  , parseGeminiEmbedResponse
-  , parseGeminiBatchEmbedResponse
   ) where
 
 import Control.Exception (SomeException, try)
@@ -36,15 +32,12 @@ import Data.Conduit (yield)
 import qualified Data.List.NonEmpty as NonEmpty
 import Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.Text.Lazy as TL
 import GHC.Generics (Generic)
 import Network.HTTP.Simple
 
 import Langchain.Core.Error (llmError)
 import Langchain.Core.Model
 import Langchain.Core.Stream (StreamEvent (..))
-import Langchain.DocumentLoader.Core (Document (..))
-import Langchain.Embeddings.Core (Embeddings (..))
 
 -- | Gemini configuration
 data GeminiConfig = GeminiConfig
@@ -157,64 +150,6 @@ instance ChatModel Gemini where
           yield $ LLMChunk rId (extractMessageText respMsg) Nothing
           yield $ LLMEnd rId respMsg Nothing
 
--- | Gemini Embeddings Provider
-data GeminiEmbeddings = GeminiEmbeddings
-  { geminiEmbedApiKey :: Text
-  , geminiEmbedModel :: Text
-  }
-  deriving (Eq, Show)
-
-instance Embeddings GeminiEmbeddings where
-  embedDocuments GeminiEmbeddings {..} docs = do
-    let texts = map (TL.toStrict . pageContent) docs
-        reqs =
-          [ object
-              [ "model" .= ("models/" <> geminiEmbedModel)
-              , "content" .= object ["parts" .= [object ["text" .= t]]]
-              ]
-          | t <- texts
-          ]
-        payload = object ["requests" .= reqs]
-        url =
-          "https://generativelanguage.googleapis.com/v1beta/models/"
-            <> geminiEmbedModel
-            <> ":batchEmbedContents?key="
-            <> geminiEmbedApiKey
-        initReq = parseRequest_ (T.unpack url)
-        req =
-          setRequestMethod "POST" $
-            setRequestHeader "Content-Type" ["application/json"] $
-              setRequestBodyJSON payload initReq
-    eRes <- liftIO $ safeHttpRequest req
-    case eRes of
-      Left err -> throwError $ llmError err (Just "GeminiEmbeddings") Nothing
-      Right bodyVal -> case parseGeminiBatchEmbedResponse bodyVal of
-        Left parseErr -> throwError $ llmError (T.pack parseErr) (Just "GeminiEmbeddings") Nothing
-        Right vecs -> pure vecs
-
-  embedQuery GeminiEmbeddings {..} query = do
-    let payload =
-          object
-            [ "model" .= ("models/" <> geminiEmbedModel)
-            , "content" .= object ["parts" .= [object ["text" .= query]]]
-            ]
-        url =
-          "https://generativelanguage.googleapis.com/v1beta/models/"
-            <> geminiEmbedModel
-            <> ":embedContent?key="
-            <> geminiEmbedApiKey
-        initReq = parseRequest_ (T.unpack url)
-        req =
-          setRequestMethod "POST" $
-            setRequestHeader "Content-Type" ["application/json"] $
-              setRequestBodyJSON payload initReq
-    eRes <- liftIO $ safeHttpRequest req
-    case eRes of
-      Left err -> throwError $ llmError err (Just "GeminiEmbeddings") Nothing
-      Right bodyVal -> case parseGeminiEmbedResponse bodyVal of
-        Left parseErr -> throwError $ llmError (T.pack parseErr) (Just "GeminiEmbeddings") Nothing
-        Right vec -> pure vec
-
 -- Helper for HTTP requests
 safeHttpRequest :: Request -> IO (Either Text Value)
 safeHttpRequest req = do
@@ -237,13 +172,3 @@ parseGeminiResponse = parseEither $ withObject "GeminiResponse" $ \o -> do
       parts <- contentObj .: "parts"
       txts <- forM parts $ withObject "Part" $ \p -> p .:? "text" .!= ""
       pure $ assistantMessage (T.intercalate "\n" txts)
-
-parseGeminiEmbedResponse :: Value -> Either String [Float]
-parseGeminiEmbedResponse = parseEither $ withObject "GeminiEmbedResponse" $ \o -> do
-  embObj <- o .: "embedding"
-  embObj .: "values"
-
-parseGeminiBatchEmbedResponse :: Value -> Either String [[Float]]
-parseGeminiBatchEmbedResponse = parseEither $ withObject "GeminiBatchEmbedResponse" $ \o -> do
-  embs <- o .: "embeddings"
-  forM embs $ withObject "Embedding" $ \e -> e .: "values"

@@ -15,7 +15,6 @@ import Test.Tasty.HUnit
 
 import Langchain.DocumentLoader.Core
 import Langchain.DocumentLoader.FileLoader
-import Langchain.Utils (showText)
 
 createTestFile :: FilePath -> String -> IO ()
 createTestFile = writeFile
@@ -64,7 +63,7 @@ fileLoaderTests =
           Left err ->
             assertBool
               "Error message should mention file not found"
-              (T.isInfixOf "File not found" (showText err))
+              (T.isInfixOf "File not found" (T.pack (show err)))
           Right _ -> assertFailure "Expected Left for non-existent file but got Right"
     , testCase "loadAndSplit should split content using defaultCharacterSplitterOps" $
         withTestFile "Paragraph 1\n\nParagraph 2\n\nParagraph 3" $ \filePath -> do
@@ -79,7 +78,7 @@ fileLoaderTests =
           Left err ->
             assertBool
               "Error message should mention file not found"
-              (T.isInfixOf "File not found" (showText err))
+              (T.isInfixOf "File not found" (T.pack (show err)))
           Right _ -> assertFailure "Expected Left for non-existent file but got Right"
     , testCase "load should handle empty files" $
         withTestFile "" $ \filePath -> do
