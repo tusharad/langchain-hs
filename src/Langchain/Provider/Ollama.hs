@@ -20,6 +20,7 @@ via JSON Schema grammar sampling, streaming, tool calling, and embeddings.
 module Langchain.Provider.Ollama
   ( Ollama (..)
   , newOllama
+  , newOllamaWithOptions
   , newOllamaWithConfig
   , newOllamaWithClient
   , defaultOllama
@@ -33,12 +34,27 @@ module Langchain.Provider.Ollama
   , withJsonFormat
   , withSchemaFormat
   , withStructuredOutput
+  , HasModelOptions (..)
+  , withOptions
+  , withTemperature
+  , withTopP
+  , withNumCtx
+  , withSeed
+  , withStop
+  , withKeepAlive
+  , withChatKeepAlive
+  , chatRequestFor
+  , invokeWithOptions
+  , streamWithOptions
   , structuredOllamaInvoke
+  , structuredOllamaInvokeWithOptions
   , structuredOllamaInvokeWithSchema
+  , structuredOllamaInvokeWithSchemaOptions
 
-    -- * Re-exports from ollama-haskell format & schema
+    -- * Re-exports from ollama-haskell format, schema & options
   , module Ollama.API.Chat
   , module Ollama.Types.Common
+  , module Ollama.Types.Options
   , OFormat.Format (..)
   , OSB.Schema (..)
   , OSB.Property (..)
@@ -62,7 +78,7 @@ import qualified Data.Text.Encoding as TE
 
 import Langchain.Core.Error (LangchainError, llmError, parsingError)
 import Langchain.Core.Model
-import Langchain.Core.Stream (StreamEvent (..), TokenUsage (..))
+import Langchain.Core.Stream (ChatStream, StreamEvent (..), TokenUsage (..))
 import Langchain.OutputParser.Structured
   ( StructuredOutput (..)
   , extractJsonFromMarkdown
@@ -78,6 +94,7 @@ import qualified Ollama.Types.Format as OFormat
 import qualified Ollama.Types.Format.SchemaBuilder as OSB
 import qualified Ollama.Types.Format.SchemaDerive as OSD
 import qualified Ollama.Types.Message as O
+import Ollama.Types.Options (ModelOptions (..), defaultOptions)
 import qualified Ollama.Types.Tool as OTool
 
 -- | Configuration options for Ollama provider
@@ -87,6 +104,7 @@ data OllamaConfig = OllamaConfig
   , configTimeout :: Maybe Int
   , configKeepAlive :: Maybe Text
   , configApiKey :: Maybe Text
+  , configOptions :: Maybe ModelOptions
   }
   deriving (Eq, Show)
 
@@ -98,6 +116,7 @@ defaultConfig =
     , configTimeout = Nothing
     , configKeepAlive = Nothing
     , configApiKey = Nothing
+    , configOptions = Nothing
     }
 
 defaultOllamaConfig :: OllamaConfig
@@ -107,16 +126,28 @@ defaultOllamaConfig = defaultConfig
 data Ollama = Ollama
   { ollamaModelName :: Text
   , client :: OllamaClient
+  , ollamaOptions :: Maybe ModelOptions
+  , ollamaKeepAlive :: Maybe Text
   }
 
 instance Show Ollama where
-  show (Ollama m _) = "Ollama provider (" ++ show m ++ ")"
+  show (Ollama m _ mbOpts mbKa) =
+    "Ollama provider (" ++ show m
+      ++ maybe "" (\o -> ", options: " ++ show o) mbOpts
+      ++ maybe "" (\k -> ", keepAlive: " ++ show k) mbKa
+      ++ ")"
 
 -- | Create a new Ollama provider with default client
 newOllama :: MonadIO m => Text -> m Ollama
 newOllama model = do
   c <- liftIO defaultClient
-  pure $ Ollama model c
+  pure $ Ollama model c Nothing Nothing
+
+-- | Create a new Ollama provider with specific 'ModelOptions'
+newOllamaWithOptions :: MonadIO m => Text -> ModelOptions -> m Ollama
+newOllamaWithOptions model opts = do
+  c <- liftIO defaultClient
+  pure $ Ollama model c (Just opts) Nothing
 
 -- | Create a new Ollama provider with custom OllamaConfig
 newOllamaWithConfig :: MonadIO m => OllamaConfig -> m Ollama
@@ -129,11 +160,11 @@ newOllamaWithConfig cfg = do
           , OConfig.configApiKey = configApiKey cfg
           }
   c <- liftIO $ newClient clientCfg
-  pure $ Ollama (configModelName cfg) c
+  pure $ Ollama (configModelName cfg) c (configOptions cfg) (configKeepAlive cfg)
 
 -- | Create an Ollama provider using an existing OllamaClient handle
 newOllamaWithClient :: Text -> OllamaClient -> Ollama
-newOllamaWithClient = Ollama
+newOllamaWithClient model c = Ollama model c Nothing Nothing
 
 -- | Default Ollama instance
 defaultOllama :: MonadIO m => m Ollama
@@ -201,17 +232,36 @@ fromOllamaMessage (O.Message r txt _imgs tools _name _think) =
             ]
    in cMsg {messageToolCalls = cTools}
 
+-- | Construct a 'ChatRequest' for an 'Ollama' instance with the given messages,
+-- pre-populated with any model-level options and keepAlive settings.
+chatRequestFor :: Ollama -> [Message] -> OllamaChat.ChatRequest
+chatRequestFor model inputMsgs =
+  let oMsgs = case inputMsgs of
+        [] -> O.userMessage "" NonEmpty.:| []
+        (m : ms) -> NonEmpty.map toOllamaMessage (m NonEmpty.:| ms)
+   in (OllamaChat.chatRequest (ModelName (ollamaModelName model)) oMsgs)
+        { OllamaChat.chatOptions = ollamaOptions model
+        , OllamaChat.chatKeepAlive = ollamaKeepAlive model
+        }
+
 instance ChatModel Ollama where
   type ModelConfig Ollama = OllamaChat.ChatRequest
 
   invoke model inputMsgs mbReq = do
-    let oMsgs = case inputMsgs of
-          [] -> O.userMessage "" NonEmpty.:| []
-          (m : ms) -> NonEmpty.map toOllamaMessage (m NonEmpty.:| ms)
-        baseReq = OllamaChat.chatRequest (ModelName (ollamaModelName model)) oMsgs
+    let baseReq = chatRequestFor model inputMsgs
         req = case mbReq of
           Nothing -> baseReq
-          Just r -> r {OllamaChat.chatModel = ModelName (ollamaModelName model), OllamaChat.chatMessages = oMsgs}
+          Just r ->
+            r
+              { OllamaChat.chatModel = ModelName (ollamaModelName model)
+              , OllamaChat.chatMessages = OllamaChat.chatMessages baseReq
+              , OllamaChat.chatOptions = case OllamaChat.chatOptions r of
+                  Nothing -> ollamaOptions model
+                  opts -> opts
+              , OllamaChat.chatKeepAlive = case OllamaChat.chatKeepAlive r of
+                  Nothing -> ollamaKeepAlive model
+                  ka -> ka
+              }
 
     eRes <- liftIO $ OllamaChat.chat (client model) req
     case eRes of
@@ -222,13 +272,20 @@ instance ChatModel Ollama where
 
   stream model inputMsgs mbReq = do
     let runId_ = "ollama-run"
-        oMsgs = case inputMsgs of
-          [] -> O.userMessage "" NonEmpty.:| []
-          (m : ms) -> NonEmpty.map toOllamaMessage (m NonEmpty.:| ms)
-        baseReq = OllamaChat.chatRequest (ModelName (ollamaModelName model)) oMsgs
+        baseReq = chatRequestFor model inputMsgs
         req = case mbReq of
           Nothing -> baseReq
-          Just r -> r {OllamaChat.chatModel = ModelName (ollamaModelName model), OllamaChat.chatMessages = oMsgs}
+          Just r ->
+            r
+              { OllamaChat.chatModel = ModelName (ollamaModelName model)
+              , OllamaChat.chatMessages = OllamaChat.chatMessages baseReq
+              , OllamaChat.chatOptions = case OllamaChat.chatOptions r of
+                  Nothing -> ollamaOptions model
+                  opts -> opts
+              , OllamaChat.chatKeepAlive = case OllamaChat.chatKeepAlive r of
+                  Nothing -> ollamaKeepAlive model
+                  ka -> ka
+              }
 
     yield $ LLMStart runId_ (ollamaModelName model) inputMsgs
     transPipe liftIO (OllamaChat.chatStream (client model) req) .| processChunks runId_
@@ -275,6 +332,80 @@ instance ChatModel Ollama where
                     LLMChunk rId chunkTxt toolDelta
                 loop newAccChunks newUsage newTools
 
+-- | Typeclass for entities that support Ollama 'ModelOptions' configuration
+class HasModelOptions a where
+  -- | Modify existing options (or initialized from 'defaultOptions' if none exist)
+  modifyModelOptions :: (ModelOptions -> ModelOptions) -> a -> a
+
+  -- | Explicitly set model options
+  setModelOptions :: ModelOptions -> a -> a
+  setModelOptions opts = modifyModelOptions (const opts)
+
+instance HasModelOptions Ollama where
+  modifyModelOptions f o =
+    let cur = fromMaybe defaultOptions (ollamaOptions o)
+     in o {ollamaOptions = Just (f cur)}
+  setModelOptions opts o = o {ollamaOptions = Just opts}
+
+instance HasModelOptions OllamaChat.ChatRequest where
+  modifyModelOptions f req =
+    let cur = fromMaybe defaultOptions (OllamaChat.chatOptions req)
+     in req {OllamaChat.chatOptions = Just (f cur)}
+  setModelOptions opts req = req {OllamaChat.chatOptions = Just opts}
+
+instance HasModelOptions ModelOptions where
+  modifyModelOptions f opts = f opts
+  setModelOptions opts _ = opts
+
+-- | Set model options on an Ollama model, ChatRequest, or ModelOptions
+withOptions :: HasModelOptions a => ModelOptions -> a -> a
+withOptions = setModelOptions
+
+-- | Set temperature (sampling temperature between 0.0 and 2.0)
+withTemperature :: HasModelOptions a => Double -> a -> a
+withTemperature t = modifyModelOptions (\opts -> opts {optTemperature = Just t})
+
+-- | Set top-p (nucleus sampling probability)
+withTopP :: HasModelOptions a => Double -> a -> a
+withTopP p = modifyModelOptions (\opts -> opts {optTopP = Just p})
+
+-- | Set number of tokens in the context window (context size)
+withNumCtx :: HasModelOptions a => Int -> a -> a
+withNumCtx n = modifyModelOptions (\opts -> opts {optNumCtx = Just n})
+
+-- | Set RNG seed for deterministic generation
+withSeed :: HasModelOptions a => Int -> a -> a
+withSeed s = modifyModelOptions (\opts -> opts {optSeed = Just s})
+
+-- | Set stop sequences
+withStop :: HasModelOptions a => [Text] -> a -> a
+withStop stops = modifyModelOptions (\opts -> opts {optStop = Just stops})
+
+-- | Set keep-alive duration on an Ollama model (e.g. "5m", "1h", "0")
+withKeepAlive :: Text -> Ollama -> Ollama
+withKeepAlive ka o = o {ollamaKeepAlive = Just ka}
+
+-- | Set keep-alive duration on a ChatRequest
+withChatKeepAlive :: Text -> OllamaChat.ChatRequest -> OllamaChat.ChatRequest
+withChatKeepAlive ka req = req {OllamaChat.chatKeepAlive = Just ka}
+
+-- | Invoke Ollama with specific ModelOptions
+invokeWithOptions ::
+  (MonadIO m, MonadError LangchainError m) =>
+  Ollama ->
+  ModelOptions ->
+  [Message] ->
+  m Message
+invokeWithOptions model opts msgs = invoke (withOptions opts model) msgs Nothing
+
+-- | Stream Ollama with specific ModelOptions
+streamWithOptions ::
+  Ollama ->
+  ModelOptions ->
+  [Message] ->
+  ChatStream
+streamWithOptions model opts msgs = stream (withOptions opts model) msgs Nothing
+
 -- | Attach generic JSON format constraint to Ollama ChatRequest
 withJsonFormat :: OllamaChat.ChatRequest -> OllamaChat.ChatRequest
 withJsonFormat req = req {OllamaChat.chatFormat = Just OFormat.JsonFormat}
@@ -300,10 +431,7 @@ structuredOllamaInvoke ::
   [Message] ->
   m a
 structuredOllamaInvoke model inputMsgs = do
-  let oMsgs = case inputMsgs of
-        [] -> O.userMessage "" NonEmpty.:| []
-        (m : ms) -> NonEmpty.map toOllamaMessage (m NonEmpty.:| ms)
-      baseReq = OllamaChat.chatRequest (ModelName (ollamaModelName model)) oMsgs
+  let baseReq = chatRequestFor model inputMsgs
       req = withStructuredOutput @a baseReq
   respMsg <- invoke model inputMsgs (Just req)
   let rawText = extractMessageText respMsg
@@ -318,6 +446,17 @@ structuredOllamaInvoke model inputMsgs = do
           (Just "structuredOllamaInvoke")
           Nothing
 
+-- | Directly invoke Ollama with structured output constrained by automatic ToSchema derivation and ModelOptions
+structuredOllamaInvokeWithOptions ::
+  forall a m.
+  (OSD.ToSchema a, FromJSON a, MonadIO m, MonadError LangchainError m) =>
+  Ollama ->
+  ModelOptions ->
+  [Message] ->
+  m a
+structuredOllamaInvokeWithOptions model opts msgs =
+  structuredOllamaInvoke (withOptions opts model) msgs
+
 -- | Directly invoke Ollama with structured output constrained by a Langchain StructuredOutput instance
 structuredOllamaInvokeWithSchema ::
   forall a m.
@@ -326,10 +465,7 @@ structuredOllamaInvokeWithSchema ::
   [Message] ->
   m a
 structuredOllamaInvokeWithSchema model inputMsgs = do
-  let oMsgs = case inputMsgs of
-        [] -> O.userMessage "" NonEmpty.:| []
-        (m : ms) -> NonEmpty.map toOllamaMessage (m NonEmpty.:| ms)
-      baseReq = OllamaChat.chatRequest (ModelName (ollamaModelName model)) oMsgs
+  let baseReq = chatRequestFor model inputMsgs
       valSchema = outputSchema (Proxy :: Proxy a)
       req = case toOllamaSchema valSchema of
         Just s -> withSchemaFormat s baseReq
@@ -346,3 +482,14 @@ structuredOllamaInvokeWithSchema model inputMsgs = do
           ("Failed to parse Ollama structured response into typed value: " <> rawText)
           (Just "structuredOllamaInvokeWithSchema")
           Nothing
+
+-- | Directly invoke Ollama with structured output constrained by a Langchain StructuredOutput instance and ModelOptions
+structuredOllamaInvokeWithSchemaOptions ::
+  forall a m.
+  (StructuredOutput a, MonadIO m, MonadError LangchainError m) =>
+  Ollama ->
+  ModelOptions ->
+  [Message] ->
+  m a
+structuredOllamaInvokeWithSchemaOptions model opts msgs =
+  structuredOllamaInvokeWithSchema (withOptions opts model) msgs

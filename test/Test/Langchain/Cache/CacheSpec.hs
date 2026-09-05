@@ -28,7 +28,7 @@ import Langchain.Core.Model
   )
 import Langchain.Provider.Gemini (Gemini (Gemini))
 import Langchain.Provider.Mock (MockModel (..), newMockModel)
-import Langchain.Provider.Ollama (Ollama (Ollama))
+import Langchain.Provider.Ollama (Ollama, newOllamaWithClient)
 import Langchain.Provider.OpenAI (OpenAI (OpenAI))
 import qualified Ollama.API.Chat as OllamaChat
 import Ollama.Client (newClient)
@@ -56,7 +56,7 @@ newOllamaForEndpoint endpoint = do
       OllamaClientConfig.defaultConfig
         { OllamaClientConfig.configBaseUrl = endpoint
         }
-  pure $ Ollama "llama3.2" ollamaClient
+  pure $ newOllamaWithClient "llama3.2" ollamaClient
 
 assertKeysDiffer :: Text -> Text -> Assertion
 assertKeysDiffer first second =

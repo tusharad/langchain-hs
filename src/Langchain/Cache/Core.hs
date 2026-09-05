@@ -171,20 +171,26 @@ instance CacheableChatModel OpenAI where
       ]
 
 instance CacheableChatModel Ollama where
-  cacheModelIdentity (Ollama modelName ollamaClient) cfg =
-    object
-      [ "provider" .= ("ollama" :: Text)
-      , "baseUrl" .= configBaseUrl (clientConfig ollamaClient)
-      , "model" .= modelName
-      , "config"
-          .= object
-            [ "tools" .= (OllamaChat.chatTools <$> cfg)
-            , "format" .= (OllamaChat.chatFormat <$> cfg)
-            , "options" .= (OllamaChat.chatOptions <$> cfg)
-            , "keep_alive" .= (OllamaChat.chatKeepAlive <$> cfg)
-            , "think" .= (OllamaChat.chatThink <$> cfg)
-            ]
-      ]
+  cacheModelIdentity o cfg =
+    let effectiveOptions = case cfg >>= OllamaChat.chatOptions of
+          Nothing -> ollamaOptions o
+          opts -> opts
+        effectiveKeepAlive = case cfg >>= OllamaChat.chatKeepAlive of
+          Nothing -> ollamaKeepAlive o
+          ka -> ka
+     in object
+          [ "provider" .= ("ollama" :: Text)
+          , "baseUrl" .= configBaseUrl (clientConfig (client o))
+          , "model" .= ollamaModelName o
+          , "config"
+              .= object
+                [ "tools" .= (OllamaChat.chatTools <$> cfg)
+                , "format" .= (OllamaChat.chatFormat <$> cfg)
+                , "options" .= effectiveOptions
+                , "keep_alive" .= effectiveKeepAlive
+                , "think" .= (OllamaChat.chatThink <$> cfg)
+                ]
+          ]
 
 instance CacheableChatModel Gemini where
   cacheModelIdentity (Gemini _ modelName) _ =

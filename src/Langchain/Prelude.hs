@@ -412,8 +412,25 @@ module Langchain.Prelude
   , Ollama
   , OllamaConfig (..)
   , newOllama
+  , newOllamaWithOptions
   , newOllamaWithConfig
   , newOllamaWithClient
+  , HasModelOptions (..)
+  , ModelOptions (..)
+  , defaultOptions
+  , withOptions
+  , withTemperature
+  , withTopP
+  , withNumCtx
+  , withSeed
+  , withStop
+  , withKeepAlive
+  , withChatKeepAlive
+  , chatRequestFor
+  , invokeWithOptions
+  , streamWithOptions
+  , structuredOllamaInvokeWithOptions
+  , structuredOllamaInvokeWithSchemaOptions
   , OpenAI
   , newOpenAI
   , Gemini
@@ -475,16 +492,33 @@ import Langchain.PromptTemplate.Prompt
 import Langchain.Provider.Gemini (Gemini, newGemini)
 import Langchain.Provider.Mock (MockModel (..), newMockModel)
 import Langchain.Provider.Ollama
-  ( Ollama
+  ( HasModelOptions (..)
+  , ModelOptions (..)
+  , Ollama
   , OllamaConfig (..)
+  , chatRequestFor
+  , defaultOptions
+  , invokeWithOptions
   , newOllama
   , newOllamaWithClient
   , newOllamaWithConfig
+  , newOllamaWithOptions
+  , streamWithOptions
   , structuredOllamaInvoke
+  , structuredOllamaInvokeWithOptions
   , structuredOllamaInvokeWithSchema
+  , structuredOllamaInvokeWithSchemaOptions
+  , withChatKeepAlive
   , withJsonFormat
+  , withKeepAlive
+  , withNumCtx
+  , withOptions
   , withSchemaFormat
+  , withSeed
+  , withStop
   , withStructuredOutput
+  , withTemperature
+  , withTopP
   )
 import Langchain.Provider.OpenAI (OpenAI, newOpenAI)
 import Langchain.Resilience.CircuitBreaker

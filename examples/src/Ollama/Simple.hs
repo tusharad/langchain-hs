@@ -15,6 +15,20 @@ runApp = do
     Left err -> T.putStrLn $ errorMessage err
     Right m -> T.putStrLn $ extractMessageText m
 
+  -- Example showcasing passing chatOptions (temperature, topP, numCtx) on the model:
+  let oWithOptions = withTemperature 0.7 $ withTopP 0.9 $ withNumCtx 4096 o
+  resWithOptions <- runExceptT $ invoke oWithOptions msg Nothing
+  case resWithOptions of
+    Left err -> T.putStrLn $ errorMessage err
+    Right m -> T.putStrLn $ extractMessageText m
+
+  -- Example showcasing passing chatOptions per request using chatRequestFor:
+  let req = withTemperature 0.2 $ withNumCtx 2048 (chatRequestFor o msg)
+  resWithReq <- runExceptT $ invoke o msg (Just req)
+  case resWithReq of
+    Left err -> T.putStrLn $ errorMessage err
+    Right m -> T.putStrLn $ extractMessageText m
+
   -- another example showcasing batch usage.
   let ques = ["What is Functor in Haskell?", "What is applicative in Haskell?", "What is Monad in Haskell?", "A really long question"]
       msgs = map (\q -> [userMessage q]) ques
