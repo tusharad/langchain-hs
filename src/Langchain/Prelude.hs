@@ -72,19 +72,13 @@ module Langchain.Prelude
   , collectEvents
   , printEvents
 
-    -- * Pure AST Pipelines (RunnableTree) & Pipeline DSL
+    -- * Pure AST Pipelines (RunnableTree)
   , RunnableTree (..)
   , (|>>)
   , (&>&)
   , interpret
   , runLambda
   , runPrim
-  , pipe
-  , (>>>#)
-  , pipeParallel
-  , PipelineStep (PipelineStep)
-  , mkStep
-  , runPipeline
 
     -- * Effect-Polymorphic Tools
   , Tool (..)
@@ -135,18 +129,6 @@ module Langchain.Prelude
   , SupervisorTeam (..)
   , newSupervisorTeam
   , runSupervisorTeam
-  , Debater (..)
-  , DebateConfig (..)
-  , defaultDebateConfig
-  , runDebate
-  , VotingClassifier (..)
-  , newVotingClassifier
-  , runVotingClassification
-  , Blackboard (..)
-  , KnowledgeSource (..)
-  , BlackboardConfig (..)
-  , newBlackboard
-  , runBlackboard
 
     -- * Guardrails & Safety
   , GuardrailResult (..)
@@ -213,6 +195,9 @@ module Langchain.Prelude
   , BaseMemory (..)
   , WindowBufferMemory (..)
   , newWindowBufferMemory
+  , TokenBufferMemory (..)
+  , newTokenBufferMemory
+  , countTokens
   , SummaryMemory (..)
   , newSummaryMemory
   , EntityMemory (..)
@@ -227,17 +212,8 @@ module Langchain.Prelude
   , fromDocuments
   , SqliteVecStore (..)
   , newSqliteVecStore
-  , PgVectorStore (..)
-  , defaultPgVectorStore
   , Retriever (..)
   , VectorStoreRetriever (..)
-  , MultiQueryRetriever (MultiQueryRetriever)
-  , newMultiQueryRetriever
-  , ContextualCompressionRetriever (..)
-  , newContextualCompressionRetriever
-  , ParentDocumentRetriever (..)
-  , newParentDocumentRetriever
-  , addParentDocuments
 
     -- * Embeddings
   , Embeddings (..)
@@ -249,7 +225,6 @@ module Langchain.Prelude
   , DirectoryLoader (..)
   , DirectoryLoaderOptions (..)
   , defaultDirectoryLoaderOptions
-  , PdfLoader (..)
   , CsvLoader (..)
   , defaultCsvLoader
   , JsonLoader (..)
@@ -339,7 +314,7 @@ module Langchain.Prelude
   , chainMiddlewares
   , loggingMiddleware
 
-    -- * Hybrid Retrieval, BM25 & Rerankers
+    -- * Hybrid Retrieval & BM25
   , BM25Index (..)
   , newBM25Index
   , newBM25IndexWithParams
@@ -352,10 +327,6 @@ module Langchain.Prelude
   , searchHybrid
   , searchHybridWithScores
   , reciprocalRankFusion
-  , Reranker (..)
-  , IdempotentReranker (..)
-  , LLMReranker (..)
-  , newLLMReranker
 
     -- * Providers
   , Ollama (..)
@@ -398,17 +369,13 @@ import Langchain.DocumentLoader.DirectoryLoader
 import Langchain.DocumentLoader.FileLoader
 import Langchain.DocumentLoader.Html
 import Langchain.DocumentLoader.Json
-import Langchain.DocumentLoader.PdfLoader
 import Langchain.DocumentLoader.WebPage
 import Langchain.Embeddings.Core
-import Langchain.Graph.Blackboard
 import Langchain.Graph.Checkpointer
-import Langchain.Graph.Debate
 import Langchain.Graph.HITL
 import Langchain.Graph.MultiAgent
 import Langchain.Graph.Parallel
 import Langchain.Graph.StateGraph
-import Langchain.Graph.Voting
 import Langchain.Guardrail.Core
 import Langchain.MCP.Client
 import Langchain.Memory.Core
@@ -417,7 +384,6 @@ import Langchain.Memory.Summary
 import Langchain.Observability
 import Langchain.OutputParser.Core
 import Langchain.OutputParser.Structured
-import Langchain.Pipeline.DSL
 import Langchain.PromptTemplate.FewShot
 import Langchain.PromptTemplate.Prompt
 import Langchain.Provider.Gemini (Gemini, newGemini)
@@ -442,12 +408,8 @@ import Langchain.Provider.OpenAI (OpenAI, newOpenAI)
 import Langchain.Resilience.CircuitBreaker
 import Langchain.Resilience.Retry
 import Langchain.Retriever.BM25
-import Langchain.Retriever.ContextualCompression
 import Langchain.Retriever.Core
 import Langchain.Retriever.Hybrid
-import Langchain.Retriever.MultiQueryRetriever
-import Langchain.Retriever.ParentDocument
-import Langchain.Retriever.Reranker
 import Langchain.TextSplitter.Character
 import Langchain.TextSplitter.Code
 import Langchain.TextSplitter.Markdown
@@ -457,7 +419,6 @@ import Langchain.Tool.Async
 import Langchain.Tool.GenericSchema
 import Langchain.VectorStore.Core
 import Langchain.VectorStore.InMemory
-import Langchain.VectorStore.PgVector
 import Langchain.VectorStore.SqliteVec
 
 -- | Default runtime configuration alias

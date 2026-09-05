@@ -14,7 +14,7 @@ import Langchain.Core.Model
   , userMessage
   )
 import Langchain.Memory.Core (BaseMemory (..))
-import qualified Langchain.Memory.TokenBufferMemory as TB
+import qualified Langchain.Memory.Core as TB
 
 tests :: TestTree
 tests =

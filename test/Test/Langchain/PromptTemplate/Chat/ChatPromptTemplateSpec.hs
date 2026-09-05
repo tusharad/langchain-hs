@@ -48,8 +48,7 @@ import Langchain.PromptTemplate.Chat.MessagesPlaceholder
   ( MessagesPlaceholder (..)
   , MessagesPlaceholderOptions (..)
   )
-import Langchain.PromptTemplate.Prompt (PromptTemplateOptions (..))
-import Langchain.PromptTemplate.String (TemplateFormat (..))
+import Langchain.PromptTemplate.Prompt (PromptTemplateOptions (..), TemplateFormat (..))
 
 tests :: TestTree
 tests =

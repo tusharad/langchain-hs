@@ -39,7 +39,6 @@ dependencies:
   - mtl >= 2.2 && < 2.4
   - ollama-haskell >= 0.4.0.0
   - openai >= 2.2.1
-  - pdf-toolbox-document == 0.1.4
   - process >= 1.6 && < 1.7
   - pystrformat
   - random >= 1.2

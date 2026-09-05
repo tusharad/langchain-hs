@@ -30,7 +30,6 @@ import System.FilePath (takeExtension, takeFileName, (</>))
 import Langchain.Core.Error (documentLoaderError)
 import Langchain.DocumentLoader.Core
 import Langchain.DocumentLoader.FileLoader (FileLoader (FileLoader))
-import Langchain.DocumentLoader.PdfLoader (PdfLoader (PdfLoader))
 import Langchain.TextSplitter.Character
 
 -- | Options for directory loading behavior
@@ -112,10 +111,8 @@ instance BaseLoader DirectoryLoader where
     if exists
       then do
         filePaths <- liftIO $ getFilesInDirectory directoryLoaderOptions 0 dirPath
-        fmap concat $ forM filePaths $ \path -> do
-          if takeExtension path == ".pdf"
-            then load (PdfLoader path)
-            else load (FileLoader path)
+        fmap concat $ forM filePaths $ \path ->
+          load (FileLoader path)
       else
         throwError $
           documentLoaderError

@@ -18,7 +18,7 @@ module Langchain.PromptTemplate.Chat
 
 import Langchain.Core.Error (LangchainError)
 import Langchain.Core.Model.Types (Message)
-import Langchain.PromptTemplate.String (extractTemplateVariables)
+import Langchain.PromptTemplate.Prompt (extractTemplateVariables)
 
 -- | Base class for message prompt templates.
 class BaseMessagePromptTemplate template input where

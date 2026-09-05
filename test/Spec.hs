@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Main (main) where
 
 import Test.Tasty
@@ -19,7 +21,6 @@ import qualified Test.Langchain.DocumentLoader.WebPageSpec as WebPageLoaderTest
 import qualified Test.Langchain.Embeddings.Core as EmbeddingsTest
 import qualified Test.Langchain.Error as ErrorTest
 import qualified Test.Langchain.Graph.CompilationSpec as GraphCompilationTest
-import qualified Test.Langchain.Graph.MultiAgentPatternsSpec as MultiAgentPatternsTest
 import qualified Test.Langchain.Guardrail.GuardrailSpec as GuardrailTest
 import qualified Test.Langchain.MCP.McpSpec as McpTest
 import qualified Test.Langchain.Memory.Core as MemoryTest
@@ -29,7 +30,6 @@ import qualified Test.Langchain.Memory.TokenBufferMemory as TokenBufferMemoryTes
 import qualified Test.Langchain.ObservabilitySpec as ObservabilityTest
 import qualified Test.Langchain.OutputParser.AdvancedParsersSpec as AdvancedParsersTest
 import qualified Test.Langchain.OutputParser.Core as OutputParserTest
-import qualified Test.Langchain.Pipeline.PipelineDSLSpec as PipelineDSLTest
 import qualified Test.Langchain.PreludeSpec as PreludeTest
 import qualified Test.Langchain.PromptTemplate.Chat.ChatPromptTemplateSpec as ChatPromptTemplateTest
 import qualified Test.Langchain.PromptTemplate.Chat.MessagesPlaceholderSpec as MessagesPlaceholderTest
@@ -43,7 +43,6 @@ import qualified Test.Langchain.Provider.OpenAI as OpenAIProviderTest
 import qualified Test.Langchain.Pure.PurePipelineSpec as PurePipelineTest
 import qualified Test.Langchain.Resilience.CircuitBreakerSpec as CircuitBreakerTest
 import qualified Test.Langchain.Resilience.RetrySpec as RetryTest
-import qualified Test.Langchain.Retriever.AdvancedRetrieversSpec as AdvancedRetrieversTest
 import qualified Test.Langchain.Retriever.BM25Spec as BM25Test
 import qualified Test.Langchain.Retriever.Core as RetrieverTest
 import qualified Test.Langchain.Retriever.HybridSpec as HybridRetrieverTest
@@ -69,10 +68,10 @@ import qualified Test.Langchain.Property.RunnableSpec as RunnablePropTest
 import qualified Test.Langchain.Property.StateReducerSpec as StateReducerPropTest
 import qualified Test.Langchain.Property.TextSplitterSpec as TextSplitterPropTest
 
--- Regression Test Modules
+-- Regression Test Module
 import qualified Test.Langchain.RegressionSpec as RegressionTest
 
--- Live Integration & E2E Test Modules (Ollama)
+-- Live Ollama E2E Integration Test Modules
 import qualified Test.Langchain.Integration.FullRagE2ESpec as FullRagE2ETest
 import qualified Test.Langchain.Integration.MultiAgentGraphE2ESpec as MultiAgentGraphE2ETest
 import qualified Test.Langchain.Integration.OllamaChatSpec as OllamaChatE2ETest
@@ -90,8 +89,7 @@ main =
       "Langchain Test Suite"
       [ testGroup
           "Unit Tests"
-          [ ErrorTest.tests
-          , PromptTemplateTest.tests
+          [ PromptTemplateTest.tests
           , FewShotPromptTemplateTest.tests
           , ChatPromptTemplateTest.tests
           , MessagesPlaceholderTest.tests
@@ -114,13 +112,12 @@ main =
           , VectorStoreTest.tests
           , SqliteVecStoreTest.tests
           , EmbeddingsTest.tests
+          , ErrorTest.tests
           , RetrieverTest.tests
-          , AdvancedRetrieversTest.tests
           , BM25Test.tests
           , HybridRetrieverTest.tests
           , RetrievalQATest.tests
           , ChainsTest.tests
-          , PipelineDSLTest.tests
           , CacheTest.tests
           , RetryTest.tests
           , CircuitBreakerTest.tests
@@ -128,7 +125,6 @@ main =
           , AdvancedToolsTest.tests
           , ReActTest.tests
           , AdvancedAgentsTest.tests
-          , MultiAgentPatternsTest.tests
           , GuardrailTest.tests
           , McpTest.tests
           , ObservabilityTest.tests

@@ -47,25 +47,18 @@ library
       Langchain.DocumentLoader.FileLoader
       Langchain.DocumentLoader.Html
       Langchain.DocumentLoader.Json
-      Langchain.DocumentLoader.PdfLoader
       Langchain.DocumentLoader.WebPage
       Langchain.Embeddings.Core
       Langchain.Embeddings.Ollama
       Langchain.Embeddings.OpenAI
-      Langchain.Error
-      Langchain.Graph.Blackboard
-      Langchain.Graph.Debate
-      Langchain.Graph.Voting
       Langchain.Guardrail.Core
       Langchain.MCP.Client
       Langchain.Memory.Core
       Langchain.Memory.Entity
       Langchain.Memory.Summary
-      Langchain.Memory.TokenBufferMemory
       Langchain.Observability
       Langchain.OutputParser.Core
       Langchain.OutputParser.Structured
-      Langchain.Pipeline.DSL
       Langchain.Prelude
       Langchain.PromptTemplate.Chat
       Langchain.PromptTemplate.Chat.ChatPromptTemplate
@@ -79,12 +72,8 @@ library
       Langchain.Resilience.CircuitBreaker
       Langchain.Resilience.Retry
       Langchain.Retriever.BM25
-      Langchain.Retriever.ContextualCompression
       Langchain.Retriever.Core
       Langchain.Retriever.Hybrid
-      Langchain.Retriever.MultiQueryRetriever
-      Langchain.Retriever.ParentDocument
-      Langchain.Retriever.Reranker
       Langchain.TextSplitter.Character
       Langchain.TextSplitter.Code
       Langchain.TextSplitter.Markdown
@@ -93,15 +82,10 @@ library
       Langchain.Tool.Async
       Langchain.Tool.Calculator
       Langchain.Tool.Core
-      Langchain.Tool.DuckDuckGo
       Langchain.Tool.FileSystem
       Langchain.Tool.GenericSchema
-      Langchain.Tool.Utils
-      Langchain.Tool.WebScraper
-      Langchain.Tool.WikipediaTool
       Langchain.VectorStore.Core
       Langchain.VectorStore.InMemory
-      Langchain.VectorStore.PgVector
       Langchain.VectorStore.SqliteVec
   other-modules:
       Paths_langchain_hs
@@ -127,7 +111,6 @@ library
     , mtl >=2.2 && <2.4
     , ollama-haskell >=0.4.0.0
     , openai >=2.2.1
-    , pdf-toolbox-document ==0.1.4
     , process ==1.6.*
     , pystrformat
     , random >=1.2
@@ -167,7 +150,6 @@ test-suite langchain-hs-test
       Test.Langchain.Embeddings.Core
       Test.Langchain.Error
       Test.Langchain.Graph.CompilationSpec
-      Test.Langchain.Graph.MultiAgentPatternsSpec
       Test.Langchain.Guardrail.GuardrailSpec
       Test.Langchain.Integration.FullRagE2ESpec
       Test.Langchain.Integration.MultiAgentGraphE2ESpec
@@ -186,7 +168,6 @@ test-suite langchain-hs-test
       Test.Langchain.ObservabilitySpec
       Test.Langchain.OutputParser.AdvancedParsersSpec
       Test.Langchain.OutputParser.Core
-      Test.Langchain.Pipeline.PipelineDSLSpec
       Test.Langchain.PreludeSpec
       Test.Langchain.PromptTemplate.Chat.ChatPromptTemplateSpec
       Test.Langchain.PromptTemplate.Chat.MessagesPlaceholderSpec
@@ -210,7 +191,6 @@ test-suite langchain-hs-test
       Test.Langchain.RegressionSpec
       Test.Langchain.Resilience.CircuitBreakerSpec
       Test.Langchain.Resilience.RetrySpec
-      Test.Langchain.Retriever.AdvancedRetrieversSpec
       Test.Langchain.Retriever.BM25Spec
       Test.Langchain.Retriever.Core
       Test.Langchain.Retriever.HybridSpec
@@ -251,7 +231,6 @@ test-suite langchain-hs-test
     , mtl >=2.2 && <2.4
     , ollama-haskell >=0.4.0.0
     , openai >=2.2.1
-    , pdf-toolbox-document ==0.1.4
     , process ==1.6.*
     , pystrformat
     , random >=1.2
@@ -306,7 +285,6 @@ benchmark langchain-hs-bench
     , mtl >=2.2 && <2.4
     , ollama-haskell >=0.4.0.0
     , openai >=2.2.1
-    , pdf-toolbox-document ==0.1.4
     , process ==1.6.*
     , pystrformat
     , random >=1.2

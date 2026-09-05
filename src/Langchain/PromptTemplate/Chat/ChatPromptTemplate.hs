@@ -64,10 +64,8 @@ import Langchain.PromptTemplate.Chat.MessagesPlaceholder
   , messagesPlaceholderVariableName
   )
 import qualified Langchain.PromptTemplate.Chat.MessagesPlaceholder as MessagesPlaceholder
-import Langchain.PromptTemplate.Prompt (PromptTemplateOptions)
+import Langchain.PromptTemplate.Prompt (PromptTemplateOptions, TemplateFormat (..))
 import qualified Langchain.PromptTemplate.Prompt as Prompt
-import Langchain.PromptTemplate.String (TemplateFormat (..))
-import qualified Langchain.PromptTemplate.String as String
 
 -- | A single chat message template inside a chat prompt.
 data ChatPromptMessage
@@ -352,7 +350,7 @@ formatMessage (StaticMessage staticMessage) _ _ = Right [staticMessage]
 
 contentBlockInputVariables :: ContentPromptBlock -> [Text]
 contentBlockInputVariables (TextPromptBlock templateFormat template) =
-  String.extractTemplateVariablesWithFormat templateFormat template
+  Prompt.extractTemplateVariablesWithFormat templateFormat template
 contentBlockInputVariables (ImagePromptBlock templateFormat imageContent) =
   imageContentInputVariables templateFormat imageContent
 
@@ -374,14 +372,14 @@ renderContentBlock variables (ImagePromptBlock templateFormat imageContent) = do
 imageContentInputVariables :: TemplateFormat -> ImageContent -> [Text]
 imageContentInputVariables templateFormat ImageContent {imageSource = source, imageDetail = detail, imageMetadata = metadata} =
   imageSourceInputVariables templateFormat source
-    <> maybe [] (String.extractTemplateVariablesWithFormat templateFormat) detail
+    <> maybe [] (Prompt.extractTemplateVariablesWithFormat templateFormat) detail
     <> maybe [] (valueInputVariables templateFormat) metadata
 
 imageSourceInputVariables :: TemplateFormat -> ImageSource -> [Text]
 imageSourceInputVariables templateFormat (ImageBase64 _ imageTemplate) =
-  String.extractTemplateVariablesWithFormat templateFormat imageTemplate
+  Prompt.extractTemplateVariablesWithFormat templateFormat imageTemplate
 imageSourceInputVariables templateFormat (ImageUrl url) =
-  String.extractTemplateVariablesWithFormat templateFormat url
+  Prompt.extractTemplateVariablesWithFormat templateFormat url
 
 partialImageContent :: TemplateFormat -> Map.Map Text Text -> ImageContent -> ImageContent
 partialImageContent templateFormat partials ImageContent {imageSource = source, imageDetail = detail, imageMetadata = metadata} =
@@ -424,7 +422,7 @@ renderPartial templateFormat partials template =
 
 valueInputVariables :: TemplateFormat -> Value -> [Text]
 valueInputVariables templateFormat (String value) =
-  String.extractTemplateVariablesWithFormat templateFormat value
+  Prompt.extractTemplateVariablesWithFormat templateFormat value
 valueInputVariables templateFormat (Array values) =
   concatMap (valueInputVariables templateFormat) values
 valueInputVariables templateFormat (Object objectValue) =
