@@ -2,15 +2,15 @@
 
 ## Run HLint linter
 lint:
-	hlint src/ test/ langchain-hs-core/ langchain-hs-graph
+	hlint src/ test/ langchain-hs-core/ langchain-hs-graph examples/
 
 ## Format source code with Fourmolu
 format:
-	fourmolu -i src/ test/ langchain-hs-core/ langchain-hs-graph
+	fourmolu -i src/ test/ langchain-hs-core/ langchain-hs-graph examples/
 
 ## Check code formatting with Fourmolu
 format-check:
-	fourmolu -m check src/ test/ langchain-hs-core/ langchain-hs-graph
+	fourmolu -m check src/ test/ langchain-hs-core/ langchain-hs-graph examples/
 
 ## Run Weeder dead code detection
 weeder:

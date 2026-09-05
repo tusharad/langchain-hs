@@ -9,8 +9,8 @@ import Test.Tasty.HUnit
 
 import Langchain.Chain.MapReduce
 import Langchain.Core.Model (extractMessageText)
-import Langchain.Provider.Mock (newMockModel)
 import Langchain.DocumentLoader.Core (Document (..))
+import Langchain.Provider.Mock (newMockModel)
 
 tests :: TestTree
 tests =

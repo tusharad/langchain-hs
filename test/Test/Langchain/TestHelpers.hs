@@ -102,4 +102,4 @@ defaultIntegrationTimeout :: Int
 defaultIntegrationTimeout = 600
 
 newTestOllama :: MonadIO m => Text -> m Ollama
-newTestOllama = newOllama 
+newTestOllama = newOllama

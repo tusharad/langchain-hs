@@ -30,7 +30,12 @@ runApp = do
     Right m -> T.putStrLn $ extractMessageText m
 
   -- another example showcasing batch usage.
-  let ques = ["What is Functor in Haskell?", "What is applicative in Haskell?", "What is Monad in Haskell?", "A really long question"]
+  let ques =
+        [ "What is Functor in Haskell?"
+        , "What is applicative in Haskell?"
+        , "What is Monad in Haskell?"
+        , "A really long question"
+        ]
       msgs = map (\q -> [userMessage q]) ques
   batchRes <- runExceptT $ batch o (take 3 msgs) Nothing
   case batchRes of

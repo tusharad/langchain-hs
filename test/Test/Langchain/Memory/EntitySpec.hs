@@ -8,9 +8,9 @@ import Test.Tasty
 import Test.Tasty.HUnit
 
 import Langchain.Core.Model (userMessage)
-import Langchain.Provider.Mock (newMockModel)
 import Langchain.Memory.Core (BaseMemory (..))
 import Langchain.Memory.Entity
+import Langchain.Provider.Mock (newMockModel)
 
 tests :: TestTree
 tests =

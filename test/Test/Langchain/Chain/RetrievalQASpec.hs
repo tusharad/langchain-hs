@@ -12,8 +12,8 @@ import Langchain.Chain.RetrievalQA
 import Langchain.Core.Model
   ( extractMessageText
   )
-import Langchain.Provider.Mock (newMockModel)
 import Langchain.DocumentLoader.Core (Document (..))
+import Langchain.Provider.Mock (newMockModel)
 import Langchain.Retriever.Core (Retriever (..))
 
 data TestRetriever = TestRetriever

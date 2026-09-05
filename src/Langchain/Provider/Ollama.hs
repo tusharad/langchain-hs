@@ -85,8 +85,8 @@ import Langchain.OutputParser.Structured
   , toOllamaSchema
   )
 
-import qualified Ollama.API.Chat as OllamaChat
 import Ollama.API.Chat
+import qualified Ollama.API.Chat as OllamaChat
 import Ollama.Client (OllamaClient, defaultClient, newClient)
 import qualified Ollama.Client.Config as OConfig
 import Ollama.Types.Common (Base64Image (..), ModelName (..))
@@ -132,7 +132,8 @@ data Ollama = Ollama
 
 instance Show Ollama where
   show (Ollama m _ mbOpts mbKa) =
-    "Ollama provider (" ++ show m
+    "Ollama provider ("
+      ++ show m
       ++ maybe "" (\o -> ", options: " ++ show o) mbOpts
       ++ maybe "" (\k -> ", keepAlive: " ++ show k) mbKa
       ++ ")"
@@ -232,8 +233,9 @@ fromOllamaMessage (O.Message r txt _imgs tools _name _think) =
             ]
    in cMsg {messageToolCalls = cTools}
 
--- | Construct a 'ChatRequest' for an 'Ollama' instance with the given messages,
--- pre-populated with any model-level options and keepAlive settings.
+{- | Construct a 'ChatRequest' for an 'Ollama' instance with the given messages,
+pre-populated with any model-level options and keepAlive settings.
+-}
 chatRequestFor :: Ollama -> [Message] -> OllamaChat.ChatRequest
 chatRequestFor model inputMsgs =
   let oMsgs = case inputMsgs of
@@ -354,7 +356,7 @@ instance HasModelOptions OllamaChat.ChatRequest where
   setModelOptions opts req = req {OllamaChat.chatOptions = Just opts}
 
 instance HasModelOptions ModelOptions where
-  modifyModelOptions f opts = f opts
+  modifyModelOptions f = f
   setModelOptions opts _ = opts
 
 -- | Set model options on an Ollama model, ChatRequest, or ModelOptions
@@ -454,8 +456,8 @@ structuredOllamaInvokeWithOptions ::
   ModelOptions ->
   [Message] ->
   m a
-structuredOllamaInvokeWithOptions model opts msgs =
-  structuredOllamaInvoke (withOptions opts model) msgs
+structuredOllamaInvokeWithOptions model opts =
+  structuredOllamaInvoke (withOptions opts model) 
 
 -- | Directly invoke Ollama with structured output constrained by a Langchain StructuredOutput instance
 structuredOllamaInvokeWithSchema ::
@@ -491,5 +493,5 @@ structuredOllamaInvokeWithSchemaOptions ::
   ModelOptions ->
   [Message] ->
   m a
-structuredOllamaInvokeWithSchemaOptions model opts msgs =
-  structuredOllamaInvokeWithSchema (withOptions opts model) msgs
+structuredOllamaInvokeWithSchemaOptions model opts =
+  structuredOllamaInvokeWithSchema (withOptions opts model) 
