@@ -6,9 +6,12 @@
 module Test.Langchain.Integration.OllamaToolSpec (tests) where
 
 import Control.Monad.Except (runExceptT)
-import Data.Aeson (FromJSON, ToJSON, object, (.=))
+import Data.Aeson (FromJSON, ToJSON, decode, object, (.=))
+import qualified Data.ByteString.Lazy.Char8 as LBSC
+import Data.Proxy (Proxy (..))
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as TE
 import GHC.Generics (Generic)
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -16,8 +19,16 @@ import Test.Tasty.HUnit
 import Langchain.Core.Error
 import Langchain.Core.Model
 import Langchain.Core.Tool (Tool (..), toolExecute)
-import Langchain.OutputParser.Structured (StructuredOutput)
-import Langchain.Provider.Ollama (structuredOllamaInvokeWithSchema)
+import Langchain.OutputParser.Structured
+  ( StructuredOutput (..)
+  , extractJsonFromMarkdown
+  , toOllamaSchema
+  )
+import Langchain.Provider.Ollama
+  ( chatRequestFor
+  , withJsonFormat
+  , withSchemaFormat
+  )
 import Langchain.Tool.Calculator (calculatorTool)
 import Test.Langchain.TestHelpers (defaultTestModel, newTestOllama, withOllamaModel)
 
@@ -57,10 +68,21 @@ tests =
                 [ systemMessage "You are a helpful math extractor."
                 , userMessage "Calculate 25 + 75 and explain briefly."
                 ]
-          res <- runExceptT $ structuredOllamaInvokeWithSchema provider prompt
+              valSchema = outputSchema (Proxy :: Proxy TestMathResult)
+              baseReq = chatRequestFor provider prompt
+              req = case toOllamaSchema valSchema of
+                Just s -> withSchemaFormat s baseReq
+                Nothing -> withJsonFormat baseReq
+          res <- runExceptT $ invoke provider prompt (Just req)
           case res of
             Left err -> assertFailure ("Structured Ollama invocation failed: " ++ show err)
-            Right (result :: TestMathResult) -> do
-              answer result @?= 100.0
-              assertBool "Explanation is not empty" (not (T.null (explanation result)))
+            Right msg -> do
+              let rawText = extractMessageText msg
+                  cleanJson = extractJsonFromMarkdown rawText
+                  bs = LBSC.fromStrict (TE.encodeUtf8 cleanJson)
+              case decode bs of
+                Just (result :: TestMathResult) -> do
+                  answer result @?= 100.0
+                  assertBool "Explanation is not empty" (not (T.null (explanation result)))
+                Nothing -> assertFailure ("Failed to decode response into TestMathResult: " ++ show rawText)
     ]

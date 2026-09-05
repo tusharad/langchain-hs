@@ -336,8 +336,6 @@ module Langchain.Prelude
   , fromOllamaSchema
   , structuredInvoke
   , structuredInvokeWithRetries
-  , structuredOllamaInvoke
-  , structuredOllamaInvokeWithSchema
   , withJsonFormat
   , withSchemaFormat
   , withStructuredOutput
@@ -429,8 +427,6 @@ module Langchain.Prelude
   , chatRequestFor
   , invokeWithOptions
   , streamWithOptions
-  , structuredOllamaInvokeWithOptions
-  , structuredOllamaInvokeWithSchemaOptions
   , OpenAI
   , newOpenAI
   , Gemini
@@ -504,10 +500,6 @@ import Langchain.Provider.Ollama
   , newOllamaWithConfig
   , newOllamaWithOptions
   , streamWithOptions
-  , structuredOllamaInvoke
-  , structuredOllamaInvokeWithOptions
-  , structuredOllamaInvokeWithSchema
-  , structuredOllamaInvokeWithSchemaOptions
   , withChatKeepAlive
   , withJsonFormat
   , withKeepAlive

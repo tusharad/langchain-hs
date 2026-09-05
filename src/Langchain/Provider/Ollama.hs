@@ -46,10 +46,6 @@ module Langchain.Provider.Ollama
   , chatRequestFor
   , invokeWithOptions
   , streamWithOptions
-  , structuredOllamaInvoke
-  , structuredOllamaInvokeWithOptions
-  , structuredOllamaInvokeWithSchema
-  , structuredOllamaInvokeWithSchemaOptions
 
     -- * Re-exports from ollama-haskell format, schema & options
   , module Ollama.API.Chat
@@ -66,24 +62,16 @@ module Langchain.Provider.Ollama
 import Control.Monad (when)
 import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.Aeson (FromJSON, Result (..), decode, fromJSON, toJSON)
-import qualified Data.ByteString.Lazy.Char8 as LBSC
+import Data.Aeson (Result (..), fromJSON, toJSON)
 import Data.Conduit (await, transPipe, yield, (.|))
 import qualified Data.List.NonEmpty as NonEmpty
 import Data.Maybe (fromMaybe, isJust)
-import Data.Proxy (Proxy (..))
 import Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.Text.Encoding as TE
 
-import Langchain.Core.Error (LangchainError, llmError, parsingError)
+import Langchain.Core.Error (LangchainError, llmError)
 import Langchain.Core.Model
 import Langchain.Core.Stream (ChatStream, StreamEvent (..), TokenUsage (..))
-import Langchain.OutputParser.Structured
-  ( StructuredOutput (..)
-  , extractJsonFromMarkdown
-  , toOllamaSchema
-  )
 
 import Ollama.API.Chat
 import qualified Ollama.API.Chat as OllamaChat
@@ -424,74 +412,3 @@ withStructuredOutput ::
   OllamaChat.ChatRequest
 withStructuredOutput req =
   req {OllamaChat.chatFormat = Just (OFormat.SchemaFormat (OSD.toSchema @a))}
-
--- | Directly invoke Ollama with structured output constrained by automatic ToSchema derivation
-structuredOllamaInvoke ::
-  forall a m.
-  (OSD.ToSchema a, FromJSON a, MonadIO m, MonadError LangchainError m) =>
-  Ollama ->
-  [Message] ->
-  m a
-structuredOllamaInvoke model inputMsgs = do
-  let baseReq = chatRequestFor model inputMsgs
-      req = withStructuredOutput @a baseReq
-  respMsg <- invoke model inputMsgs (Just req)
-  let rawText = extractMessageText respMsg
-      cleanJson = extractJsonFromMarkdown rawText
-      bs = LBSC.fromStrict (TE.encodeUtf8 cleanJson)
-  case decode bs of
-    Just val -> pure val
-    Nothing ->
-      throwError $
-        parsingError
-          ("Failed to parse Ollama structured response into typed value: " <> rawText)
-          (Just "structuredOllamaInvoke")
-          Nothing
-
--- | Directly invoke Ollama with structured output constrained by automatic ToSchema derivation and ModelOptions
-structuredOllamaInvokeWithOptions ::
-  forall a m.
-  (OSD.ToSchema a, FromJSON a, MonadIO m, MonadError LangchainError m) =>
-  Ollama ->
-  ModelOptions ->
-  [Message] ->
-  m a
-structuredOllamaInvokeWithOptions model opts =
-  structuredOllamaInvoke (withOptions opts model)
-
--- | Directly invoke Ollama with structured output constrained by a Langchain StructuredOutput instance
-structuredOllamaInvokeWithSchema ::
-  forall a m.
-  (StructuredOutput a, MonadIO m, MonadError LangchainError m) =>
-  Ollama ->
-  [Message] ->
-  m a
-structuredOllamaInvokeWithSchema model inputMsgs = do
-  let baseReq = chatRequestFor model inputMsgs
-      valSchema = outputSchema (Proxy :: Proxy a)
-      req = case toOllamaSchema valSchema of
-        Just s -> withSchemaFormat s baseReq
-        Nothing -> withJsonFormat baseReq
-  respMsg <- invoke model inputMsgs (Just req)
-  let rawText = extractMessageText respMsg
-      cleanJson = extractJsonFromMarkdown rawText
-      bs = LBSC.fromStrict (TE.encodeUtf8 cleanJson)
-  case decode bs of
-    Just val -> pure val
-    Nothing ->
-      throwError $
-        parsingError
-          ("Failed to parse Ollama structured response into typed value: " <> rawText)
-          (Just "structuredOllamaInvokeWithSchema")
-          Nothing
-
--- | Directly invoke Ollama with structured output constrained by a Langchain StructuredOutput instance and ModelOptions
-structuredOllamaInvokeWithSchemaOptions ::
-  forall a m.
-  (StructuredOutput a, MonadIO m, MonadError LangchainError m) =>
-  Ollama ->
-  ModelOptions ->
-  [Message] ->
-  m a
-structuredOllamaInvokeWithSchemaOptions model opts =
-  structuredOllamaInvokeWithSchema (withOptions opts model)
