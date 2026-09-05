@@ -185,7 +185,7 @@ function initTableOfContents() {
    ========================================================================== */
 const searchDocs = [
   { title: "Installation & Packages", category: "Getting Started", url: "/getting-started/installation.html", snippet: "Stack, Cabal, Nix setup, GHC 9.6+, monorepo architecture." },
-  { title: "Quickstart (5-Minute Guide)", category: "Getting Started", url: "/getting-started/quickstart.html", snippet: "Building your first LLM app with Ollama, OpenAI, or MockModel." },
+  { title: "Quickstart (5-Minute Guide)", category: "Getting Started", url: "/getting-started/quickstart.html", snippet: "Building your first LLM app with Ollama, OpenAI, or Gemini." },
   { title: "Building Your First Agent", category: "Getting Started", url: "/getting-started/first-agent.html", snippet: "Constructing ReAct and Plan-and-Execute agents with typed tools." },
   { title: "Stateful Graphs (StateGraph)", category: "Getting Started", url: "/getting-started/first-graph.html", snippet: "Creating cyclic state machines, reducers, and graph compilation." },
   { title: "Monorepo Architecture", category: "Core Concepts", url: "/concepts/architecture.html", snippet: "Zero-dependency pure core, graph engine, and high-level ecosystem." },

@@ -27,7 +27,7 @@ data BugReport = BugReport
 
 main :: IO ()
 main = do
-  let model = newOllama "qwen2.5:7b" "http://localhost:11434"
+  model <- newOllama "qwen2.5:7b" defaultConfig
 
   let userLog = "Crash: Null pointer in HTTP connection pool worker thread after 500 requests"
 

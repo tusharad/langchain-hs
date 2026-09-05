@@ -8,22 +8,28 @@ import Langchain.Prelude
 
 runApp :: IO ()
 runApp = do
-  o <- newOllama "gemma3"
+  o <- newOllama "gemma3" defaultConfig
   let msg = [userMessage "Write a poem about functional programming"]
   res <- runExceptT $ invoke o msg Nothing
   case res of
     Left err -> T.putStrLn $ errorMessage err
     Right m -> T.putStrLn $ extractMessageText m
 
-  -- Example showcasing passing chatOptions (temperature, topP, numCtx) on the model:
-  let oWithOptions = withTemperature 0.7 $ withTopP 0.9 $ withNumCtx 4096 o
-  resWithOptions <- runExceptT $ invoke oWithOptions msg Nothing
+  -- Example showcasing passing chatOptions (temperature, topP, numCtx) per request using withOptions and defaultOptions:
+  let reqWithOptions =
+        withOptions
+          (defaultOptions {optTemperature = Just 0.7, optTopP = Just 0.9, optNumCtx = Just 4096})
+          (chatRequestFor o msg)
+  resWithOptions <- runExceptT $ invoke o msg (Just reqWithOptions)
   case resWithOptions of
     Left err -> T.putStrLn $ errorMessage err
     Right m -> T.putStrLn $ extractMessageText m
 
-  -- Example showcasing passing chatOptions per request using chatRequestFor:
-  let req = withTemperature 0.2 $ withNumCtx 2048 (chatRequestFor o msg)
+  -- Example showcasing custom chatOptions per request:
+  let req =
+        withOptions
+          (defaultOptions {optTemperature = Just 0.2, optNumCtx = Just 2048})
+          (chatRequestFor o msg)
   resWithReq <- runExceptT $ invoke o msg (Just req)
   case resWithReq of
     Left err -> T.putStrLn $ errorMessage err

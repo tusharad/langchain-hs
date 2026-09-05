@@ -3,7 +3,7 @@
 {-# LANGUAGE TypeFamilies #-}
 
 {- |
-Module      : Langchain.Provider.Mock
+Module      : Test.Langchain.Provider.Mock
 Description : Mock chat model provider for testing and deterministic evaluation
 Copyright   : (c) 2025-2026 Tushar Adhatrao
 License     : MIT
@@ -12,14 +12,16 @@ Stability   : experimental
 
 Provides a purely in-memory 'MockModel' implementing 'ChatModel' for testing and offline workflows.
 -}
-module Langchain.Provider.Mock
+module Test.Langchain.Provider.Mock
   ( MockModel (..)
   , newMockModel
   ) where
 
+import Data.Aeson (object, (.=))
 import Data.Conduit (yield)
 import Data.Text (Text)
 
+import Langchain.Cache.Core (CacheableChatModel (..))
 import Langchain.Core.Model
   ( ChatModel (..)
   , assistantMessage
@@ -47,3 +49,11 @@ instance ChatModel MockModel where
     yield $ LLMStart rId (mockModelName model) inputMsgs
     yield $ LLMChunk rId (mockResponse model) Nothing
     yield $ LLMEnd rId (assistantMessage $ mockResponse model) Nothing
+
+instance CacheableChatModel MockModel where
+  cacheModelIdentity (MockModel response mName) _ =
+    object
+      [ "provider" .= ("mock" :: Text)
+      , "model" .= mName
+      , "response" .= response
+      ]

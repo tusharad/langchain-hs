@@ -28,7 +28,7 @@ inputPrompt =
 
 runApp :: IO ()
 runApp = do
-  o <- newOllama "gemma3"
+  o <- newOllama "gemma3" defaultConfig
   let msg = [userMessage inputPrompt]
   let chatReq = withStructuredOutput @Person (chatRequestFor o msg)
   res <- runLangchainTIO $ do

@@ -44,7 +44,6 @@ import Langchain.Core.Model
   , Message (..)
   )
 import Langchain.Provider.Gemini (Gemini (..))
-import Langchain.Provider.Mock (MockModel (..))
 import Langchain.Provider.Ollama (Ollama (..))
 import Langchain.Provider.OpenAI (OpenAI (..))
 import qualified Ollama.API.Chat as OllamaChat
@@ -172,12 +171,8 @@ instance CacheableChatModel OpenAI where
 
 instance CacheableChatModel Ollama where
   cacheModelIdentity o cfg =
-    let effectiveOptions = case cfg >>= OllamaChat.chatOptions of
-          Nothing -> ollamaOptions o
-          opts -> opts
-        effectiveKeepAlive = case cfg >>= OllamaChat.chatKeepAlive of
-          Nothing -> ollamaKeepAlive o
-          ka -> ka
+    let effectiveOptions = cfg >>= OllamaChat.chatOptions
+        effectiveKeepAlive = cfg >>= OllamaChat.chatKeepAlive
      in object
           [ "provider" .= ("ollama" :: Text)
           , "baseUrl" .= configBaseUrl (clientConfig (client o))
@@ -197,14 +192,6 @@ instance CacheableChatModel Gemini where
     object
       [ "provider" .= ("gemini" :: Text)
       , "model" .= modelName
-      ]
-
-instance CacheableChatModel MockModel where
-  cacheModelIdentity (MockModel response modelName) _ =
-    object
-      [ "provider" .= ("mock" :: Text)
-      , "model" .= modelName
-      , "response" .= response
       ]
 
 {- | Compute a canonical cache key from a model identity and complete input messages.

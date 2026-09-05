@@ -104,8 +104,8 @@ import Langchain.Prelude
 
 main :: IO ()
 main = do
-  let model = newOllama "qwen2.5:7b" "http://localhost:11434"
-      agent = newPlanAndExecuteAgent model model Nothing
+  model <- newOllama "qwen2.5:7b" defaultConfig
+  let agent = newPlanAndExecuteAgent model model Nothing
 
   res <- runExceptT $ runPlanAndExecute agent "Write a Haskell CLI that counts words in text files"
   case res of

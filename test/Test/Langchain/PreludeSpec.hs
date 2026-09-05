@@ -7,6 +7,7 @@ import Test.Tasty
 import Test.Tasty.HUnit
 
 import Langchain.Prelude
+import Test.Langchain.Provider.Mock (newMockModel)
 
 tests :: TestTree
 tests =
@@ -15,7 +16,7 @@ tests =
     [ testCase "prelude exports LangchainT and runLangchainTIO" $ do
         res <- runLangchainTIO (pure ("prelude works" :: String))
         res @?= Right "prelude works"
-    , testCase "prelude exports MockModel and invoke" $ do
+    , testCase "prelude exports invoke and message helpers" $ do
         let mdl = newMockModel "pong"
         res <- runExceptT $ invoke mdl [userMessage "ping"] Nothing
         case res of

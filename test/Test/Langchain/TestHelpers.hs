@@ -26,7 +26,7 @@ import Control.Monad.IO.Class (MonadIO)
 import Data.Aeson (Value, decode)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Langchain.Provider.Ollama (Ollama, newOllama)
+import Langchain.Provider.Ollama (Ollama, defaultConfig, newOllama)
 import Network.HTTP.Simple
   ( getResponseBody
   , getResponseStatusCode
@@ -102,4 +102,4 @@ defaultIntegrationTimeout :: Int
 defaultIntegrationTimeout = 600
 
 newTestOllama :: MonadIO m => Text -> m Ollama
-newTestOllama = newOllama
+newTestOllama model = newOllama model defaultConfig

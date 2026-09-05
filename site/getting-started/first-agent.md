@@ -73,7 +73,7 @@ Construct a `ReActAgent` with your LLM, toolset, and iteration limits:
 ```haskell
 main :: IO ()
 main = do
-  let model = newOllama "qwen2.5:7b" "http://localhost:11434"
+  model <- newOllama "qwen2.5:7b" defaultConfig
   let tools = [calculatorTool]
   
   -- Create ReAct Agent with default limits (max 15 iterations)
@@ -97,7 +97,7 @@ For complex multi-step problems, a `PlanAndExecuteAgent` uses two specialized mo
 ```haskell
 planAndExecuteExample :: IO ()
 planAndExecuteExample = do
-  let model = newOllama "qwen2.5:7b" "http://localhost:11434"
+  model <- newOllama "qwen2.5:7b" defaultConfig
   let agent = newPlanAndExecuteAgent model model (Just [calculatorTool])
 
   res <- runExceptT $ runPlanAndExecute agent "Calculate (12 * 45) + 10 and format the explanation."

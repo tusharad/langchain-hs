@@ -14,7 +14,7 @@ import System.IO (hFlush, stdout)
 
 runApp :: IO ()
 runApp = do
-  o <- newOllama "gemma3"
+  o <- newOllama "gemma3" defaultConfig
   let msgs = [userMessage "What is the meaning of life"]
   res <- runResourceT $ runExceptT $ runConduit $ stream o msgs Nothing .| CL.mapM_ onStreamEvent
   case res of

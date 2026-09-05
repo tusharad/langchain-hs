@@ -15,7 +15,7 @@ inputPrompt = "What is 15 * 4? Please use the calculator tool to find the answer
 
 runApp :: IO ()
 runApp = do
-  o <- newOllama "qwen3.5:2b"
+  o <- newOllama "qwen3.5:2b" defaultConfig
   let promptMsgs = [userMessage inputPrompt]
       chatReq = withTools [calculatorTool @IO] (chatRequestFor o promptMsgs)
 

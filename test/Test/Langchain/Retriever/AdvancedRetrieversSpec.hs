@@ -14,7 +14,7 @@ import Test.Tasty.HUnit
 
 import Langchain.DocumentLoader.Core (Document (..))
 import Langchain.Embeddings.Core (Embeddings (..))
-import Langchain.Provider.Mock (newMockModel)
+import Test.Langchain.Provider.Mock (newMockModel)
 import Langchain.Retriever.ContextualCompression
 import Langchain.Retriever.Core
 import Langchain.Retriever.ParentDocument

@@ -27,7 +27,7 @@ import Langchain.Core.Model
   , userMessage
   )
 import Langchain.Provider.Gemini (Gemini (Gemini))
-import Langchain.Provider.Mock (MockModel (..), newMockModel)
+import Test.Langchain.Provider.Mock (MockModel (..), newMockModel)
 import Langchain.Provider.Ollama (Ollama, newOllamaWithClient)
 import Langchain.Provider.OpenAI (OpenAI (OpenAI))
 import qualified Ollama.API.Chat as OllamaChat

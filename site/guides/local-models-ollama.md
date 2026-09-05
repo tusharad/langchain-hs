@@ -39,7 +39,7 @@ import Langchain.Prelude
 main :: IO ()
 main = do
   -- Connect to local Ollama daemon
-  let model = newOllama "qwen2.5:7b" "http://localhost:11434"
+  model <- newOllama "qwen2.5:7b" defaultConfig
 
   let prompt = [ userMessage "Write a pure Haskell function that computes Fibonacci numbers using zipWith." ]
 

@@ -44,8 +44,6 @@ module Langchain.Prelude
 
     -- * Multi-Modal Models & Messages
   , ChatModel (..)
-  , MockModel (..)
-  , newMockModel
   , Message (..)
   , Role
   , ContentBlock (..)
@@ -408,27 +406,16 @@ module Langchain.Prelude
   , formatNdJson
 
     -- * Providers
-  , Ollama
-  , OllamaConfig (..)
+  , Ollama (..)
+  , OllamaClientConfig (..)
+  , defaultConfig
   , newOllama
-  , newOllamaWithOptions
-  , newOllamaWithConfig
   , newOllamaWithClient
-  , HasModelOptions (..)
   , ModelOptions (..)
   , defaultOptions
   , withOptions
-  , withTemperature
-  , withTopP
-  , withNumCtx
-  , withSeed
-  , withStop
-  , withKeepAlive
-  , withChatKeepAlive
   , chatRequestFor
-  , HasTools (..)
   , withTools
-  , withOllamaTools
   , toOllamaTool
   , toOllamaTools
   , OpenAI
@@ -449,7 +436,7 @@ import Langchain.Chain.RetrievalQA
 import Langchain.Config.Validation
 import Langchain.Core.Error
 import Langchain.Core.Model
-import Langchain.Core.Monad
+import Langchain.Core.Monad hiding (defaultConfig)
 import qualified Langchain.Core.Monad as CoreMonad
 import Langchain.Core.Runnable
 import Langchain.Core.Stream
@@ -490,34 +477,22 @@ import Langchain.Pipeline.DSL
 import Langchain.PromptTemplate.FewShot
 import Langchain.PromptTemplate.Prompt
 import Langchain.Provider.Gemini (Gemini, newGemini)
-import Langchain.Provider.Mock (MockModel (..), newMockModel)
 import Langchain.Provider.Ollama
-  ( HasModelOptions (..)
-  , HasTools (..)
-  , ModelOptions (..)
-  , Ollama
-  , OllamaConfig (..)
+  ( ModelOptions (..)
+  , Ollama (..)
+  , OllamaClientConfig (..)
   , chatRequestFor
+  , defaultConfig
   , defaultOptions
   , newOllama
   , newOllamaWithClient
-  , newOllamaWithConfig
-  , newOllamaWithOptions
   , toOllamaTool
   , toOllamaTools
-  , withChatKeepAlive
   , withJsonFormat
-  , withKeepAlive
-  , withNumCtx
-  , withOllamaTools
   , withOptions
   , withSchemaFormat
-  , withSeed
-  , withStop
   , withStructuredOutput
-  , withTemperature
   , withTools
-  , withTopP
   )
 import Langchain.Provider.OpenAI (OpenAI, newOpenAI)
 import Langchain.Resilience.CircuitBreaker
