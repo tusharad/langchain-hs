@@ -26,7 +26,7 @@ import Control.Monad.IO.Class (MonadIO)
 import Data.Aeson (Value, decode)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Langchain.Provider.Ollama (Ollama, defaultConfig, newOllama)
+import Langchain.Provider.Ollama (Ollama, configTimeout, defaultConfig, newOllama)
 import Network.HTTP.Simple
   ( getResponseBody
   , getResponseStatusCode
