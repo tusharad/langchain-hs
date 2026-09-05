@@ -44,8 +44,11 @@ module Langchain.Provider.Ollama
   , withKeepAlive
   , withChatKeepAlive
   , chatRequestFor
-  , invokeWithOptions
-  , streamWithOptions
+  , HasTools (..)
+  , withTools
+  , withOllamaTools
+  , toOllamaTool
+  , toOllamaTools
 
     -- * Re-exports from ollama-haskell format, schema & options
   , module Ollama.API.Chat
@@ -60,18 +63,22 @@ module Langchain.Provider.Ollama
   ) where
 
 import Control.Monad (when)
-import Control.Monad.Except (MonadError, throwError)
+import Control.Monad.Except (throwError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.Aeson (Result (..), fromJSON, toJSON)
+import Data.Aeson (Result (..), decode, fromJSON, toJSON)
+import qualified Data.Aeson as Aeson
+import qualified Data.ByteString.Lazy.Char8 as LBSC
 import Data.Conduit (await, transPipe, yield, (.|))
 import qualified Data.List.NonEmpty as NonEmpty
-import Data.Maybe (fromMaybe, isJust)
+import Data.Maybe (fromMaybe, isJust, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as TE
 
-import Langchain.Core.Error (LangchainError, llmError)
+import Langchain.Core.Error (llmError)
 import Langchain.Core.Model
-import Langchain.Core.Stream (ChatStream, StreamEvent (..), TokenUsage (..))
+import Langchain.Core.Stream (StreamEvent (..), TokenUsage (..))
+import Langchain.Core.Tool (Tool, toolToValue)
 
 import Ollama.API.Chat
 import qualified Ollama.API.Chat as OllamaChat
@@ -93,6 +100,7 @@ data OllamaConfig = OllamaConfig
   , configKeepAlive :: Maybe Text
   , configApiKey :: Maybe Text
   , configOptions :: Maybe ModelOptions
+  , configTools :: Maybe [OTool.Tool]
   }
   deriving (Eq, Show)
 
@@ -105,6 +113,7 @@ defaultConfig =
     , configKeepAlive = Nothing
     , configApiKey = Nothing
     , configOptions = Nothing
+    , configTools = Nothing
     }
 
 defaultOllamaConfig :: OllamaConfig
@@ -116,27 +125,29 @@ data Ollama = Ollama
   , client :: OllamaClient
   , ollamaOptions :: Maybe ModelOptions
   , ollamaKeepAlive :: Maybe Text
+  , ollamaTools :: Maybe [OTool.Tool]
   }
 
 instance Show Ollama where
-  show (Ollama m _ mbOpts mbKa) =
+  show (Ollama m _ mbOpts mbKa mbTools) =
     "Ollama provider ("
       ++ show m
       ++ maybe "" (\o -> ", options: " ++ show o) mbOpts
       ++ maybe "" (\k -> ", keepAlive: " ++ show k) mbKa
+      ++ maybe "" (\ts -> ", tools: " ++ show (length ts)) mbTools
       ++ ")"
 
 -- | Create a new Ollama provider with default client
 newOllama :: MonadIO m => Text -> m Ollama
 newOllama model = do
   c <- liftIO defaultClient
-  pure $ Ollama model c Nothing Nothing
+  pure $ Ollama model c Nothing Nothing Nothing
 
 -- | Create a new Ollama provider with specific 'ModelOptions'
 newOllamaWithOptions :: MonadIO m => Text -> ModelOptions -> m Ollama
 newOllamaWithOptions model opts = do
   c <- liftIO defaultClient
-  pure $ Ollama model c (Just opts) Nothing
+  pure $ Ollama model c (Just opts) Nothing Nothing
 
 -- | Create a new Ollama provider with custom OllamaConfig
 newOllamaWithConfig :: MonadIO m => OllamaConfig -> m Ollama
@@ -149,11 +160,11 @@ newOllamaWithConfig cfg = do
           , OConfig.configApiKey = configApiKey cfg
           }
   c <- liftIO $ newClient clientCfg
-  pure $ Ollama (configModelName cfg) c (configOptions cfg) (configKeepAlive cfg)
+  pure $ Ollama (configModelName cfg) c (configOptions cfg) (configKeepAlive cfg) (configTools cfg)
 
 -- | Create an Ollama provider using an existing OllamaClient handle
 newOllamaWithClient :: Text -> OllamaClient -> Ollama
-newOllamaWithClient model c = Ollama model c Nothing Nothing
+newOllamaWithClient model c = Ollama model c Nothing Nothing Nothing
 
 -- | Default Ollama instance
 defaultOllama :: MonadIO m => m Ollama
@@ -193,20 +204,26 @@ toOllamaMessage msg =
                 { OTool.tcFunction =
                     OTool.ToolCallFunction
                       { OTool.tcfName = toolCallName tc
-                      , OTool.tcfArguments = case fromJSON (toolCallArguments tc) of
-                          Success m -> m
-                          _ -> mempty
+                      , OTool.tcfArguments = parseArgs (toolCallArguments tc)
                       }
                 }
             | tc <- tcs
             ]
-   in O.Message r txt imgs tools Nothing Nothing
+      parseArgs v = case v of
+        Aeson.Object _ -> case fromJSON v of
+          Success m -> m
+          _ -> mempty
+        Aeson.String s -> fromMaybe mempty $ decode (LBSC.fromStrict (TE.encodeUtf8 s))
+        _ -> case fromJSON v of
+          Success m -> m
+          _ -> mempty
+   in O.Message r txt imgs tools (messageName msg) Nothing
 
 -- | Convert Ollama Message to core Message
 fromOllamaMessage :: O.Message -> Message
-fromOllamaMessage (O.Message r txt _imgs tools _name _think) =
+fromOllamaMessage (O.Message r txt _imgs tools name _think) =
   let cRole = fromOllamaRole r
-      cMsg = textMessage cRole txt
+      cMsg = (textMessage cRole txt) {messageName = name}
       cTools = case tools of
         Nothing -> Nothing
         Just tcs ->
@@ -222,7 +239,7 @@ fromOllamaMessage (O.Message r txt _imgs tools _name _think) =
    in cMsg {messageToolCalls = cTools}
 
 {- | Construct a 'ChatRequest' for an 'Ollama' instance with the given messages,
-pre-populated with any model-level options and keepAlive settings.
+pre-populated with any model-level options, keepAlive, and tools settings.
 -}
 chatRequestFor :: Ollama -> [Message] -> OllamaChat.ChatRequest
 chatRequestFor model inputMsgs =
@@ -232,6 +249,7 @@ chatRequestFor model inputMsgs =
    in (OllamaChat.chatRequest (ModelName (ollamaModelName model)) oMsgs)
         { OllamaChat.chatOptions = ollamaOptions model
         , OllamaChat.chatKeepAlive = ollamaKeepAlive model
+        , OllamaChat.chatTools = ollamaTools model
         }
 
 instance ChatModel Ollama where
@@ -251,6 +269,9 @@ instance ChatModel Ollama where
               , OllamaChat.chatKeepAlive = case OllamaChat.chatKeepAlive r of
                   Nothing -> ollamaKeepAlive model
                   ka -> ka
+              , OllamaChat.chatTools = case OllamaChat.chatTools r of
+                  Nothing -> ollamaTools model
+                  tools -> tools
               }
 
     eRes <- liftIO $ OllamaChat.chat (client model) req
@@ -275,6 +296,9 @@ instance ChatModel Ollama where
               , OllamaChat.chatKeepAlive = case OllamaChat.chatKeepAlive r of
                   Nothing -> ollamaKeepAlive model
                   ka -> ka
+              , OllamaChat.chatTools = case OllamaChat.chatTools r of
+                  Nothing -> ollamaTools model
+                  tools -> tools
               }
 
     yield $ LLMStart runId_ (ollamaModelName model) inputMsgs
@@ -379,22 +403,36 @@ withKeepAlive ka o = o {ollamaKeepAlive = Just ka}
 withChatKeepAlive :: Text -> OllamaChat.ChatRequest -> OllamaChat.ChatRequest
 withChatKeepAlive ka req = req {OllamaChat.chatKeepAlive = Just ka}
 
--- | Invoke Ollama with specific ModelOptions
-invokeWithOptions ::
-  (MonadIO m, MonadError LangchainError m) =>
-  Ollama ->
-  ModelOptions ->
-  [Message] ->
-  m Message
-invokeWithOptions model opts msgs = invoke (withOptions opts model) msgs Nothing
+-- | Typeclass for structures that can carry Ollama tools
+class HasTools a where
+  getTools :: a -> Maybe [OTool.Tool]
+  setOllamaTools :: [OTool.Tool] -> a -> a
 
--- | Stream Ollama with specific ModelOptions
-streamWithOptions ::
-  Ollama ->
-  ModelOptions ->
-  [Message] ->
-  ChatStream
-streamWithOptions model opts msgs = stream (withOptions opts model) msgs Nothing
+instance HasTools Ollama where
+  getTools = ollamaTools
+  setOllamaTools ts o = o {ollamaTools = Just ts}
+
+instance HasTools OllamaChat.ChatRequest where
+  getTools = OllamaChat.chatTools
+  setOllamaTools ts req = req {OllamaChat.chatTools = Just ts}
+
+-- | Attach Langchain tools to an Ollama provider or ChatRequest
+withTools :: HasTools a => [Tool m] -> a -> a
+withTools ts = setOllamaTools (toOllamaTools ts)
+
+-- | Attach raw Ollama tools to an Ollama provider or ChatRequest
+withOllamaTools :: HasTools a => [OTool.Tool] -> a -> a
+withOllamaTools = setOllamaTools
+
+-- | Convert a Langchain 'Tool' definition to an Ollama 'OTool.Tool'
+toOllamaTool :: Tool m -> Maybe OTool.Tool
+toOllamaTool t = case fromJSON (toolToValue t) of
+  Success ot -> Just ot
+  Error _ -> Nothing
+
+-- | Convert a list of Langchain 'Tool' definitions to Ollama 'OTool.Tool's
+toOllamaTools :: [Tool m] -> [OTool.Tool]
+toOllamaTools = mapMaybe toOllamaTool
 
 -- | Attach generic JSON format constraint to Ollama ChatRequest
 withJsonFormat :: OllamaChat.ChatRequest -> OllamaChat.ChatRequest

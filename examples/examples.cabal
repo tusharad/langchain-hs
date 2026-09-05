@@ -31,6 +31,7 @@ library
       Ollama.Simple
       Ollama.Stream
       Ollama.StructuredOutput
+      Ollama.Tool
   other-modules:
       Paths_examples
   hs-source-dirs:
@@ -110,6 +111,25 @@ executable streamollama
       Paths_examples
   hs-source-dirs:
       app/streamollama
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , conduit
+    , examples
+    , langchain-hs
+    , mtl
+    , resourcet
+    , text
+  default-language: Haskell2010
+
+executable toolollama
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/toolollama
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson

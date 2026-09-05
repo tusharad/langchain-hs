@@ -10,10 +10,13 @@ import Data.Text (Text)
 import qualified Data.Text as T
 
 import Langchain.Core.Model
+import Langchain.Core.Tool (Tool)
 import Langchain.Provider.Ollama
+import Langchain.Tool.Calculator (calculatorTool)
 
 import qualified Ollama.Client as OC
 import qualified Ollama.Client.Config as OCC
+import qualified Ollama.Types.Tool as OTool
 
 testModelName :: Text
 testModelName = "gemma3:latest"
@@ -87,4 +90,27 @@ tests =
           Just opts -> do
             optTemperature opts @?= Just 0.2
             optNumCtx opts @?= Just 1024
+    , testCase "toOllamaTool converts calculatorTool to Ollama Tool" $ do
+        let cTool = calculatorTool :: Tool IO
+        case toOllamaTool cTool of
+          Nothing -> assertFailure "Failed to convert calculatorTool to Ollama Tool"
+          Just ot -> do
+            OTool.toolType ot @?= "function"
+            OTool.fnName (OTool.toolFunction ot) @?= "calculator"
+    , testCase "withTools on ChatRequest sets chatTools" $ do
+        p <- newOllama testModelName
+        let req = withTools [calculatorTool :: Tool IO] (chatRequestFor p [userMessage "Hello"])
+        case chatTools req of
+          Nothing -> assertFailure "Expected chatTools in ChatRequest"
+          Just ts -> length ts @?= 1
+    , testCase "withTools on Ollama provider sets ollamaTools and chatRequestFor inherits them" $ do
+        p <- newOllama testModelName
+        let p' = withTools [calculatorTool :: Tool IO] p
+        case ollamaTools p' of
+          Nothing -> assertFailure "Expected ollamaTools in Ollama provider"
+          Just ts -> length ts @?= 1
+        let req = chatRequestFor p' [userMessage "Hello"]
+        case chatTools req of
+          Nothing -> assertFailure "Expected chatTools in ChatRequest"
+          Just ts -> length ts @?= 1
     ]

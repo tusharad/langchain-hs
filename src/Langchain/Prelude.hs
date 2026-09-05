@@ -54,6 +54,7 @@ module Langchain.Prelude
   , userMessage
   , systemMessage
   , assistantMessage
+  , toolMessage
   , imageMessage
   , extractMessageText
   , StreamEvent
@@ -425,8 +426,11 @@ module Langchain.Prelude
   , withKeepAlive
   , withChatKeepAlive
   , chatRequestFor
-  , invokeWithOptions
-  , streamWithOptions
+  , HasTools (..)
+  , withTools
+  , withOllamaTools
+  , toOllamaTool
+  , toOllamaTools
   , OpenAI
   , newOpenAI
   , Gemini
@@ -489,27 +493,30 @@ import Langchain.Provider.Gemini (Gemini, newGemini)
 import Langchain.Provider.Mock (MockModel (..), newMockModel)
 import Langchain.Provider.Ollama
   ( HasModelOptions (..)
+  , HasTools (..)
   , ModelOptions (..)
   , Ollama
   , OllamaConfig (..)
   , chatRequestFor
   , defaultOptions
-  , invokeWithOptions
   , newOllama
   , newOllamaWithClient
   , newOllamaWithConfig
   , newOllamaWithOptions
-  , streamWithOptions
+  , toOllamaTool
+  , toOllamaTools
   , withChatKeepAlive
   , withJsonFormat
   , withKeepAlive
   , withNumCtx
+  , withOllamaTools
   , withOptions
   , withSchemaFormat
   , withSeed
   , withStop
   , withStructuredOutput
   , withTemperature
+  , withTools
   , withTopP
   )
 import Langchain.Provider.OpenAI (OpenAI, newOpenAI)
