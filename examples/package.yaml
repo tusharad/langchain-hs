@@ -65,6 +65,36 @@ executables:
     dependencies:
     - examples
 
+  monadollama:
+    main:                Main.hs
+    source-dirs:         app/monadollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  jsonollama:
+    main:                Main.hs
+    source-dirs:         app/jsonollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  toolollama:
+    main:                Main.hs
+    source-dirs:         app/toolollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
 tests:
   examples-test:
     main:                Spec.hs

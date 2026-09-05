@@ -44,8 +44,6 @@ module Langchain.Prelude
 
     -- * Multi-Modal Models & Messages
   , ChatModel (..)
-  , MockModel (..)
-  , newMockModel
   , Message (..)
   , Role
   , ContentBlock (..)
@@ -54,6 +52,7 @@ module Langchain.Prelude
   , userMessage
   , systemMessage
   , assistantMessage
+  , toolMessage
   , imageMessage
   , extractMessageText
   , StreamEvent
@@ -336,8 +335,6 @@ module Langchain.Prelude
   , fromOllamaSchema
   , structuredInvoke
   , structuredInvokeWithRetries
-  , structuredOllamaInvoke
-  , structuredOllamaInvokeWithSchema
   , withJsonFormat
   , withSchemaFormat
   , withStructuredOutput
@@ -409,13 +406,18 @@ module Langchain.Prelude
   , formatNdJson
 
     -- * Providers
-  , Ollama
-  , OllamaConfig (..)
+  , Ollama (..)
+  , OllamaClientConfig (..)
+  , defaultConfig
   , newOllama
-  , newOllamaWithConfig
-  , newOllamaWithTimeout
-  , newOllamaWithEndpoint
   , newOllamaWithClient
+  , ModelOptions (..)
+  , defaultOptions
+  , withOptions
+  , chatRequestFor
+  , withTools
+  , toOllamaTool
+  , toOllamaTools
   , OpenAI
   , newOpenAI
   , Gemini
@@ -434,7 +436,7 @@ import Langchain.Chain.RetrievalQA
 import Langchain.Config.Validation
 import Langchain.Core.Error
 import Langchain.Core.Model
-import Langchain.Core.Monad
+import Langchain.Core.Monad hiding (defaultConfig)
 import qualified Langchain.Core.Monad as CoreMonad
 import Langchain.Core.Runnable
 import Langchain.Core.Stream
@@ -476,18 +478,21 @@ import Langchain.PromptTemplate.FewShot
 import Langchain.PromptTemplate.Prompt
 import Langchain.Provider.Gemini (Gemini, newGemini)
 import Langchain.Provider.Ollama
-  ( Ollama
-  , OllamaConfig (..)
+  ( ModelOptions (..)
+  , Ollama (..)
+  , OllamaClientConfig (..)
+  , chatRequestFor
+  , defaultConfig
+  , defaultOptions
   , newOllama
   , newOllamaWithClient
-  , newOllamaWithConfig
-  , newOllamaWithEndpoint
-  , newOllamaWithTimeout
-  , structuredOllamaInvoke
-  , structuredOllamaInvokeWithSchema
+  , toOllamaTool
+  , toOllamaTools
   , withJsonFormat
+  , withOptions
   , withSchemaFormat
   , withStructuredOutput
+  , withTools
   )
 import Langchain.Provider.OpenAI (OpenAI, newOpenAI)
 import Langchain.Resilience.CircuitBreaker

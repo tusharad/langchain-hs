@@ -7,9 +7,10 @@ import qualified Data.Text as T
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import Langchain.Core.Model (extractMessageText, newMockModel, userMessage)
+import Langchain.Core.Model (extractMessageText, userMessage)
 import Langchain.Memory.Core (BaseMemory (..))
 import Langchain.Memory.Summary
+import Test.Langchain.Provider.Mock (newMockModel)
 
 tests :: TestTree
 tests =

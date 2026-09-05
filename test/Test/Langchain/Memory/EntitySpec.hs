@@ -7,9 +7,10 @@ import qualified Data.Map.Strict as Map
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import Langchain.Core.Model (newMockModel, userMessage)
+import Langchain.Core.Model (userMessage)
 import Langchain.Memory.Core (BaseMemory (..))
 import Langchain.Memory.Entity
+import Test.Langchain.Provider.Mock (newMockModel)
 
 tests :: TestTree
 tests =

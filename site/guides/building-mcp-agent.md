@@ -22,7 +22,7 @@ import Langchain.Prelude
 main :: IO ()
 main = do
   -- 1. Initialize local LLM
-  let model = newOllama "qwen2.5:7b" "http://localhost:11434"
+  model <- newOllama "qwen2.5:7b" defaultConfig
 
   -- 2. Connect to Filesystem MCP Server over stdio
   fsMcp <- newStdioMcpClient "npx" 

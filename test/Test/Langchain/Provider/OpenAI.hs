@@ -122,8 +122,8 @@ gatedSseServer waitForContinuation _request respond =
       flush
 
 withTestProvider :: [TestSseEvent] -> (OpenAI -> IO a) -> IO a
-withTestProvider events action =
-  withTestApplication (serve (Proxy :: Proxy TestOpenAIStreamApi) (testStreamServer events)) action
+withTestProvider events =
+  withTestApplication (serve (Proxy :: Proxy TestOpenAIStreamApi) (testStreamServer events))
 
 withErrorProvider :: (OpenAI -> IO a) -> IO a
 withErrorProvider =
@@ -196,14 +196,14 @@ tests =
           Just envApiKey -> do
             envModel <- fromMaybe "gpt-4o-mini" <$> lookupEnv "OPENAI_STREAM_TEST_MODEL"
             result <-
-              timeout 60000000
-                $ runResourceT
-                $ runExceptT
-                $ collectEvents
-                $ stream
-                  (newOpenAI (T.pack envApiKey) (T.pack envModel))
-                  [userMessage "Reply with exactly OK."]
-                  Nothing
+              timeout 60000000 $
+                runResourceT $
+                  runExceptT $
+                    collectEvents $
+                      stream
+                        (newOpenAI (T.pack envApiKey) (T.pack envModel))
+                        [userMessage "Reply with exactly OK."]
+                        Nothing
             case result of
               Nothing -> assertFailure "OpenAI stream timed out"
               Just (Left err) -> assertFailure $ "Expected stream success, got: " ++ show err
@@ -238,11 +238,11 @@ tests =
                     (const $ pure $ Right "The weather in Paris is sunny and 22 C.")
                 provider = newOpenAI (T.pack envApiKey) (T.pack envModel)
                 runLive messages config =
-                  timeout 60000000
-                    $ runResourceT
-                    $ runExceptT
-                    $ collectEvents
-                    $ stream provider messages config
+                  timeout 60000000 $
+                    runResourceT $
+                      runExceptT $
+                        collectEvents $
+                          stream provider messages config
                 prompt = userMessage "Use get_weather to look up the weather in Paris, then answer using the tool result."
 
             firstResult <-
@@ -273,10 +273,10 @@ tests =
               Just (Left err) -> assertFailure $ "Expected tool-result stream success, got: " ++ show err
               Just (Right events) -> case reverse events of
                 LLMEnd _ responseMessage (Just usage) : _ -> do
-                  assertBool "Expected final text after tool result"
-                    $ not
-                    $ T.null
-                    $ extractMessageText responseMessage
+                  assertBool "Expected final text after tool result" $
+                    not $
+                      T.null $
+                        extractMessageText responseMessage
                   assertBool "Expected positive total token usage" $ totalTokens usage > 0
                 _ -> assertFailure $ "Expected LLMEnd with usage, got: " ++ show events
     , testCase "normalizeBaseUrl strips endpoint paths for servant compatibility" $ do

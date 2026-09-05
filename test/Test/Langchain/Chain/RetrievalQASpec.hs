@@ -11,10 +11,10 @@ import Test.Tasty.HUnit
 import Langchain.Chain.RetrievalQA
 import Langchain.Core.Model
   ( extractMessageText
-  , newMockModel
   )
 import Langchain.DocumentLoader.Core (Document (..))
 import Langchain.Retriever.Core (Retriever (..))
+import Test.Langchain.Provider.Mock (newMockModel)
 
 data TestRetriever = TestRetriever
   deriving (Show, Eq)

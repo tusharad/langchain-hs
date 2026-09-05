@@ -20,16 +20,14 @@ import Langchain.Core.Model
   , ImageContent (..)
   , ImageSource (..)
   , Message (..)
-  , MockModel (..)
   , Role (..)
   , ToolCall (..)
   , assistantMessage
   , extractMessageText
-  , newMockModel
   , userMessage
   )
 import Langchain.Provider.Gemini (Gemini (Gemini))
-import Langchain.Provider.Ollama (Ollama (Ollama))
+import Langchain.Provider.Ollama (Ollama, newOllamaWithClient)
 import Langchain.Provider.OpenAI (OpenAI (OpenAI))
 import qualified Ollama.API.Chat as OllamaChat
 import Ollama.Client (newClient)
@@ -40,6 +38,7 @@ import qualified Ollama.Types.Message as OllamaMessage
 import Ollama.Types.Options (ModelOptions (..), defaultOptions)
 import Ollama.Types.Tool (FunctionDef (..))
 import qualified Ollama.Types.Tool as OllamaTool
+import Test.Langchain.Provider.Mock (MockModel (..), newMockModel)
 
 testMessages :: [Message]
 testMessages = [userMessage "Describe the image"]
@@ -57,7 +56,7 @@ newOllamaForEndpoint endpoint = do
       OllamaClientConfig.defaultConfig
         { OllamaClientConfig.configBaseUrl = endpoint
         }
-  pure $ Ollama "llama3.2" ollamaClient
+  pure $ newOllamaWithClient "llama3.2" ollamaClient
 
 assertKeysDiffer :: Text -> Text -> Assertion
 assertKeysDiffer first second =

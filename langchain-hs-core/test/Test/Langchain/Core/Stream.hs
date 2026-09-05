@@ -10,13 +10,14 @@ import Control.Monad.Trans.Resource (runResourceT)
 
 import Langchain.Core.Model
 import Langchain.Core.Stream
+import Test.Langchain.Core.TestModel (TestChatModel (..))
 
 tests :: TestTree
 tests =
   testGroup
     "Langchain.Core.Stream"
     [ testCase "stream emits LLMStart, LLMChunk, LLMEnd events" $ do
-        let model = MockModel "Streamed content" "mock-gpt"
+        let model = TestChatModel "Streamed content" "mock-gpt"
             input = [userMessage "Stream test"]
         res <- runResourceT $ runExceptT $ collectEvents (stream model input Nothing)
         case res of

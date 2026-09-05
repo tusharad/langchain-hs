@@ -20,6 +20,7 @@ import qualified Langchain.Memory.TokenBufferMemory as TB
 import Langchain.Provider.OpenAI (parseOpenAIResponse)
 import Langchain.Tool.Calculator (calculatorTool)
 import Langchain.Tool.WebScraper (webScraperTool)
+import Test.Langchain.Provider.Mock (newMockModel)
 
 tests :: TestTree
 tests =

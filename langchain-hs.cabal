@@ -225,6 +225,7 @@ test-suite langchain-hs-test
       Test.Langchain.Property.TextSplitterSpec
       Test.Langchain.Provider.FixturesSpec
       Test.Langchain.Provider.Gemini
+      Test.Langchain.Provider.Mock
       Test.Langchain.Provider.Ollama
       Test.Langchain.Provider.OllamaConversionSpec
       Test.Langchain.Provider.OpenAI

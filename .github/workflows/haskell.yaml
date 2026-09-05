@@ -100,3 +100,17 @@ jobs:
 
     - name: install dependancies, build and test stack project.
       uses: freckle/stack-action@v5
+
+  build-example:
+    needs: tests
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: copy repo
+        uses: actions/checkout@v7
+
+      - name: build with stack project
+        uses: freckle/stack-action@v5
+        with:
+          working-directory: examples
+

@@ -42,7 +42,6 @@ import Database.SQLite.Simple
 import Langchain.Core.Model
   ( ChatModel (..)
   , Message (..)
-  , MockModel (..)
   )
 import Langchain.Provider.Gemini (Gemini (..))
 import Langchain.Provider.Ollama (Ollama (..))
@@ -171,34 +170,28 @@ instance CacheableChatModel OpenAI where
       ]
 
 instance CacheableChatModel Ollama where
-  cacheModelIdentity (Ollama modelName ollamaClient) cfg =
-    object
-      [ "provider" .= ("ollama" :: Text)
-      , "baseUrl" .= configBaseUrl (clientConfig ollamaClient)
-      , "model" .= modelName
-      , "config"
-          .= object
-            [ "tools" .= (OllamaChat.chatTools <$> cfg)
-            , "format" .= (OllamaChat.chatFormat <$> cfg)
-            , "options" .= (OllamaChat.chatOptions <$> cfg)
-            , "keep_alive" .= (OllamaChat.chatKeepAlive <$> cfg)
-            , "think" .= (OllamaChat.chatThink <$> cfg)
-            ]
-      ]
+  cacheModelIdentity o cfg =
+    let effectiveOptions = cfg >>= OllamaChat.chatOptions
+        effectiveKeepAlive = cfg >>= OllamaChat.chatKeepAlive
+     in object
+          [ "provider" .= ("ollama" :: Text)
+          , "baseUrl" .= configBaseUrl (clientConfig (client o))
+          , "model" .= ollamaModelName o
+          , "config"
+              .= object
+                [ "tools" .= (OllamaChat.chatTools <$> cfg)
+                , "format" .= (OllamaChat.chatFormat <$> cfg)
+                , "options" .= effectiveOptions
+                , "keep_alive" .= effectiveKeepAlive
+                , "think" .= (OllamaChat.chatThink <$> cfg)
+                ]
+          ]
 
 instance CacheableChatModel Gemini where
   cacheModelIdentity (Gemini _ modelName) _ =
     object
       [ "provider" .= ("gemini" :: Text)
       , "model" .= modelName
-      ]
-
-instance CacheableChatModel MockModel where
-  cacheModelIdentity (MockModel response modelName) _ =
-    object
-      [ "provider" .= ("mock" :: Text)
-      , "model" .= modelName
-      , "response" .= response
       ]
 
 {- | Compute a canonical cache key from a model identity and complete input messages.

@@ -63,6 +63,7 @@ test-suite langchain-hs-core-test
       Test.Langchain.Core.Monad
       Test.Langchain.Core.Runnable
       Test.Langchain.Core.Stream
+      Test.Langchain.Core.TestModel
       Test.Langchain.Core.Tool
       Paths_langchain_hs_core
   hs-source-dirs:

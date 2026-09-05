@@ -23,6 +23,7 @@ module Langchain.Core.Model.Types
   , userMessage
   , systemMessage
   , assistantMessage
+  , toolMessage
   , imageMessage
   , extractMessageText
   , roleLabel
@@ -159,6 +160,10 @@ systemMessage = textMessage System
 -- | Create an Assistant role text message.
 assistantMessage :: Text -> Message
 assistantMessage = textMessage Assistant
+
+-- | Create a Tool role text message.
+toolMessage :: Text -> Message
+toolMessage = textMessage Tool
 
 -- | Create an Image content block message.
 imageMessage :: Role -> Text -> Text -> Message

@@ -26,7 +26,7 @@ import Control.Monad.IO.Class (MonadIO)
 import Data.Aeson (Value, decode)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Langchain.Provider.Ollama (Ollama, newOllamaWithTimeout)
+import Langchain.Provider.Ollama (Ollama, configTimeout, defaultConfig, newOllama)
 import Network.HTTP.Simple
   ( getResponseBody
   , getResponseStatusCode
@@ -101,6 +101,10 @@ withOllamaModel preferredModel action = do
 defaultIntegrationTimeout :: Int
 defaultIntegrationTimeout = 600
 
--- | Helper to create an Ollama test provider with a high timeout (600s)
 newTestOllama :: MonadIO m => Text -> m Ollama
-newTestOllama modelName = newOllamaWithTimeout modelName defaultIntegrationTimeout
+newTestOllama model =
+  newOllama
+    model
+    defaultConfig
+      { configTimeout = 600
+      }

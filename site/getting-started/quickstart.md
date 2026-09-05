@@ -1,6 +1,6 @@
 ---
 title: Quickstart (5-Minute Guide)
-description: Create your first working LLM program in Haskell with Ollama, OpenAI, or MockModel.
+description: Create your first working LLM program in Haskell with Ollama, OpenAI, or Gemini.
 category: Getting Started
 ---
 
@@ -20,7 +20,7 @@ import Langchain.Prelude
 main :: IO ()
 main = do
   -- 1. Initialize the ChatModel instance
-  let model = newOllama "qwen2.5:7b" "http://localhost:11434"
+  model <- newOllama "qwen2.5:7b" defaultConfig
 
   -- 2. Construct messages
   let messages =
@@ -66,7 +66,7 @@ import Langchain.Prelude
 
 streamExample :: IO ()
 streamExample = do
-  let model = newOllama "qwen2.5:7b" "http://localhost:11434"
+  model <- newOllama "qwen2.5:7b" defaultConfig
   let messages = [userMessage "Count from 1 to 10 with explanations."]
 
   -- Stream tokens directly to stdout as they arrive
