@@ -14,11 +14,11 @@ import Test.Tasty.HUnit
 
 import Langchain.DocumentLoader.Core (Document (..))
 import Langchain.Embeddings.Core (Embeddings (..))
-import Test.Langchain.Provider.Mock (newMockModel)
 import Langchain.Retriever.ContextualCompression
 import Langchain.Retriever.Core
 import Langchain.Retriever.ParentDocument
 import Langchain.VectorStore.InMemory
+import Test.Langchain.Provider.Mock (newMockModel)
 
 data MockEmbeddings = MockEmbeddings
 

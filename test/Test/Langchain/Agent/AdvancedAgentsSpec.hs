@@ -21,8 +21,8 @@ import Langchain.Core.Model
   , assistantMessage
   )
 import qualified Langchain.Core.Model as Model
-import Test.Langchain.Provider.Mock (newMockModel)
 import Langchain.Tool.Core (createTool)
+import Test.Langchain.Provider.Mock (newMockModel)
 
 tests :: TestTree
 tests =

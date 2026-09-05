@@ -13,8 +13,8 @@ import Langchain.Core.Model
   ( extractMessageText
   )
 import Langchain.DocumentLoader.Core (Document (..))
-import Test.Langchain.Provider.Mock (newMockModel)
 import Langchain.Retriever.Core (Retriever (..))
+import Test.Langchain.Provider.Mock (newMockModel)
 
 data TestRetriever = TestRetriever
   deriving (Show, Eq)

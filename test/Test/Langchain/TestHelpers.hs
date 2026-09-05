@@ -102,4 +102,9 @@ defaultIntegrationTimeout :: Int
 defaultIntegrationTimeout = 600
 
 newTestOllama :: MonadIO m => Text -> m Ollama
-newTestOllama model = newOllama model defaultConfig
+newTestOllama model =
+  newOllama
+    model
+    defaultConfig
+      { configTimeout = 600
+      }

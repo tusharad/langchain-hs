@@ -27,7 +27,6 @@ import Langchain.Core.Model
   , userMessage
   )
 import Langchain.Provider.Gemini (Gemini (Gemini))
-import Test.Langchain.Provider.Mock (MockModel (..), newMockModel)
 import Langchain.Provider.Ollama (Ollama, newOllamaWithClient)
 import Langchain.Provider.OpenAI (OpenAI (OpenAI))
 import qualified Ollama.API.Chat as OllamaChat
@@ -39,6 +38,7 @@ import qualified Ollama.Types.Message as OllamaMessage
 import Ollama.Types.Options (ModelOptions (..), defaultOptions)
 import Ollama.Types.Tool (FunctionDef (..))
 import qualified Ollama.Types.Tool as OllamaTool
+import Test.Langchain.Provider.Mock (MockModel (..), newMockModel)
 
 testMessages :: [Message]
 testMessages = [userMessage "Describe the image"]

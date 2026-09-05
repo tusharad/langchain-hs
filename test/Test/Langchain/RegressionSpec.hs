@@ -17,10 +17,10 @@ import Langchain.Core.Stream
 import Langchain.Core.Tool (Tool (..), toolExecute)
 import Langchain.Memory.Core
 import qualified Langchain.Memory.TokenBufferMemory as TB
-import Test.Langchain.Provider.Mock (newMockModel)
 import Langchain.Provider.OpenAI (parseOpenAIResponse)
 import Langchain.Tool.Calculator (calculatorTool)
 import Langchain.Tool.WebScraper (webScraperTool)
+import Test.Langchain.Provider.Mock (newMockModel)
 
 tests :: TestTree
 tests =
