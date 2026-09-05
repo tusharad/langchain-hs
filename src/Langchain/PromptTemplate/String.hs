@@ -37,6 +37,7 @@ data TemplateFormat
   = FString
   deriving (Show, Eq, Generic, ToJSON, FromJSON)
 
+renderTemplateWithFormat :: TemplateFormat -> Map.Map Text Text -> Text -> Either LangchainError Text
 renderTemplateWithFormat FString = renderFStringTemplate
 
 renderFStringTemplate :: Map.Map Text Text -> Text -> Either LangchainError Text
