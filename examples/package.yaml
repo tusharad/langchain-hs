@@ -116,6 +116,16 @@ executables:
     dependencies:
     - examples
 
+  memoryollama:
+    main:                Main.hs
+    source-dirs:         app/memoryollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
 tests:
   examples-test:
     main:                Spec.hs
