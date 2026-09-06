@@ -34,6 +34,7 @@ library
       Ollama.Memory
       Ollama.Monad
       Ollama.Observability
+      Ollama.PlanAndExecute
       Ollama.RAG
       Ollama.ReAct
       Ollama.Resilience
@@ -201,6 +202,28 @@ executable observabilityollama
       Paths_examples
   hs-source-dirs:
       app/observabilityollama
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , conduit
+    , containers
+    , examples
+    , langchain-hs
+    , langchain-hs-core
+    , mtl
+    , resourcet
+    , text
+    , time
+  default-language: Haskell2010
+
+executable planandexecuteollama
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/planandexecuteollama
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson

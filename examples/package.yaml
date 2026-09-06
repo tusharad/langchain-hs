@@ -218,6 +218,16 @@ executables:
     dependencies:
     - examples
 
+  planandexecuteollama:
+    main:                Main.hs
+    source-dirs:         app/planandexecuteollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
 
 tests:
   examples-test:

@@ -54,6 +54,8 @@ module Langchain.Provider.Ollama
   , withTools
   , toOllamaTool
   , toOllamaTools
+  , OllamaWithTools (..)
+  , bindTools
 
     -- * Re-exports from ollama-haskell format, schema, options & client config
   , module Ollama.API.Chat
@@ -349,3 +351,25 @@ withStructuredOutput ::
   OllamaChat.ChatRequest
 withStructuredOutput req =
   req {OllamaChat.chatFormat = Just (OFormat.SchemaFormat (OSD.toSchema @a))}
+
+-- | Ollama model with pre-bound tools
+data OllamaWithTools m = OllamaWithTools
+  { ollamaBaseModel :: !Ollama
+  , ollamaBoundTools :: ![Tool m]
+  }
+
+instance Show (OllamaWithTools m) where
+  show (OllamaWithTools m _) = "OllamaWithTools (" ++ show m ++ ")"
+
+-- | Bind tools to an Ollama model so any invocation automatically includes tool definitions
+bindTools :: [Tool m] -> Ollama -> OllamaWithTools m
+bindTools ts model = OllamaWithTools model ts
+
+instance ChatModel (OllamaWithTools m) where
+  type ModelConfig (OllamaWithTools m) = OllamaChat.ChatRequest
+  invoke (OllamaWithTools model ts) msgs mbReq =
+    let req = fromMaybe (chatRequestFor model msgs) mbReq
+     in invoke model msgs (Just (withTools ts req))
+  stream (OllamaWithTools model ts) msgs mbReq =
+    let req = fromMaybe (chatRequestFor model msgs) mbReq
+     in stream model msgs (Just (withTools ts req))

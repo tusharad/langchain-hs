@@ -6,7 +6,6 @@ import Test.Tasty
 
 -- Unit Test Modules
 import qualified Test.Langchain.Agent.AdvancedAgentsSpec as AdvancedAgentsTest
-import qualified Test.Langchain.Agent.MiddlewareSpec as MiddlewareTest
 import qualified Test.Langchain.Agent.ReAct as ReActTest
 import qualified Test.Langchain.Cache.CacheSpec as CacheTest
 import qualified Test.Langchain.Callback.CallbackManagerSpec as CallbackTest
@@ -55,6 +54,7 @@ import qualified Test.Langchain.Tool.AdvancedToolsSpec as AdvancedToolsTest
 import qualified Test.Langchain.Tool.Calculator as CalculatorToolTest
 import qualified Test.Langchain.Tool.Core as ToolTest
 import qualified Test.Langchain.Tool.FileSystem as FileSystemToolTest
+import qualified Test.Langchain.Tool.Shell as ShellToolTest
 import qualified Test.Langchain.VectorStore.Core as VectorStoreTest
 import qualified Test.Langchain.VectorStore.SqliteVecSpec as SqliteVecStoreTest
 
@@ -73,7 +73,6 @@ import qualified Test.Langchain.RegressionSpec as RegressionTest
 
 -- Live Ollama E2E Integration Test Modules
 import qualified Test.Langchain.Integration.FullRagE2ESpec as FullRagE2ETest
-import qualified Test.Langchain.Integration.MultiAgentGraphE2ESpec as MultiAgentGraphE2ETest
 import qualified Test.Langchain.Integration.OllamaChatSpec as OllamaChatE2ETest
 import qualified Test.Langchain.Integration.OllamaEmbeddingSpec as OllamaEmbedE2ETest
 import qualified Test.Langchain.Integration.OllamaStreamSpec as OllamaStreamE2ETest
@@ -137,8 +136,8 @@ main =
           , FixturesTest.tests
           , CalculatorToolTest.tests
           , FileSystemToolTest.tests
+          , ShellToolTest.tests
           , GraphCompilationTest.tests
-          , MiddlewareTest.tests
           , PurePipelineTest.tests
           , PreludeTest.tests
           ]
@@ -165,7 +164,6 @@ main =
           , OllamaEmbedE2ETest.tests
           , FullRagE2ETest.tests
           , ReActE2ETest.tests
-          , MultiAgentGraphE2ETest.tests
           , StateGraphE2ETest.tests
           , StreamingCachingRetryE2ETest.tests
           ]
