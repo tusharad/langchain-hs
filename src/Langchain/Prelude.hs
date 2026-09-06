@@ -169,6 +169,9 @@ module Langchain.Prelude
   , OTelTracer (..)
   , newOTelTracer
   , getSpans
+  , startSpan
+  , endSpan
+  , addSpanAttribute
   , withSpan
   , exportSpansJson
 
