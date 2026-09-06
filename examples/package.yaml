@@ -178,6 +178,27 @@ executables:
     dependencies:
     - examples
 
+  retrievalqaollama:
+    main:                Main.hs
+    source-dirs:         app/retrievalqaollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  mapreduceollama:
+    main:                Main.hs
+    source-dirs:         app/mapreduceollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+
 tests:
   examples-test:
     main:                Spec.hs
