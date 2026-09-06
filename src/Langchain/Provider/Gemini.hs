@@ -1,5 +1,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -27,6 +29,7 @@ import Control.Monad (forM)
 import Control.Monad.Except (throwError)
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson
+import qualified Data.Aeson.KeyMap as KeyMap
 import Data.Aeson.Types (parseEither)
 import Data.Conduit (yield)
 import qualified Data.List.NonEmpty as NonEmpty
@@ -38,6 +41,8 @@ import Network.HTTP.Simple
 import Langchain.Core.Error (llmError)
 import Langchain.Core.Model
 import Langchain.Core.Stream (StreamEvent (..))
+import Langchain.Core.Tool (toolToValue)
+import Langchain.Tool.Binding (ToolBinder (..))
 
 -- | Gemini configuration
 data GeminiConfig = GeminiConfig
@@ -104,9 +109,10 @@ messageToGemini msg =
 instance ChatModel Gemini where
   type ModelConfig Gemini = Value
 
-  invoke provider inputMsgs _ = do
+  invoke provider inputMsgs mbConfig = do
     let contentsPayload = map messageToGemini inputMsgs
-        payload = object ["contents" .= contentsPayload]
+        basePayload = object ["contents" .= contentsPayload]
+        payload = mergeGeminiConfig basePayload mbConfig
         url =
           "https://generativelanguage.googleapis.com/v1beta/models/"
             <> model provider
@@ -172,3 +178,24 @@ parseGeminiResponse = parseEither $ withObject "GeminiResponse" $ \o -> do
       parts <- contentObj .: "parts"
       txts <- forM parts $ withObject "Part" $ \p -> p .:? "text" .!= ""
       pure $ assistantMessage (T.intercalate "\n" txts)
+
+-- | Merge optional config fields into the Gemini request payload
+mergeGeminiConfig :: Value -> Maybe Value -> Value
+mergeGeminiConfig base Nothing = base
+mergeGeminiConfig (Object baseFields) (Just (Object cfgFields)) =
+  Object (KeyMap.union cfgFields baseFields)
+mergeGeminiConfig base _ = base
+
+-- | Bind tools to a Gemini model by adding tool declarations to the config Value
+instance ToolBinder Gemini m where
+  bindToolsConfig tools mbConfig =
+    case tools of
+      [] -> mbConfig
+      _ ->
+        let toolDefs = map toolToValue tools
+            toolsDecl = toJSON [object ["function_declarations" .= toolDefs]]
+            toolsMap = KeyMap.singleton "tools" toolsDecl
+         in Just $ case mbConfig of
+              Nothing -> Object toolsMap
+              Just (Object existing) -> Object (KeyMap.union toolsMap existing)
+              Just other -> other

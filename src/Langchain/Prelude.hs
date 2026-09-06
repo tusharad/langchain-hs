@@ -84,6 +84,7 @@ module Langchain.Prelude
   , Tool (..)
   , createTool
   , toolToValue
+  , ToolBinder (..)
   , DeriveToolSchema (..)
   , deriveToolParametersSchema
   , executeToolAsync
@@ -119,16 +120,13 @@ module Langchain.Prelude
   , addParallelNodes
 
     -- * Advanced Agent Patterns
+  , PlanStep (..)
+  , Plan (..)
+  , StepExecutor (..)
   , PlanAndExecuteAgent (..)
   , newPlanAndExecuteAgent
+  , newPlanAndExecuteAgentWithTools
   , runPlanAndExecute
-  , FunctionsAgent (FunctionsAgent)
-  , newFunctionsAgent
-  , runFunctionsAgent
-  , SpecialistAgent (..)
-  , SupervisorTeam (..)
-  , newSupervisorTeam
-  , runSupervisorTeam
 
     -- * Guardrails & Safety
   , GuardrailResult (..)
@@ -315,10 +313,9 @@ module Langchain.Prelude
   , createReActAgent
   , reactStep
   , runReActAgent
-  , AgentMiddleware (..)
-  , defaultMiddleware
-  , chainMiddlewares
-  , loggingMiddleware
+
+    -- * Standard Tools
+  , shellTool
 
     -- * Hybrid Retrieval & BM25
   , BM25Index (..)
@@ -348,17 +345,16 @@ module Langchain.Prelude
   , withTools
   , toOllamaTool
   , toOllamaTools
+  , OllamaWithTools (..)
+  , bindTools
   , OpenAI
   , newOpenAI
   , Gemini
   , newGemini
   ) where
 
-import Langchain.Agent.Functions
-import Langchain.Agent.Middleware
 import Langchain.Agent.PlanAndExecute
 import Langchain.Agent.ReAct
-import Langchain.Agent.Supervisor
 import Langchain.Cache.Core
 import Langchain.Callback.Manager
 import Langchain.Chain.MapReduce
@@ -399,6 +395,8 @@ import Langchain.Provider.Ollama
   ( ModelOptions (..)
   , Ollama (..)
   , OllamaClientConfig (..)
+  , OllamaWithTools (..)
+  , bindTools
   , chatRequestFor
   , defaultConfig
   , defaultOptions
@@ -425,7 +423,9 @@ import Langchain.TextSplitter.Markdown
 import Langchain.TextSplitter.RecursiveCharacter
 import Langchain.TextSplitter.Token
 import Langchain.Tool.Async
+import Langchain.Tool.Binding
 import Langchain.Tool.GenericSchema
+import Langchain.Tool.Shell (shellTool)
 import Langchain.VectorStore.Core
 import Langchain.VectorStore.InMemory
 import Langchain.VectorStore.SqliteVec
