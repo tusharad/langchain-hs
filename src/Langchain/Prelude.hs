@@ -84,6 +84,7 @@ module Langchain.Prelude
   , Tool (..)
   , createTool
   , toolToValue
+  , ToolBinder (..)
   , DeriveToolSchema (..)
   , deriveToolParametersSchema
   , executeToolAsync
@@ -422,6 +423,7 @@ import Langchain.TextSplitter.Markdown
 import Langchain.TextSplitter.RecursiveCharacter
 import Langchain.TextSplitter.Token
 import Langchain.Tool.Async
+import Langchain.Tool.Binding
 import Langchain.Tool.GenericSchema
 import Langchain.Tool.Shell (shellTool)
 import Langchain.VectorStore.Core

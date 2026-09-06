@@ -77,6 +77,7 @@ library
       Langchain.TextSplitter.RecursiveCharacter
       Langchain.TextSplitter.Token
       Langchain.Tool.Async
+      Langchain.Tool.Binding
       Langchain.Tool.Calculator
       Langchain.Tool.Core
       Langchain.Tool.FileSystem

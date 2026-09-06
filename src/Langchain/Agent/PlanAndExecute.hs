@@ -51,6 +51,7 @@ import Langchain.Core.Model
   )
 import Langchain.Core.Tool (Tool)
 import Langchain.OutputParser.Structured (StructuredOutput, TypeSchema, structuredInvoke)
+import Langchain.Tool.Binding (ToolBinder (..))
 
 -- | Single step in an execution plan
 data PlanStep = PlanStep
@@ -82,7 +83,7 @@ instance FromJSON PlanStep where
     pure $ PlanStep num desc
 
 -- | Collection of steps forming a plan
-data Plan = Plan
+newtype Plan = Plan
   { planSteps :: [PlanStep]
   }
   deriving stock (Show, Eq, Generic)
@@ -99,20 +100,24 @@ class StepExecutor e m where
 
 instance
   {-# OVERLAPPING #-}
-  (m ~ n, ChatModel model, MonadIO n, MonadError LangchainError n) =>
+  (m ~ n, ToolBinder model m, MonadIO n, MonadError LangchainError n) =>
   StepExecutor (ReActAgent model m) n
   where
   executeStep agent prompt = do
     msg <- runReActAgent agent [userMessage prompt]
     pure $ extractMessageText msg
 
-instance {-# OVERLAPPING #-} (m ~ n, ChatModel model, MonadIO n, MonadError LangchainError n) => StepExecutor (model, [Tool m]) n where
+instance
+  {-# OVERLAPPING #-}
+  (m ~ n, ToolBinder model m, MonadIO n, MonadError LangchainError n) =>
+  StepExecutor (model, [Tool m]) n
+  where
   executeStep (model, tools) prompt = do
     let agent = createReActAgent model tools
     executeStep agent prompt
 
 instance {-# OVERLAPPING #-} (m ~ n) => StepExecutor (Text -> m Text) n where
-  executeStep act prompt = act prompt
+  executeStep = id
 
 instance {-# OVERLAPPABLE #-} (ChatModel model, MonadIO m, MonadError LangchainError m) => StepExecutor model m where
   executeStep model prompt = do
@@ -141,8 +146,8 @@ newPlanAndExecuteAgentWithTools ::
   [Tool m] ->
   Maybe Text ->
   PlanAndExecuteAgent planner (ReActAgent model m)
-newPlanAndExecuteAgentWithTools planner model tools mbPrompt =
-  PlanAndExecuteAgent planner (createReActAgent model tools) mbPrompt
+newPlanAndExecuteAgentWithTools planner model tools =
+  PlanAndExecuteAgent planner (createReActAgent model tools)
 
 -- | Execute a goal using the Plan-and-Execute workflow with structured JSON planning
 runPlanAndExecute ::
