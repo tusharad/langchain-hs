@@ -198,6 +198,17 @@ executables:
     dependencies:
     - examples
 
+  resilienceollama:
+    main:                Main.hs
+    source-dirs:         app/resilienceollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+
 
 tests:
   examples-test:
