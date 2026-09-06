@@ -27,7 +27,7 @@ runApp = do
     Right _ -> pure ()
 
 chat_ :: Ollama -> OTelTracer -> Text -> ExceptT LangchainError IO ()
-chat_ model tracer prompt = do
+chat_ model_ tracer prompt = do
   sp <-
     startSpan
       tracer
@@ -40,7 +40,7 @@ chat_ model tracer prompt = do
           , ("input_length", T.pack (show (T.length prompt)))
           ]
       )
-  res <- invoke model [userMessage prompt] Nothing
+  res <- invoke model_ [userMessage prompt] Nothing
   let answer = extractMessageText res
   addSpanAttribute tracer (spanId sp) "output_length" (T.pack (show (T.length answer)))
   endSpan tracer (spanId sp) StatusOk

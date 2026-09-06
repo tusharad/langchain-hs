@@ -184,6 +184,7 @@ module Langchain.Prelude
   , dispatchEvent
   , dispatchEventAsync
   , newLoggingCallbackHandler
+  , getCallbackLogs
 
     -- * Resilience
   , CircuitState (..)
@@ -217,9 +218,11 @@ module Langchain.Prelude
   , newSqliteVecStore
   , Retriever (..)
   , VectorStoreRetriever (..)
+  , retrieveWithCallbacks
 
     -- * Embeddings
   , Embeddings (..)
+  , OllamaEmbeddings (..)
 
     -- * Document Loaders
   , Document (..)
@@ -375,6 +378,7 @@ import Langchain.DocumentLoader.Html
 import Langchain.DocumentLoader.Json
 import Langchain.DocumentLoader.WebPage
 import Langchain.Embeddings.Core
+import Langchain.Embeddings.Ollama (OllamaEmbeddings (..))
 import Langchain.Graph.Checkpointer
 import Langchain.Graph.HITL
 import Langchain.Graph.MultiAgent

@@ -20,10 +20,10 @@ runApp = do
     Right _ -> pure ()
 
 chat_ :: Ollama -> WindowBufferMemory -> Text -> ExceptT LangchainError IO ()
-chat_ model mem prompt = do
+chat_ model_ mem prompt = do
   addUserMessage mem prompt
   history <- messages mem
-  resp <- invoke model history Nothing
+  resp <- invoke model_ history Nothing
   let answer = extractMessageText resp
   addAiMessage mem answer
   liftIO $ do

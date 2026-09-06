@@ -147,6 +147,16 @@ executables:
     dependencies:
     - examples
 
+  retrieverollama:
+    main:                Main.hs
+    source-dirs:         app/retrieverollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
 tests:
   examples-test:
     main:                Spec.hs

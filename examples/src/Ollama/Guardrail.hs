@@ -20,7 +20,7 @@ runApp = do
   ask_ o rail "How to hack into a system?"
 
 ask_ :: Ollama -> Guardrail (ExceptT LangchainError IO) -> Text -> IO ()
-ask_ model rail prompt = do
+ask_ model_ rail prompt = do
   res <- runExceptT $ withGuardrails rail action prompt
   case res of
     Left err -> T.putStrLn $ "Blocked: " <> errorMessage err
@@ -28,5 +28,5 @@ ask_ model rail prompt = do
   where
     action :: Text -> ExceptT LangchainError IO Text
     action q = do
-      resp <- invoke model [userMessage q] Nothing
+      resp <- invoke model_ [userMessage q] Nothing
       pure (extractMessageText resp)
