@@ -9,11 +9,8 @@ import Control.Concurrent.Async (async, poll, wait)
 import Control.Concurrent.STM
   ( atomically
   , modifyTVar'
-  , newTBQueueIO
   , newTVarIO
-  , readTBQueue
   , readTVarIO
-  , writeTBQueue
   )
 import Control.Exception (SomeException, catch)
 import Control.Monad (forM, void)

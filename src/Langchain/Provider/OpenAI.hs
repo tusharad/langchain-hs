@@ -34,18 +34,8 @@ module Langchain.Provider.OpenAI
   ) where
 
 import Control.Applicative ((<|>))
-import Control.Concurrent.Async (AsyncCancelled (..), async, cancel)
-import Control.Concurrent.STM
-  ( atomically
-  , newEmptyTMVarIO
-  , newTBQueueIO
-  , orElse
-  , putTMVar
-  , readTBQueue
-  , readTMVar
-  , writeTBQueue
-  )
-import Control.Exception (SomeException, finally, fromException, throwIO, try)
+import Control.Concurrent.Async (AsyncCancelled (..))
+import Control.Exception (SomeException, fromException, throwIO, try)
 import Control.Monad (forM)
 import Control.Monad.Except (throwError)
 import Control.Monad.IO.Class (liftIO)
@@ -78,7 +68,7 @@ import qualified OpenAI.V1.Usage as OU
 
 import Langchain.Core.Error (LangchainError, llmError)
 import Langchain.Core.Model
-import Langchain.Core.Stream (StreamEvent (..), StreamM, TokenUsage (..))
+import Langchain.Core.Stream (StreamEvent (..), StreamM, TokenUsage (..), callbackSource)
 import Langchain.Core.Tool (Tool, toolToValue)
 import Network.HTTP.Client (newManager)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
@@ -497,35 +487,6 @@ instance ChatModel OpenAI where
             | Just AsyncCancelled <- fromException err -> throwIO err
             | otherwise -> emit $ Left $ asText err
           Right () -> pure ()
-
--- | A type alias for a streaming callback function that produces values of type @a@.
-type StreamCallback a = (a -> IO ()) -> IO ()
-
--- | A type alias for a Conduit source that produces values of type @a@ in the 'StreamM' monad.
-type StreamSource a = ConduitT () a StreamM ()
-
--- | Convert a callback-based streaming function into a Conduit source.
-callbackSource :: StreamCallback a -> StreamSource a
-callbackSource produce = bracketP start (cancel . third) consume
-  where
-    start = do
-      queue <- newTBQueueIO 64
-      finished <- newEmptyTMVarIO
-      worker <-
-        async $ produce (atomically . writeTBQueue queue) `finally` atomically (putTMVar finished ())
-      pure (queue, finished, worker)
-
-    consume (queue, finished, _worker) = loop
-      where
-        loop = do
-          let waitForFinished = Nothing <$ readTMVar finished
-              readEvent = Just <$> readTBQueue queue
-          next <- liftIO . atomically $ readEvent `orElse` waitForFinished
-          case next of
-            Just item -> yield item >> loop
-            Nothing -> pure ()
-
-    third (_, _, worker) = worker
 
 -- | Convert a 'SomeException' to 'Text' for error reporting.
 asText :: SomeException -> Text
