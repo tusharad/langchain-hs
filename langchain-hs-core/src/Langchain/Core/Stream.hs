@@ -18,15 +18,30 @@ module Langchain.Core.Stream
   , StreamM
   , EventStream
   , ChatStream
+  , StreamCallback
+  , StreamSource
+  , callbackSource
   , collectEvents
   , printEvents
   ) where
 
+import Control.Concurrent.Async (async, cancel)
+import Control.Concurrent.STM
+  ( atomically
+  , newEmptyTMVarIO
+  , newTBQueueIO
+  , orElse
+  , putTMVar
+  , readTBQueue
+  , readTMVar
+  , writeTBQueue
+  )
+import Control.Exception (finally)
 import Control.Monad.Except (ExceptT, runExceptT)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Resource (ResourceT, runResourceT)
 import Data.Aeson (FromJSON, ToJSON, Value)
-import Data.Conduit (ConduitT, runConduit, (.|))
+import Data.Conduit (ConduitT, bracketP, runConduit, yield, (.|))
 import qualified Data.Conduit.List as CL
 import Data.Text (Text)
 import GHC.Generics (Generic)
@@ -115,6 +130,35 @@ type StreamM = ExceptT LangchainError (ResourceT IO)
 
 -- | A resource-safe stream of chat model events.
 type ChatStream = EventStream StreamM
+
+-- | A callback function that produces values of type @a@.
+type StreamCallback a = (a -> IO ()) -> IO ()
+
+-- | A Conduit source that produces values of type @a@ in the 'StreamM' monad.
+type StreamSource a = ConduitT () a StreamM ()
+
+-- | Convert a callback-based streaming function into a Conduit source.
+callbackSource :: StreamCallback a -> StreamSource a
+callbackSource produce = bracketP start (cancel . third) consume
+  where
+    start = do
+      queue <- newTBQueueIO 64
+      finished <- newEmptyTMVarIO
+      worker <-
+        async $ produce (atomically . writeTBQueue queue) `finally` atomically (putTMVar finished ())
+      pure (queue, finished, worker)
+
+    consume (queue, finished, _worker) = loop
+      where
+        loop = do
+          let waitForFinished = Nothing <$ readTMVar finished
+              readEvent = Just <$> readTBQueue queue
+          next <- liftIO . atomically $ readEvent `orElse` waitForFinished
+          case next of
+            Just item -> yield item >> loop
+            Nothing -> pure ()
+
+    third (_, _, worker) = worker
 
 -- | Collect all emitted events from a stream into a list.
 collectEvents :: Monad m => EventStream m -> m [StreamEvent]

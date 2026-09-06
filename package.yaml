@@ -96,9 +96,6 @@ tests:
       - async
       - http-conduit
       - http-types
-      - servant
-      - servant-event-stream
-      - servant-server
       - wai
       - warp
 

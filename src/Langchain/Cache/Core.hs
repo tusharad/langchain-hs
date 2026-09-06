@@ -193,11 +193,30 @@ instance CacheableChatModel Ollama where
           ]
 
 instance CacheableChatModel Gemini where
-  cacheModelIdentity (Gemini _ modelName) _ =
-    object
+  cacheModelIdentity (Gemini _ modelName) config =
+    object $
       [ "provider" .= ("gemini" :: Text)
       , "model" .= modelName
       ]
+        <> maybe [] (pure . ("config" .=)) config
+  cacheModelIdentity (GeminiWithBaseUrl _ modelName baseUrl) config
+    | effectiveBaseUrl == defaultGeminiBaseUrl = defaultIdentity
+    | otherwise =
+        object $
+          [ "provider" .= ("gemini" :: Text)
+          , "model" .= modelName
+          , "baseUrl" .= effectiveBaseUrl
+          ]
+            <> maybe [] (pure . ("config" .=)) config
+    where
+      effectiveBaseUrl = TS.dropWhileEnd (== '/') baseUrl
+      defaultGeminiBaseUrl = "https://generativelanguage.googleapis.com"
+      defaultIdentity =
+        object $
+          [ "provider" .= ("gemini" :: Text)
+          , "model" .= modelName
+          ]
+            <> maybe [] (pure . ("config" .=)) config
 
 {- | Compute a canonical cache key from a model identity and complete input messages.
 

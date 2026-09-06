@@ -5,7 +5,7 @@ module Test.Langchain.Cache.CacheSpec (tests) where
 
 import Control.Concurrent.STM (newTVarIO)
 import Control.Monad.Except (runExceptT)
-import Data.Aeson (object, (.=))
+import Data.Aeson (Value, object, (.=))
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.Text (Text)
 import System.FilePath ((</>))
@@ -26,7 +26,7 @@ import Langchain.Core.Model
   , extractMessageText
   , userMessage
   )
-import Langchain.Provider.Gemini (Gemini (Gemini))
+import Langchain.Provider.Gemini (Gemini (..))
 import Langchain.Provider.Ollama (Ollama, newOllamaWithClient)
 import Langchain.Provider.OpenAI (OpenAI (OpenAI))
 import qualified Ollama.API.Chat as OllamaChat
@@ -134,12 +134,23 @@ tests =
         assertKeysDiffer baseKey $ computeCacheKey otherEndpoint Nothing testMessages
         assertKeysDiffer baseKey $ computeCacheKey otherTemperature Nothing testMessages
         baseKey @?= computeCacheKey base (Just $ object ["unused" .= True]) testMessages
-    , testCase "cache key distinguishes Gemini identity and ignores its config" $ do
+    , testCase "cache key distinguishes Gemini identity and request config" $ do
         let base = Gemini "key" "gemini-2.0-flash"
             otherModel = Gemini "key" "gemini-2.5-pro"
             baseKey = computeCacheKey base Nothing testMessages
         assertKeysDiffer baseKey $ computeCacheKey otherModel Nothing testMessages
-        baseKey @?= computeCacheKey base (Just $ object ["unused" .= True]) testMessages
+        assertKeysDiffer baseKey $
+          computeCacheKey base (Just $ object ["tools" .= ([] :: [Value])]) testMessages
+    , testCase "cache key distinguishes Gemini custom endpoints" $ do
+        let defaultEndpoint = Gemini "key" "gemini-2.0-flash"
+            firstEndpoint = GeminiWithBaseUrl "key" "gemini-2.0-flash" "http://gemini-one.example.com"
+            sameEndpoint = GeminiWithBaseUrl "key" "gemini-2.0-flash" "http://gemini-one.example.com/"
+            secondEndpoint = GeminiWithBaseUrl "key" "gemini-2.0-flash" "http://gemini-two.example.com"
+            defaultKey = computeCacheKey defaultEndpoint Nothing testMessages
+            firstKey = computeCacheKey firstEndpoint Nothing testMessages
+        assertKeysDiffer defaultKey firstKey
+        firstKey @?= computeCacheKey sameEndpoint Nothing testMessages
+        assertKeysDiffer firstKey $ computeCacheKey secondEndpoint Nothing testMessages
     , testCase "cache key ignores MockModel config" $ do
         let mockModel = newMockModel "Dynamic Output"
         computeCacheKey mockModel Nothing testMessages
