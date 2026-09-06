@@ -338,6 +338,7 @@ module Langchain.Prelude
   , defaultOptions
   , withOptions
   , chatRequestFor
+  , resolveChatRequest
   , withTools
   , toOllamaTool
   , toOllamaTools
@@ -392,6 +393,7 @@ import Langchain.Provider.Ollama
   , Ollama (..)
   , OllamaClientConfig (..)
   , chatRequestFor
+  , resolveChatRequest
   , defaultConfig
   , defaultOptions
   , newOllama

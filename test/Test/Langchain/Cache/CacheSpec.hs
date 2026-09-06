@@ -46,7 +46,7 @@ testMessages = [userMessage "Describe the image"]
 baseOllamaRequest :: OllamaChat.ChatRequest
 baseOllamaRequest =
   OllamaChat.chatRequest
-    (ModelName "ignored-model")
+    (ModelName "llama3.2")
     (OllamaMessage.userMessage "ignored-message" :| [])
 
 newOllamaForEndpoint :: Text -> IO Ollama
@@ -150,12 +150,12 @@ tests =
         let baseKey = computeCacheKey firstEndpoint (Just baseOllamaRequest) testMessages
             ignoredFieldsRequest =
               baseOllamaRequest
-                { OllamaChat.chatModel = ModelName "another-ignored-model"
-                , OllamaChat.chatMessages = OllamaMessage.userMessage "another-ignored-message" :| []
+                { OllamaChat.chatMessages = OllamaMessage.userMessage "another-ignored-message" :| []
                 , OllamaChat.chStream = Just True
                 }
             requestsThatChangeOutput =
-              [ baseOllamaRequest
+              [ baseOllamaRequest {OllamaChat.chatModel = ModelName "different-model"}
+              , baseOllamaRequest
                   { OllamaChat.chatTools =
                       Just [OllamaTool.Tool "function" (FunctionDef "get_weather" Nothing Nothing Nothing)]
                   }
