@@ -420,32 +420,38 @@ instance ChatModel OpenAI where
           Just (Left err) -> throwError $ llmError' err
           Just (Right OpenAIDone) -> finishStream
           Just (Right (OpenAIChunk OpenAIStreamChunk {streamChoices, streamUsage})) -> do
-            let selectedChoice = List.find ((== 0) . streamChoiceIndex) streamChoices
-                (texts, nextToolCalls) =
-                  case selectedChoice of
-                    Nothing -> ([], toolCalls)
-                    Just OpenAIStreamChoice {streamChoiceDelta = OpenAIStreamDelta {streamContent, streamToolCalls}} ->
-                      (maybe [] pure streamContent, List.foldl' (flip addToolCall) toolCalls streamToolCalls)
+            let (texts, nextToolCalls) = handleChoice $ List.find choice0 streamChoices
                 nextUsage = streamUsage <|> usage
             mapM_ (\text -> yield $ LLMChunk rId text Nothing) texts
             receiveChunks (accumulated <> mconcat texts) nextToolCalls nextUsage
         where
+          choice0 = (== 0) . streamChoiceIndex
+
+          handleChoice Nothing = ([], toolCalls)
+          handleChoice (Just OpenAIStreamChoice {streamChoiceDelta = OpenAIStreamDelta {streamContent, streamToolCalls}}) =
+            let nextToolCalls = List.foldl' addToolCall toolCalls streamToolCalls
+             in (maybe [] pure streamContent, nextToolCalls)
+
           addToolCall
+            toolCalls'
             OpenAIStreamToolCall
               { streamToolCallIndex
               , streamToolCallId
               , streamToolCallName
               , streamToolCallArguments
               } =
-              Map.alter (Just . update) streamToolCallIndex
+              Map.alter (Just . update) streamToolCallIndex toolCalls'
               where
                 update curr =
-                  PartialToolCall
-                    { partialToolCallId = streamToolCallId <|> (curr >>= partialToolCallId)
-                    , partialToolCallName = streamToolCallName <|> (curr >>= partialToolCallName)
-                    , partialToolCallArguments =
-                        maybe "" partialToolCallArguments curr <> fromMaybe "" streamToolCallArguments
-                    }
+                  let prevId = curr >>= partialToolCallId
+                      prevName = curr >>= partialToolCallName
+                      prevArgs = maybe "" partialToolCallArguments curr
+                      nextArgs = fromMaybe "" streamToolCallArguments
+                   in PartialToolCall
+                        { partialToolCallId = streamToolCallId <|> prevId
+                        , partialToolCallName = streamToolCallName <|> prevName
+                        , partialToolCallArguments = prevArgs <> nextArgs
+                        }
 
           finishStream = do
             finalToolCalls <- lift $ traverse toToolCall $ Map.elems toolCalls
