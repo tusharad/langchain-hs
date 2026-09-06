@@ -1,10 +1,8 @@
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeOperators #-}
 
 module Test.Langchain.Provider.OpenAI (tests) where
 
-import Control.Concurrent (newEmptyMVar, putMVar, takeMVar, threadDelay)
+import Control.Concurrent (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.Async (async, poll, wait)
 import Control.Concurrent.STM
   ( atomically
@@ -12,7 +10,6 @@ import Control.Concurrent.STM
   , newTVarIO
   , readTVarIO
   )
-import Control.Exception (SomeException, catch)
 import Control.Monad (forM, void)
 import Control.Monad.Except (runExceptT)
 import Control.Monad.IO.Class (liftIO)
@@ -20,24 +17,14 @@ import Control.Monad.Trans.Resource (runResourceT)
 import Data.Aeson (Value)
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.KeyMap as KeyMap
-import qualified Data.ByteString.Builder as Builder
 import qualified Data.ByteString.Lazy as LBS
-import Data.Conduit (ConduitT, await, runConduit, (.|))
+import Data.Conduit (await, runConduit, (.|))
 import qualified Data.Conduit.Combinators as C
 import Data.Maybe (fromMaybe, isJust, isNothing)
-import Data.Proxy (Proxy (..))
 import qualified Data.Text as T
 import qualified Data.Vector as V
-import Network.HTTP.Types (hContentType, status200)
-import Network.Wai (Application, responseStream, strictRequestBody)
-import Network.Wai.Handler.Warp (testWithApplication)
-import Servant (Header, JSON, ReqBody, Server, err500, serve, throwError, (:>))
-import Servant.API.EventStream
-  ( PostServerSentEvents
-  , ServerEvent (..)
-  , ToServerEvent (..)
-  )
-import Servant.Conduit ()
+import Network.HTTP.Types (status500)
+import Network.Wai (Application, responseLBS)
 import System.Environment (lookupEnv)
 import System.Timeout (timeout)
 import Test.Tasty
@@ -49,126 +36,65 @@ import Langchain.Core.Stream (StreamEvent (..), TokenUsage (..), collectEvents)
 import Langchain.Core.Tool (Tool, createTool, toolToValue)
 import qualified Langchain.Core.Tool as CoreTool
 import Langchain.Provider.OpenAI
-
-newtype TestSseEvent = TestSseEvent LBS.ByteString
-
-instance ToServerEvent TestSseEvent where
-  toServerEvent (TestSseEvent event) = ServerEvent Nothing Nothing event Nothing Nothing
-
-type TestOpenAIStreamApi =
-  "v1"
-    :> "chat"
-    :> "completions"
-    :> Header "Authorization" T.Text
-    :> ReqBody '[JSON] Value
-    :> PostServerSentEvents (ConduitT () TestSseEvent IO ())
-
-testStreamServer :: [TestSseEvent] -> Server TestOpenAIStreamApi
-testStreamServer events _ _ = pure $ C.yieldMany events
-
-testErrorServer :: Server TestOpenAIStreamApi
-testErrorServer _ _ = throwError err500
-
-rawSseServer :: [LBS.ByteString] -> Application
-rawSseServer frames _request respond =
-  respond $
-    responseStream status200 [(hContentType, "text/event-stream")] $ \write flush ->
-      mapM_
-        (\frame -> write (Builder.lazyByteString frame) >> flush)
-        frames
-
-capturingRawSseServer :: (Maybe Value -> IO ()) -> [LBS.ByteString] -> Application
-capturingRawSseServer captureRequest frames request respond = do
-  captureRequest . Aeson.decode =<< strictRequestBody request
-  rawSseServer frames request respond
-
-sseFrame :: LBS.ByteString -> LBS.ByteString
-sseFrame payload = "data: " <> payload <> "\n\n"
-
-cancellationAwareSseServer :: IO () -> Application
-cancellationAwareSseServer signalClientClosed _request respond =
-  respond $
-    responseStream status200 [(hContentType, "text/event-stream")] $ \write flush -> do
-      let TestSseEvent firstEvent = chunk "Hello"
-          keepAlive = do
-            write ": keepalive\n\n"
-            flush
-            threadDelay 1000
-            keepAlive
-          onDisconnect :: SomeException -> IO ()
-          onDisconnect _ = signalClientClosed
-      write $ "data: " <> Builder.lazyByteString firstEvent <> "\n\n"
-      flush
-      keepAlive `catch` onDisconnect
-
-gatedSseServer :: IO () -> Application
-gatedSseServer waitForContinuation _request respond =
-  respond $
-    responseStream status200 [(hContentType, "text/event-stream")] $ \write flush -> do
-      let TestSseEvent firstEvent = chunk "Hel"
-          TestSseEvent secondEvent = chunk "lo"
-      write $ "data: " <> Builder.lazyByteString firstEvent <> "\n\n"
-      flush
-      waitForContinuation
-      write $ "data: " <> Builder.lazyByteString secondEvent <> "\n\n"
-      write "data: [DONE]\n\n"
-      flush
-
-withTestProvider :: [TestSseEvent] -> (OpenAI -> IO a) -> IO a
-withTestProvider events =
-  withTestApplication (serve (Proxy :: Proxy TestOpenAIStreamApi) (testStreamServer events))
+import Test.Langchain.Provider.TestSseServer
+  ( cancellationAwareSseServer
+  , capturingRawSseServer
+  , collectModelStream
+  , gatedSseServer
+  , rawSseServer
+  , sseFrame
+  , withTestApplication
+  )
 
 withErrorProvider :: (OpenAI -> IO a) -> IO a
-withErrorProvider =
-  withTestApplication $ serve (Proxy :: Proxy TestOpenAIStreamApi) testErrorServer
+withErrorProvider action =
+  withTestApplication errorServer $ \url -> withOpenAIProvider url action
 
 withRawTestProvider :: [LBS.ByteString] -> (OpenAI -> IO a) -> IO a
-withRawTestProvider frames = withTestApplication (rawSseServer frames)
+withRawTestProvider frames action =
+  withTestApplication (rawSseServer frames) $ \url -> withOpenAIProvider url action
 
 withRequestCapturingProvider :: (Maybe Value -> IO ()) -> (OpenAI -> IO a) -> IO a
-withRequestCapturingProvider captureRequest =
-  withTestApplication $ capturingRawSseServer captureRequest [sseFrame "[DONE]"]
+withRequestCapturingProvider captureRequest action =
+  withTestApplication (capturingRawSseServer (captureRequest . Aeson.decode) [sseFrame "[DONE]"]) $ \url ->
+    withOpenAIProvider url action
 
 withCancellationAwareProvider :: IO () -> (OpenAI -> IO a) -> IO a
-withCancellationAwareProvider signalClientClosed =
-  withTestApplication (cancellationAwareSseServer signalClientClosed)
+withCancellationAwareProvider signalClientClosed action =
+  withTestApplication (cancellationAwareSseServer (sseFrame $ chunk "Hello") signalClientClosed) $ \url ->
+    withOpenAIProvider url action
 
 withGatedProvider :: IO () -> (OpenAI -> IO a) -> IO a
-withGatedProvider waitForContinuation =
-  withTestApplication (gatedSseServer waitForContinuation)
+withGatedProvider waitForContinuation action =
+  withTestApplication
+    ( gatedSseServer
+        (sseFrame $ chunk "Hel")
+        waitForContinuation
+        [sseFrame (chunk "lo"), sseFrame "[DONE]"]
+    )
+    $ \url -> withOpenAIProvider url action
 
-withTestApplication :: Application -> (OpenAI -> IO a) -> IO a
-withTestApplication app action =
-  testWithApplication (pure app) $ \port ->
-    action $
-      (newOpenAI "test-key" "test-model")
-        { baseUrl = "http://127.0.0.1:" <> T.pack (show port)
-        }
+withOpenAIProvider :: T.Text -> (OpenAI -> IO a) -> IO a
+withOpenAIProvider url action =
+  action $ (newOpenAI "test-key" "test-model") {baseUrl = url}
 
-collectStream :: [TestSseEvent] -> IO (Either LangchainError [StreamEvent])
-collectStream events =
-  withTestProvider events $ \provider ->
-    runResourceT $ runExceptT $ collectEvents (stream provider [userMessage "Hello"] Nothing)
+errorServer :: Application
+errorServer _request respond = respond $ responseLBS status500 [] ""
 
 collectRawStream :: [LBS.ByteString] -> IO (Either LangchainError [StreamEvent])
 collectRawStream frames =
   withRawTestProvider frames $ \provider ->
-    runResourceT $ runExceptT $ collectEvents (stream provider [userMessage "Hello"] Nothing)
+    collectModelStream provider [userMessage "Hello"] Nothing
 
-chunk :: LBS.ByteString -> TestSseEvent
+chunk :: LBS.ByteString -> LBS.ByteString
 chunk content =
-  TestSseEvent $
-    "{\"id\":\"chatcmpl-test\",\"object\":\"chat.completion.chunk\",\"created\":0,\"model\":\"test-model\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\""
-      <> content
-      <> "\"},\"finish_reason\":null}]}"
+  "{\"id\":\"chatcmpl-test\",\"object\":\"chat.completion.chunk\",\"created\":0,\"model\":\"test-model\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\""
+    <> content
+    <> "\"},\"finish_reason\":null}]}"
 
-done :: TestSseEvent
-done = TestSseEvent "[DONE]"
-
-emptyChoices :: TestSseEvent
+emptyChoices :: LBS.ByteString
 emptyChoices =
-  TestSseEvent
-    "{\"id\":\"chatcmpl-test\",\"object\":\"chat.completion.chunk\",\"created\":0,\"model\":\"test-model\",\"choices\":[]}"
+  "{\"id\":\"chatcmpl-test\",\"object\":\"chat.completion.chunk\",\"created\":0,\"model\":\"test-model\",\"choices\":[]}"
 
 tests :: TestTree
 tests =
@@ -283,7 +209,7 @@ tests =
         normalizeBaseUrl "https://openrouter.ai/api/v1/chat/completions" @?= "https://openrouter.ai/api"
         normalizeBaseUrl "http://localhost:11434/v1" @?= "http://localhost:11434"
     , testCase "stream emits chunks and ends at [DONE]" $ do
-        result <- collectStream [chunk "Hel", chunk "lo", done]
+        result <- collectRawStream [sseFrame $ chunk "Hel", sseFrame $ chunk "lo", sseFrame "[DONE]"]
         case result of
           Left err -> assertFailure $ "Expected stream success, got: " ++ show err
           Right events -> case events of
@@ -327,7 +253,7 @@ tests =
                   extractMessageText responseMessage @?= "Hello"
                 _ -> assertFailure $ "Expected a completed stream, got: " ++ show events
     , testCase "stream finishes when the SSE connection closes" $ do
-        result <- collectStream [chunk "Hello"]
+        result <- collectRawStream [sseFrame $ chunk "Hello"]
         case result of
           Left err -> assertFailure $ "Expected stream success, got: " ++ show err
           Right events -> case events of
@@ -335,7 +261,7 @@ tests =
               extractMessageText responseMessage @?= "Hello"
             _ -> assertFailure $ "Unexpected stream events: " ++ show events
     , testCase "stream ignores chunks without choices" $ do
-        result <- collectStream [emptyChoices, done]
+        result <- collectRawStream [sseFrame emptyChoices, sseFrame "[DONE]"]
         case result of
           Left err -> assertFailure $ "Expected stream success, got: " ++ show err
           Right events -> case events of
@@ -343,7 +269,7 @@ tests =
               extractMessageText responseMessage @?= ""
             _ -> assertFailure $ "Unexpected stream events: " ++ show events
     , testCase "stream converts malformed SSE data to LangchainError" $ do
-        result <- collectStream [TestSseEvent "not JSON"]
+        result <- collectRawStream [sseFrame "not JSON"]
         case result of
           Left _ -> pure ()
           Right events -> assertFailure $ "Expected stream failure, got: " ++ show events
@@ -354,8 +280,7 @@ tests =
           Left _ -> pure ()
           Right events -> assertFailure $ "Expected stream failure, got: " ++ show events
     , testCase "stream handles SSE frames written in multiple pieces" $ do
-        let TestSseEvent event = chunk "Hello"
-            frame = "data: " <> event <> "\n\n"
+        let frame = sseFrame $ chunk "Hello"
             splitPoint = LBS.length frame `div` 2
             fragments = [LBS.take splitPoint frame, LBS.drop splitPoint frame, "data: [DONE]\n\n"]
         result <- collectRawStream fragments
