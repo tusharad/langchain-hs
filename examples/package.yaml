@@ -28,6 +28,7 @@ dependencies:
 - mtl
 - conduit
 - resourcet
+- containers
 
 
 ghc-options:
@@ -88,6 +89,26 @@ executables:
   toolollama:
     main:                Main.hs
     source-dirs:         app/toolollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  prompttemplate:
+    main:                Main.hs
+    source-dirs:         app/prompttemplate
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  ragollama:
+    main:                Main.hs
+    source-dirs:         app/ragollama
     ghc-options:
     - -threaded
     - -rtsopts

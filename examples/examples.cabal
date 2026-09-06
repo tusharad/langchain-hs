@@ -27,7 +27,9 @@ source-repository head
 
 library
   exposed-modules:
+      Common.PromptTemplate
       Ollama.Monad
+      Ollama.RAG
       Ollama.Simple
       Ollama.Stream
       Ollama.StructuredOutput
@@ -42,6 +44,7 @@ library
     , base >=4.7 && <5
     , bytestring
     , conduit
+    , containers
     , langchain-hs
     , mtl
     , resourcet
@@ -60,6 +63,7 @@ executable jsonollama
     , base >=4.7 && <5
     , bytestring
     , conduit
+    , containers
     , examples
     , langchain-hs
     , mtl
@@ -79,6 +83,47 @@ executable monadollama
     , base >=4.7 && <5
     , bytestring
     , conduit
+    , containers
+    , examples
+    , langchain-hs
+    , mtl
+    , resourcet
+    , text
+  default-language: Haskell2010
+
+executable prompttemplate
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/prompttemplate
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , conduit
+    , containers
+    , examples
+    , langchain-hs
+    , mtl
+    , resourcet
+    , text
+  default-language: Haskell2010
+
+executable ragollama
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/ragollama
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , conduit
+    , containers
     , examples
     , langchain-hs
     , mtl
@@ -98,6 +143,7 @@ executable simpleollama
     , base >=4.7 && <5
     , bytestring
     , conduit
+    , containers
     , examples
     , langchain-hs
     , mtl
@@ -117,6 +163,7 @@ executable streamollama
     , base >=4.7 && <5
     , bytestring
     , conduit
+    , containers
     , examples
     , langchain-hs
     , mtl
@@ -136,6 +183,7 @@ executable toolollama
     , base >=4.7 && <5
     , bytestring
     , conduit
+    , containers
     , examples
     , langchain-hs
     , mtl
@@ -156,6 +204,7 @@ test-suite examples-test
     , base >=4.7 && <5
     , bytestring
     , conduit
+    , containers
     , examples
     , langchain-hs
     , mtl
