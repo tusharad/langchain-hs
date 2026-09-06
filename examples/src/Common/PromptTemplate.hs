@@ -4,5 +4,5 @@ import Langchain.PromptTemplate.String
 
 runApp :: IO ()
 runApp = do
-    let _ = renderFStringTemplate
-    undefined
+  let _ = renderFStringTemplate
+  undefined

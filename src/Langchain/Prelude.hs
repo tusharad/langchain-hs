@@ -393,11 +393,11 @@ import Langchain.Provider.Ollama
   , Ollama (..)
   , OllamaClientConfig (..)
   , chatRequestFor
-  , resolveChatRequest
   , defaultConfig
   , defaultOptions
   , newOllama
   , newOllamaWithClient
+  , resolveChatRequest
   , toOllamaTool
   , toOllamaTools
   , withJsonFormat

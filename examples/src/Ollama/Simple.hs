@@ -3,19 +3,19 @@
 module Ollama.Simple (runApp) where
 
 import Control.Monad.Except (runExceptT)
+import qualified Data.Map as Map
 import qualified Data.Text.IO as T
 import qualified Data.Text.Lazy as T
 import Langchain.Prelude
 import Langchain.PromptTemplate.Prompt
-import qualified Data.Map as Map
 
 runPromptTemplateExample :: IO ()
 runPromptTemplateExample = do
-    let items = Map.fromList [("name", "John"), ("age", "25")]
-    let inputText = "{name} is of age of {age}, he is only {age}!"
-    case renderFStringTemplate items inputText of
-      Left err -> T.putStrLn $ errorMessage err
-      Right r -> T.putStrLn r
+  let items = Map.fromList [("name", "John"), ("age", "25")]
+  let inputText = "{name} is of age of {age}, he is only {age}!"
+  case renderFStringTemplate items inputText of
+    Left err -> T.putStrLn $ errorMessage err
+    Right r -> T.putStrLn r
 
 runApp :: IO ()
 runApp = do
@@ -24,7 +24,7 @@ runApp = do
   let splittedChars = splitTextRecursive defaultRecursiveCharacterSplitterOps prompt
   mapM_ (T.putStrLn . T.toStrict) splittedChars
   o <- newOllama "gemma3" defaultConfig
-  let msg = map (userMessage . T.toStrict) [prompt]
+  let msg = [(userMessage . T.toStrict) prompt]
   res <- runExceptT $ invoke o msg Nothing
   case res of
     Left err -> T.putStrLn $ errorMessage err

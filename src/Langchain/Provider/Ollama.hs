@@ -185,11 +185,12 @@ fromOllamaMessage (O.Message r txt _imgs tools name _think) =
             ]
    in cMsg {messageToolCalls = cTools}
 
--- | Construct a 'ChatRequest' for an 'Ollama' instance with the given messages.
---
--- Sets 'chatModel' to the provider's 'ollamaModelName'. When passed to 'invoke'
--- or 'stream', any non-empty message argument passed directly to 'invoke' or
--- 'stream' will take priority over the messages in this 'ChatRequest'.
+{- | Construct a 'ChatRequest' for an 'Ollama' instance with the given messages.
+
+Sets 'chatModel' to the provider's 'ollamaModelName'. When passed to 'invoke'
+or 'stream', any non-empty message argument passed directly to 'invoke' or
+'stream' will take priority over the messages in this 'ChatRequest'.
+-}
 chatRequestFor :: Ollama -> [Message] -> OllamaChat.ChatRequest
 chatRequestFor model inputMsgs =
   let oMsgs = case inputMsgs of
@@ -197,25 +198,26 @@ chatRequestFor model inputMsgs =
         (m : ms) -> NonEmpty.map toOllamaMessage (m NonEmpty.:| ms)
    in OllamaChat.chatRequest (ModelName (ollamaModelName model)) oMsgs
 
--- | Resolve the effective 'ChatRequest', effective model name, and effective messages
--- given the provider instance, explicit message arguments, and optional 'ChatRequest'.
---
--- = Precedence Rules
---
--- * __Messages Precedence__:
---   1. If @inputMsgs@ is non-empty (@not (null inputMsgs)@), it takes priority and
---      is used as the request conversation. This enables reusing a configured
---      'ChatRequest' (tools, formats, options) across invocations and guarantees
---      that 'batch' processes each item's messages properly.
---   2. If @inputMsgs@ is empty (@null inputMsgs@) and a 'ChatRequest' is provided,
---      its 'chatMessages' field is preserved and used.
---   3. If both are empty (or @inputMsgs@ is empty and 'mbReq' is 'Nothing'),
---      it defaults to a single empty user message.
---
--- * __Model Name Precedence__:
---   1. If a 'ChatRequest' is provided and its 'chatModel' is non-empty,
---      it overrides the provider's default 'ollamaModelName'.
---   2. Otherwise, the provider's 'ollamaModelName' is used as the default.
+{- | Resolve the effective 'ChatRequest', effective model name, and effective messages
+given the provider instance, explicit message arguments, and optional 'ChatRequest'.
+
+= Precedence Rules
+
+* __Messages Precedence__:
+  1. If @inputMsgs@ is non-empty (@not (null inputMsgs)@), it takes priority and
+     is used as the request conversation. This enables reusing a configured
+     'ChatRequest' (tools, formats, options) across invocations and guarantees
+     that 'batch' processes each item's messages properly.
+  2. If @inputMsgs@ is empty (@null inputMsgs@) and a 'ChatRequest' is provided,
+     its 'chatMessages' field is preserved and used.
+  3. If both are empty (or @inputMsgs@ is empty and 'mbReq' is 'Nothing'),
+     it defaults to a single empty user message.
+
+* __Model Name Precedence__:
+  1. If a 'ChatRequest' is provided and its 'chatModel' is non-empty,
+     it overrides the provider's default 'ollamaModelName'.
+  2. Otherwise, the provider's 'ollamaModelName' is used as the default.
+-}
 resolveChatRequest ::
   Ollama ->
   [Message] ->
