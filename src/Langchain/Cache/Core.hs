@@ -193,6 +193,22 @@ instance CacheableChatModel Gemini where
       [ "provider" .= ("gemini" :: Text)
       , "model" .= modelName
       ]
+  cacheModelIdentity (GeminiWithBaseUrl _ modelName baseUrl) _
+    | effectiveBaseUrl == defaultGeminiBaseUrl = defaultIdentity
+    | otherwise =
+        object
+          [ "provider" .= ("gemini" :: Text)
+          , "model" .= modelName
+          , "baseUrl" .= effectiveBaseUrl
+          ]
+    where
+      effectiveBaseUrl = TS.dropWhileEnd (== '/') baseUrl
+      defaultGeminiBaseUrl = "https://generativelanguage.googleapis.com"
+      defaultIdentity =
+        object
+          [ "provider" .= ("gemini" :: Text)
+          , "model" .= modelName
+          ]
 
 {- | Compute a canonical cache key from a model identity and complete input messages.
 

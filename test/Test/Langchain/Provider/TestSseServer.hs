@@ -5,6 +5,7 @@ module Test.Langchain.Provider.TestSseServer
   ( withTestApplication
   , rawSseServer
   , capturingRawSseServer
+  , capturingRawSseRequestServer
   , sseFrame
   , gatedSseServer
   , cancellationAwareSseServer
@@ -19,7 +20,7 @@ import qualified Data.ByteString.Builder as Builder
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Text as T
 import Network.HTTP.Types (hContentType, status200)
-import Network.Wai (Application, responseStream, strictRequestBody)
+import Network.Wai (Application, Request, responseStream, strictRequestBody)
 import Network.Wai.Handler.Warp (testWithApplication)
 
 import Langchain.Core.Error (LangchainError)
@@ -40,6 +41,13 @@ rawSseServer frames _request respond =
 capturingRawSseServer :: (LBS.ByteString -> IO ()) -> [LBS.ByteString] -> Application
 capturingRawSseServer captureRequest frames request respond = do
   captureRequest =<< strictRequestBody request
+  rawSseServer frames request respond
+
+capturingRawSseRequestServer ::
+  (Request -> LBS.ByteString -> IO ()) -> [LBS.ByteString] -> Application
+capturingRawSseRequestServer captureRequest frames request respond = do
+  body <- strictRequestBody request
+  captureRequest request body
   rawSseServer frames request respond
 
 sseFrame :: LBS.ByteString -> LBS.ByteString
