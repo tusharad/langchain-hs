@@ -208,6 +208,15 @@ executables:
     dependencies:
     - examples
 
+  reactollama:
+    main:                Main.hs
+    source-dirs:         app/reactollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
 
 
 tests:
