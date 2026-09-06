@@ -29,6 +29,7 @@ library
   exposed-modules:
       Common.PromptTemplate
       Ollama.Guardrail
+      Ollama.MCP
       Ollama.Memory
       Ollama.Monad
       Ollama.Observability
@@ -83,6 +84,27 @@ executable jsonollama
       Paths_examples
   hs-source-dirs:
       app/jsonollama
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , conduit
+    , containers
+    , examples
+    , langchain-hs
+    , mtl
+    , resourcet
+    , text
+    , time
+  default-language: Haskell2010
+
+executable mcpollama
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/mcpollama
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson
