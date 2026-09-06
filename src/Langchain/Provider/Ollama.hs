@@ -16,6 +16,26 @@ Stability   : experimental
 
 Ollama provider using 'ollama-haskell' 0.4.0.0. Supports native structured outputs
 via JSON Schema grammar sampling, streaming, tool calling, and embeddings.
+
+== Request & Precedence Semantics
+Because Ollama's 'ModelConfig' is 'OllamaChat.ChatRequest', which contains both
+'chatModel' and 'chatMessages', callers may supply messages and model names either
+via the 'ChatModel' interface ('invoke' / 'stream' arguments) or within the 'ChatRequest'.
+
+The provider resolves these with well-defined precedence rules:
+
+1. __Messages Precedence__:
+   * When @inputMsgs@ is non-empty (@not (null inputMsgs)@), it takes precedence over
+     'ChatRequest.chatMessages'. This enables reusing request templates across multiple calls
+     and ensures 'batch' processes each item's messages properly.
+   * When @inputMsgs@ is empty (@null inputMsgs@), the provider falls back to
+     'ChatRequest.chatMessages' if a 'ChatRequest' is provided.
+   * If both are empty, defaults to an empty user message.
+
+2. __Model Name Precedence__:
+   * When a 'ChatRequest' is provided with a non-empty 'chatModel', it overrides
+     the provider's default 'ollamaModelName'.
+   * Otherwise, the provider's 'ollamaModelName' is used as the default.
 -}
 module Langchain.Provider.Ollama
   ( Ollama (..)
@@ -30,6 +50,7 @@ module Langchain.Provider.Ollama
   , withStructuredOutput
   , withOptions
   , chatRequestFor
+  , resolveChatRequest
   , withTools
   , toOllamaTool
   , toOllamaTools
@@ -164,7 +185,12 @@ fromOllamaMessage (O.Message r txt _imgs tools name _think) =
             ]
    in cMsg {messageToolCalls = cTools}
 
--- | Construct a 'ChatRequest' for an 'Ollama' instance with the given messages.
+{- | Construct a 'ChatRequest' for an 'Ollama' instance with the given messages.
+
+Sets 'chatModel' to the provider's 'ollamaModelName'. When passed to 'invoke'
+or 'stream', any non-empty message argument passed directly to 'invoke' or
+'stream' will take priority over the messages in this 'ChatRequest'.
+-}
 chatRequestFor :: Ollama -> [Message] -> OllamaChat.ChatRequest
 chatRequestFor model inputMsgs =
   let oMsgs = case inputMsgs of
@@ -172,24 +198,67 @@ chatRequestFor model inputMsgs =
         (m : ms) -> NonEmpty.map toOllamaMessage (m NonEmpty.:| ms)
    in OllamaChat.chatRequest (ModelName (ollamaModelName model)) oMsgs
 
+{- | Resolve the effective 'ChatRequest', effective model name, and effective messages
+given the provider instance, explicit message arguments, and optional 'ChatRequest'.
+
+= Precedence Rules
+
+* __Messages Precedence__:
+  1. If @inputMsgs@ is non-empty (@not (null inputMsgs)@), it takes priority and
+     is used as the request conversation. This enables reusing a configured
+     'ChatRequest' (tools, formats, options) across invocations and guarantees
+     that 'batch' processes each item's messages properly.
+  2. If @inputMsgs@ is empty (@null inputMsgs@) and a 'ChatRequest' is provided,
+     its 'chatMessages' field is preserved and used.
+  3. If both are empty (or @inputMsgs@ is empty and 'mbReq' is 'Nothing'),
+     it defaults to a single empty user message.
+
+* __Model Name Precedence__:
+  1. If a 'ChatRequest' is provided and its 'chatModel' is non-empty,
+     it overrides the provider's default 'ollamaModelName'.
+  2. Otherwise, the provider's 'ollamaModelName' is used as the default.
+-}
+resolveChatRequest ::
+  Ollama ->
+  [Message] ->
+  Maybe OllamaChat.ChatRequest ->
+  (OllamaChat.ChatRequest, Text, [Message])
+resolveChatRequest model inputMsgs mbReq =
+  let providerModel = ollamaModelName model
+      resolvedModelText = case mbReq of
+        Just r ->
+          let m = unModelName (OllamaChat.chatModel r)
+           in if T.null m then providerModel else m
+        Nothing -> providerModel
+      resolvedModelName = ModelName resolvedModelText
+
+      (resolvedOMsgs, resolvedCoreMsgs) = case inputMsgs of
+        (m : ms) ->
+          let oList = NonEmpty.map toOllamaMessage (m NonEmpty.:| ms)
+           in (oList, inputMsgs)
+        [] -> case mbReq of
+          Just r ->
+            let oList = OllamaChat.chatMessages r
+                coreList = map fromOllamaMessage (NonEmpty.toList oList)
+             in (oList, coreList)
+          Nothing ->
+            (O.userMessage "" NonEmpty.:| [], [])
+
+      resolvedReq = case mbReq of
+        Nothing ->
+          OllamaChat.chatRequest resolvedModelName resolvedOMsgs
+        Just r ->
+          r
+            { OllamaChat.chatModel = resolvedModelName
+            , OllamaChat.chatMessages = resolvedOMsgs
+            }
+   in (resolvedReq, resolvedModelText, resolvedCoreMsgs)
+
 instance ChatModel Ollama where
   type ModelConfig Ollama = OllamaChat.ChatRequest
 
   invoke model inputMsgs mbReq = do
-    let baseReq = chatRequestFor model inputMsgs
-        req = case mbReq of
-          Nothing -> baseReq
-          Just r ->
-            r
-              { OllamaChat.chatModel = ModelName (ollamaModelName model)
-              , OllamaChat.chatMessages = OllamaChat.chatMessages baseReq
-              , OllamaChat.chatOptions = OllamaChat.chatOptions r
-              , OllamaChat.chatKeepAlive = OllamaChat.chatKeepAlive r
-              , OllamaChat.chatTools = OllamaChat.chatTools r
-              , OllamaChat.chatFormat = OllamaChat.chatFormat r
-              , OllamaChat.chatThink = OllamaChat.chatThink r
-              }
-
+    let (req, _modelName, _msgs) = resolveChatRequest model inputMsgs mbReq
     eRes <- liftIO $ OllamaChat.chat (client model) req
     case eRes of
       Left err -> throwError $ llmError (T.pack $ show err) Nothing Nothing
@@ -199,21 +268,9 @@ instance ChatModel Ollama where
 
   stream model inputMsgs mbReq = do
     let runId_ = "ollama-run"
-        baseReq = chatRequestFor model inputMsgs
-        req = case mbReq of
-          Nothing -> baseReq
-          Just r ->
-            r
-              { OllamaChat.chatModel = ModelName (ollamaModelName model)
-              , OllamaChat.chatMessages = OllamaChat.chatMessages baseReq
-              , OllamaChat.chatOptions = OllamaChat.chatOptions r
-              , OllamaChat.chatKeepAlive = OllamaChat.chatKeepAlive r
-              , OllamaChat.chatTools = OllamaChat.chatTools r
-              , OllamaChat.chatFormat = OllamaChat.chatFormat r
-              , OllamaChat.chatThink = OllamaChat.chatThink r
-              }
+        (req, resolvedModel, resolvedMsgs) = resolveChatRequest model inputMsgs mbReq
 
-    yield $ LLMStart runId_ (ollamaModelName model) inputMsgs
+    yield $ LLMStart runId_ resolvedModel resolvedMsgs
     transPipe liftIO (OllamaChat.chatStream (client model) req) .| processChunks runId_
     where
       processChunks rId = loop [] Nothing Nothing

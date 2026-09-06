@@ -169,6 +169,9 @@ module Langchain.Prelude
   , OTelTracer (..)
   , newOTelTracer
   , getSpans
+  , startSpan
+  , endSpan
+  , addSpanAttribute
   , withSpan
   , exportSpansJson
 
@@ -181,6 +184,7 @@ module Langchain.Prelude
   , dispatchEvent
   , dispatchEventAsync
   , newLoggingCallbackHandler
+  , getCallbackLogs
 
     -- * Resilience
   , CircuitState (..)
@@ -214,9 +218,11 @@ module Langchain.Prelude
   , newSqliteVecStore
   , Retriever (..)
   , VectorStoreRetriever (..)
+  , retrieveWithCallbacks
 
     -- * Embeddings
   , Embeddings (..)
+  , OllamaEmbeddings (..)
 
     -- * Document Loaders
   , Document (..)
@@ -338,6 +344,7 @@ module Langchain.Prelude
   , defaultOptions
   , withOptions
   , chatRequestFor
+  , resolveChatRequest
   , withTools
   , toOllamaTool
   , toOllamaTools
@@ -371,6 +378,7 @@ import Langchain.DocumentLoader.Html
 import Langchain.DocumentLoader.Json
 import Langchain.DocumentLoader.WebPage
 import Langchain.Embeddings.Core
+import Langchain.Embeddings.Ollama (OllamaEmbeddings (..))
 import Langchain.Graph.Checkpointer
 import Langchain.Graph.HITL
 import Langchain.Graph.MultiAgent
@@ -396,6 +404,7 @@ import Langchain.Provider.Ollama
   , defaultOptions
   , newOllama
   , newOllamaWithClient
+  , resolveChatRequest
   , toOllamaTool
   , toOllamaTools
   , withJsonFormat

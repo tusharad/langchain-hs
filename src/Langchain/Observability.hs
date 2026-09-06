@@ -38,6 +38,7 @@ module Langchain.Observability
   , getSpans
   , startSpan
   , endSpan
+  , addSpanAttribute
   , withSpan
   , exportSpansJson
   ) where
@@ -236,6 +237,16 @@ endSpan OTelTracer {..} targetSpanId status = liftIO $ do
                 , spanDurationMicros = Just durMicros
                 , spanStatus = status
                 }
+      | otherwise = sp
+
+-- | Add or update an attribute on an active or completed span
+addSpanAttribute :: MonadIO m => OTelTracer -> Text -> Text -> Text -> m ()
+addSpanAttribute OTelTracer {..} targetSpanId key val = liftIO $ do
+  atomically $ modifyTVar' tracerSpansVar (map updateAttr)
+  where
+    updateAttr sp
+      | spanId sp == targetSpanId =
+          sp {spanAttributes = Map.insert key val (spanAttributes sp)}
       | otherwise = sp
 
 -- | Wrap a monadic computation within an OpenTelemetry span

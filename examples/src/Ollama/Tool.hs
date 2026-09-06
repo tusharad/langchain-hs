@@ -20,7 +20,6 @@ runApp = do
       chatReq = withTools [calculatorTool @IO] (chatRequestFor o promptMsgs)
 
   res <- runLangchainTIO $ do
-    -- Turn 1: Model receives the available tools and generates a tool call
     respMsg <- invoke o promptMsgs (Just chatReq)
     case messageToolCalls respMsg of
       Nothing -> do
@@ -33,7 +32,6 @@ runApp = do
         liftIO $ T.putStrLn $ "Tool called: " <> toolCallName tCall
         liftIO $ T.putStrLn $ "Arguments: " <> T.pack (show (toolCallArguments tCall))
 
-        -- Execute the requested tool
         eExec <- liftIO $ toolExecute (calculatorTool @IO) (toolCallArguments tCall)
         toolResult <- case eExec of
           Left err -> pure $ "Tool execution error: " <> errorMessage err
@@ -41,7 +39,6 @@ runApp = do
 
         liftIO $ T.putStrLn $ "Tool execution result: " <> toolResult
 
-        -- Turn 2: Feed back tool execution result to Ollama to synthesize final answer
         let toolMsg =
               (toolMessage toolResult)
                 { messageName = Just (toolCallName tCall)

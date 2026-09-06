@@ -49,8 +49,8 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import Network.HTTP.Simple
-import System.IO (BufferMode (..), hFlush, hGetLine, hSetBuffering)
-import System.Process (CreateProcess (..), StdStream (..), createProcess, proc)
+import System.IO (BufferMode (..), hClose, hFlush, hGetLine, hSetBuffering)
+import System.Process (CreateProcess (..), StdStream (..), createProcess, proc, terminateProcess)
 
 import Langchain.Core.Error (LangchainError, toolError)
 import Langchain.Tool.Core (Tool (..), createTool)
@@ -135,9 +135,9 @@ execStdioJsonRpc cmd args rpcReq = do
           (proc cmd args)
             { std_in = CreatePipe
             , std_out = CreatePipe
-            , std_err = CreatePipe
+            , std_err = NoStream
             }
-    (Just hIn, Just hOut, _, _) <- createProcess cp
+    (Just hIn, Just hOut, _, ph) <- createProcess cp
     hSetBuffering hIn LineBuffering
     hSetBuffering hOut LineBuffering
 
@@ -171,6 +171,9 @@ execStdioJsonRpc cmd args rpcReq = do
     LBSC.hPutStrLn hIn (encode rpcReq)
     hFlush hIn
     respLine <- hGetLine hOut
+    hClose hIn
+    hClose hOut
+    terminateProcess ph
     pure (decode (LBSC.pack respLine) :: Maybe Value)
 
   case eRes of

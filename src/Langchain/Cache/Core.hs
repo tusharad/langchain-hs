@@ -44,7 +44,7 @@ import Langchain.Core.Model
   , Message (..)
   )
 import Langchain.Provider.Gemini (Gemini (..))
-import Langchain.Provider.Ollama (Ollama (..))
+import Langchain.Provider.Ollama (ModelName (..), Ollama (..))
 import Langchain.Provider.OpenAI (OpenAI (..))
 import qualified Ollama.API.Chat as OllamaChat
 import Ollama.Client (OllamaClient (..))
@@ -173,10 +173,15 @@ instance CacheableChatModel Ollama where
   cacheModelIdentity o cfg =
     let effectiveOptions = cfg >>= OllamaChat.chatOptions
         effectiveKeepAlive = cfg >>= OllamaChat.chatKeepAlive
+        effectiveModel = case cfg of
+          Just r ->
+            let m = unModelName (OllamaChat.chatModel r)
+             in if TS.null m then ollamaModelName o else m
+          Nothing -> ollamaModelName o
      in object
           [ "provider" .= ("ollama" :: Text)
           , "baseUrl" .= configBaseUrl (clientConfig (client o))
-          , "model" .= ollamaModelName o
+          , "model" .= effectiveModel
           , "config"
               .= object
                 [ "tools" .= (OllamaChat.chatTools <$> cfg)
