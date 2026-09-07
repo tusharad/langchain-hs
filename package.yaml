@@ -85,6 +85,7 @@ tests:
       - text
       - bytestring
       - aeson
+      - aeson-qq
       - containers
       - directory
       - filepath
