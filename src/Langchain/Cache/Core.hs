@@ -35,6 +35,7 @@ import Data.Aeson (ToJSON, Value, decode, encode, object, (.=))
 import qualified Data.ByteString.Lazy as LBS
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as TS
 import qualified Data.Text.Encoding as TE
@@ -188,13 +189,7 @@ instance CacheableChatModel Ollama where
           ]
 
 instance CacheableChatModel Gemini where
-  cacheModelIdentity (Gemini _ modelName) config =
-    object $
-      [ "provider" .= ("gemini" :: Text)
-      , "model" .= modelName
-      ]
-        <> maybe [] (pure . ("config" .=)) config
-  cacheModelIdentity (GeminiWithBaseUrl _ modelName baseUrl) config
+  cacheModelIdentity (Gemini _ modelName baseUrl) config
     | effectiveBaseUrl == defaultGeminiBaseUrl = defaultIdentity
     | otherwise =
         object $
@@ -204,7 +199,7 @@ instance CacheableChatModel Gemini where
           ]
             <> maybe [] (pure . ("config" .=)) config
     where
-      effectiveBaseUrl = TS.dropWhileEnd (== '/') baseUrl
+      effectiveBaseUrl = TS.dropWhileEnd (== '/') $ fromMaybe "" baseUrl
       defaultGeminiBaseUrl = "https://generativelanguage.googleapis.com"
       defaultIdentity =
         object $

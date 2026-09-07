@@ -50,7 +50,7 @@ import Test.Langchain.Provider.TestSseServer
   )
 
 withGeminiProvider :: T.Text -> (Gemini -> IO a) -> IO a
-withGeminiProvider url action = action $ geminiWithBaseUrl "test-key" "test-model" url
+withGeminiProvider url action = action $ newGemini "test-key" "test-model" (Just url)
 
 withRawTestProvider :: [LBS.ByteString] -> (Gemini -> IO a) -> IO a
 withRawTestProvider frames action =
@@ -96,7 +96,7 @@ tests =
   testGroup
     "Langchain.Provider.Gemini"
     [ testCase "newGemini initializes provider with model" $ do
-        let p = newGemini "ai-key" "gemini-1.5-pro"
+        let p = newGemini "ai-key" "gemini-1.5-pro" Nothing
         model p @?= "gemini-1.5-pro"
     , testGroup
         "invoke"
@@ -136,7 +136,7 @@ tests =
             result <-
               runExceptT $
                 invoke
-                  (newGemini "test-key" "test-model")
+                  (newGemini "test-key" "test-model" Nothing)
                   [userMessage "Hello"]
                   (Just $ Aeson.String "invalid")
             case result of
@@ -324,7 +324,7 @@ tests =
                       runExceptT $
                         collectEvents $
                           stream
-                            (newGemini (T.pack envApiKey) (T.pack envModel))
+                            (newGemini (T.pack envApiKey) (T.pack envModel) Nothing)
                             [userMessage "Reply with exactly OK."]
                             Nothing
                 case result of
@@ -348,7 +348,7 @@ tests =
                         "Returns the current weather for a city."
                         weatherSchema
                         (const $ pure $ Right "The weather in Paris is sunny and 22 C.")
-                    provider = newGemini (T.pack envApiKey) (T.pack envModel)
+                    provider = newGemini (T.pack envApiKey) (T.pack envModel) Nothing
                     runLive messages config =
                       timeout 60000000 $
                         runResourceT $

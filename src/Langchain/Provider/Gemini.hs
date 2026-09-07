@@ -22,7 +22,6 @@ module Langchain.Provider.Gemini
   , defaultConfig
   , defaultGeminiConfig
   , newGemini
-  , geminiWithBaseUrl
   , geminiTools
   , parseGeminiResponse
   ) where
@@ -79,27 +78,15 @@ defaultGeminiConfig = defaultConfig
 -- | Gemini ChatModel provider
 data Gemini
   = Gemini
-      { apiKey :: Text
-      , model :: Text
-      }
-  | GeminiWithBaseUrl
-      { apiKey :: Text
-      , model :: Text
-      , baseUrl :: Text
-      }
+  { apiKey :: Text
+  , model :: Text
+  , baseUrl :: Maybe Text
+  }
   deriving (Eq, Show)
 
 -- | Create a new Gemini provider instance
-newGemini :: Text -> Text -> Gemini
+newGemini :: Text -> Text -> Maybe Text -> Gemini
 newGemini = Gemini
-
-{- | Create a Gemini provider with a custom API base URL.
-
-This is primarily useful for local test servers. 'newGemini' remains the
-standard constructor and preserves its existing two-argument form.
--}
-geminiWithBaseUrl :: Text -> Text -> Text -> Gemini
-geminiWithBaseUrl = GeminiWithBaseUrl
 
 geminiApiKey :: Gemini -> Text
 geminiApiKey = apiKey
@@ -108,8 +95,8 @@ geminiModel :: Gemini -> Text
 geminiModel = model
 
 geminiBaseUrl :: Gemini -> Text
+geminiBaseUrl Gemini {baseUrl = Just baseUrl} = T.dropWhileEnd (== '/') baseUrl
 geminiBaseUrl Gemini {} = "https://generativelanguage.googleapis.com"
-geminiBaseUrl GeminiWithBaseUrl {baseUrl} = T.dropWhileEnd (== '/') baseUrl
 
 -- Convert ContentBlock to Gemini Part JSON
 contentBlockToPart :: ContentBlock -> Value

@@ -137,17 +137,19 @@ tests =
         assertKeysDiffer baseKey $ computeCacheKey otherTemperature Nothing testMessages
         baseKey @?= computeCacheKey base (Just $ object ["unused" .= True]) testMessages
     , testCase "cache key distinguishes Gemini identity and request config" $ do
-        let base = Gemini "key" "gemini-2.0-flash"
-            otherModel = Gemini "key" "gemini-2.5-pro"
+        let base = Gemini "key" "gemini-2.0-flash" Nothing
+            otherModel = Gemini "key" "gemini-2.5-pro" Nothing
             baseKey = computeCacheKey base Nothing testMessages
         assertKeysDiffer baseKey $ computeCacheKey otherModel Nothing testMessages
         assertKeysDiffer baseKey $
           computeCacheKey base (Just $ object ["tools" .= ([] :: [Value])]) testMessages
     , testCase "cache key distinguishes Gemini custom endpoints" $ do
-        let defaultEndpoint = Gemini "key" "gemini-2.0-flash"
-            firstEndpoint = GeminiWithBaseUrl "key" "gemini-2.0-flash" "http://gemini-one.example.com"
-            sameEndpoint = GeminiWithBaseUrl "key" "gemini-2.0-flash" "http://gemini-one.example.com/"
-            secondEndpoint = GeminiWithBaseUrl "key" "gemini-2.0-flash" "http://gemini-two.example.com"
+        let defaultEndpoint = Gemini "key" "gemini-2.0-flash" Nothing
+            url1 = Just "http://gemini-one.example.com"
+            url2 = Just "http://gemini-two.example.com"
+            firstEndpoint = Gemini "key" "gemini-2.0-flash" url1
+            sameEndpoint = Gemini "key" "gemini-2.0-flash" url1
+            secondEndpoint = Gemini "key" "gemini-2.0-flash" url2
             defaultKey = computeCacheKey defaultEndpoint Nothing testMessages
             firstKey = computeCacheKey firstEndpoint Nothing testMessages
         assertKeysDiffer defaultKey firstKey
