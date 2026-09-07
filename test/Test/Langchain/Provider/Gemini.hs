@@ -319,14 +319,14 @@ tests =
               Just envApiKey -> do
                 envModel <- fromMaybe "gemini-3.5-flash-lite" <$> lookupEnv "GEMINI_STREAM_TEST_MODEL"
                 result <-
-                  timeout 60000000
-                    $ runResourceT
-                    $ runExceptT
-                    $ collectEvents
-                    $ stream
-                      (newGemini (T.pack envApiKey) (T.pack envModel))
-                      [userMessage "Reply with exactly OK."]
-                      Nothing
+                  timeout 60000000 $
+                    runResourceT $
+                      runExceptT $
+                        collectEvents $
+                          stream
+                            (newGemini (T.pack envApiKey) (T.pack envModel))
+                            [userMessage "Reply with exactly OK."]
+                            Nothing
                 case result of
                   Nothing -> assertFailure "Gemini stream timed out"
                   Just (Left err) -> assertFailure $ "Expected stream success, got: " ++ show err
@@ -350,11 +350,11 @@ tests =
                         (const $ pure $ Right "The weather in Paris is sunny and 22 C.")
                     provider = newGemini (T.pack envApiKey) (T.pack envModel)
                     runLive messages config =
-                      timeout 60000000
-                        $ runResourceT
-                        $ runExceptT
-                        $ collectEvents
-                        $ stream provider messages config
+                      timeout 60000000 $
+                        runResourceT $
+                          runExceptT $
+                            collectEvents $
+                              stream provider messages config
                     prompt = userMessage "Use get_weather to look up the weather in Paris, then answer using the tool result."
 
                 firstResult <- runLive [prompt] (Just $ geminiTools [weatherTool])
@@ -384,10 +384,10 @@ tests =
                   Just (Left err) -> assertFailure $ "Expected tool-result stream success, got: " ++ show err
                   Just (Right events) -> case reverse events of
                     LLMEnd _ responseMessage (Just usage) : _ -> do
-                      assertBool "Expected final text after tool result"
-                        $ not
-                        $ T.null
-                        $ extractMessageText responseMessage
+                      assertBool "Expected final text after tool result" $
+                        not $
+                          T.null $
+                            extractMessageText responseMessage
                       assertBool "Expected positive total token usage" $ totalTokens usage > 0
                     _ -> assertFailure $ "Expected LLMEnd with usage, got: " ++ show events
         , testCase "stream sends Gemini function declarations and function responses" $ do

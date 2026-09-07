@@ -1,7 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -271,9 +270,9 @@ instance ChatModel Gemini where
             <> geminiApiKey provider
         initReq = parseRequest_ (T.unpack url)
         req =
-          setRequestMethod "POST"
-            $ setRequestHeader "Content-Type" ["application/json"]
-            $ setRequestBodyJSON payload initReq
+          setRequestMethod "POST" $
+            setRequestHeader "Content-Type" ["application/json"] $
+              setRequestBodyJSON payload initReq
 
     eRes <- liftIO $ safeHttpRequest req
     case eRes of
@@ -461,7 +460,7 @@ parseGeminiResponse = parseEither $ withObject "GeminiResponse" $ \o -> do
         let texts = [text | GeminiText text <- parsedParts]
             toolCalls = [toolCall | GeminiFunctionCall toolCall _ <- parsedParts]
             signatures = [signature | GeminiFunctionCall _ signature <- parsedParts]
-        pure
-          $ withThoughtSignatures toolCalls signatures
-          $ assistantMessage
-          $ T.intercalate "\n" texts
+        pure $
+          withThoughtSignatures toolCalls signatures $
+            assistantMessage $
+              T.intercalate "\n" texts
