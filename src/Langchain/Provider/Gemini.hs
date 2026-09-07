@@ -301,22 +301,30 @@ instance ChatModel Gemini where
       geminiEvents requestPayload emit = do
         result <- try $ do
           manager <- newManager tlsManagerSettings
+
           let baseUrl = parseBaseUrl (T.unpack $ geminiBaseUrl provider)
-          clientEnv <- mkClientEnv manager <$> baseUrl
-          let request =
+              model = geminiModel provider
+              apiKey = geminiApiKey provider
+              request =
                 geminiStreamClient
-                  (geminiModel provider <> ":streamGenerateContent")
+                  (model <> ":streamGenerateContent")
                   (Just "sse")
-                  (Just $ geminiApiKey provider)
+                  (Just apiKey)
                   requestPayload
-          withClientM request clientEnv $ \case
-            Left err -> emit . Left . T.pack $ show err
-            Right source -> runConduit $ source .| C.mapM_ (emit . Right)
+
+          clientEnv <- mkClientEnv manager <$> baseUrl
+          withClientM request clientEnv $
+            either
+              emitError
+              (\source -> runConduit $ source .| C.mapM_ (emit . Right))
         case result of
           Left err
             | Just AsyncCancelled <- fromException err -> throwIO err
-            | otherwise -> emit . Left . T.pack $ show err
+            | otherwise -> emitError err
           Right () -> pure ()
+        where
+          emitError :: Show a => a -> IO ()
+          emitError = emit . Left . T.pack . show
 
       rId = "gemini-stream-run"
 
