@@ -5,6 +5,7 @@ module Test.Langchain.Agent.AdvancedAgentsSpec (tests) where
 
 import Control.Monad.Except (runExceptT)
 import qualified Data.Aeson as Aeson
+import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -80,5 +81,6 @@ instance ChatModel MockToolCallingModel where
                 , messageName = Nothing
                 , messageToolCalls = Just [ToolCall "call_1" "function" "calc" (Aeson.object [])]
                 , messageToolId = Nothing
+                , messageMetadata = Map.empty
                 }
   stream _ _ _ = pure ()

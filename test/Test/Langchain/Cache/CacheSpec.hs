@@ -7,6 +7,7 @@ import Control.Concurrent.STM (newTVarIO)
 import Control.Monad.Except (runExceptT)
 import Data.Aeson (Value, object, (.=))
 import Data.List.NonEmpty (NonEmpty (..))
+import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import System.FilePath ((</>))
 import System.IO.Temp (withSystemTempDirectory)
@@ -111,6 +112,7 @@ tests =
                 Nothing
                 Nothing
                 Nothing
+                Map.empty
             toolMessage =
               (userMessage "Describe the image")
                 { messageToolCalls = Just [ToolCall "call-1" "function" "describe_image" (object [])]

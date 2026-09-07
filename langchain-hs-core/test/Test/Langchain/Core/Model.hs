@@ -7,6 +7,7 @@ import Test.Tasty.HUnit
 
 import Control.Monad.Except (runExceptT)
 import Data.List.NonEmpty (NonEmpty (..))
+import qualified Data.Map.Strict as Map
 
 import Langchain.Core.Model
 import Test.Langchain.Core.TestModel (TestChatModel (..))
@@ -21,6 +22,7 @@ tests =
             let msg = userMessage "Hello AI"
             messageRole msg @?= User
             extractMessageText msg @?= "Hello AI"
+            messageMetadata msg @?= Map.empty
         , testCase "systemMessage creates System message" $ do
             let msg = systemMessage "You are a assistant"
             messageRole msg @?= System

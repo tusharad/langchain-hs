@@ -338,7 +338,7 @@ formatMessage (ContentMessagePrompt role blocks) variables _ = do
   renderedBlocks <- concat <$> traverse (renderContentBlock variables) blocks
   case NonEmpty.nonEmpty renderedBlocks of
     Nothing -> Right []
-    Just nonEmptyBlocks -> Right [Message role nonEmptyBlocks Nothing Nothing Nothing]
+    Just nonEmptyBlocks -> Right [Message role nonEmptyBlocks Nothing Nothing Nothing Map.empty]
 formatMessage (MessagesPlaceholderPrompt placeholder storedMessages) _ messageVariables =
   formatMessages placeholder $
     case storedMessages of

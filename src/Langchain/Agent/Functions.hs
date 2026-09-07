@@ -105,6 +105,7 @@ runFunctionsAgent FunctionsAgent {..} query = do
                     , messageName = Just tName
                     , messageToolCalls = Nothing
                     , messageToolId = Just tId
+                    , messageMetadata = Map.empty
                     }
               let nextMsgs = msgs ++ [resp] ++ toolResultMsgs
               loop nextMsgs (attemptsLeft - 1)

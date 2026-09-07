@@ -40,6 +40,7 @@ import Data.Conduit (ConduitT, await, runConduit, yield, (.|))
 import qualified Data.Conduit.Combinators as C
 import qualified Data.List as List
 import qualified Data.List.NonEmpty as NonEmpty
+import qualified Data.Map.Strict as Map
 import Data.Maybe (fromMaybe)
 import qualified Data.Proxy as Proxy
 import Data.Text (Text)
@@ -166,7 +167,7 @@ messageToGemini msg =
         Tool -> "user"
         Function -> "user"
       toolCallParts = case role of
-        Assistant -> maybe [] (map functionCallPart) (messageToolCalls msg)
+        Assistant -> maybe [] (functionCallParts $ messageMetadata msg) (messageToolCalls msg)
         _ -> []
       contentBlocks = NonEmpty.toList (messageContents msg)
       contentParts = map contentBlockToPart contentBlocks
@@ -175,8 +176,11 @@ messageToGemini msg =
         | otherwise = map contentBlockToPart (filter (not . emptyTextPart) contentBlocks) <> toolCallParts
    in object ["role" .= (geminiRole :: Text), "parts" .= parts]
   where
-    functionCallPart (ToolCall {toolCallName = name, toolCallArguments = args, toolCallId = callId}) =
-      object
+    functionCallParts metadata toolCalls =
+      zipWith functionCallPart toolCalls (thoughtSignatures metadata <> repeat Nothing)
+
+    functionCallPart (ToolCall {toolCallName = name, toolCallArguments = args, toolCallId = callId}) thoughtSignature =
+      object $
         [ "functionCall"
             .= object
               ( [ "name" .= name
@@ -185,11 +189,32 @@ messageToGemini msg =
                   <> (["id" .= callId | notNull callId])
               )
         ]
+          <> maybe [] (pure . ("thoughtSignature" .=)) thoughtSignature
 
     notNull = not . T.null
 
     emptyTextPart (TextBlock text) = T.null text
     emptyTextPart _ = False
+
+geminiThoughtSignaturesKey :: Text
+geminiThoughtSignaturesKey = "langchain.gemini.thoughtSignatures"
+
+thoughtSignatures :: Map.Map Text Value -> [Maybe Text]
+thoughtSignatures metadata =
+  case Map.lookup geminiThoughtSignaturesKey metadata of
+    Just value -> case fromJSON value of
+      Success signatures -> signatures
+      Error _ -> []
+    Nothing -> []
+
+withThoughtSignatures :: [ToolCall] -> [Maybe Text] -> Message -> Message
+withThoughtSignatures [] _ message = message {messageToolCalls = Nothing}
+withThoughtSignatures toolCalls signatures message =
+  message
+    { messageToolCalls = Just toolCalls
+    , messageMetadata =
+        Map.insert geminiThoughtSignaturesKey (toJSON signatures) (messageMetadata message)
+    }
 
 functionResponsePart :: [ToolCall] -> Message -> Either Text Value
 functionResponsePart priorToolCalls msg = do
@@ -266,25 +291,29 @@ instance ChatModel Gemini where
       either (throwError . llmError') pure $ requestPayload config
 
     let events = geminiEvents payload
-    (accumulated, toolCalls, usage) <-
+    (accumulated, toolCalls, thoughtSignatures', usage) <-
       callbackSource events
-        .| receiveChunks "" [] Nothing
+        .| receiveChunks "" [] [] Nothing
 
-    let message = (assistantMessage accumulated) {messageToolCalls = nonEmpty toolCalls}
+    let message = withThoughtSignatures toolCalls thoughtSignatures' $ assistantMessage accumulated
     yield $ LLMEnd rId message usage
     where
-      receiveChunks accumulated toolCalls usage = do
+      receiveChunks accumulated toolCalls thoughtSignatures' usage = do
         next <- await
         case next of
-          Nothing -> pure (accumulated, toolCalls, usage)
+          Nothing -> pure (accumulated, toolCalls, thoughtSignatures', usage)
           Just (Left err) -> throwError $ llmError' err
           Just (Right (GeminiStreamEvent GeminiStreamChunk {streamCandidates, streamUsage})) -> do
             let parts = maybe [] streamParts $ candidate0 streamCandidates
                 texts = [text | GeminiText text <- parts]
-                calls = [toolCall | GeminiFunctionCall toolCall <- parts]
+                calls = [(toolCall, signature) | GeminiFunctionCall toolCall signature <- parts]
                 nextUsage = streamUsage <|> usage
-            emitParts texts calls
-            receiveChunks (accumulated <> mconcat texts) (toolCalls <> calls) nextUsage
+            emitParts texts (map fst calls)
+            receiveChunks
+              (accumulated <> mconcat texts)
+              (toolCalls <> map fst calls)
+              (thoughtSignatures' <> map snd calls)
+              nextUsage
 
       candidate0 = List.find ((== 0) . streamCandidateIndex)
 
@@ -294,9 +323,6 @@ instance ChatModel Gemini where
         mapM_ (yieldChunk "" . Just) remaining
 
       yieldChunk text mbToolCall = yield $ LLMChunk rId text mbToolCall
-
-      nonEmpty [] = Nothing
-      nonEmpty calls = Just calls
 
       geminiEvents requestPayload emit = do
         result <- try $ do
@@ -362,13 +388,13 @@ instance FromJSON GeminiStreamCandidate where
 
 data GeminiPart
   = GeminiText Text
-  | GeminiFunctionCall ToolCall
+  | GeminiFunctionCall ToolCall (Maybe Text)
 
 parseGeminiPart :: Value -> Parser GeminiPart
 parseGeminiPart = withObject "GeminiPart" $ \obj -> do
   functionCall <- obj .:? "functionCall"
   case functionCall of
-    Just value -> GeminiFunctionCall <$> parseGeminiFunctionCall value
+    Just value -> GeminiFunctionCall <$> parseGeminiFunctionCall value <*> pure (parseThoughtSignature obj)
     Nothing -> GeminiText <$> obj .:? "text" .!= ""
 
 parseGeminiFunctionCall :: Value -> Parser ToolCall
@@ -378,6 +404,12 @@ parseGeminiFunctionCall = withObject "GeminiFunctionCall" $ \obj ->
     <*> pure "function"
     <*> obj .: "name"
     <*> obj .:? "args" .!= object []
+
+parseThoughtSignature :: Object -> Maybe Text
+parseThoughtSignature obj =
+  case KeyMap.lookup "thoughtSignature" obj of
+    Just (String signature) -> Just signature
+    _ -> Nothing
 
 parseGeminiUsage :: Value -> Parser TokenUsage
 parseGeminiUsage = withObject "GeminiUsageMetadata" $ \obj ->
@@ -421,15 +453,15 @@ parseGeminiResponse = parseEither $ withObject "GeminiResponse" $ \o -> do
   candidates <- o .: "candidates"
   case candidates of
     [] -> fail "Empty candidates array in Gemini response"
-    (c : _) -> flip (withObject "Candidate") c $ \cand -> do
-      contentObj <- cand .: "content"
-      parts <- contentObj .: "parts"
-      parsedParts <- traverse parseGeminiPart parts
-      let texts = [text | GeminiText text <- parsedParts]
-          toolCalls = [toolCall | GeminiFunctionCall toolCall <- parsedParts]
-      pure $
-        (assistantMessage $ T.intercalate "\n" texts)
-          { messageToolCalls = case toolCalls of
-              [] -> Nothing
-              calls -> Just calls
-          }
+    (c : _) ->
+      flip (withObject "Candidate") c $ \cand -> do
+        contentObj <- cand .: "content"
+        parts <- contentObj .: "parts"
+        parsedParts <- traverse parseGeminiPart parts
+        let texts = [text | GeminiText text <- parsedParts]
+            toolCalls = [toolCall | GeminiFunctionCall toolCall _ <- parsedParts]
+            signatures = [signature | GeminiFunctionCall _ signature <- parsedParts]
+        pure
+          $ withThoughtSignatures toolCalls signatures
+          $ assistantMessage
+          $ T.intercalate "\n" texts
