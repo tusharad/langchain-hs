@@ -22,6 +22,7 @@ description:         Please see the README on GitHub at <https://github.com/gith
 dependencies:
 - base >= 4.7 && < 5
 - langchain-hs
+- langchain-hs-core
 - text
 - aeson
 - bytestring
@@ -166,6 +167,67 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - examples
+
+  runnableollama:
+    main:                Main.hs
+    source-dirs:         app/runnableollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  retrievalqaollama:
+    main:                Main.hs
+    source-dirs:         app/retrievalqaollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  mapreduceollama:
+    main:                Main.hs
+    source-dirs:         app/mapreduceollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  resilienceollama:
+    main:                Main.hs
+    source-dirs:         app/resilienceollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  reactollama:
+    main:                Main.hs
+    source-dirs:         app/reactollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  planandexecuteollama:
+    main:                Main.hs
+    source-dirs:         app/planandexecuteollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
 
 tests:
   examples-test:

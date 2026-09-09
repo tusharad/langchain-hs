@@ -32,11 +32,8 @@ source-repository head
 
 library
   exposed-modules:
-      Langchain.Agent.Functions
-      Langchain.Agent.Middleware
       Langchain.Agent.PlanAndExecute
       Langchain.Agent.ReAct
-      Langchain.Agent.Supervisor
       Langchain.Cache.Core
       Langchain.Callback.Manager
       Langchain.Chain.MapReduce
@@ -80,10 +77,12 @@ library
       Langchain.TextSplitter.RecursiveCharacter
       Langchain.TextSplitter.Token
       Langchain.Tool.Async
+      Langchain.Tool.Binding
       Langchain.Tool.Calculator
       Langchain.Tool.Core
       Langchain.Tool.FileSystem
       Langchain.Tool.GenericSchema
+      Langchain.Tool.Shell
       Langchain.VectorStore.Core
       Langchain.VectorStore.InMemory
       Langchain.VectorStore.SqliteVec
@@ -135,7 +134,6 @@ test-suite langchain-hs-test
   main-is: Spec.hs
   other-modules:
       Test.Langchain.Agent.AdvancedAgentsSpec
-      Test.Langchain.Agent.MiddlewareSpec
       Test.Langchain.Agent.ReAct
       Test.Langchain.Cache.CacheSpec
       Test.Langchain.Callback.CallbackManagerSpec
@@ -152,7 +150,6 @@ test-suite langchain-hs-test
       Test.Langchain.Graph.CompilationSpec
       Test.Langchain.Guardrail.GuardrailSpec
       Test.Langchain.Integration.FullRagE2ESpec
-      Test.Langchain.Integration.MultiAgentGraphE2ESpec
       Test.Langchain.Integration.OllamaChatSpec
       Test.Langchain.Integration.OllamaEmbeddingSpec
       Test.Langchain.Integration.OllamaStreamSpec
@@ -204,6 +201,7 @@ test-suite langchain-hs-test
       Test.Langchain.Tool.Calculator
       Test.Langchain.Tool.Core
       Test.Langchain.Tool.FileSystem
+      Test.Langchain.Tool.Shell
       Test.Langchain.VectorStore.Core
       Test.Langchain.VectorStore.SqliteVecSpec
       Paths_langchain_hs

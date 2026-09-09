@@ -1,6 +1,8 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 
 {- |
 Module      : Langchain.Agent.ReAct
@@ -11,6 +13,7 @@ Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
 
 Modernized ReAct agent operating over ChatModel, Tool m, and multi-modal Message history.
+Uses 'ToolBinder' to pass tool definitions to the LLM provider in a provider-agnostic way.
 -}
 module Langchain.Agent.ReAct
   ( AgentStep (..)
@@ -28,6 +31,7 @@ import Langchain.Core.Error (LangchainError, agentError, toolError)
 import Langchain.Core.Model
 import qualified Langchain.Core.Model.Types as M
 import Langchain.Core.Tool
+import Langchain.Tool.Binding (ToolBinder (..))
 
 -- | Step result of ReAct reasoning iteration
 data AgentStep
@@ -53,20 +57,22 @@ createReActAgent model tools =
 
 -- | Run a single step of ReAct reasoning using ChatModel
 reactStep ::
-  (ChatModel model, MonadIO m, MonadError LangchainError m) =>
+  forall model m.
+  (ToolBinder model m, MonadIO m, MonadError LangchainError m) =>
   model ->
   [Tool m] ->
   [Message] ->
   m AgentStep
-reactStep model _ history = do
-  responseMsg <- invoke model history Nothing
+reactStep model tools history = do
+  let cfg = bindToolsConfig @model tools Nothing
+  responseMsg <- invoke model history cfg
   case messageToolCalls responseMsg of
     Just (tc : _) -> pure $ AgentAction responseMsg tc
     _ -> pure $ AgentFinish responseMsg
 
 -- | Execute the full ReAct reasoning loop until AgentFinish or max iterations reached
 runReActAgent ::
-  (ChatModel model, MonadIO m, MonadError LangchainError m) =>
+  (ToolBinder model m, MonadIO m, MonadError LangchainError m) =>
   ReActAgent model m ->
   [Message] ->
   m Message

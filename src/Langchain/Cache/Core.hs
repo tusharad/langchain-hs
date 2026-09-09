@@ -3,7 +3,10 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 {- |
 Module      : Langchain.Cache.Core
@@ -46,6 +49,7 @@ import Langchain.Core.Model
 import Langchain.Provider.Gemini (Gemini (..))
 import Langchain.Provider.Ollama (ModelName (..), Ollama (..))
 import Langchain.Provider.OpenAI (OpenAI (..))
+import Langchain.Tool.Binding (ToolBinder (..))
 import qualified Ollama.API.Chat as OllamaChat
 import Ollama.Client (OllamaClient (..))
 import Ollama.Client.Config (OllamaClientConfig (..))
@@ -228,3 +232,10 @@ instance (CacheableChatModel model, CacheBackend cache) => ChatModel (CachedMode
 
   stream CachedModel {..} =
     stream underlyingModel
+
+-- | Delegate tool binding to the underlying model
+instance
+  (CacheableChatModel model, CacheBackend cache, ToolBinder model m) =>
+  ToolBinder (CachedModel model cache) m
+  where
+  bindToolsConfig = bindToolsConfig @model

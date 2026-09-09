@@ -141,7 +141,12 @@ runGraph sg@StateGraph {..} currentId state
           throwError $
             internalError ("Node not found in compiled graph: " <> currentId) (Just currentId) Nothing
 
--- | Standard pure reducer concatenating Message lists
+{- | Standard pure reducer concatenating 'Message' lists.
+
+__Note:__ This reducer expects node actions to return only the /new/ messages (the delta)
+to append to the existing history. If your node actions return the full accumulated message
+list, use 'replaceFieldReducer' instead to avoid duplicating previous messages.
+-}
 appendMessagesReducer :: StateReducer [Message]
 appendMessagesReducer old new = old ++ new
 

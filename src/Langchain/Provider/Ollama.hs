@@ -1,6 +1,8 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
@@ -54,6 +56,8 @@ module Langchain.Provider.Ollama
   , withTools
   , toOllamaTool
   , toOllamaTools
+  , OllamaWithTools (..)
+  , bindTools
 
     -- * Re-exports from ollama-haskell format, schema, options & client config
   , module Ollama.API.Chat
@@ -85,6 +89,7 @@ import Langchain.Core.Error (llmError)
 import Langchain.Core.Model
 import Langchain.Core.Stream (StreamEvent (..), TokenUsage (..))
 import Langchain.Core.Tool (Tool, toolToValue)
+import Langchain.Tool.Binding (ToolBinder (..))
 
 import Ollama.API.Chat
 import qualified Ollama.API.Chat as OllamaChat
@@ -349,3 +354,43 @@ withStructuredOutput ::
   OllamaChat.ChatRequest
 withStructuredOutput req =
   req {OllamaChat.chatFormat = Just (OFormat.SchemaFormat (OSD.toSchema @a))}
+
+-- | Ollama model with pre-bound tools
+data OllamaWithTools m = OllamaWithTools
+  { ollamaBaseModel :: !Ollama
+  , ollamaBoundTools :: ![Tool m]
+  }
+
+instance Show (OllamaWithTools m) where
+  show (OllamaWithTools m _) = "OllamaWithTools (" ++ show m ++ ")"
+
+-- | Bind tools to an Ollama model so any invocation automatically includes tool definitions
+bindTools :: [Tool m] -> Ollama -> OllamaWithTools m
+bindTools ts model = OllamaWithTools model ts
+
+instance ChatModel (OllamaWithTools m) where
+  type ModelConfig (OllamaWithTools m) = OllamaChat.ChatRequest
+  invoke (OllamaWithTools model ts) msgs mbReq =
+    let req = fromMaybe (chatRequestFor model msgs) mbReq
+     in invoke model msgs (Just (withTools ts req))
+  stream (OllamaWithTools model ts) msgs mbReq =
+    let req = fromMaybe (chatRequestFor model msgs) mbReq
+     in stream model msgs (Just (withTools ts req))
+
+-- | Bind tools to an Ollama model by creating/merging a ChatRequest with tool definitions
+instance ToolBinder Ollama m where
+  bindToolsConfig tools mbReq =
+    case tools of
+      [] -> mbReq
+      _ ->
+        let baseReq = fromMaybe (OllamaChat.chatRequest (ModelName "") (O.userMessage "" NonEmpty.:| [])) mbReq
+         in Just $ withTools tools baseReq
+
+-- | OllamaWithTools already has tools bound, but merges additional tools if provided
+instance ToolBinder (OllamaWithTools m) n where
+  bindToolsConfig tools mbReq =
+    case tools of
+      [] -> mbReq
+      _ ->
+        let baseReq = fromMaybe (OllamaChat.chatRequest (ModelName "") (O.userMessage "" NonEmpty.:| [])) mbReq
+         in Just $ withTools tools baseReq
