@@ -241,10 +241,10 @@ openAIStreamClient = client (Proxy :: Proxy OpenAIStreamApi)
 streamRequestBody :: CC.CreateChatCompletion -> Maybe Value -> Value
 streamRequestBody request options = case Aeson.toJSON request of
   Object fields ->
-    Object $
-      KeyMap.insert "stream_options" (object ["include_usage" Aeson..= True]) $
-        KeyMap.insert "stream" (Bool True) $
-          KeyMap.union fields optionFields
+    Object
+      $ KeyMap.insert "stream_options" (object ["include_usage" Aeson..= True])
+      $ KeyMap.insert "stream" (Bool True)
+      $ KeyMap.union fields optionFields
   value -> value
   where
     optionFields = case options of
@@ -424,35 +424,42 @@ instance ChatModel OpenAI where
           Just (Left err) -> throwError $ llmError' err
           Just (Right OpenAIDone) -> finishStream
           Just (Right (OpenAIChunk OpenAIStreamChunk {streamChoices, streamUsage})) -> do
-            let selectedChoice = List.find ((== 0) . streamChoiceIndex) streamChoices
-                (texts, nextToolCalls) =
-                  case selectedChoice of
-                    Nothing -> ([], toolCalls)
-                    Just OpenAIStreamChoice {streamChoiceDelta = OpenAIStreamDelta {streamContent, streamToolCalls}} ->
-                      (maybe [] pure streamContent, List.foldl' (flip addToolCall) toolCalls streamToolCalls)
+            let (texts, nextToolCalls) = handleChoice $ choice0 streamChoices
                 nextUsage = streamUsage <|> usage
             mapM_ (\text -> yield $ LLMChunk rId text Nothing) texts
             receiveChunks (accumulated <> mconcat texts) nextToolCalls nextUsage
         where
+          choice0 = List.find $ (== 0) . streamChoiceIndex
+
+          handleChoice Nothing = ([], toolCalls)
+          handleChoice (Just OpenAIStreamChoice {streamChoiceDelta = OpenAIStreamDelta {streamContent, streamToolCalls}}) =
+            let nextToolCalls = List.foldl' addToolCall toolCalls streamToolCalls
+             in (maybe [] pure streamContent, nextToolCalls)
+
           addToolCall
+            toolCalls'
             OpenAIStreamToolCall
               { streamToolCallIndex
               , streamToolCallId
               , streamToolCallName
               , streamToolCallArguments
               } =
-              Map.alter (Just . update) streamToolCallIndex
+              Map.alter (Just . update) streamToolCallIndex toolCalls'
               where
                 update curr =
-                  PartialToolCall
-                    { partialToolCallId = streamToolCallId <|> (curr >>= partialToolCallId)
-                    , partialToolCallName = streamToolCallName <|> (curr >>= partialToolCallName)
-                    , partialToolCallArguments =
-                        maybe "" partialToolCallArguments curr <> fromMaybe "" streamToolCallArguments
-                    }
+                  let prevId = curr >>= partialToolCallId
+                      prevName = curr >>= partialToolCallName
+                      prevArgs = maybe "" partialToolCallArguments curr
+                      nextArgs = fromMaybe "" streamToolCallArguments
+                   in PartialToolCall
+                        { partialToolCallId = streamToolCallId <|> prevId
+                        , partialToolCallName = streamToolCallName <|> prevName
+                        , partialToolCallArguments = prevArgs <> nextArgs
+                        }
 
           finishStream = do
-            finalToolCalls <- lift $ traverse toToolCall $ Map.elems toolCalls
+            let finalizeToolCalls = traverse toToolCall $ Map.elems toolCalls
+            finalToolCalls <- lift finalizeToolCalls
             mapM_ (yield . LLMChunk rId "" . Just) finalToolCalls
             pure (accumulated, nonEmpty finalToolCalls, usage)
             where
@@ -461,16 +468,19 @@ instance ChatModel OpenAI where
 
               toToolCall :: PartialToolCall -> StreamM ToolCall
               toToolCall PartialToolCall {partialToolCallId, partialToolCallName, partialToolCallArguments} = do
-                toolCallId <- mb partialToolCallId "OpenAI stream ended with a tool call missing an id"
+                toolCallId <-
+                  fromMaybeOrThrow "OpenAI stream ended with a tool call missing an id" partialToolCallId
                 toolCallName <-
-                  mb partialToolCallName "OpenAI stream ended with a tool call missing a function name"
-                toolCallArguments <- case decode partialToolCallArguments of
-                  Left err -> throw $ "Invalid JSON arguments in OpenAI tool call: " <> T.pack err
-                  Right arguments -> pure arguments
+                  fromMaybeOrThrow "OpenAI stream ended with a tool call missing a function name" partialToolCallName
+                toolCallArguments <-
+                  either
+                    (throwLlmError . ("Invalid JSON arguments in OpenAI tool call: " <>) . T.pack)
+                    pure
+                    (decode partialToolCallArguments)
                 pure ToolCall {toolCallId, toolCallType = "function", toolCallName, toolCallArguments}
 
-              throw = throwError . llmError'
-              mb x errMsg = maybe (throw errMsg) pure x
+              throwLlmError = throwError . llmError'
+              fromMaybeOrThrow err = maybe (throwLlmError err) pure
               decode = Aeson.eitherDecode . LBS.fromStrict . TE.encodeUtf8
 
       -- \| Internal function to handle streaming events from OpenAI.
