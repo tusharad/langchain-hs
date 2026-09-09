@@ -1,11 +1,14 @@
 .stack-work/
+**/.stack-work/
 .hie/
+**/.hie/
 *~
 Wiki.md
 *.yaml.lock
 
 # Cabal & Hakyll
 dist-newstyle/
+**/dist-newstyle/
 site/_site/
 site/_cache/
 site/dist-newstyle/

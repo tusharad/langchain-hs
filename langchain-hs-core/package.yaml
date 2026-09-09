@@ -1,12 +1,24 @@
 name:                langchain-hs-core
-version:             0.1.0.0
+version:             0.0.5.0
 synopsis:            Core typeclasses and pure AST primitives for langchain-hs
-description:         Zero HTTP dependency core package containing ChatModel, RunnableTree, ContentBlock, and StreamEvent primitives.
+description:         Zero HTTP dependency core package containing ChatModel, RunnableTree, ContentBlock, Tool, and StreamEvent primitives.
 category:            Web, AI, Control
 author:              Tushar Adhatrao
 maintainer:          tusharadhatrao@gmail.com
 copyright:           2025-2026 Tushar Adhatrao
 license:             MIT
+license-file:        LICENSE
+github:              "tusharad/langchain-hs"
+
+extra-source-files:
+  - README.md
+  - CHANGELOG.md
+
+tested-with:
+  - GHC == 9.10.1
+  - GHC == 9.8.4
+  - GHC == 9.6.6
+  - GHC == 9.4.8
 
 dependencies:
 - aeson >= 2.0 && < 3

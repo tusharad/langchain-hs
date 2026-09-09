@@ -6,18 +6,40 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to the
 [Haskell Package Versioning Policy](https://pvp.haskell.org/).
 
-## Unreleased
+## 0.0.5.0 - 2026-09-10
 
-### Added
+### Major Architecture & Ecosystem Evolution
 
-- Upgraded to `ollama-haskell` `0.4.0.0` with support for native JSON schema grammar constraints (`Format`, `SchemaFormat`, `ToSchema`, `ToJsonType`).
-- Added native Ollama structured output execution: `structuredOllamaInvoke`, `structuredOllamaInvokeWithSchema`, `withStructuredOutput`, `withSchemaFormat`, `withJsonFormat`.
-- Enhanced generic JSON Schema derivation in `Langchain.OutputParser.Structured` and `Langchain.Tool.GenericSchema`:
-  - Automatic recursive derivation for nested composite record types.
-  - Automatic omission of optional (`Maybe a`) fields from JSON Schema `"required"` arrays.
-  - Rich type coverage for `Integer`, `Word8..64`, `Int8..64`, `UTCTime`, `Day`, `Scientific`, and collections.
-  - Bidirectional schema conversion bridges: `toOllamaSchema` and `fromOllamaSchema`.
-- Project hygiene: Weeder dead code detection configuration (`weeder.toml`, `make weeder`), removed unsupported Anthropic and DeepSeek providers, and pruned unused dependencies.
+- **3-Tier Monorepo Architecture**:
+  - `langchain-hs-core` (0.0.5.0): Zero-dependency pure core with `RunnableTree`, `ChatModel`, `ContentBlock`, `Tool`, `StreamEvent`, and `LangchainT`.
+  - `langchain-hs-graph` (0.0.5.0): Graph-based state machine engine with `StateGraph`, `StateReducer`, checkpointers, HITL, and multi-agent coordination.
+  - `langchain-hs` (0.0.5.0): Production integrations for Ollama, OpenAI, Gemini, Vector Stores, MCP, and Observability.
+- **Pure AST Pipelines (`RunnableTree`)**:
+  - The core selling point: Every component implements the `Runnable` typeclass.
+  - Compose pure GADT abstract syntax trees using `|>>` (sequential composition), `&>&` (parallel fan-out), and `>>>#` (fallback failover) without side effects before interpretation.
+- **LangGraph in Haskell (`StateGraph`)**:
+  - Cyclic state machines with pure state reducers (`StateReducer s`) satisfying monoid associativity laws.
+  - Thread-safe STM in-memory checkpointer (`MemoryCheckpointer`) and persistent `SQLiteCheckpointer`.
+  - First-class Human-in-the-Loop (`HITL`) node interruption, inspect/edit state, and resumption via `resumeGraph`.
+  - Time-travel state replay and Graphviz DOT visualization export.
+- **Model Context Protocol (MCP)**:
+  - Native stdio and HTTP JSON-RPC 2.0 client implementation.
+  - Dynamic tool inspection and bidirectional schema mapping to Haskell `Tool` definitions.
+- **Decoupled Monad Transformer (`LangchainT env m a`)**:
+  - Removed redundant global config structs in favor of parameterization over custom user environment `env`.
+  - Complete `MonadReader`, `MonadError`, `MonadIO`, and `MonadTrans` instances.
+- **Dual-Provider Parity Across 20 Core Components**:
+  - 1-to-1 verified parity across all 20 components between local **🦙 Ollama** and cloud **⚡ OpenAI / OpenRouter**.
+  - All 41 executables in `examples/` tested and verified live.
+- **Production Observability & Resilience**:
+  - OpenTelemetry distributed tracing spans (`withSpan`) and structured JSON telemetry.
+  - Three-state Circuit Breaker, exponential backoff retries with randomized jitter, and in-memory caching.
+- **Documentation Website**:
+  - Redesigned Hakyll site with live Ollama/OpenAI provider toggles, instant search (`Cmd+K`), and 20 dedicated component pages.
+- **Dependency & Performance Upgrades**:
+  - Upgraded to `ollama-haskell` `0.4.1.0` with JSON schema grammar constraints.
+  - Migrated to `MercuryTechnologies/openai` client.
+  - Full PVP upper bounds across all packages for Hackage compliance.
 
 ## 0.0.3.0 - 2025-11-16
 
