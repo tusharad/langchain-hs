@@ -52,7 +52,9 @@ supervisorNode model name routes extractPrompt updateState =
             matchExact =
               lookup rawRoute routes
                 <|> lookup (T.toLower rawRoute) [(T.toLower r, target) | (r, target) <- routes]
-                <|> lookup cleanRoute [(T.toLower (T.filter (\c -> c /= '.' && c /= '"' && c /= '\'') r), target) | (r, target) <- routes]
+                <|> lookup
+                  cleanRoute
+                  [(T.toLower (T.filter (\c -> c /= '.' && c /= '"' && c /= '\'') r), target) | (r, target) <- routes]
             matchSubstring =
               case filter (\(r, _) -> T.toLower r `T.isInfixOf` cleanRoute) routes of
                 ((_, target) : _) -> Just target

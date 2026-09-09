@@ -84,7 +84,7 @@ ingestNode filePath state = do
       mkDoc t = Document t Map.empty
       splitDocs =
         concatMap
-          (\d -> map mkDoc (splitText ops (pageContent d)))
+          (map mkDoc . splitText ops . pageContent)
           docs
   liftIO $ T.putStrLn $ "[ingest] loaded " <> T.pack (show (length splitDocs)) <> " chunks"
   pure state {chunks = splitDocs}
@@ -179,4 +179,3 @@ runApp = do
         Right finalState -> do
           T.putStrLn "\n=== Final Answer ==="
           T.putStrLn (answer finalState)
-

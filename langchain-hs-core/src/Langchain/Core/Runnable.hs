@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -21,19 +22,61 @@ module Langchain.Core.Runnable
   , interpret
   , runLambda
   , runPrim
+  , runPure
+  , runPassthrough
+  , runIdent
+  , runBranch
+  , runFallback
+  , runChat
+  , runModel
+  , ModelRunnable (..)
+  , TextModelRunnable (..)
   ) where
 
 import Control.Concurrent.Async (concurrently)
 import Control.Monad.Except (ExceptT, MonadError, catchError, runExceptT, throwError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import Data.Aeson (Value)
 import Data.Kind (Type)
+import Data.Text (Text)
+
 import Langchain.Core.Error (LangchainError)
+import Langchain.Core.Model (ChatModel, extractMessageText, userMessage)
+import qualified Langchain.Core.Model as M (invoke)
+import Langchain.Core.Model.Types (Message)
+import Langchain.Core.Tool (Tool (..))
 
 -- | Fundamental Runnable interface for components wrapped in 'Prim'.
 class Runnable r m where
   type RunnableInput r :: Type
   type RunnableOutput r :: Type
   invoke :: r -> RunnableInput r -> m (Either LangchainError (RunnableOutput r))
+
+-- | Any Tool can be executed as a primitive Runnable taking JSON 'Value' to 'Text'.
+instance Monad m => Runnable (Tool m) m where
+  type RunnableInput (Tool m) = Value
+  type RunnableOutput (Tool m) = Text
+  invoke = toolExecute
+
+-- | Wrapper to treat any 'ChatModel' as a Runnable over '[Message]' -> 'Message'.
+newtype ModelRunnable c = ModelRunnable c
+  deriving (Eq, Show)
+
+instance (ChatModel c, MonadIO m) => Runnable (ModelRunnable c) m where
+  type RunnableInput (ModelRunnable c) = [Message]
+  type RunnableOutput (ModelRunnable c) = Message
+  invoke (ModelRunnable c) msgs = runExceptT (M.invoke c msgs Nothing)
+
+-- | Wrapper to treat any 'ChatModel' as a simple 'Text' -> 'Text' Runnable.
+newtype TextModelRunnable c = TextModelRunnable c
+  deriving (Eq, Show)
+
+instance (ChatModel c, MonadIO m) => Runnable (TextModelRunnable c) m where
+  type RunnableInput (TextModelRunnable c) = Text
+  type RunnableOutput (TextModelRunnable c) = Text
+  invoke (TextModelRunnable c) prompt = do
+    res <- runExceptT $ M.invoke c [userMessage prompt] Nothing
+    pure (extractMessageText <$> res)
 
 {- | Pure GADT representing a composable pipeline AST.
 'i' = input type, 'o' = output type, 'm' = monad context.
@@ -121,3 +164,31 @@ interpret (Branch cond tTrue tFalse) input = do
   if b then interpret tTrue input else interpret tFalse input
 interpret (Fallback t1 t2) input =
   catchError (interpret t1 input) (\_ -> interpret t2 input)
+
+-- | Lift a pure function into a 'RunnableTree' node.
+runPure :: Monad m => (i -> o) -> RunnableTree m i o
+runPure f = runLambda (pure . Right . f)
+
+-- | Identity node in a 'RunnableTree' (passes input through unchanged, like LangChain's 'RunnablePassthrough').
+runPassthrough :: RunnableTree m a a
+runPassthrough = Id
+
+-- | Alias for 'runPassthrough'.
+runIdent :: RunnableTree m a a
+runIdent = Id
+
+-- | Construct a conditional branch AST node.
+runBranch :: (i -> m Bool) -> RunnableTree m i o -> RunnableTree m i o -> RunnableTree m i o
+runBranch = Branch
+
+-- | Construct a self-healing fallback AST node (tries first, catches errors and runs second).
+runFallback :: RunnableTree m i o -> RunnableTree m i o -> RunnableTree m i o
+runFallback = Fallback
+
+-- | Lift any 'ChatModel' into a simple 'Text' -> 'Text' pipeline step.
+runChat :: (ChatModel c, MonadIO m) => c -> RunnableTree m Text Text
+runChat c = runPrim (TextModelRunnable c)
+
+-- | Lift any 'ChatModel' into a structured '[Message]' -> 'Message' pipeline step.
+runModel :: (ChatModel c, MonadIO m) => c -> RunnableTree m [Message] Message
+runModel c = runPrim (ModelRunnable c)

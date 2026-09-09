@@ -1,5 +1,4 @@
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE OverloadedStrings #-}
 
 {- |
 Module      : Langchain.Core.Monad
@@ -40,10 +39,11 @@ import Control.Monad.Reader (ReaderT, runReaderT)
 
 import Langchain.Core.Error (LangchainError)
 
--- | Standard framework monad transformer stack: ReaderT over ExceptT.
---
--- The type variable @r@ is the reader environment — pass your own provider
--- config, application context, or @()@ when none is needed.
+{- | Standard framework monad transformer stack: ReaderT over ExceptT.
+
+The type variable @r@ is the reader environment — pass your own provider
+config, application context, or @()@ when none is needed.
+-}
 type LangchainT r m = ReaderT r (ExceptT LangchainError m)
 
 -- | Execute a 'LangchainT' computation with a given environment.

@@ -126,7 +126,8 @@ tests =
                 let toolMsgs = filter (\m -> messageRole m == Tool) secondCallHistory
                 length toolMsgs @?= 1
                 case toolMsgs of
-                  (m : _) -> assertBool "Error observation" ("Tool not found: unknown_tool" `T.isInfixOf` extractMessageText m)
+                  (m : _) ->
+                    assertBool "Error observation" ("Tool not found: unknown_tool" `T.isInfixOf` extractMessageText m)
                   _ -> assertFailure "Expected tool message"
               _ -> assertFailure "Expected 2 invocations"
     , testCase "runReActAgent completes full loop on finish" $ do

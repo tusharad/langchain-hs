@@ -25,7 +25,9 @@ tests =
           @?= ["Thisisasinglewordwit", "houtanyseparators"]
     , testCase "splitText handles both separator and chunk size" $ do
         let ops = CharacterSplitterOps {chunkSize = 20, separator = "\n\n"}
-        splitText ops "First paragraph that is quite long.\n\nSecond paragraph that is also very long and should be split."
+        splitText
+          ops
+          "First paragraph that is quite long.\n\nSecond paragraph that is also very long and should be split."
           @?= [ "First paragraph that"
               , " is quite long."
               , "Second paragraph tha"

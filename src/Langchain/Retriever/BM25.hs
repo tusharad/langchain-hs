@@ -1,7 +1,10 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TypeFamilies #-}
 
 {- |
 Module      : Langchain.Retriever.BM25
@@ -23,6 +26,8 @@ module Langchain.Retriever.BM25
   , bm25SearchWithScores
   , tokenize
   ) where
+
+import Langchain.Core.Runnable (Runnable (..))
 
 import Data.Char (isAlphaNum)
 #if MIN_VERSION_base(4,20,0)
@@ -138,3 +143,9 @@ bm25SearchWithScores BM25Index {..} query k
           tfWeight = (tfD * (bm25K1 + 1.0)) / (tfD + bm25K1 * (1.0 - bm25B + bm25B * normLen))
           scoreDelta = idf * tfWeight
        in Map.insertWith (+) docIdx scoreDelta acc
+
+-- | 'BM25Index' implements 'Runnable' mapping a search query 'Text' to '[Document]' results.
+instance Monad m => Runnable BM25Index m where
+  type RunnableInput BM25Index = Text
+  type RunnableOutput BM25Index = [Document]
+  invoke idx query = pure $ Right (bm25Search idx query 5)

@@ -1,7 +1,10 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TypeFamilies #-}
 
 {- |
 Module      : Langchain.Retriever.Hybrid
@@ -23,7 +26,9 @@ module Langchain.Retriever.Hybrid
   , reciprocalRankFusion
   ) where
 
+import Control.Monad.Except (runExceptT)
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import Langchain.Core.Runnable (Runnable (..))
 #if MIN_VERSION_base(4,20,0)
 import Data.List (sortBy)
 #else
@@ -142,3 +147,9 @@ searchHybridWithScores HybridRetriever {..} query k = do
           ]
 
   pure $ take k fused
+
+-- | 'HybridRetriever' implements 'Runnable' mapping search query 'Text' to fused '[Document]' results.
+instance MonadIO m => Runnable HybridRetriever m where
+  type RunnableInput HybridRetriever = Text
+  type RunnableOutput HybridRetriever = [Document]
+  invoke hr query = runExceptT (searchHybrid hr query 5)

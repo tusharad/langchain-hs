@@ -25,8 +25,6 @@ tests =
     , testCase "runLangchainT threads custom env through ask" $ do
         -- Developers use ask / asks from mtl directly with their own r
         let customEnv = (42 :: Int)
-        res <- runLangchainT customEnv $ do
-          env <- ask
-          pure env
+        res <- runLangchainT customEnv ask
         res @?= Right 42
     ]

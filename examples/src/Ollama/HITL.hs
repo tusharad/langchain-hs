@@ -104,7 +104,7 @@ runApp = do
   -- 2. Build the Graph with HITL checkpoint interrupt
   -- -------------------------------------------------------------------------
   let reviewHitlNode =
-        hitlNode cp threadId "humanReview" (\s -> pure $ Right s)
+        hitlNode cp threadId "humanReview" (pure . Right)
 
       graphDef =
         addEdge "publishPost" endNodeId

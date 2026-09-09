@@ -75,6 +75,16 @@ module Langchain.Prelude
   , interpret
   , runLambda
   , runPrim
+  , runPure
+  , runPassthrough
+  , runIdent
+  , runBranch
+  , runFallback
+  , runChat
+  , runModel
+  , runRetriever
+  , ModelRunnable (..)
+  , TextModelRunnable (..)
 
     -- * Effect-Polymorphic Tools
   , Tool (..)
@@ -358,7 +368,7 @@ import Langchain.Chain.RetrievalQA
 import Langchain.Core.Error
 import Langchain.Core.Model
 import Langchain.Core.Monad
-import Langchain.Core.Runnable
+import Langchain.Core.Runnable hiding (invoke)
 import Langchain.Core.Stream
 import Langchain.Core.Tool
 import Langchain.DocumentLoader.Core
@@ -424,4 +434,3 @@ import Langchain.Tool.Shell (shellTool)
 import Langchain.VectorStore.Core
 import Langchain.VectorStore.InMemory
 import Langchain.VectorStore.SqliteVec
-
