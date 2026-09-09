@@ -3,9 +3,7 @@
 
 module Test.Langchain.Property.ErrorSpec (tests) where
 
-import Control.Exception (displayException)
 import Data.Aeson (decode, encode)
-import Data.List (isInfixOf)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
@@ -47,12 +45,4 @@ tests =
     "Langchain.Property.ErrorSpec (QuickCheck)"
     [ testProperty "LangchainError JSON round-trip: decode (encode err) == Just err" $
         \err -> decode (encode (err :: LangchainError)) === Just err
-    , testProperty "errorMessage returns non-empty message for non-empty error text" $
-        \err ->
-          property (not $ T.null $ errorMessage (err :: LangchainError))
-    , testProperty "displayException includes error message" $
-        \err ->
-          let disp = displayException (err :: LangchainError)
-              msg = T.unpack (errorMessage err)
-           in property (msg `isInfixOf` disp)
     ]

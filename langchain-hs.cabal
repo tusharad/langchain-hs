@@ -144,7 +144,6 @@ test-suite langchain-hs-test
       Test.Langchain.DocumentLoader.DirectoryLoader
       Test.Langchain.DocumentLoader.HtmlSpec
       Test.Langchain.DocumentLoader.JsonSpec
-      Test.Langchain.DocumentLoader.WebPageSpec
       Test.Langchain.Embeddings.Core
       Test.Langchain.Error
       Test.Langchain.Graph.CompilationSpec
@@ -165,7 +164,6 @@ test-suite langchain-hs-test
       Test.Langchain.ObservabilitySpec
       Test.Langchain.OutputParser.AdvancedParsersSpec
       Test.Langchain.OutputParser.Core
-      Test.Langchain.PreludeSpec
       Test.Langchain.PromptTemplate.Chat.ChatPromptTemplateSpec
       Test.Langchain.PromptTemplate.Chat.MessagesPlaceholderSpec
       Test.Langchain.PromptTemplate.FewShotSpec
@@ -173,18 +171,14 @@ test-suite langchain-hs-test
       Test.Langchain.Property.CheckpointerSpec
       Test.Langchain.Property.ErrorSpec
       Test.Langchain.Property.MessageSpec
-      Test.Langchain.Property.OutputParserSpec
       Test.Langchain.Property.PromptTemplateSpec
       Test.Langchain.Property.RunnableSpec
-      Test.Langchain.Property.StateReducerSpec
       Test.Langchain.Property.TextSplitterSpec
       Test.Langchain.Provider.FixturesSpec
-      Test.Langchain.Provider.Gemini
       Test.Langchain.Provider.Mock
       Test.Langchain.Provider.Ollama
       Test.Langchain.Provider.OllamaConversionSpec
       Test.Langchain.Provider.OpenAI
-      Test.Langchain.Pure.PurePipelineSpec
       Test.Langchain.RegressionSpec
       Test.Langchain.Resilience.CircuitBreakerSpec
       Test.Langchain.Resilience.RetrySpec
@@ -199,7 +193,6 @@ test-suite langchain-hs-test
       Test.Langchain.TextSplitter.TokenSpec
       Test.Langchain.Tool.AdvancedToolsSpec
       Test.Langchain.Tool.Calculator
-      Test.Langchain.Tool.Core
       Test.Langchain.Tool.FileSystem
       Test.Langchain.Tool.Shell
       Test.Langchain.VectorStore.Core

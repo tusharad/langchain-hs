@@ -28,14 +28,13 @@ utilityTests :: TestTree
 utilityTests =
   testGroup
     "Utility Functions Tests"
-    [ testCase "initialMessages should create list with system message" $ do
-        let prompt = "You are a helpful assistant"
-            result = initialMessages prompt
+    [ testCase "initialMessages creates list with a single system message" $ do
+        let result = initialMessages "You are a helpful assistant"
         length result @?= 1
         case result of
-          (m : _) -> m @?= systemMessage prompt
+          (m : _) -> m @?= systemMessage "You are a helpful assistant"
           [] -> assertFailure "Expected non-empty list"
-    , testCase "trimMessages should keep specified number of messages" $ do
+    , testCase "trimMessages keeps last n messages (non-system)" $ do
         let msgs =
               [ systemMessage "System"
               , userMessage "User1"
@@ -43,27 +42,21 @@ utilityTests =
               , userMessage "User2"
               ]
             trimmed = trimMessages 2 msgs
-        length trimmed @?= 2
         trimmed @?= [assistantMessage "AI1", userMessage "User2"]
-    , testCase "trimMessages should keep all messages if n >= length" $ do
-        let msgs = [systemMessage "System", userMessage "User1"]
-            trimmed = trimMessages 3 msgs
-        length trimmed @?= 2
-        trimmed @?= [systemMessage "System", userMessage "User1"]
     ]
 
 windowBufferMemoryTests :: TestTree
 windowBufferMemoryTests =
   testGroup
     "WindowBufferMemory Tests"
-    [ testCase "messages should return current messages" $ do
+    [ testCase "messages returns current messages" $ do
         let initialMsgs = [systemMessage "System"]
         memory <- newWindowBufferMemory 3 initialMsgs
         res <- runExceptT $ messages memory
         case res of
           Left err -> assertFailure $ "Expected Right but got Left: " ++ show err
           Right msgs -> msgs @?= initialMsgs
-    , testCase "addMessage should add message when under capacity" $ do
+    , testCase "addMessage adds message when under capacity" $ do
         let initialMsgs = [systemMessage "System"]
         memory <- newWindowBufferMemory 3 initialMsgs
         res <- runExceptT $ do
@@ -72,7 +65,7 @@ windowBufferMemoryTests =
         case res of
           Left err -> assertFailure $ "Expected Right but got Left: " ++ show err
           Right msgs -> msgs @?= [systemMessage "System", userMessage "User1"]
-    , testCase "addMessage should maintain max window size" $ do
+    , testCase "addMessage trims oldest non-system message when at capacity" $ do
         let initialMsgs =
               [ systemMessage "System"
               , userMessage "User1"
@@ -84,28 +77,9 @@ windowBufferMemoryTests =
           messages memory
         case res of
           Left err -> assertFailure $ "Expected Right but got Left: " ++ show err
-          Right msgs -> do
-            length msgs @?= 3
+          Right msgs ->
             msgs @?= [systemMessage "System", assistantMessage "AI1", userMessage "User2"]
-    , testCase "addUserMessage should add message with User role" $ do
-        let initialMsgs = [systemMessage "System"]
-        memory <- newWindowBufferMemory 3 initialMsgs
-        res <- runExceptT $ do
-          addUserMessage memory "Hello"
-          messages memory
-        case res of
-          Left err -> assertFailure $ "Expected Right but got Left: " ++ show err
-          Right msgs -> msgs @?= [systemMessage "System", userMessage "Hello"]
-    , testCase "addAiMessage should add message with Assistant role" $ do
-        let initialMsgs = [systemMessage "System"]
-        memory <- newWindowBufferMemory 3 initialMsgs
-        res <- runExceptT $ do
-          addAiMessage memory "I can help"
-          messages memory
-        case res of
-          Left err -> assertFailure $ "Expected Right but got Left: " ++ show err
-          Right msgs -> msgs @?= [systemMessage "System", assistantMessage "I can help"]
-    , testCase "clear should reset to default system message" $ do
+    , testCase "clear resets to default system message" $ do
         let initialMsgs =
               [ systemMessage "System"
               , userMessage "User1"

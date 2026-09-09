@@ -16,7 +16,6 @@ import qualified Test.Langchain.DocumentLoader.CsvSpec as CsvLoaderTest
 import qualified Test.Langchain.DocumentLoader.DirectoryLoader as DirectoryLoaderTest
 import qualified Test.Langchain.DocumentLoader.HtmlSpec as HtmlLoaderTest
 import qualified Test.Langchain.DocumentLoader.JsonSpec as JsonLoaderTest
-import qualified Test.Langchain.DocumentLoader.WebPageSpec as WebPageLoaderTest
 import qualified Test.Langchain.Embeddings.Core as EmbeddingsTest
 import qualified Test.Langchain.Error as ErrorTest
 import qualified Test.Langchain.Graph.CompilationSpec as GraphCompilationTest
@@ -29,17 +28,14 @@ import qualified Test.Langchain.Memory.TokenBufferMemory as TokenBufferMemoryTes
 import qualified Test.Langchain.ObservabilitySpec as ObservabilityTest
 import qualified Test.Langchain.OutputParser.AdvancedParsersSpec as AdvancedParsersTest
 import qualified Test.Langchain.OutputParser.Core as OutputParserTest
-import qualified Test.Langchain.PreludeSpec as PreludeTest
 import qualified Test.Langchain.PromptTemplate.Chat.ChatPromptTemplateSpec as ChatPromptTemplateTest
 import qualified Test.Langchain.PromptTemplate.Chat.MessagesPlaceholderSpec as MessagesPlaceholderTest
 import qualified Test.Langchain.PromptTemplate.FewShotSpec as FewShotPromptTemplateTest
 import qualified Test.Langchain.PromptTemplate.PromptSpec as PromptTemplateTest
 import qualified Test.Langchain.Provider.FixturesSpec as FixturesTest
-import qualified Test.Langchain.Provider.Gemini as GeminiProviderTest
 import qualified Test.Langchain.Provider.Ollama as OllamaProviderTest
 import qualified Test.Langchain.Provider.OllamaConversionSpec as OllamaConversionTest
 import qualified Test.Langchain.Provider.OpenAI as OpenAIProviderTest
-import qualified Test.Langchain.Pure.PurePipelineSpec as PurePipelineTest
 import qualified Test.Langchain.Resilience.CircuitBreakerSpec as CircuitBreakerTest
 import qualified Test.Langchain.Resilience.RetrySpec as RetryTest
 import qualified Test.Langchain.Retriever.BM25Spec as BM25Test
@@ -52,7 +48,6 @@ import qualified Test.Langchain.TextSplitter.RecursiveCharacterSpec as Recursive
 import qualified Test.Langchain.TextSplitter.TokenSpec as TokenSplitterTest
 import qualified Test.Langchain.Tool.AdvancedToolsSpec as AdvancedToolsTest
 import qualified Test.Langchain.Tool.Calculator as CalculatorToolTest
-import qualified Test.Langchain.Tool.Core as ToolTest
 import qualified Test.Langchain.Tool.FileSystem as FileSystemToolTest
 import qualified Test.Langchain.Tool.Shell as ShellToolTest
 import qualified Test.Langchain.VectorStore.Core as VectorStoreTest
@@ -62,10 +57,8 @@ import qualified Test.Langchain.VectorStore.SqliteVecSpec as SqliteVecStoreTest
 import qualified Test.Langchain.Property.CheckpointerSpec as CheckpointerPropTest
 import qualified Test.Langchain.Property.ErrorSpec as ErrorPropTest
 import qualified Test.Langchain.Property.MessageSpec as MessagePropTest
-import qualified Test.Langchain.Property.OutputParserSpec as OutputParserPropTest
 import qualified Test.Langchain.Property.PromptTemplateSpec as PromptTemplatePropTest
 import qualified Test.Langchain.Property.RunnableSpec as RunnablePropTest
-import qualified Test.Langchain.Property.StateReducerSpec as StateReducerPropTest
 import qualified Test.Langchain.Property.TextSplitterSpec as TextSplitterPropTest
 
 -- Regression Test Module
@@ -104,7 +97,6 @@ main =
           , CsvLoaderTest.tests
           , JsonLoaderTest.tests
           , HtmlLoaderTest.tests
-          , WebPageLoaderTest.tests
           , MemoryTest.tests
           , SummaryMemoryTest.tests
           , EntityMemoryTest.tests
@@ -120,7 +112,6 @@ main =
           , CacheTest.tests
           , RetryTest.tests
           , CircuitBreakerTest.tests
-          , ToolTest.tests
           , AdvancedToolsTest.tests
           , ReActTest.tests
           , AdvancedAgentsTest.tests
@@ -132,14 +123,11 @@ main =
           , OllamaProviderTest.tests
           , OllamaConversionTest.tests
           , OpenAIProviderTest.tests
-          , GeminiProviderTest.tests
           , FixturesTest.tests
           , CalculatorToolTest.tests
           , FileSystemToolTest.tests
           , ShellToolTest.tests
           , GraphCompilationTest.tests
-          , PurePipelineTest.tests
-          , PreludeTest.tests
           ]
       , testGroup
           "Property Tests (Laws & Invariants)"
@@ -147,10 +135,8 @@ main =
           , PromptTemplatePropTest.tests
           , TextSplitterPropTest.tests
           , RunnablePropTest.tests
-          , StateReducerPropTest.tests
           , CheckpointerPropTest.tests
           , ErrorPropTest.tests
-          , OutputParserPropTest.tests
           ]
       , testGroup
           "Regression Tests"

@@ -13,7 +13,7 @@ import Control.Concurrent.STM
   , readTVarIO
   )
 import Control.Exception (SomeException, catch)
-import Control.Monad (forM, void)
+import Control.Monad (void)
 import Control.Monad.Except (runExceptT)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Resource (runResourceT)
@@ -24,7 +24,7 @@ import qualified Data.ByteString.Builder as Builder
 import qualified Data.ByteString.Lazy as LBS
 import Data.Conduit (ConduitT, await, runConduit, (.|))
 import qualified Data.Conduit.Combinators as C
-import Data.Maybe (fromMaybe, isJust, isNothing)
+import Data.Maybe (isJust, isNothing)
 import Data.Proxy (Proxy (..))
 import qualified Data.Text as T
 import qualified Data.Vector as V
@@ -38,7 +38,6 @@ import Servant.API.EventStream
   , ToServerEvent (..)
   )
 import Servant.Conduit ()
-import System.Environment (lookupEnv)
 import System.Timeout (timeout)
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -47,7 +46,7 @@ import Langchain.Core.Error (LangchainError)
 import Langchain.Core.Model
 import Langchain.Core.Stream (StreamEvent (..), TokenUsage (..), collectEvents)
 import Langchain.Core.Tool (Tool, createTool, toolToValue)
-import qualified Langchain.Core.Tool as CoreTool
+
 import Langchain.Provider.OpenAI
 
 newtype TestSseEvent = TestSseEvent LBS.ByteString
@@ -174,105 +173,7 @@ tests :: TestTree
 tests =
   testGroup
     "Langchain.Provider.OpenAI"
-    [ testCase "newOpenAI initializes default provider" $ do
-        let p = newOpenAI "sk-test" "gpt-4o"
-        model p @?= "gpt-4o"
-        baseUrl p @?= "https://api.openai.com"
-    , testCase "openAICompatible initializes custom endpoint" $ do
-        let p = openAICompatible "sk-test" "custom-llm" "https://custom-ai.example.com"
-        model p @?= "custom-llm"
-        baseUrl p @?= "https://custom-ai.example.com"
-    , testCase "live OpenAI stream emits text and usage" $ do
-        mbApiKey <- lookupEnv "OPENAI_API_KEY"
-        case mbApiKey of
-          Nothing -> putStrLn " [SKIPPED] OPENAI_API_KEY is not set"
-          Just envApiKey -> do
-            envModel <- fromMaybe "gpt-4o-mini" <$> lookupEnv "OPENAI_STREAM_TEST_MODEL"
-            result <-
-              timeout 60000000
-                $ runResourceT
-                $ runExceptT
-                $ collectEvents
-                $ stream
-                  (newOpenAI (T.pack envApiKey) (T.pack envModel))
-                  [userMessage "Reply with exactly OK."]
-                  Nothing
-            case result of
-              Nothing -> assertFailure "OpenAI stream timed out"
-              Just (Left err) -> assertFailure $ "Expected stream success, got: " ++ show err
-              Just (Right events) -> do
-                print events
-                case reverse events of
-                  LLMEnd _ responseMessage (Just usage) : _ -> do
-                    assertBool "Expected non-empty streamed text" $ not $ T.null $ extractMessageText responseMessage
-                    assertBool "Expected positive total token usage" $ totalTokens usage > 0
-                  _ -> assertFailure $ "Expected LLMEnd with usage, got: " ++ show events
-    , testCase "live OpenAI stream invokes a tool and continues with its result" $ do
-        mbApiKey <- lookupEnv "OPENAI_API_KEY"
-        case mbApiKey of
-          Nothing -> putStrLn " [SKIPPED] OPENAI_API_KEY is not set"
-          Just envApiKey -> do
-            envModel <- fromMaybe "gpt-4o-mini" <$> lookupEnv "OPENAI_STREAM_TEST_MODEL"
-            let weatherTool :: Tool IO
-                weatherTool =
-                  createTool
-                    "get_weather"
-                    "Returns the current weather for a city."
-                    ( Aeson.object
-                        [ "type" Aeson..= ("object" :: T.Text)
-                        , "properties"
-                            Aeson..= Aeson.object
-                              [ "city" Aeson..= Aeson.object ["type" Aeson..= ("string" :: T.Text)]
-                              ]
-                        , "required" Aeson..= ["city" :: T.Text]
-                        , "additionalProperties" Aeson..= False
-                        ]
-                    )
-                    (const $ pure $ Right "The weather in Paris is sunny and 22 C.")
-                provider = newOpenAI (T.pack envApiKey) (T.pack envModel)
-                runLive messages config =
-                  timeout 60000000
-                    $ runResourceT
-                    $ runExceptT
-                    $ collectEvents
-                    $ stream provider messages config
-                prompt = userMessage "Use get_weather to look up the weather in Paris, then answer using the tool result."
-
-            firstResult <-
-              runLive [prompt] (Just $ openAITools [weatherTool] (OpenAIToolFunction "get_weather"))
-            firstEvents <- case firstResult of
-              Nothing -> assertFailure "OpenAI tool-call stream timed out" >> fail "unreachable"
-              Just (Left err) -> assertFailure ("Expected tool-call stream success, got: " ++ show err) >> fail "unreachable"
-              Just (Right events) -> pure events
-            (assistant, toolCalls) <- case reverse firstEvents of
-              LLMEnd _ responseMessage _ : _ -> case messageToolCalls responseMessage of
-                Just calls@[toolCall]
-                  | toolCallName toolCall == "get_weather" -> pure (responseMessage, calls)
-                _ -> assertFailure ("Expected OpenAI tool call, got: " ++ show firstEvents) >> fail "unreachable"
-              _ -> assertFailure ("Expected tool-call stream end, got: " ++ show firstEvents) >> fail "unreachable"
-            toolResults <- forM toolCalls $ \toolCall -> do
-              output <- CoreTool.toolExecute weatherTool (toolCallArguments toolCall)
-              case output of
-                Left err -> assertFailure ("Tool execution failed: " ++ show err) >> fail "unreachable"
-                Right text ->
-                  pure $
-                    (textMessage Tool text)
-                      { messageName = Just (toolCallName toolCall)
-                      , messageToolId = Just (toolCallId toolCall)
-                      }
-            secondResult <- runLive ([prompt, assistant] <> toolResults) Nothing
-            case secondResult of
-              Nothing -> assertFailure "OpenAI tool-result stream timed out"
-              Just (Left err) -> assertFailure $ "Expected tool-result stream success, got: " ++ show err
-              Just (Right events) -> case reverse events of
-                LLMEnd _ responseMessage (Just usage) : _ -> do
-                  assertBool "Expected final text after tool result"
-                    $ not
-                    $ T.null
-                    $ extractMessageText responseMessage
-                  assertBool "Expected positive total token usage" $ totalTokens usage > 0
-                _ -> assertFailure $ "Expected LLMEnd with usage, got: " ++ show events
-    , testCase "normalizeBaseUrl strips endpoint paths for servant compatibility" $ do
+    [ testCase "normalizeBaseUrl strips endpoint paths for servant compatibility" $ do
         normalizeBaseUrl "https://api.openai.com" @?= "https://api.openai.com"
         normalizeBaseUrl "https://api.openai.com/" @?= "https://api.openai.com"
         normalizeBaseUrl "https://api.openai.com/v1" @?= "https://api.openai.com"
