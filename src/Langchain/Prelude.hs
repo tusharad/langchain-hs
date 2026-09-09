@@ -84,6 +84,7 @@ module Langchain.Prelude
   , Tool (..)
   , createTool
   , toolToValue
+  , ToolBinder (..)
   , DeriveToolSchema (..)
   , deriveToolParametersSchema
   , executeToolAsync
@@ -119,16 +120,13 @@ module Langchain.Prelude
   , addParallelNodes
 
     -- * Advanced Agent Patterns
+  , PlanStep (..)
+  , Plan (..)
+  , StepExecutor (..)
   , PlanAndExecuteAgent (..)
   , newPlanAndExecuteAgent
+  , newPlanAndExecuteAgentWithTools
   , runPlanAndExecute
-  , FunctionsAgent (FunctionsAgent)
-  , newFunctionsAgent
-  , runFunctionsAgent
-  , SpecialistAgent (..)
-  , SupervisorTeam (..)
-  , newSupervisorTeam
-  , runSupervisorTeam
 
     -- * Guardrails & Safety
   , GuardrailResult (..)
@@ -169,6 +167,9 @@ module Langchain.Prelude
   , OTelTracer (..)
   , newOTelTracer
   , getSpans
+  , startSpan
+  , endSpan
+  , addSpanAttribute
   , withSpan
   , exportSpansJson
 
@@ -181,6 +182,7 @@ module Langchain.Prelude
   , dispatchEvent
   , dispatchEventAsync
   , newLoggingCallbackHandler
+  , getCallbackLogs
 
     -- * Resilience
   , CircuitState (..)
@@ -214,9 +216,11 @@ module Langchain.Prelude
   , newSqliteVecStore
   , Retriever (..)
   , VectorStoreRetriever (..)
+  , retrieveWithCallbacks
 
     -- * Embeddings
   , Embeddings (..)
+  , OllamaEmbeddings (..)
 
     -- * Document Loaders
   , Document (..)
@@ -309,10 +313,9 @@ module Langchain.Prelude
   , createReActAgent
   , reactStep
   , runReActAgent
-  , AgentMiddleware (..)
-  , defaultMiddleware
-  , chainMiddlewares
-  , loggingMiddleware
+
+    -- * Standard Tools
+  , shellTool
 
     -- * Hybrid Retrieval & BM25
   , BM25Index (..)
@@ -338,20 +341,20 @@ module Langchain.Prelude
   , defaultOptions
   , withOptions
   , chatRequestFor
+  , resolveChatRequest
   , withTools
   , toOllamaTool
   , toOllamaTools
+  , OllamaWithTools (..)
+  , bindTools
   , OpenAI
   , newOpenAI
   , Gemini
   , newGemini
   ) where
 
-import Langchain.Agent.Functions
-import Langchain.Agent.Middleware
 import Langchain.Agent.PlanAndExecute
 import Langchain.Agent.ReAct
-import Langchain.Agent.Supervisor
 import Langchain.Cache.Core
 import Langchain.Callback.Manager
 import Langchain.Chain.MapReduce
@@ -371,6 +374,7 @@ import Langchain.DocumentLoader.Html
 import Langchain.DocumentLoader.Json
 import Langchain.DocumentLoader.WebPage
 import Langchain.Embeddings.Core
+import Langchain.Embeddings.Ollama (OllamaEmbeddings (..))
 import Langchain.Graph.Checkpointer
 import Langchain.Graph.HITL
 import Langchain.Graph.MultiAgent
@@ -391,11 +395,14 @@ import Langchain.Provider.Ollama
   ( ModelOptions (..)
   , Ollama (..)
   , OllamaClientConfig (..)
+  , OllamaWithTools (..)
+  , bindTools
   , chatRequestFor
   , defaultConfig
   , defaultOptions
   , newOllama
   , newOllamaWithClient
+  , resolveChatRequest
   , toOllamaTool
   , toOllamaTools
   , withJsonFormat
@@ -416,7 +423,9 @@ import Langchain.TextSplitter.Markdown
 import Langchain.TextSplitter.RecursiveCharacter
 import Langchain.TextSplitter.Token
 import Langchain.Tool.Async
+import Langchain.Tool.Binding
 import Langchain.Tool.GenericSchema
+import Langchain.Tool.Shell (shellTool)
 import Langchain.VectorStore.Core
 import Langchain.VectorStore.InMemory
 import Langchain.VectorStore.SqliteVec

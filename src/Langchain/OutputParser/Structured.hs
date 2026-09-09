@@ -257,7 +257,22 @@ fromOllamaSchema (SB.Schema props reqs) =
         ]
     jsonTypeToValue (SB.JObject subSchema) = fromOllamaSchema subSchema
 
--- | Invoke a ChatModel and extract a typed StructuredOutput value
+{- | Invoke a 'ChatModel' and extract a typed 'StructuredOutput' value.
+
+This function injects the JSON Schema into a system prompt and parses the LLM's response,
+retrying up to 3 times with error feedback if parsing fails.
+
+__Provider-Specific Grammar Enforcement:__
+Note that 'structuredInvoke' relies on prompt-based instructions and schema validation across
+generic 'ChatModel' instances. If you are using Ollama and want strict token-level schema
+enforcement (where Ollama guarantees valid JSON conforming to the schema at generation time),
+use 'withStructuredOutput' or set 'chatFormat' on 'ChatRequest' directly:
+
+@
+import Langchain.Provider.Ollama (ChatRequest(..), SchemaFormat(..))
+let req = def { chatFormat = Just (SchemaFormat (toOllamaSchema (outputSchema (Proxy :: Proxy MyType)))) }
+@
+-}
 structuredInvoke ::
   forall a model m.
   (StructuredOutput a, ChatModel model, MonadIO m, MonadError LangchainError m) =>

@@ -2,7 +2,9 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -70,6 +72,7 @@ import Langchain.Core.Error (LangchainError, llmError)
 import Langchain.Core.Model
 import Langchain.Core.Stream (StreamEvent (..), StreamM, TokenUsage (..), callbackSource)
 import Langchain.Core.Tool (Tool, toolToValue)
+import Langchain.Tool.Binding (ToolBinder (..))
 import Network.HTTP.Client (newManager)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Servant.API (Header, JSON, ReqBody, (:>))
@@ -374,7 +377,7 @@ fromOAIUsage u =
 instance ChatModel OpenAI where
   type ModelConfig OpenAI = Value
 
-  invoke provider inputMsgs _ = do
+  invoke provider inputMsgs mbOptions = do
     resp <- liftIO $ first asText <$> try createComplention
     case resp of
       Left err -> throwError $ llmError' err
@@ -388,7 +391,8 @@ instance ChatModel OpenAI where
     where
       createComplention = do
         methods <- getMethods
-        let body = reqBody provider inputMsgs
+        let baseBody = reqBody provider inputMsgs
+            body = mergeOptions baseBody mbOptions
         OAI.createChatCompletion methods body
       getMethods = do
         clientEnv <- OAI.getClientEnv (normalizeBaseUrl (baseUrl provider))
@@ -500,6 +504,21 @@ asText ex = T.pack $ show (ex :: SomeException)
 llmError' :: Text -> LangchainError
 llmError' msg = llmError msg Nothing Nothing
 
+-- | Merge option fields (tools, tool_choice, response_format, etc.) into a 'CreateChatCompletion'.
+mergeOptions :: CC.CreateChatCompletion -> Maybe Value -> CC.CreateChatCompletion
+mergeOptions body Nothing = body
+mergeOptions body (Just opts) =
+  case Aeson.toJSON body of
+    Object baseFields ->
+      let optFields = case opts of
+            Object fs -> fs
+            _ -> mempty
+          merged = KeyMap.union optFields baseFields
+       in case Aeson.fromJSON (Object merged) of
+            Aeson.Success merged' -> merged'
+            _ -> body -- fallback: ignore unparseable options
+    _ -> body
+
 -- | Construct the request body for OpenAI chat completion.
 reqBody :: OpenAI -> [Message] -> CC.CreateChatCompletion
 reqBody provider inputMsgs =
@@ -574,3 +593,16 @@ parseOpenAIResponse = parseEither $ Aeson.withObject "OpenAIResponse" $ \o -> do
           pure (Just calls)
       let msg = (assistantMessage contentTxt) {messageToolCalls = cToolCalls}
       pure (msg, mbUsage)
+
+-- | Bind tools to an OpenAI model by merging tool definitions into the options Value
+instance ToolBinder OpenAI m where
+  bindToolsConfig tools mbOpts =
+    case tools of
+      [] -> mbOpts
+      _ ->
+        let toolsVal = openAITools tools OpenAIToolAuto
+         in Just $ case (mbOpts, toolsVal) of
+              (Nothing, v) -> v
+              (Just (Object existing), Object newFields) ->
+                Object (KeyMap.union newFields existing)
+              (Just existing, _) -> existing

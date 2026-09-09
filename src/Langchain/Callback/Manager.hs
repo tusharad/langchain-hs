@@ -23,6 +23,7 @@ module Langchain.Callback.Manager
   , dispatchEvent
   , dispatchEventAsync
   , newLoggingCallbackHandler
+  , getCallbackLogs
   ) where
 
 import Control.Concurrent.Async (async)
@@ -40,6 +41,8 @@ data CallbackEvent
   | OnLLMEnd !Text !Text !Int !UTCTime -- Model name, Output text, Latency micros, Timestamp
   | OnToolStart !Text !Value !UTCTime -- Tool name, Arguments, Timestamp
   | OnToolEnd !Text !Text !Int !UTCTime -- Tool name, Output text, Latency micros, Timestamp
+  | OnRetrieverStart !Text !Text !UTCTime -- Retriever name, Query, Timestamp
+  | OnRetrieverEnd !Text ![Text] !Int !UTCTime -- Retriever name, Retrieved snippets, Latency micros, Timestamp
   | OnChainStart !Text !Text !UTCTime -- Chain name, Input, Timestamp
   | OnChainEnd !Text !Text !Int !UTCTime -- Chain name, Output, Latency micros, Timestamp
   | OnGraphNodeStart !Text !Text !UTCTime -- NodeId, State summary, Timestamp
@@ -91,3 +94,7 @@ newLoggingCallbackHandler name = liftIO $ do
           , handleEvent = \event -> atomically $ modifyTVar' logsVar (\logs -> logs ++ [T.pack (show event)])
           }
   pure (handler, logsVar)
+
+-- | Read all logs accumulated by a logging callback handler
+getCallbackLogs :: MonadIO m => TVar [Text] -> m [Text]
+getCallbackLogs = liftIO . readTVarIO

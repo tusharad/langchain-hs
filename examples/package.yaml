@@ -22,12 +22,15 @@ description:         Please see the README on GitHub at <https://github.com/gith
 dependencies:
 - base >= 4.7 && < 5
 - langchain-hs
+- langchain-hs-core
 - text
 - aeson
 - bytestring
 - mtl
 - conduit
 - resourcet
+- containers
+- time
 
 
 ghc-options:
@@ -94,6 +97,137 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - examples
+
+  prompttemplate:
+    main:                Main.hs
+    source-dirs:         app/prompttemplate
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  ragollama:
+    main:                Main.hs
+    source-dirs:         app/ragollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  memoryollama:
+    main:                Main.hs
+    source-dirs:         app/memoryollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  observabilityollama:
+    main:                Main.hs
+    source-dirs:         app/observabilityollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  guardrailollama:
+    main:                Main.hs
+    source-dirs:         app/guardrailollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  retrieverollama:
+    main:                Main.hs
+    source-dirs:         app/retrieverollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  mcpollama:
+    main:                Main.hs
+    source-dirs:         app/mcpollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  runnableollama:
+    main:                Main.hs
+    source-dirs:         app/runnableollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  retrievalqaollama:
+    main:                Main.hs
+    source-dirs:         app/retrievalqaollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  mapreduceollama:
+    main:                Main.hs
+    source-dirs:         app/mapreduceollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  resilienceollama:
+    main:                Main.hs
+    source-dirs:         app/resilienceollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  reactollama:
+    main:                Main.hs
+    source-dirs:         app/reactollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  planandexecuteollama:
+    main:                Main.hs
+    source-dirs:         app/planandexecuteollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
 
 tests:
   examples-test:

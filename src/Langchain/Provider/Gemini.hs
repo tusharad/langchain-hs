@@ -1,6 +1,8 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -22,7 +24,6 @@ module Langchain.Provider.Gemini
   , defaultConfig
   , defaultGeminiConfig
   , newGemini
-  , geminiTools
   , parseGeminiResponse
   ) where
 
@@ -61,6 +62,7 @@ import Langchain.Core.Error (LangchainError, llmError)
 import Langchain.Core.Model
 import Langchain.Core.Stream (StreamEvent (..), TokenUsage (..), callbackSource)
 import qualified Langchain.Core.Tool as CoreTool
+import Langchain.Tool.Binding (ToolBinder (..))
 
 -- | Gemini configuration
 data GeminiConfig = GeminiConfig
@@ -124,22 +126,6 @@ contentBlockToPart (AudioBlock mime b64) =
     ]
 contentBlockToPart (DataBlock _) =
   object ["text" .= ("[Data block]" :: Text)]
-
--- | Build Gemini tool declarations from langchain tool definitions.
-geminiTools :: [CoreTool.Tool m] -> Value
-geminiTools tools =
-  object
-    [ "tools"
-        .= [ object ["functionDeclarations" .= map functionDeclaration tools]
-           ]
-    ]
-  where
-    functionDeclaration tool =
-      object
-        [ "name" .= CoreTool.toolName tool
-        , "description" .= CoreTool.toolDescription tool
-        , "parameters" .= CoreTool.toolSchema tool
-        ]
 
 -- Convert a non-tool Message to Gemini Content JSON.
 messageToGemini :: Message -> Value
@@ -451,3 +437,28 @@ parseGeminiResponse = parseEither $ withObject "GeminiResponse" $ \o -> do
           withThoughtSignatures toolCalls signatures $
             assistantMessage $
               T.intercalate "\n" texts
+
+-- | Bind tools to a Gemini model by adding function declarations to the config.
+instance ToolBinder Gemini m where
+  bindToolsConfig tools config =
+    case tools of
+      [] -> config
+      _ ->
+        let generated =
+              KeyMap.singleton
+                "tools"
+                ( toJSON
+                    [ object ["functionDeclarations" .= map functionDeclaration tools]
+                    ]
+                )
+         in Just $ case config of
+              Nothing -> Object generated
+              Just (Object existing) -> Object (KeyMap.union generated existing)
+              Just other -> other
+    where
+      functionDeclaration tool =
+        object
+          [ "name" .= CoreTool.toolName tool
+          , "description" .= CoreTool.toolDescription tool
+          , "parameters" .= CoreTool.toolSchema tool
+          ]

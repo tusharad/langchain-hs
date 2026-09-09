@@ -14,8 +14,10 @@ import Langchain.Core.Tool (Tool)
 import Langchain.Provider.Ollama
 import Langchain.Tool.Calculator (calculatorTool)
 
+import qualified Data.List.NonEmpty as NonEmpty
 import qualified Ollama.Client as OC
 import qualified Ollama.Types.Format as OFormat
+import qualified Ollama.Types.Message as O
 import qualified Ollama.Types.Tool as OTool
 
 testModelName :: Text
@@ -94,4 +96,66 @@ tests =
         case res of
           Left err -> assertFailure $ "Expected success, got error: " ++ show err
           Right msg -> messageRole msg @?= Assistant
+    , testGroup
+        "Precedence Rules (resolveChatRequest)"
+        [ testCase "inputMsgs takes priority over ChatRequest chatMessages when non-empty" $ do
+            p <- newOllama "base-model" defaultConfig
+            let invokeMsgs = [userMessage "From invoke argument"]
+                reqMsgs = [userMessage "From ChatRequest"]
+                customReq = chatRequestFor p reqMsgs
+                (resolvedReq, resolvedModel, resolvedMsgs) =
+                  resolveChatRequest p invokeMsgs (Just customReq)
+            resolvedModel @?= "base-model"
+            resolvedMsgs @?= invokeMsgs
+            NonEmpty.toList (chatMessages resolvedReq) @?= map toOllamaMessage invokeMsgs
+        , testCase "fallback to ChatRequest chatMessages when inputMsgs is empty" $ do
+            p <- newOllama "base-model" defaultConfig
+            let reqMsgs = [userMessage "From ChatRequest only"]
+                customReq = chatRequestFor p reqMsgs
+                (resolvedReq, resolvedModel, resolvedMsgs) =
+                  resolveChatRequest p [] (Just customReq)
+            resolvedModel @?= "base-model"
+            resolvedMsgs @?= reqMsgs
+            NonEmpty.toList (chatMessages resolvedReq) @?= map toOllamaMessage reqMsgs
+        , testCase "defaults to single empty message when both inputMsgs and mbReq are empty" $ do
+            p <- newOllama "base-model" defaultConfig
+            let (resolvedReq, resolvedModel, resolvedMsgs) =
+                  resolveChatRequest p [] Nothing
+            resolvedModel @?= "base-model"
+            resolvedMsgs @?= []
+            NonEmpty.toList (chatMessages resolvedReq) @?= [O.userMessage ""]
+        , testCase "ChatRequest chatModel overrides provider ollamaModelName when non-empty" $ do
+            p <- newOllama "base-model" defaultConfig
+            let customReq = (chatRequestFor p [userMessage "hi"]) {chatModel = ModelName "custom-model"}
+                (resolvedReq, resolvedModel, _) =
+                  resolveChatRequest p [userMessage "hi"] (Just customReq)
+            resolvedModel @?= "custom-model"
+            chatModel resolvedReq @?= ModelName "custom-model"
+        , testCase "falls back to ollamaModelName when ChatRequest chatModel is empty" $ do
+            p <- newOllama "base-model" defaultConfig
+            let customReq = (chatRequestFor p [userMessage "hi"]) {chatModel = ModelName ""}
+                (resolvedReq, resolvedModel, _) =
+                  resolveChatRequest p [userMessage "hi"] (Just customReq)
+            resolvedModel @?= "base-model"
+            chatModel resolvedReq @?= ModelName "base-model"
+        , testCase "falls back to ollamaModelName when mbReq is Nothing" $ do
+            p <- newOllama "base-model" defaultConfig
+            let (resolvedReq, resolvedModel, _) =
+                  resolveChatRequest p [userMessage "hi"] Nothing
+            resolvedModel @?= "base-model"
+            chatModel resolvedReq @?= ModelName "base-model"
+        , testCase "preserves options, tools, format, and keep-alive from ChatRequest" $ do
+            p <- newOllama "base-model" defaultConfig
+            let opts = defaultOptions {optTemperature = Just 0.5}
+                customReq =
+                  (withOptions opts (chatRequestFor p [userMessage "dummy"]))
+                    { chatKeepAlive = Just "5m"
+                    , chatFormat = Just OFormat.JsonFormat
+                    }
+                (resolvedReq, _, _) =
+                  resolveChatRequest p [userMessage "override message"] (Just customReq)
+            chatOptions resolvedReq @?= Just opts
+            chatKeepAlive resolvedReq @?= Just "5m"
+            chatFormat resolvedReq @?= Just OFormat.JsonFormat
+        ]
     ]

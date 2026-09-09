@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Test.Langchain.Provider.Gemini (tests) where
 
@@ -39,6 +40,7 @@ import Langchain.Core.Stream (StreamEvent (..), TokenUsage (..), collectEvents)
 import Langchain.Core.Tool (Tool, createTool)
 import qualified Langchain.Core.Tool as CoreTool
 import Langchain.Provider.Gemini
+import Langchain.Tool.Binding (ToolBinder (bindToolsConfig))
 import Test.Langchain.Provider.TestSseServer
   ( cancellationAwareSseServer
   , capturingRawSseRequestServer
@@ -102,13 +104,14 @@ tests =
         "invoke"
         [ testCase "invoke sends Gemini function declarations" $ do
             let weatherTool :: Tool IO
-                weatherTool = createTool "get_weather" "Gets the weather" weatherSchema (const $ pure $ Right "sunny")
+                weatherTool = createTool "get_weather" "Gets the weather" weatherSchema (const . pure $ Right "sunny")
             capturedRequest <- newEmptyMVar
             withTestApplication
-              (capturingGenerateContentServer (\request body -> putMVar capturedRequest (request, body)))
+              (capturingGenerateContentServer (curry . putMVar $ capturedRequest))
               $ \url ->
                 withGeminiProvider url $ \provider -> do
-                  result <- runExceptT $ invoke provider [userMessage "Hello"] (Just $ geminiTools [weatherTool])
+                  let tools = bindToolsConfig @Gemini [weatherTool] Nothing
+                  result <- runExceptT $ invoke provider [userMessage "Hello"] tools
                   case result of
                     Left err -> assertFailure $ "Expected invoke success, got: " ++ show err
                     Right response -> extractMessageText response @?= "ok"
@@ -133,12 +136,9 @@ tests =
               }
             |]
         , testCase "invoke rejects a non-object Gemini config" $ do
-            result <-
-              runExceptT $
-                invoke
-                  (newGemini "test-key" "test-model" Nothing)
-                  [userMessage "Hello"]
-                  (Just $ Aeson.String "invalid")
+            let gemini = newGemini "test-key" "test-model" Nothing
+                modelConfig = Just $ Aeson.String "invalid"
+            result <- runExceptT $ invoke gemini [userMessage "Hello"] modelConfig
             case result of
               Left err ->
                 assertBool "Expected config error" $
@@ -192,7 +192,7 @@ tests =
                     }
             capturedRequest <- newEmptyMVar
             withTestApplication
-              (capturingGenerateContentServer (\request body -> putMVar capturedRequest (request, body)))
+              (capturingGenerateContentServer (curry . putMVar $ capturedRequest))
               $ \url ->
                 withGeminiProvider url $ \provider -> do
                   result <- runExceptT $ invoke provider [assistant] Nothing
@@ -219,8 +219,26 @@ tests =
                   "candidates": [{
                     "content": {
                       "parts": [
-                        {"functionCall": {"id": "call_weather", "name": "get_weather", "args": {"city": "Paris"}}},
-                        {"thoughtSignature": "signature_time", "functionCall": {"id": "call_time", "name": "get_time", "args": {"zone": "UTC"}}}
+                        {
+                            "functionCall":
+                                {
+                                    "id": "call_weather",
+                                    "name": "get_weather",
+                                    "args": {
+                                        "city": "Paris"
+                                    }
+                                }
+                        },
+                        {
+                            "thoughtSignature": "signature_time",
+                            "functionCall": {
+                                "id": "call_time",
+                                "name": "get_time",
+                                "args": {
+                                    "zone": "UTC"
+                                }
+                            }
+                        }
                       ]
                     }
                   }]
@@ -228,25 +246,46 @@ tests =
               |]
             assistant <- case parseGeminiResponse response of
               Left err -> assertFailure ("Expected function call response, got: " ++ err) >> fail "unreachable"
-              Right message -> pure message
+              Right message -> return message
             capturedRequest <- newEmptyMVar
             withTestApplication
-              (capturingGenerateContentServer (\request body -> putMVar capturedRequest (request, body)))
+              (capturingGenerateContentServer (curry . putMVar $ capturedRequest))
               $ \url ->
                 withGeminiProvider url $ \provider -> do
                   result <- runExceptT $ invoke provider [assistant] Nothing
                   case result of
                     Left err -> assertFailure $ "Expected invoke success, got: " ++ show err
-                    Right _ -> pure ()
+                    Right _ -> return ()
             (_, body) <- takeMVar capturedRequest
             Aeson.decode body
               @?= Just
                 [aesonQQ|
               {
-                "contents": [{"role": "model", "parts": [
-                  {"functionCall": {"id": "call_weather", "name": "get_weather", "args": {"city": "Paris"}}},
-                  {"thoughtSignature": "signature_time", "functionCall": {"id": "call_time", "name": "get_time", "args": {"zone": "UTC"}}}
-                ]}]
+                "contents": [
+                    {
+                        "role": "model",
+                        "parts": [
+                            {
+                                "functionCall": {
+                                    "id": "call_weather",
+                                    "name": "get_weather",
+                                    "args": {
+                                        "city": "Paris"
+                                    }
+                                }
+                            },
+                            {
+                                "thoughtSignature": "signature_time",
+                                "functionCall": {
+                                    "id": "call_time",
+                                    "name": "get_time",
+                                    "args": {
+                                        "zone": "UTC"
+                                    }
+                                }
+                            }
+                    ]
+                }]
               }
             |]
         , testCase "invoke omits Gemini thought signatures when metadata is malformed" $ do
@@ -258,7 +297,7 @@ tests =
                     }
             capturedRequest <- newEmptyMVar
             withTestApplication
-              (capturingGenerateContentServer (\request body -> putMVar capturedRequest (request, body)))
+              (capturingGenerateContentServer (curry . putMVar $ capturedRequest))
               $ \url ->
                 withGeminiProvider url $ \provider -> do
                   result <- runExceptT $ invoke provider [assistant] Nothing
@@ -270,9 +309,21 @@ tests =
               @?= Just
                 [aesonQQ|
               {
-                "contents": [{"role": "model", "parts": [{"functionCall": {
-                  "id": "call_1", "name": "get_weather", "args": {"city": "Paris"}
-                }}]}]
+                "contents": [
+                    {
+                        "role": "model",
+                        "parts": [
+                            {
+                                "functionCall": {
+                                    "id": "call_1",
+                                    "name": "get_weather",
+                                    "args": {
+                                        "city": "Paris"
+                                    }
+                            }
+                        }]
+                    }
+                ]
               }
             |]
         , testCase "invoke groups adjacent Gemini function responses" $ do
@@ -288,13 +339,14 @@ tests =
                     }
             capturedRequest <- newEmptyMVar
             withTestApplication
-              (capturingGenerateContentServer (\request body -> putMVar capturedRequest (request, body)))
+              (capturingGenerateContentServer (curry . putMVar $ capturedRequest))
               $ \url ->
                 withGeminiProvider url $ \provider -> do
-                  result <- runExceptT $ invoke provider [userMessage "Weather?", weatherResult, timeResult] Nothing
+                  let messages = [userMessage "Weather?", weatherResult, timeResult]
+                  result <- runExceptT $ invoke provider messages Nothing
                   case result of
                     Left err -> assertFailure $ "Expected invoke success, got: " ++ show err
-                    Right _ -> pure ()
+                    Right _ -> return ()
             (_, body) <- takeMVar capturedRequest
             Aeson.decode body
               @?= Just
@@ -318,15 +370,11 @@ tests =
               Nothing -> putStrLn " [SKIPPED] GEMINI_API_KEY is not set"
               Just envApiKey -> do
                 envModel <- fromMaybe "gemini-3.5-flash-lite" <$> lookupEnv "GEMINI_STREAM_TEST_MODEL"
+                let provider = newGemini (T.pack envApiKey) (T.pack envModel) Nothing
                 result <-
                   timeout 60000000 $
-                    runResourceT $
-                      runExceptT $
-                        collectEvents $
-                          stream
-                            (newGemini (T.pack envApiKey) (T.pack envModel) Nothing)
-                            [userMessage "Reply with exactly OK."]
-                            Nothing
+                    runResourceT . runExceptT . collectEvents $
+                      stream provider [userMessage "Reply with exactly OK."] Nothing
                 case result of
                   Nothing -> assertFailure "Gemini stream timed out"
                   Just (Left err) -> assertFailure $ "Expected stream success, got: " ++ show err
@@ -347,17 +395,15 @@ tests =
                         "get_weather"
                         "Returns the current weather for a city."
                         weatherSchema
-                        (const $ pure $ Right "The weather in Paris is sunny and 22 C.")
+                        (const . return $ Right "The weather in Paris is sunny and 22 C.")
                     provider = newGemini (T.pack envApiKey) (T.pack envModel) Nothing
                     runLive messages config =
                       timeout 60000000 $
-                        runResourceT $
-                          runExceptT $
-                            collectEvents $
-                              stream provider messages config
+                        runResourceT . runExceptT . collectEvents $
+                          stream provider messages config
                     prompt = userMessage "Use get_weather to look up the weather in Paris, then answer using the tool result."
 
-                firstResult <- runLive [prompt] (Just $ geminiTools [weatherTool])
+                firstResult <- runLive [prompt] (bindToolsConfig @Gemini [weatherTool] Nothing)
                 firstEvents <- case firstResult of
                   Nothing -> assertFailure "Gemini tool-call stream timed out" >> fail "unreachable"
                   Just (Left err) -> assertFailure ("Expected tool-call stream success, got: " ++ show err) >> fail "unreachable"
@@ -404,13 +450,15 @@ tests =
             capturedRequest <- newEmptyMVar
             withTestApplication
               ( capturingRawSseRequestServer
-                  (\request body -> putMVar capturedRequest (request, body))
+                  (curry . putMVar $ capturedRequest)
                   [sseFrame "{}"]
               )
               $ \url -> withGeminiProvider url $ \provider ->
-                void . runResourceT . runExceptT $
-                  collectEvents
-                    (stream provider [userMessage "Weather?", assistant, toolResult] (Just $ geminiTools [weatherTool]))
+                void . runResourceT . runExceptT . collectEvents $
+                  stream
+                    provider
+                    [userMessage "Weather?", assistant, toolResult]
+                    (bindToolsConfig @Gemini [weatherTool] Nothing)
             (request, body) <- takeMVar capturedRequest
             requestMethod request @?= "POST"
             rawPathInfo request @?= "/v1beta/models/test-model:streamGenerateContent"
@@ -594,12 +642,12 @@ tests =
             capturedRequest <- newEmptyMVar
             withTestApplication
               ( capturingRawSseRequestServer
-                  (\request body -> putMVar capturedRequest (request, body))
+                  (curry . putMVar $ capturedRequest)
                   [sseFrame "{}"]
               )
               $ \url -> do
                 withGeminiProvider url $ \provider ->
-                  void . runResourceT . runExceptT $ collectEvents (stream provider [userMessage "Hello"] Nothing)
+                  void . runResourceT . runExceptT . collectEvents $ stream provider [userMessage "Hello"] Nothing
                 (request, body) <- takeMVar capturedRequest
                 requestMethod request @?= "POST"
                 rawPathInfo request @?= "/v1beta/models/test-model:streamGenerateContent"

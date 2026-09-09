@@ -1,4 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -27,6 +29,7 @@ import Langchain.Core.Model
   , assistantMessage
   )
 import Langchain.Core.Stream (StreamEvent (..))
+import Langchain.Tool.Binding (ToolBinder (..))
 
 -- | Mock model implementation for pure monadic testing.
 data MockModel = MockModel
@@ -49,6 +52,9 @@ instance ChatModel MockModel where
     yield $ LLMStart rId (mockModelName model) inputMsgs
     yield $ LLMChunk rId (mockResponse model) Nothing
     yield $ LLMEnd rId (assistantMessage $ mockResponse model) Nothing
+
+instance ToolBinder MockModel m where
+  bindToolsConfig _ _ = Nothing
 
 instance CacheableChatModel MockModel where
   cacheModelIdentity (MockModel response mName) _ =

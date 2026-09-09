@@ -27,7 +27,20 @@ source-repository head
 
 library
   exposed-modules:
+      Common.PromptTemplate
+      Ollama.Guardrail
+      Ollama.MapReduce
+      Ollama.MCP
+      Ollama.Memory
       Ollama.Monad
+      Ollama.Observability
+      Ollama.PlanAndExecute
+      Ollama.RAG
+      Ollama.ReAct
+      Ollama.Resilience
+      Ollama.RetrievalQA
+      Ollama.Retriever
+      Ollama.Runnable
       Ollama.Simple
       Ollama.Stream
       Ollama.StructuredOutput
@@ -42,10 +55,35 @@ library
     , base >=4.7 && <5
     , bytestring
     , conduit
+    , containers
     , langchain-hs
+    , langchain-hs-core
     , mtl
     , resourcet
     , text
+    , time
+  default-language: Haskell2010
+
+executable guardrailollama
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/guardrailollama
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , conduit
+    , containers
+    , examples
+    , langchain-hs
+    , langchain-hs-core
+    , mtl
+    , resourcet
+    , text
+    , time
   default-language: Haskell2010
 
 executable jsonollama
@@ -60,11 +98,80 @@ executable jsonollama
     , base >=4.7 && <5
     , bytestring
     , conduit
+    , containers
     , examples
     , langchain-hs
+    , langchain-hs-core
     , mtl
     , resourcet
     , text
+    , time
+  default-language: Haskell2010
+
+executable mapreduceollama
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/mapreduceollama
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , conduit
+    , containers
+    , examples
+    , langchain-hs
+    , langchain-hs-core
+    , mtl
+    , resourcet
+    , text
+    , time
+  default-language: Haskell2010
+
+executable mcpollama
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/mcpollama
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , conduit
+    , containers
+    , examples
+    , langchain-hs
+    , langchain-hs-core
+    , mtl
+    , resourcet
+    , text
+    , time
+  default-language: Haskell2010
+
+executable memoryollama
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/memoryollama
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , conduit
+    , containers
+    , examples
+    , langchain-hs
+    , langchain-hs-core
+    , mtl
+    , resourcet
+    , text
+    , time
   default-language: Haskell2010
 
 executable monadollama
@@ -79,11 +186,212 @@ executable monadollama
     , base >=4.7 && <5
     , bytestring
     , conduit
+    , containers
     , examples
     , langchain-hs
+    , langchain-hs-core
     , mtl
     , resourcet
     , text
+    , time
+  default-language: Haskell2010
+
+executable observabilityollama
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/observabilityollama
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , conduit
+    , containers
+    , examples
+    , langchain-hs
+    , langchain-hs-core
+    , mtl
+    , resourcet
+    , text
+    , time
+  default-language: Haskell2010
+
+executable planandexecuteollama
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/planandexecuteollama
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , conduit
+    , containers
+    , examples
+    , langchain-hs
+    , langchain-hs-core
+    , mtl
+    , resourcet
+    , text
+    , time
+  default-language: Haskell2010
+
+executable prompttemplate
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/prompttemplate
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , conduit
+    , containers
+    , examples
+    , langchain-hs
+    , langchain-hs-core
+    , mtl
+    , resourcet
+    , text
+    , time
+  default-language: Haskell2010
+
+executable ragollama
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/ragollama
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , conduit
+    , containers
+    , examples
+    , langchain-hs
+    , langchain-hs-core
+    , mtl
+    , resourcet
+    , text
+    , time
+  default-language: Haskell2010
+
+executable reactollama
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/reactollama
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , conduit
+    , containers
+    , examples
+    , langchain-hs
+    , langchain-hs-core
+    , mtl
+    , resourcet
+    , text
+    , time
+  default-language: Haskell2010
+
+executable resilienceollama
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/resilienceollama
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , conduit
+    , containers
+    , examples
+    , langchain-hs
+    , langchain-hs-core
+    , mtl
+    , resourcet
+    , text
+    , time
+  default-language: Haskell2010
+
+executable retrievalqaollama
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/retrievalqaollama
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , conduit
+    , containers
+    , examples
+    , langchain-hs
+    , langchain-hs-core
+    , mtl
+    , resourcet
+    , text
+    , time
+  default-language: Haskell2010
+
+executable retrieverollama
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/retrieverollama
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , conduit
+    , containers
+    , examples
+    , langchain-hs
+    , langchain-hs-core
+    , mtl
+    , resourcet
+    , text
+    , time
+  default-language: Haskell2010
+
+executable runnableollama
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/runnableollama
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , conduit
+    , containers
+    , examples
+    , langchain-hs
+    , langchain-hs-core
+    , mtl
+    , resourcet
+    , text
+    , time
   default-language: Haskell2010
 
 executable simpleollama
@@ -98,11 +406,14 @@ executable simpleollama
     , base >=4.7 && <5
     , bytestring
     , conduit
+    , containers
     , examples
     , langchain-hs
+    , langchain-hs-core
     , mtl
     , resourcet
     , text
+    , time
   default-language: Haskell2010
 
 executable streamollama
@@ -117,11 +428,14 @@ executable streamollama
     , base >=4.7 && <5
     , bytestring
     , conduit
+    , containers
     , examples
     , langchain-hs
+    , langchain-hs-core
     , mtl
     , resourcet
     , text
+    , time
   default-language: Haskell2010
 
 executable toolollama
@@ -136,11 +450,14 @@ executable toolollama
     , base >=4.7 && <5
     , bytestring
     , conduit
+    , containers
     , examples
     , langchain-hs
+    , langchain-hs-core
     , mtl
     , resourcet
     , text
+    , time
   default-language: Haskell2010
 
 test-suite examples-test
@@ -156,9 +473,12 @@ test-suite examples-test
     , base >=4.7 && <5
     , bytestring
     , conduit
+    , containers
     , examples
     , langchain-hs
+    , langchain-hs-core
     , mtl
     , resourcet
     , text
+    , time
   default-language: Haskell2010
