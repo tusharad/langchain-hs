@@ -23,6 +23,7 @@ dependencies:
 - base >= 4.7 && < 5
 - langchain-hs
 - langchain-hs-core
+- langchain-hs-graph
 - text
 - aeson
 - bytestring
@@ -227,6 +228,39 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - examples
+
+  stategraphollama:
+    main:                Main.hs
+    source-dirs:         app/stategraphollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+    - langchain-hs-graph
+
+  multiagentollama:
+    main:                Main.hs
+    source-dirs:         app/multiagentollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+    - langchain-hs-graph
+
+  hitlollama:
+    main:                Main.hs
+    source-dirs:         app/hitlollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+    - langchain-hs-graph
 
 
 tests:

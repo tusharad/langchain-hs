@@ -29,10 +29,12 @@ library
   exposed-modules:
       Common.PromptTemplate
       Ollama.Guardrail
+      Ollama.HITL
       Ollama.MapReduce
       Ollama.MCP
       Ollama.Memory
       Ollama.Monad
+      Ollama.MultiAgent
       Ollama.Observability
       Ollama.PlanAndExecute
       Ollama.RAG
@@ -42,6 +44,7 @@ library
       Ollama.Retriever
       Ollama.Runnable
       Ollama.Simple
+      Ollama.StateGraph
       Ollama.Stream
       Ollama.StructuredOutput
       Ollama.Tool
@@ -58,6 +61,7 @@ library
     , containers
     , langchain-hs
     , langchain-hs-core
+    , langchain-hs-graph
     , mtl
     , resourcet
     , text
@@ -80,6 +84,30 @@ executable guardrailollama
     , examples
     , langchain-hs
     , langchain-hs-core
+    , langchain-hs-graph
+    , mtl
+    , resourcet
+    , text
+    , time
+  default-language: Haskell2010
+
+executable hitlollama
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/hitlollama
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , conduit
+    , containers
+    , examples
+    , langchain-hs
+    , langchain-hs-core
+    , langchain-hs-graph
     , mtl
     , resourcet
     , text
@@ -102,6 +130,7 @@ executable jsonollama
     , examples
     , langchain-hs
     , langchain-hs-core
+    , langchain-hs-graph
     , mtl
     , resourcet
     , text
@@ -124,6 +153,7 @@ executable mapreduceollama
     , examples
     , langchain-hs
     , langchain-hs-core
+    , langchain-hs-graph
     , mtl
     , resourcet
     , text
@@ -146,6 +176,7 @@ executable mcpollama
     , examples
     , langchain-hs
     , langchain-hs-core
+    , langchain-hs-graph
     , mtl
     , resourcet
     , text
@@ -168,6 +199,7 @@ executable memoryollama
     , examples
     , langchain-hs
     , langchain-hs-core
+    , langchain-hs-graph
     , mtl
     , resourcet
     , text
@@ -190,6 +222,30 @@ executable monadollama
     , examples
     , langchain-hs
     , langchain-hs-core
+    , langchain-hs-graph
+    , mtl
+    , resourcet
+    , text
+    , time
+  default-language: Haskell2010
+
+executable multiagentollama
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/multiagentollama
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , conduit
+    , containers
+    , examples
+    , langchain-hs
+    , langchain-hs-core
+    , langchain-hs-graph
     , mtl
     , resourcet
     , text
@@ -212,6 +268,7 @@ executable observabilityollama
     , examples
     , langchain-hs
     , langchain-hs-core
+    , langchain-hs-graph
     , mtl
     , resourcet
     , text
@@ -234,6 +291,7 @@ executable planandexecuteollama
     , examples
     , langchain-hs
     , langchain-hs-core
+    , langchain-hs-graph
     , mtl
     , resourcet
     , text
@@ -256,6 +314,7 @@ executable prompttemplate
     , examples
     , langchain-hs
     , langchain-hs-core
+    , langchain-hs-graph
     , mtl
     , resourcet
     , text
@@ -278,6 +337,7 @@ executable ragollama
     , examples
     , langchain-hs
     , langchain-hs-core
+    , langchain-hs-graph
     , mtl
     , resourcet
     , text
@@ -300,6 +360,7 @@ executable reactollama
     , examples
     , langchain-hs
     , langchain-hs-core
+    , langchain-hs-graph
     , mtl
     , resourcet
     , text
@@ -322,6 +383,7 @@ executable resilienceollama
     , examples
     , langchain-hs
     , langchain-hs-core
+    , langchain-hs-graph
     , mtl
     , resourcet
     , text
@@ -344,6 +406,7 @@ executable retrievalqaollama
     , examples
     , langchain-hs
     , langchain-hs-core
+    , langchain-hs-graph
     , mtl
     , resourcet
     , text
@@ -366,6 +429,7 @@ executable retrieverollama
     , examples
     , langchain-hs
     , langchain-hs-core
+    , langchain-hs-graph
     , mtl
     , resourcet
     , text
@@ -388,6 +452,7 @@ executable runnableollama
     , examples
     , langchain-hs
     , langchain-hs-core
+    , langchain-hs-graph
     , mtl
     , resourcet
     , text
@@ -410,6 +475,30 @@ executable simpleollama
     , examples
     , langchain-hs
     , langchain-hs-core
+    , langchain-hs-graph
+    , mtl
+    , resourcet
+    , text
+    , time
+  default-language: Haskell2010
+
+executable stategraphollama
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/stategraphollama
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , conduit
+    , containers
+    , examples
+    , langchain-hs
+    , langchain-hs-core
+    , langchain-hs-graph
     , mtl
     , resourcet
     , text
@@ -432,6 +521,7 @@ executable streamollama
     , examples
     , langchain-hs
     , langchain-hs-core
+    , langchain-hs-graph
     , mtl
     , resourcet
     , text
@@ -454,6 +544,7 @@ executable toolollama
     , examples
     , langchain-hs
     , langchain-hs-core
+    , langchain-hs-graph
     , mtl
     , resourcet
     , text
@@ -477,6 +568,7 @@ test-suite examples-test
     , examples
     , langchain-hs
     , langchain-hs-core
+    , langchain-hs-graph
     , mtl
     , resourcet
     , text

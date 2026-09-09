@@ -49,12 +49,16 @@ hitlNode ::
   NodeId ->
   (s -> m (Either LangchainError s)) ->
   Node s m
-hitlNode cp threadId name _ =
+hitlNode cp threadId name preAction =
   Node
     { nodeId = name
     , nodeAction = \state -> do
-        _ <- saveCheckpoint cp threadId name state
-        pure $ Left $ hitlInterruptError name
+        eSt <- preAction state
+        case eSt of
+          Left err -> pure $ Left err
+          Right st -> do
+            _ <- saveCheckpoint cp threadId name st
+            pure $ Left $ hitlInterruptError name
     }
 
 -- | Resume an interrupted graph execution after human modification of checkpoint state
