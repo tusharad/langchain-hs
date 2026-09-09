@@ -21,8 +21,8 @@ description: Purely functional, effect-polymorphic, zero-unsafePerformIO AI agen
       <span>Get Started in 5 Min</span>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
     </a>
-    <a href="/concepts/architecture.html" class="btn-secondary">
-      <span>Architecture &amp; Laws</span>
+    <a href="/components/chat-models.html" class="btn-secondary">
+      <span>Explore 20 Components</span>
     </a>
     <a href="/api/cheat-sheet.html" class="btn-secondary">
       <span>Prelude Cheat Sheet</span>
@@ -30,146 +30,270 @@ description: Purely functional, effect-polymorphic, zero-unsafePerformIO AI agen
   </div>
 </section>
 
-<!-- Interactive Tabbed Code Showcase -->
+<!-- Interactive Dual-Provider Code Showcase -->
 <section class="showcase-section">
   <div class="showcase-header">
-    <h2>Built For Pure Mathematical Precision</h2>
-    <p style="color: var(--text-muted);">Explore the core abstractions that make langchain-hs uniquely reliable.</p>
+    <h2>Real Working Code: Ollama vs OpenAI</h2>
+    <p style="color: var(--text-muted);">Switch between local inference (Ollama) and cloud APIs (OpenAI / OpenRouter) across all 20 components.</p>
   </div>
 
-  <div class="tabs-nav">
-    <button class="tab-btn active" data-tab="runnable">Pure AST Pipeline</button>
-    <button class="tab-btn" data-tab="graph">StateGraph (LangGraph)</button>
-    <button class="tab-btn" data-tab="mcp">Model Context Protocol (MCP)</button>
-    <button class="tab-btn" data-tab="multiagent">Supervisor Teams</button>
-    <button class="tab-btn" data-tab="otel">OpenTelemetry Spans</button>
-  </div>
+  <div class="provider-group">
+    <div class="provider-panel active" data-provider="ollama" data-label="🦙 Ollama (Local)" data-exe="stack run simpleollama">
+      <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE OverloadedStrings #-}</span>
+<span class="kw">module</span> <span class="dt">Main</span> <span class="kw">where</span>
 
-  <!-- Tab 1: Runnable AST Pipeline -->
-  <div class="tab-pane active" id="tab-runnable">
-    <div class="code-block-wrapper">
-      <div class="code-header">
-        <span class="code-lang">haskell</span>
-      </div>
-      <pre><code class="language-haskell">{-# LANGUAGE OverloadedStrings #-}
-import Langchain.Prelude
+<span class="kw">import</span> <span class="dt">Control.Monad.Except</span> (runExceptT)
+<span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Text.IO</span> <span class="kw">as</span> <span class="dt">T</span>
+<span class="kw">import</span> <span class="dt">Langchain.Prelude</span>
 
--- Compose pure AST pipelines with (|>>) and (&>&)
-ragPipeline :: RunnableTree IO Text Text
-ragPipeline =
-      runLambda (\q -> (q, q))                      -- duplicate query
-  |>> (fetchDocuments &>& generateFollowup)          -- parallel branch
-  |>> runLambda (\(docs, fup) -> renderPrompt docs fup)
-  |>> invokeLLM model
-  |>> parseStructuredOutput
-
--- Zero IO during construction. Full AST introspection & optimization before interpretation!
-main :: IO ()
-main = do
-  output <- interpret ragPipeline "Explain Monads in 3 sentences"
-  print output</code></pre>
-    </div>
-  </div>
-
-  <!-- Tab 2: StateGraph -->
-  <div class="tab-pane" id="tab-graph">
-    <div class="code-block-wrapper">
-      <div class="code-header">
-        <span class="code-lang">haskell</span>
-      </div>
-      <pre><code class="language-haskell">-- Define pure state reducer with Monoid associativity
-data AgentState = AgentState { messages :: [Message], currentPhase :: Text }
-
--- Construct cyclic workflow with STM TVar checkpointing and SQLite persistence
-workflow :: StateGraph AgentState IO
-workflow = emptyStateGraph appendMessagesReducer
-  & addNode "planner" plannerNode
-  & addNode "executor" executorNode
-  & addNode "reviewer" reviewerNode
-  & addEdge startNodeId "planner"
-  & addEdge "planner" "executor"
-  & addConditionalEdge "executor" shouldReview 
-      [ ("continue", "reviewer"), ("done", endNodeId) ]
-  & addEdge "reviewer" "planner" -- cyclic feedback loop!
-
-compiled = compileGraph workflow (Just memoryCheckpointer)</code></pre>
-    </div>
-  </div>
-
-  <!-- Tab 3: Model Context Protocol (MCP) -->
-  <div class="tab-pane" id="tab-mcp">
-    <div class="code-block-wrapper">
-      <div class="code-header">
-        <span class="code-lang">haskell</span>
-      </div>
-      <pre><code class="language-haskell">import Langchain.Prelude
-
-mcpAgentWorkflow :: IO ()
-mcpAgentWorkflow = do
-  -- Connect to any MCP server via stdio or HTTP JSON-RPC 2.0
-  client <- newStdioMcpClient "npx" ["-y", "@modelcontextprotocol/server-everything"]
+<span class="ot">main ::</span> <span class="dt">IO</span> ()
+<span class="ot">main</span> <span class="ot">=</span> <span class="kw">do</span>
+  <span class="co">-- Connect to local Ollama instance (DeepSeek, Llama 3, Gemma, etc.)</span>
+  o <span class="ot">&lt;-</span> newOllama <span class="st">&quot;gemma3&quot;</span> defaultConfig
   
-  -- Introspect server tools and automatically convert to native Tool definitions
-  mcpTools <- listMcpTools client
-  let nativeTools = map mcpToolToLangchainTool mcpTools
-  
-  -- Bind tools to your ReAct or Plan-and-Execute Agent
-  let agent = createReActAgent model nativeTools defaultAgentConfig
-  res <- runReActAgent agent "Inspect the current filesystem and count .hs files"
-  print res</code></pre>
+  <span class="kw">let</span> msg <span class="ot">=</span> [userMessage <span class="st">&quot;Write a poem about functional programming in Haskell&quot;</span>]
+  res <span class="ot">&lt;-</span> runExceptT <span class="op">$$</span> invoke o msg <span class="dt">Nothing</span>
+  <span class="kw">case</span> res <span class="kw">of</span>
+    <span class="dt">Left</span> err <span class="ot">-&gt;</span> T.putStrLn <span class="op">$$</span> errorMessage err
+    <span class="dt">Right</span> m  <span class="ot">-&gt;</span> T.putStrLn <span class="op">$$</span> extractMessageText m</code></pre></div>
     </div>
-  </div>
 
-  <!-- Tab 4: Multi-Agent Teams -->
-  <div class="tab-pane" id="tab-multiagent">
-    <div class="code-block-wrapper">
-      <div class="code-header">
-        <span class="code-lang">haskell</span>
-      </div>
-      <pre><code class="language-haskell">import Langchain.Prelude
+    <div class="provider-panel" data-provider="openai" data-label="⚡ OpenAI / OpenRouter" data-exe="stack run simpleopenai">
+      <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE OverloadedStrings #-}</span>
+<span class="kw">module</span> <span class="dt">Main</span> <span class="kw">where</span>
 
--- Construct capability-based specialist agents
-researcher = SpecialistAgent "researcher" "Web & document retrieval" [searchTool]
-coder      = SpecialistAgent "coder" "Haskell implementation & types" [ghcTool]
-tester     = SpecialistAgent "tester" "QuickCheck property verification" [testTool]
+<span class="kw">import</span> <span class="dt">Control.Monad.Except</span> (runExceptT)
+<span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Text.IO</span> <span class="kw">as</span> <span class="dt">T</span>
+<span class="kw">import</span> <span class="dt">Langchain.Prelude</span>
+<span class="kw">import</span> <span class="dt">OpenAI.Common</span> (defaultModelName, getOpenRouterModel)
 
--- Supervisor automatically delegates turns based on capabilities
-supervisor = newSupervisorTeam model [researcher, coder, tester] 10
-
-main :: IO ()
-main = do
-  result <- runSupervisorTeam supervisor "Implement a thread-safe LRU cache with tests"
-  print result</code></pre>
-    </div>
-  </div>
-
-  <!-- Tab 5: OpenTelemetry -->
-  <div class="tab-pane" id="tab-otel">
-    <div class="code-block-wrapper">
-      <div class="code-header">
-        <span class="code-lang">haskell</span>
-      </div>
-      <pre><code class="language-haskell">import Langchain.Prelude
-import qualified Data.Map.Strict as Map
-
-observeAgent :: IO ()
-observeAgent = do
-  tracer <- newOTelTracer Nothing
+<span class="ot">main ::</span> <span class="dt">IO</span> ()
+<span class="ot">main</span> <span class="ot">=</span> <span class="kw">do</span>
+  <span class="co">-- Connect to OpenAI or OpenRouter using environment API key</span>
+  o <span class="ot">&lt;-</span> getOpenRouterModel defaultModelName
   
-  -- Trace multi-agent execution with OpenTelemetry Spans
-  _ <- withSpan tracer "agent_execution" Nothing ClientSpan 
-                (Map.singleton "session_id" "session-42") $$ do
-    runSupervisorTeam supervisor "Summarize Q3 earnings"
-    
-  -- Export trace data to JSON or OTLP collector
-  spansJson <- exportSpansJson tracer
-  putStrLn spansJson</code></pre>
+  <span class="kw">let</span> msg <span class="ot">=</span> [userMessage <span class="st">&quot;Write a poem about functional programming in Haskell&quot;</span>]
+  res <span class="ot">&lt;-</span> runExceptT <span class="op">$$</span> invoke o msg <span class="dt">Nothing</span>
+  <span class="kw">case</span> res <span class="kw">of</span>
+    <span class="dt">Left</span> err <span class="ot">-&gt;</span> T.putStrLn <span class="op">$$</span> errorMessage err
+    <span class="dt">Right</span> m  <span class="ot">-&gt;</span> T.putStrLn <span class="op">$$</span> extractMessageText m</code></pre></div>
     </div>
   </div>
 </section>
 
+<!-- 20 Components Directory Gallery -->
+<section class="showcase-section" style="margin-top: 3rem;">
+  <div class="showcase-header">
+    <h2>Complete Component Directory (20 Components)</h2>
+    <p style="color: var(--text-muted);">Every component features dual Ollama/OpenAI examples, verified build targets, and complete Haskell signatures.</p>
+  </div>
+
+  <div class="components-gallery">
+    <a href="/components/chat-models.html" class="component-card">
+      <div class="component-card-icon">💬</div>
+      <div class="component-card-title">Chat Models</div>
+      <div class="component-card-desc">Unified interface for model invocation, message types, options, and batch generation.</div>
+      <div class="component-card-pills">
+        <span class="mini-pill">Ollama</span>
+        <span class="mini-pill">OpenAI</span>
+        <span class="mini-pill">Batch</span>
+      </div>
+    </a>
+
+    <a href="/components/streaming.html" class="component-card">
+      <div class="component-card-icon">🌊</div>
+      <div class="component-card-title">Streaming</div>
+      <div class="component-card-desc">Real-time incremental token streaming and Conduit pipeline consumers.</div>
+      <div class="component-card-pills">
+        <span class="mini-pill">streamChat</span>
+        <span class="mini-pill">Tokens</span>
+      </div>
+    </a>
+
+    <a href="/components/monad.html" class="component-card">
+      <div class="component-card-icon">🏛️</div>
+      <div class="component-card-title">Langchain Monad</div>
+      <div class="component-card-desc">Type-safe LangchainT transformer decoupled over custom environments and error handlers.</div>
+      <div class="component-card-pills">
+        <span class="mini-pill">LangchainT</span>
+        <span class="mini-pill">ReaderT</span>
+      </div>
+    </a>
+
+    <a href="/components/tools.html" class="component-card">
+      <div class="component-card-icon">🔧</div>
+      <div class="component-card-title">Tools &amp; Function Calling</div>
+      <div class="component-card-desc">Effect-polymorphic Haskell tools, JSON parameter schemas, and LLM tool execution.</div>
+      <div class="component-card-pills">
+        <span class="mini-pill">Tool</span>
+        <span class="mini-pill">Schema</span>
+      </div>
+    </a>
+
+    <a href="/components/structured-output.html" class="component-card">
+      <div class="component-card-icon">📋</div>
+      <div class="component-card-title">Structured Outputs</div>
+      <div class="component-card-desc">Guaranteed JSON schema generation parsed into type-safe Aeson data structures.</div>
+      <div class="component-card-pills">
+        <span class="mini-pill">FromJSON</span>
+        <span class="mini-pill">Parser</span>
+      </div>
+    </a>
+
+    <a href="/components/rag.html" class="component-card">
+      <div class="component-card-icon">📚</div>
+      <div class="component-card-title">RAG &amp; Embeddings</div>
+      <div class="component-card-desc">Dense vector embeddings, cosine distance calculation, and document chunking.</div>
+      <div class="component-card-pills">
+        <span class="mini-pill">Embeddings</span>
+        <span class="mini-pill">Cosine</span>
+      </div>
+    </a>
+
+    <a href="/components/retrievers.html" class="component-card">
+      <div class="component-card-icon">🔍</div>
+      <div class="component-card-title">Retrievers &amp; Ensembles</div>
+      <div class="component-card-desc">Reciprocal Rank Fusion (RRF) combining BM25 keyword matching and vector stores.</div>
+      <div class="component-card-pills">
+        <span class="mini-pill">BM25</span>
+        <span class="mini-pill">RRF</span>
+      </div>
+    </a>
+
+    <a href="/components/memory.html" class="component-card">
+      <div class="component-card-icon">🧠</div>
+      <div class="component-card-title">Memory Systems</div>
+      <div class="component-card-desc">Buffer memories and persistent conversational history tracking across multi-turn sessions.</div>
+      <div class="component-card-pills">
+        <span class="mini-pill">BufferMemory</span>
+        <span class="mini-pill">History</span>
+      </div>
+    </a>
+
+    <a href="/components/retrieval-qa.html" class="component-card">
+      <div class="component-card-icon">💡</div>
+      <div class="component-card-title">Retrieval QA Chains</div>
+      <div class="component-card-desc">End-to-end question answering pipeline synthesizing relevant context and citations.</div>
+      <div class="component-card-pills">
+        <span class="mini-pill">QA Chain</span>
+        <span class="mini-pill">Synthesis</span>
+      </div>
+    </a>
+
+    <a href="/components/map-reduce.html" class="component-card">
+      <div class="component-card-icon">🗺️</div>
+      <div class="component-card-title">Map-Reduce Processing</div>
+      <div class="component-card-desc">Hierarchical summarization and chunk reduction over books, papers, and large corpora.</div>
+      <div class="component-card-pills">
+        <span class="mini-pill">Map</span>
+        <span class="mini-pill">Reduce</span>
+      </div>
+    </a>
+
+    <a href="/components/react-agent.html" class="component-card">
+      <div class="component-card-icon">🤖</div>
+      <div class="component-card-title">ReAct Agent</div>
+      <div class="component-card-desc">Autonomous reasoning and acting loop with tool selection, execution, and observations.</div>
+      <div class="component-card-pills">
+        <span class="mini-pill">ReAct</span>
+        <span class="mini-pill">Tools</span>
+      </div>
+    </a>
+
+    <a href="/components/plan-and-execute.html" class="component-card">
+      <div class="component-card-icon">🎯</div>
+      <div class="component-card-title">Plan-and-Execute Agent</div>
+      <div class="component-card-desc">Decoupled macro-planner creating structured task DAGs with execution &amp; replanning.</div>
+      <div class="component-card-pills">
+        <span class="mini-pill">Planner</span>
+        <span class="mini-pill">Executor</span>
+      </div>
+    </a>
+
+    <a href="/components/guardrails.html" class="component-card">
+      <div class="component-card-icon">🛡️</div>
+      <div class="component-card-title">Guardrails &amp; Safety</div>
+      <div class="component-card-desc">Pre- and post-execution filtering, PII redaction, and semantic policy moderation.</div>
+      <div class="component-card-pills">
+        <span class="mini-pill">Guardrail</span>
+        <span class="mini-pill">Safety</span>
+      </div>
+    </a>
+
+    <a href="/components/resilience.html" class="component-card">
+      <div class="component-card-icon">⚡</div>
+      <div class="component-card-title">Resilience &amp; Retries</div>
+      <div class="component-card-desc">Exponential backoff retries, fallback providers, and circuit breaker patterns.</div>
+      <div class="component-card-pills">
+        <span class="mini-pill">Fallback</span>
+        <span class="mini-pill">CircuitBreaker</span>
+      </div>
+    </a>
+
+    <a href="/components/observability.html" class="component-card">
+      <div class="component-card-icon">📊</div>
+      <div class="component-card-title">Observability &amp; Tracing</div>
+      <div class="component-card-desc">Callbacks, execution timing, token metrics, and OpenTelemetry span exports.</div>
+      <div class="component-card-pills">
+        <span class="mini-pill">OTel</span>
+        <span class="mini-pill">Callbacks</span>
+      </div>
+    </a>
+
+    <a href="/components/mcp.html" class="component-card">
+      <div class="component-card-icon">🔌</div>
+      <div class="component-card-title">Model Context Protocol (MCP)</div>
+      <div class="component-card-desc">Stdio and HTTP JSON-RPC client connecting external tool and resource servers.</div>
+      <div class="component-card-pills">
+        <span class="mini-pill">MCP</span>
+        <span class="mini-pill">JSON-RPC</span>
+      </div>
+    </a>
+
+    <a href="/components/state-graph.html" class="component-card">
+      <div class="component-card-icon">🕸️</div>
+      <div class="component-card-title">Stateful Graphs (StateGraph)</div>
+      <div class="component-card-desc">Cyclic workflows, pure state reducers, and checkpointed state machines.</div>
+      <div class="component-card-pills">
+        <span class="mini-pill">LangGraph</span>
+        <span class="mini-pill">Cyclic</span>
+      </div>
+    </a>
+
+    <a href="/components/multi-agent.html" class="component-card">
+      <div class="component-card-icon">👥</div>
+      <div class="component-card-title">Multi-Agent Systems</div>
+      <div class="component-card-desc">Supervisor routing, consensus debate, and multi-agent coordination.</div>
+      <div class="component-card-pills">
+        <span class="mini-pill">Supervisor</span>
+        <span class="mini-pill">Debate</span>
+      </div>
+    </a>
+
+    <a href="/components/hitl.html" class="component-card">
+      <div class="component-card-icon">⏸️</div>
+      <div class="component-card-title">Human-in-the-Loop (HITL)</div>
+      <div class="component-card-desc">Interrupt execution graphs for human approval, edit state, and resume seamlessly.</div>
+      <div class="component-card-pills">
+        <span class="mini-pill">Interrupt</span>
+        <span class="mini-pill">Checkpointer</span>
+      </div>
+    </a>
+
+    <a href="/components/runnables.html" class="component-card">
+      <div class="component-card-icon">🔗</div>
+      <div class="component-card-title">Runnables &amp; AST Pipelines</div>
+      <div class="component-card-desc">First-class AST composition via pipe (|&gt;&gt;), parallel (&amp;&gt;&amp;), and fallback (&gt;&gt;&gt;#).</div>
+      <div class="component-card-pills">
+        <span class="mini-pill">RunnableTree</span>
+        <span class="mini-pill">GADT</span>
+      </div>
+    </a>
+  </div>
+</section>
+
 <!-- Features Grid -->
-<div class="features-grid">
+<div class="features-grid" style="margin-top: 3rem;">
   <div class="feature-card">
     <div class="feature-icon">🛡️</div>
     <div class="feature-title">Pure Zero-Dependency Core</div>
@@ -218,48 +342,3 @@ observeAgent = do
     </div>
   </div>
 </div>
-
-<!-- Architecture Diagram -->
-<section class="showcase-section" style="margin-top: 2rem;">
-  <div class="showcase-header">
-    <h2>3-Tier Monorepo Architecture</h2>
-    <p style="color: var(--text-muted);">Strict separation of pure domain logic, graph workflows, and high-level integrations.</p>
-  </div>
-
-  <div class="mermaid-wrapper">
-    <pre class="mermaid">
-flowchart TB
-    subgraph Core ["langchain-hs-core (Zero HTTP Dependencies)"]
-        RT["RunnableTree (Pure GADT AST)"]
-        CM["ChatModel (Effect-Polymorphic)"]
-        CB["ContentBlock (Multi-Modal)"]
-        TL["Tool m (Typed Schema & Exec)"]
-        SE["StreamEvent (Conduit Streaming)"]
-    end
-
-    subgraph Graph ["langchain-hs-graph (Workflow & Multi-Agent)"]
-        SG["StateGraph s m"]
-        SR["StateReducer (Pure Monoid)"]
-        CP["Checkpointer (STM TVar & SQLite)"]
-        HT["HITL Interrupt & Resume"]
-        TT["TimeTravel History & Replay"]
-        DOT["Graphviz DOT Visualization"]
-        PN["Parallel Concurrent Nodes"]
-    end
-
-    subgraph HighLevel ["langchain-hs (Ecosystem & Production)"]
-        PR["Providers: Ollama, OpenAI, Gemini"]
-        AG["Agents: ReAct, Plan-and-Execute, Supervisor, Debate, Blackboard"]
-        MCP["MCP Client (Stdio & HTTP JSON-RPC 2.0)"]
-        VS["Vector Stores: SQLite-vec, InMemory, PgVector, Qdrant"]
-        CH["Chains: Conversational RAG, MapReduce, SQL Database"]
-        OB["Observability: OpenTelemetry, Structured Logging, Tracer"]
-        RES["Resilience: Circuit Breaker, Retries, Connection Pool"]
-    end
-
-    HighLevel --> Graph
-    HighLevel --> Core
-    Graph --> Core
-    </pre>
-  </div>
-</section>
