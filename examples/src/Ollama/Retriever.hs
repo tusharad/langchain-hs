@@ -25,10 +25,10 @@ runApp = do
         ]
       bm25 = newBM25Index docs
 
-  res <- runLangchainTIO $ do
+  res <- runLangchainT () $ do
     let embed = OllamaEmbeddings "nomic-embed-text:latest" Nothing Nothing Nothing
     vecStore <- fromDocuments embed docs
-    let vecSearch q k = fromRight [] <$> runLangchainTIO (similaritySearch vecStore q k)
+    let vecSearch q k = fromRight [] <$> runLangchainT () (similaritySearch vecStore q k)
         hybrid = newHybridRetriever bm25 vecSearch
 
     matchedBM25 <- retrieveWithCallbacks cb "BM25" bm25 "GHC-9.8"
@@ -48,7 +48,7 @@ runApp = do
   T.putStrLn "\n--- Callback Logs ---"
   mapM_ T.putStrLn logs
 
-ask_ :: Ollama -> CallbackManager -> Text -> Text -> LangchainT IO ()
+ask_ :: Ollama -> CallbackManager -> Text -> Text -> LangchainT () IO ()
 ask_ llm cb query context = do
   start <- liftIO getCurrentTime
   let prompt = "Context: " <> context <> "\nQuestion: " <> query

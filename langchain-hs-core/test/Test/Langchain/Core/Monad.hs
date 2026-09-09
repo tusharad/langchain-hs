@@ -2,6 +2,7 @@
 
 module Test.Langchain.Core.Monad (tests) where
 
+import Control.Monad.Reader (ask)
 import Test.Tasty
 import Test.Tasty.HUnit
 
@@ -13,20 +14,19 @@ tests =
   testGroup
     "Test.Langchain.Core.Monad"
     [ testCase "runLangchainT executes pure computations successfully" $ do
-        res <- runLangchainT defaultConfig (pure ("hello" :: String))
+        res <- runLangchainT () (pure ("hello" :: String))
         res @?= Right "hello"
     , testCase "runLangchainT propagates errors via throwLangchainError" $ do
-        res <- runLangchainT defaultConfig $ do
+        res <- runLangchainT () $ do
           throwLangchainError (internalError "test fail" Nothing Nothing)
         case res of
           Left _ -> pure ()
           Right _ -> assertFailure "Expected error"
-    , testCase "askConfig retrieves default configuration" $ do
-        res <- runLangchainT defaultConfig $ defaultModelName <$> askConfig
-        res @?= Right "qwen2.5:7b"
-    , testCase "withConfig modifies configuration locally" $ do
-        res <- runLangchainT defaultConfig $ do
-          withConfig (\c -> c {defaultModelName = "custom-model"}) $
-            defaultModelName <$> askConfig
-        res @?= Right "custom-model"
+    , testCase "runLangchainT threads custom env through ask" $ do
+        -- Developers use ask / asks from mtl directly with their own r
+        let customEnv = (42 :: Int)
+        res <- runLangchainT customEnv $ do
+          env <- ask
+          pure env
+        res @?= Right 42
     ]
