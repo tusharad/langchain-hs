@@ -48,6 +48,27 @@ library
       Ollama.Stream
       Ollama.StructuredOutput
       Ollama.Tool
+      OpenAI.Common
+      OpenAI.Guardrail
+      OpenAI.HITL
+      OpenAI.MapReduce
+      OpenAI.MCP
+      OpenAI.Memory
+      OpenAI.Monad
+      OpenAI.MultiAgent
+      OpenAI.Observability
+      OpenAI.PlanAndExecute
+      OpenAI.RAG
+      OpenAI.ReAct
+      OpenAI.Resilience
+      OpenAI.RetrievalQA
+      OpenAI.Retriever
+      OpenAI.Runnable
+      OpenAI.Simple
+      OpenAI.StateGraph
+      OpenAI.Stream
+      OpenAI.StructuredOutput
+      OpenAI.Tool
   other-modules:
       Paths_examples
   hs-source-dirs:
@@ -91,12 +112,58 @@ executable guardrailollama
     , time
   default-language: Haskell2010
 
+executable guardrailopenai
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/guardrailopenai
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , conduit
+    , containers
+    , examples
+    , langchain-hs
+    , langchain-hs-core
+    , langchain-hs-graph
+    , mtl
+    , resourcet
+    , text
+    , time
+  default-language: Haskell2010
+
 executable hitlollama
   main-is: Main.hs
   other-modules:
       Paths_examples
   hs-source-dirs:
       app/hitlollama
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , conduit
+    , containers
+    , examples
+    , langchain-hs
+    , langchain-hs-core
+    , langchain-hs-graph
+    , mtl
+    , resourcet
+    , text
+    , time
+  default-language: Haskell2010
+
+executable hitlopenai
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/hitlopenai
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson
@@ -137,12 +204,58 @@ executable jsonollama
     , time
   default-language: Haskell2010
 
+executable jsonopenai
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/jsonopenai
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , conduit
+    , containers
+    , examples
+    , langchain-hs
+    , langchain-hs-core
+    , langchain-hs-graph
+    , mtl
+    , resourcet
+    , text
+    , time
+  default-language: Haskell2010
+
 executable mapreduceollama
   main-is: Main.hs
   other-modules:
       Paths_examples
   hs-source-dirs:
       app/mapreduceollama
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , conduit
+    , containers
+    , examples
+    , langchain-hs
+    , langchain-hs-core
+    , langchain-hs-graph
+    , mtl
+    , resourcet
+    , text
+    , time
+  default-language: Haskell2010
+
+executable mapreduceopenai
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/mapreduceopenai
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson
@@ -183,12 +296,58 @@ executable mcpollama
     , time
   default-language: Haskell2010
 
+executable mcpopenai
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/mcpopenai
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , conduit
+    , containers
+    , examples
+    , langchain-hs
+    , langchain-hs-core
+    , langchain-hs-graph
+    , mtl
+    , resourcet
+    , text
+    , time
+  default-language: Haskell2010
+
 executable memoryollama
   main-is: Main.hs
   other-modules:
       Paths_examples
   hs-source-dirs:
       app/memoryollama
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , conduit
+    , containers
+    , examples
+    , langchain-hs
+    , langchain-hs-core
+    , langchain-hs-graph
+    , mtl
+    , resourcet
+    , text
+    , time
+  default-language: Haskell2010
+
+executable memoryopenai
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/memoryopenai
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson
@@ -229,12 +388,58 @@ executable monadollama
     , time
   default-language: Haskell2010
 
+executable monadopenai
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/monadopenai
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , conduit
+    , containers
+    , examples
+    , langchain-hs
+    , langchain-hs-core
+    , langchain-hs-graph
+    , mtl
+    , resourcet
+    , text
+    , time
+  default-language: Haskell2010
+
 executable multiagentollama
   main-is: Main.hs
   other-modules:
       Paths_examples
   hs-source-dirs:
       app/multiagentollama
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , conduit
+    , containers
+    , examples
+    , langchain-hs
+    , langchain-hs-core
+    , langchain-hs-graph
+    , mtl
+    , resourcet
+    , text
+    , time
+  default-language: Haskell2010
+
+executable multiagentopenai
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/multiagentopenai
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson
@@ -275,12 +480,58 @@ executable observabilityollama
     , time
   default-language: Haskell2010
 
+executable observabilityopenai
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/observabilityopenai
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , conduit
+    , containers
+    , examples
+    , langchain-hs
+    , langchain-hs-core
+    , langchain-hs-graph
+    , mtl
+    , resourcet
+    , text
+    , time
+  default-language: Haskell2010
+
 executable planandexecuteollama
   main-is: Main.hs
   other-modules:
       Paths_examples
   hs-source-dirs:
       app/planandexecuteollama
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , conduit
+    , containers
+    , examples
+    , langchain-hs
+    , langchain-hs-core
+    , langchain-hs-graph
+    , mtl
+    , resourcet
+    , text
+    , time
+  default-language: Haskell2010
+
+executable planandexecuteopenai
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/planandexecuteopenai
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson
@@ -344,12 +595,58 @@ executable ragollama
     , time
   default-language: Haskell2010
 
+executable ragopenai
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/ragopenai
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , conduit
+    , containers
+    , examples
+    , langchain-hs
+    , langchain-hs-core
+    , langchain-hs-graph
+    , mtl
+    , resourcet
+    , text
+    , time
+  default-language: Haskell2010
+
 executable reactollama
   main-is: Main.hs
   other-modules:
       Paths_examples
   hs-source-dirs:
       app/reactollama
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , conduit
+    , containers
+    , examples
+    , langchain-hs
+    , langchain-hs-core
+    , langchain-hs-graph
+    , mtl
+    , resourcet
+    , text
+    , time
+  default-language: Haskell2010
+
+executable reactopenai
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/reactopenai
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson
@@ -390,12 +687,58 @@ executable resilienceollama
     , time
   default-language: Haskell2010
 
+executable resilienceopenai
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/resilienceopenai
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , conduit
+    , containers
+    , examples
+    , langchain-hs
+    , langchain-hs-core
+    , langchain-hs-graph
+    , mtl
+    , resourcet
+    , text
+    , time
+  default-language: Haskell2010
+
 executable retrievalqaollama
   main-is: Main.hs
   other-modules:
       Paths_examples
   hs-source-dirs:
       app/retrievalqaollama
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , conduit
+    , containers
+    , examples
+    , langchain-hs
+    , langchain-hs-core
+    , langchain-hs-graph
+    , mtl
+    , resourcet
+    , text
+    , time
+  default-language: Haskell2010
+
+executable retrievalqaopenai
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/retrievalqaopenai
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson
@@ -436,12 +779,58 @@ executable retrieverollama
     , time
   default-language: Haskell2010
 
+executable retrieveropenai
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/retrieveropenai
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , conduit
+    , containers
+    , examples
+    , langchain-hs
+    , langchain-hs-core
+    , langchain-hs-graph
+    , mtl
+    , resourcet
+    , text
+    , time
+  default-language: Haskell2010
+
 executable runnableollama
   main-is: Main.hs
   other-modules:
       Paths_examples
   hs-source-dirs:
       app/runnableollama
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , conduit
+    , containers
+    , examples
+    , langchain-hs
+    , langchain-hs-core
+    , langchain-hs-graph
+    , mtl
+    , resourcet
+    , text
+    , time
+  default-language: Haskell2010
+
+executable runnableopenai
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/runnableopenai
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson
@@ -482,12 +871,58 @@ executable simpleollama
     , time
   default-language: Haskell2010
 
+executable simpleopenai
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/simpleopenai
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , conduit
+    , containers
+    , examples
+    , langchain-hs
+    , langchain-hs-core
+    , langchain-hs-graph
+    , mtl
+    , resourcet
+    , text
+    , time
+  default-language: Haskell2010
+
 executable stategraphollama
   main-is: Main.hs
   other-modules:
       Paths_examples
   hs-source-dirs:
       app/stategraphollama
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , conduit
+    , containers
+    , examples
+    , langchain-hs
+    , langchain-hs-core
+    , langchain-hs-graph
+    , mtl
+    , resourcet
+    , text
+    , time
+  default-language: Haskell2010
+
+executable stategraphopenai
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/stategraphopenai
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson
@@ -528,12 +963,58 @@ executable streamollama
     , time
   default-language: Haskell2010
 
+executable streamopenai
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/streamopenai
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , conduit
+    , containers
+    , examples
+    , langchain-hs
+    , langchain-hs-core
+    , langchain-hs-graph
+    , mtl
+    , resourcet
+    , text
+    , time
+  default-language: Haskell2010
+
 executable toolollama
   main-is: Main.hs
   other-modules:
       Paths_examples
   hs-source-dirs:
       app/toolollama
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , conduit
+    , containers
+    , examples
+    , langchain-hs
+    , langchain-hs-core
+    , langchain-hs-graph
+    , mtl
+    , resourcet
+    , text
+    , time
+  default-language: Haskell2010
+
+executable toolopenai
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/toolopenai
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson

@@ -262,6 +262,209 @@ executables:
     - examples
     - langchain-hs-graph
 
+  simpleopenai:
+    main:                Main.hs
+    source-dirs:         app/simpleopenai
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  streamopenai:
+    main:                Main.hs
+    source-dirs:         app/streamopenai
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  monadopenai:
+    main:                Main.hs
+    source-dirs:         app/monadopenai
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  jsonopenai:
+    main:                Main.hs
+    source-dirs:         app/jsonopenai
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  toolopenai:
+    main:                Main.hs
+    source-dirs:         app/toolopenai
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  ragopenai:
+    main:                Main.hs
+    source-dirs:         app/ragopenai
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  memoryopenai:
+    main:                Main.hs
+    source-dirs:         app/memoryopenai
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  observabilityopenai:
+    main:                Main.hs
+    source-dirs:         app/observabilityopenai
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  guardrailopenai:
+    main:                Main.hs
+    source-dirs:         app/guardrailopenai
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  retrieveropenai:
+    main:                Main.hs
+    source-dirs:         app/retrieveropenai
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  mcpopenai:
+    main:                Main.hs
+    source-dirs:         app/mcpopenai
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  runnableopenai:
+    main:                Main.hs
+    source-dirs:         app/runnableopenai
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  retrievalqaopenai:
+    main:                Main.hs
+    source-dirs:         app/retrievalqaopenai
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  mapreduceopenai:
+    main:                Main.hs
+    source-dirs:         app/mapreduceopenai
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  resilienceopenai:
+    main:                Main.hs
+    source-dirs:         app/resilienceopenai
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  reactopenai:
+    main:                Main.hs
+    source-dirs:         app/reactopenai
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  planandexecuteopenai:
+    main:                Main.hs
+    source-dirs:         app/planandexecuteopenai
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  stategraphopenai:
+    main:                Main.hs
+    source-dirs:         app/stategraphopenai
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+    - langchain-hs-graph
+
+  multiagentopenai:
+    main:                Main.hs
+    source-dirs:         app/multiagentopenai
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+    - langchain-hs-graph
+
+  hitlopenai:
+    main:                Main.hs
+    source-dirs:         app/hitlopenai
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+    - langchain-hs-graph
+
 
 tests:
   examples-test:
