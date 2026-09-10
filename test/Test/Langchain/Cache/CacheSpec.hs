@@ -5,8 +5,9 @@ module Test.Langchain.Cache.CacheSpec (tests) where
 
 import Control.Concurrent.STM (newTVarIO)
 import Control.Monad.Except (runExceptT)
-import Data.Aeson (object, (.=))
+import Data.Aeson (Value, object, (.=))
 import Data.List.NonEmpty (NonEmpty (..))
+import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import System.FilePath ((</>))
 import System.IO.Temp (withSystemTempDirectory)
@@ -26,7 +27,7 @@ import Langchain.Core.Model
   , extractMessageText
   , userMessage
   )
-import Langchain.Provider.Gemini (Gemini (Gemini))
+import Langchain.Provider.Gemini (Gemini (..))
 import Langchain.Provider.Ollama (Ollama, newOllamaWithClient)
 import Langchain.Provider.OpenAI (OpenAI (OpenAI))
 import qualified Ollama.API.Chat as OllamaChat
@@ -111,6 +112,7 @@ tests =
                 Nothing
                 Nothing
                 Nothing
+                Map.empty
             toolMessage =
               (userMessage "Describe the image")
                 { messageToolCalls = Just [ToolCall "call-1" "function" "describe_image" (object [])]
@@ -134,12 +136,25 @@ tests =
         assertKeysDiffer baseKey $ computeCacheKey otherEndpoint Nothing testMessages
         assertKeysDiffer baseKey $ computeCacheKey otherTemperature Nothing testMessages
         baseKey @?= computeCacheKey base (Just $ object ["unused" .= True]) testMessages
-    , testCase "cache key distinguishes Gemini identity and ignores its config" $ do
-        let base = Gemini "key" "gemini-2.0-flash"
-            otherModel = Gemini "key" "gemini-2.5-pro"
+    , testCase "cache key distinguishes Gemini identity and request config" $ do
+        let base = Gemini "key" "gemini-2.0-flash" Nothing
+            otherModel = Gemini "key" "gemini-2.5-pro" Nothing
             baseKey = computeCacheKey base Nothing testMessages
         assertKeysDiffer baseKey $ computeCacheKey otherModel Nothing testMessages
-        baseKey @?= computeCacheKey base (Just $ object ["unused" .= True]) testMessages
+        assertKeysDiffer baseKey $
+          computeCacheKey base (Just $ object ["tools" .= ([] :: [Value])]) testMessages
+    , testCase "cache key distinguishes Gemini custom endpoints" $ do
+        let defaultEndpoint = Gemini "key" "gemini-2.0-flash" Nothing
+            url1 = Just "http://gemini-one.example.com"
+            url2 = Just "http://gemini-two.example.com"
+            firstEndpoint = Gemini "key" "gemini-2.0-flash" url1
+            sameEndpoint = Gemini "key" "gemini-2.0-flash" url1
+            secondEndpoint = Gemini "key" "gemini-2.0-flash" url2
+            defaultKey = computeCacheKey defaultEndpoint Nothing testMessages
+            firstKey = computeCacheKey firstEndpoint Nothing testMessages
+        assertKeysDiffer defaultKey firstKey
+        firstKey @?= computeCacheKey sameEndpoint Nothing testMessages
+        assertKeysDiffer firstKey $ computeCacheKey secondEndpoint Nothing testMessages
     , testCase "cache key ignores MockModel config" $ do
         let mockModel = newMockModel "Dynamic Output"
         computeCacheKey mockModel Nothing testMessages

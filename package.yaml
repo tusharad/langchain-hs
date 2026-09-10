@@ -86,6 +86,7 @@ tests:
       - text
       - bytestring
       - aeson
+      - aeson-qq
       - containers
       - directory
       - filepath
@@ -97,9 +98,6 @@ tests:
       - async
       - http-conduit
       - http-types
-      - servant
-      - servant-event-stream
-      - servant-server
       - wai
       - warp
 
