@@ -41,6 +41,14 @@ and this project adheres to the
   - Migrated to `MercuryTechnologies/openai` client.
   - Full PVP upper bounds across all packages for Hackage compliance.
 
+### ⚠️ Breaking Changes from 0.0.3.0
+
+- **`LangchainT` is now parameterized over `env`** (`LangchainT env m a` instead of the former implicit `LangchainConfig`).
+  - Replace `runLangchainT config action` with `runLangchainT env action` where `env` is your custom environment type (use `()` if you have no shared config).
+  - The `MonadReader env (LangchainT env m)` instance gives you `ask`/`asks` to read your environment from within the monad.
+- **`ChatMessage` renamed to `Message`** throughout — update all pattern matches and constructor calls.
+- **Agent modules restructured** — `Langchain.Agent` is now split into `Langchain.Agent.ReAct` and `Langchain.Agent.PlanAndExecute` with updated type signatures for tool-call support.
+
 ## 0.0.3.0 - 2025-11-16
 
 ### Added

@@ -17,7 +17,6 @@ jobs:
       - uses: haskell-actions/run-fourmolu@v11
         with:
           version: "0.17.0.0"
-          working-directory: "./src"
 
   hlint:
     runs-on: ubuntu-latest
@@ -32,7 +31,12 @@ jobs:
     - name: 'Run HLint'
       uses: haskell-actions/hlint-run@v2
       with:
-        path: src/
+        path: |
+          src/
+          test/
+          langchain-hs-core/
+          langchain-hs-graph/
+          examples/src/
         fail-on: warning
 
   generate:
@@ -60,7 +64,7 @@ jobs:
     - name: Copy repo into actions 
       uses: actions/checkout@v4
 
-    - name: install dependancies, build and test stack project.
+    - name: Install dependencies and build (multi-GHC matrix)
       uses: freckle/stack-action@v5
       with:
           stack-arguments: --stack-yaml ${{ matrix.stack-yaml }}
@@ -98,7 +102,7 @@ jobs:
         ollama run gemma3 "Hey, how are you?"
         ollama run qwen3.5:2b "Hey, how are you?"
 
-    - name: install dependancies, build and test stack project.
+    - name: Install dependencies, build, and run test suite
       uses: freckle/stack-action@v5
 
   build-example:
@@ -107,10 +111,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: copy repo
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
 
       - name: build with stack project
         uses: freckle/stack-action@v5
         with:
-          working-directory: examples
+          stack-arguments: --work-dir examples/.stack-work
 

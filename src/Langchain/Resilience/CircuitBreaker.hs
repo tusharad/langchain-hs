@@ -85,7 +85,7 @@ withCircuitBreaker ::
 withCircuitBreaker CircuitBreaker {..} action = do
   now <- liftIO getCurrentTime
   canProceed <- liftIO $ atomically $ do
-    (st, _) <- readTVar circuitStateVar -- TODO: second arguement fails not taken care of
+    (st, _) <- readTVar circuitStateVar -- Only the state is needed to gate; count is managed in the error handler below
     case st of
       CircuitClosed -> pure True
       CircuitHalfOpen -> pure True

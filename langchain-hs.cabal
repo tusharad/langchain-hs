@@ -8,7 +8,7 @@ name:           langchain-hs
 version:        0.0.5.0
 synopsis:       Pure functional LLM agent framework and multi-agent graph engine in Haskell
 description:    Build LLM-powered applications, ReAct agents, and LangGraph-style stateful workflows in Haskell with zero unsafePerformIO.
-category:       Web, AI
+category:       AI
 homepage:       https://github.com/tusharad/langchain-hs#readme
 bug-reports:    https://github.com/tusharad/langchain-hs/issues
 author:         Tushar Adhatrao
@@ -18,10 +18,9 @@ license:        MIT
 license-file:   LICENSE
 build-type:     Simple
 tested-with:
-    GHC == 9.10.1
+    GHC == 9.12.4
+  , GHC == 9.10.3
   , GHC == 9.8.4
-  , GHC == 9.6.6
-  , GHC == 9.4.8
 extra-source-files:
     README.md
     CHANGELOG.md

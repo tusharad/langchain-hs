@@ -6,6 +6,8 @@
 *Source: [github.com/tusharad/langchain-hs](https://github.com/tusharad/langchain-hs)*  
 *License: MIT*
 
+> **Navigation**: [← README](README.md) | [Hackage Docs](https://hackage.haskell.org/package/langchain-hs) | [Examples](examples/)
+
 ---
 
 ## Abstract

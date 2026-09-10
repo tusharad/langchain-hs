@@ -6,11 +6,12 @@
 
 ---
 
-[![Hackage](https://img.shields.io/badge/hackage-v0.0.5-blue.svg)](https://hackage.haskell.org/package/langchain-hs)
-[![GHC](https://img.shields.io/badge/GHC-9.6+-purple.svg)](https://www.haskell.org/ghc/)
+[![Hackage](https://img.shields.io/badge/hackage-0.0.5.0-blue.svg)](https://hackage.haskell.org/package/langchain-hs)
+[![GHC](https://img.shields.io/badge/GHC-9.8%2B-purple.svg)](https://www.haskell.org/ghc/)
 [![Components](https://img.shields.io/badge/components-20%20verified-brightgreen.svg)](#-20-core-components--verified-targets)
 [![Providers](https://img.shields.io/badge/providers-Ollama%20%7C%20OpenAI%20%7C%20Gemini-orange.svg)](#-dual-provider-parity-ollama--openai)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Whitepaper](https://img.shields.io/badge/whitepaper-read%20now-blueviolet.svg)](whitepaper.md)
 
 ---
 
@@ -90,9 +91,9 @@ flowchart TB
 
 | Package | Directory | Version | Description |
 |---|---|---|---|
-| `langchain-hs-core` | [`langchain-hs-core/`](./langchain-hs-core) | `0.1.0.0` | Zero-dependency pure core: `RunnableTree`, `ChatModel`, `ContentBlock`, `Tool`, and `LangchainT`. |
-| `langchain-hs-graph` | [`langchain-hs-graph/`](./langchain-hs-graph) | `0.5.0.0` | Stateful graph engine: `StateGraph s m`, checkpointers, HITL, time-travel, and parallel nodes. |
-| `langchain-hs` | [`./`](./) | `0.0.5` | Production ecosystem: Ollama/OpenAI providers, Agents, MCP, Vector Stores, Chains, Observability. |
+| `langchain-hs-core` | [`langchain-hs-core/`](./langchain-hs-core) | `0.0.5.0` | Zero-dependency pure core: `RunnableTree`, `ChatModel`, `ContentBlock`, `Tool`, and `LangchainT`. |
+| `langchain-hs-graph` | [`langchain-hs-graph/`](./langchain-hs-graph) | `0.0.5.0` | Stateful graph engine: `StateGraph s m`, checkpointers, HITL, time-travel, and parallel nodes. |
+| `langchain-hs` | [`./`](./) | `0.0.5.0` | Production ecosystem: Ollama/OpenAI providers, Agents, MCP, Vector Stores, Chains, Observability. |
 | `examples` | [`examples/`](./examples) | - | 41 runnable executables covering all 20 components for Ollama and OpenAI. |
 | `site` | [`site/`](./site) | - | Hakyll documentation website with live provider toggle and component reference. |
 
@@ -205,28 +206,33 @@ main = do
 
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
-import Langchain.Graph
+import Langchain.Graph.StateGraph
 import Langchain.Prelude
 
--- Define pure state with Monoid append reducer
+-- Pure state with a list-append reducer
 data AgentState = AgentState { messages :: [Message], loopCount :: Int }
 
+-- Build the graph using pure combinators
 workflow :: StateGraph AgentState IO
-workflow = emptyStateGraph appendMessagesReducer
-  & addNode "planner" plannerNode
-  & addNode "executor" executorNode
-  & addNode "reviewer" reviewerNode
-  & addEdge startNodeId "planner"
-  & addEdge "planner" "executor"
-  & addConditionalEdge "executor" shouldReview 
-      [ ("continue", "reviewer"), ("done", endNodeId) ]
-  & addEdge "reviewer" "planner" -- cyclic feedback loop!
+workflow =
+  addEdge "reviewer" "planner"          -- cyclic feedback loop!
+    $ addConditionalEdge "executor"
+        (\s -> pure $ if done s then Right endNodeId else Right "reviewer")
+    $ addEdge "planner" "executor"
+    $ addEdge startNodeId "planner"
+    $ addNode "reviewer" (Node reviewerNode replaceFieldReducer)
+    $ addNode "executor" (Node executorNode replaceFieldReducer)
+    $ addNode "planner"  (Node plannerNode  replaceFieldReducer)
+    $ emptyStateGraph
 
 main :: IO ()
 main = do
-  let compiled = compileGraph workflow (Just memoryCheckpointer)
-  finalState <- runGraph compiled initialState
-  print finalState
+  checkpointer <- newMemoryCheckpointer
+  case compileGraph workflow of
+    Left err -> print err
+    Right compiled -> do
+      result <- runGraph compiled initialState (Just checkpointer)
+      print result
 ```
 *Run:* `stack run stategraphollama` or `stack run stategraphopenai`
 
@@ -258,6 +264,31 @@ main = do
 
 ---
 
+## 📥 Installation
+
+### Stack
+Add to your `stack.yaml`:
+```yaml
+extra-deps:
+  - langchain-hs-core-0.0.5.0
+  - langchain-hs-graph-0.0.5.0
+  - langchain-hs-0.0.5.0
+```
+Then in your `.cabal` or `package.yaml`:
+```yaml
+dependencies:
+  - langchain-hs        # full ecosystem (providers, agents, MCP, vector stores)
+  - langchain-hs-core   # pure core only (no HTTP dependencies)
+  - langchain-hs-graph  # graph engine only
+```
+
+### Cabal
+```bash
+cabal install langchain-hs
+```
+
+---
+
 ## 🛠️ Development & Quality Commands
 
 The repository enforces strict code quality and formatting via `make`:
@@ -283,6 +314,23 @@ make site-build
 
 # Run live documentation server with auto-reload (port 8000)
 make site-watch
+```
+
+---
+
+## 📚 Documentation & Research
+
+| Resource | Description |
+|:---|:---|
+| **[Hackage Docs](https://hackage.haskell.org/package/langchain-hs)** | Full Haddock API reference for all exported modules |
+| **[Whitepaper](whitepaper.md)** | Deep technical dive: category theory foundations, algebraic laws, effect-polymorphic design, and advanced multi-agent patterns |
+| **[Documentation Website](site/)** | Hakyll site with 20 component pages, live provider toggle, and instant search (`Cmd+K`) |
+| **[Examples](examples/)** | 41 runnable executables covering every component for Ollama and OpenAI |
+
+To build the Haddock API docs locally:
+```bash
+make docs
+# Opens in .stack-work/install/.../doc/index.html
 ```
 
 ---

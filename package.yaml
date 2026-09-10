@@ -6,7 +6,7 @@ license-file: LICENSE
 author: "Tushar Adhatrao"
 maintainer: "tusharadhatrao@gmail.com"
 copyright: "2025-2026 Tushar Adhatrao"
-category: Web, AI
+category: AI
 synopsis: "Pure functional LLM agent framework and multi-agent graph engine in Haskell"
 extra-source-files:
   - README.md
@@ -15,10 +15,9 @@ extra-source-files:
 description: Build LLM-powered applications, ReAct agents, and LangGraph-style stateful workflows in Haskell with zero unsafePerformIO.
 
 tested-with:
-  - GHC == 9.10.1
+  - GHC == 9.12.4
+  - GHC == 9.10.3
   - GHC == 9.8.4
-  - GHC == 9.6.6
-  - GHC == 9.4.8
 
 dependencies:
   - aeson >= 2 && < 3
