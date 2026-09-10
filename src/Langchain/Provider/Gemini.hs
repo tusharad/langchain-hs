@@ -72,7 +72,7 @@ data GeminiConfig = GeminiConfig
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 defaultConfig :: Text -> GeminiConfig
-defaultConfig key = GeminiConfig key "gemini-1.5-pro"
+defaultConfig key = GeminiConfig key "gemini-3.6-flash"
 
 defaultGeminiConfig :: Text -> GeminiConfig
 defaultGeminiConfig = defaultConfig
@@ -322,12 +322,21 @@ instance ChatModel Gemini where
           Right () -> pure ()
         where
           emitError :: Show a => a -> IO ()
-          emitError = emit . Left . T.pack . show
+          emitError =
+            emit . Left . redactKey (geminiApiKey provider) . T.pack . show
 
       rId = "gemini-stream-run"
 
 llmError' :: Text -> LangchainError
 llmError' err = llmError err Nothing Nothing
+
+{- | Replace the literal API key with @[REDACTED]@ in error messages so it
+  never appears in 'LangchainError' values or test output.
+-}
+redactKey :: Text -> Text -> Text
+redactKey key txt
+  | T.null key = txt
+  | otherwise = T.replace key "[REDACTED]" txt
 
 data GeminiStreamChunk = GeminiStreamChunk
   { streamCandidates :: [GeminiStreamCandidate]
@@ -422,21 +431,31 @@ safeHttpRequest req = do
 -- Parse Gemini response JSON
 parseGeminiResponse :: Value -> Either String Message
 parseGeminiResponse = parseEither $ withObject "GeminiResponse" $ \o -> do
+  -- Surface API-level errors (e.g. safety blocks, quota exhausted) verbatim
+  case KeyMap.lookup "error" o of
+    Just (Object errObj) -> do
+      msg <- errObj .: "message" <|> pure "Unknown Gemini API error"
+      fail (T.unpack msg)
+    _ -> pure ()
   candidates <- o .: "candidates"
   case candidates of
     [] -> fail "Empty candidates array in Gemini response"
     (c : _) ->
       flip (withObject "Candidate") c $ \cand -> do
-        contentObj <- cand .: "content"
-        parts <- contentObj .: "parts"
-        parsedParts <- traverse parseGeminiPart parts
-        let texts = [text | GeminiText text <- parsedParts]
-            toolCalls = [toolCall | GeminiFunctionCall toolCall _ <- parsedParts]
-            signatures = [signature | GeminiFunctionCall _ signature <- parsedParts]
-        pure $
-          withThoughtSignatures toolCalls signatures $
-            assistantMessage $
-              T.intercalate "\n" texts
+        -- "content" is absent when finishReason is SAFETY or MAX_TOKENS with no output
+        mContentObj <- cand .:? "content"
+        case mContentObj of
+          Nothing -> pure $ assistantMessage ""
+          Just contentObj -> do
+            parts <- contentObj .: "parts"
+            parsedParts <- traverse parseGeminiPart parts
+            let texts = [text | GeminiText text <- parsedParts]
+                toolCalls = [toolCall | GeminiFunctionCall toolCall _ <- parsedParts]
+                signatures = [signature | GeminiFunctionCall _ signature <- parsedParts]
+            pure $
+              withThoughtSignatures toolCalls signatures $
+                assistantMessage $
+                  T.intercalate "\n" texts
 
 -- | Bind tools to a Gemini model by adding function declarations to the config.
 instance ToolBinder Gemini m where

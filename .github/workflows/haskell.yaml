@@ -75,31 +75,13 @@ jobs:
         shell: bash
 
     steps:
-    - name: Copy repo into actions 
+    - name: Copy repo into actions
       uses: actions/checkout@v4
- 
-    - name: Installing ollama
-      uses: ai-action/ollama-action@v2
-      with:
-        model: gemma3:latest
-
-    - name: Installing ollama
-      uses: ai-action/ollama-action@v2
-      with:
-        model: qwen3.5:2b
-
-    - name: Installing ollama embedding model
-      uses: ai-action/ollama-action@v2
-      with:
-        model: nomic-embed-text
-
-    - name: Warming up ollama models
-      run: |
-        ollama run gemma3 "Hey, how are you?"
-        ollama run qwen3.5:2b "Hey, how are you?"
 
     - name: Install dependencies, build, and run test suite
       uses: freckle/stack-action@v5
+      env:
+        OPENROUTER_API_KEY: ${{ secrets.OPEN_ROUTER_API_KEY }}
 
   build-example:
     needs: tests

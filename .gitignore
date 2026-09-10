@@ -20,3 +20,4 @@ site/dist-newstyle/
 .env.test.local
 .env.production.local
 key
+gemini_api_key
