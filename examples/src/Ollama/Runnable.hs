@@ -49,16 +49,7 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified Data.Text.Lazy as TL
 
-import Langchain.Core.Runnable (runIdent)
-import Langchain.DocumentLoader.Core (Document (..))
 import Langchain.Prelude
-import Langchain.PromptTemplate.Prompt
-  ( PromptTemplate (..)
-  , TemplateFormat (..)
-  , fromTemplateWithFormat
-  )
-import Langchain.Provider.Ollama (defaultConfig, newOllama)
-import Langchain.Retriever.BM25 (newBM25Index)
 import Langchain.Tool.Calculator (calculatorTool)
 
 -- ---------------------------------------------------------------------------

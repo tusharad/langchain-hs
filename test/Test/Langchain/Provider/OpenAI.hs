@@ -10,7 +10,6 @@ import Control.Concurrent.STM
   , newTVarIO
   , readTVarIO
   )
-import Control.Exception (SomeException, catch)
 import Control.Monad (forM, void)
 import Control.Monad.Except (runExceptT)
 import Control.Monad.IO.Class (liftIO)
@@ -24,16 +23,8 @@ import qualified Data.Conduit.Combinators as C
 import Data.Maybe (fromMaybe, isJust, isNothing)
 import qualified Data.Text as T
 import qualified Data.Vector as V
-import Network.HTTP.Types (hContentType, status200, status500)
-import Network.Wai (Application, responseLBS, responseStream, strictRequestBody)
-import Network.Wai.Handler.Warp (testWithApplication)
-import Servant (Header, JSON, ReqBody, Server, err500, serve, throwError, (:>))
-import Servant.API.EventStream
-  ( PostServerSentEvents
-  , ServerEvent (..)
-  , ToServerEvent (..)
-  )
-import Servant.Conduit ()
+import Network.HTTP.Types (status500)
+import Network.Wai (Application, responseLBS)
 import System.Environment (lookupEnv)
 import System.Timeout (timeout)
 import Test.Tasty
@@ -43,6 +34,7 @@ import Langchain.Core.Error (LangchainError)
 import Langchain.Core.Model
 import Langchain.Core.Stream (StreamEvent (..), TokenUsage (..), collectEvents)
 import Langchain.Core.Tool (Tool, createTool, toolToValue)
+import qualified Langchain.Core.Tool as CoreTool
 
 import Langchain.Provider.OpenAI
 import Test.Langchain.Provider.TestSseServer

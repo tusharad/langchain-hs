@@ -175,12 +175,12 @@ test-suite langchain-hs-test
       Test.Langchain.Property.RunnableSpec
       Test.Langchain.Property.TextSplitterSpec
       Test.Langchain.Provider.FixturesSpec
+      Test.Langchain.Provider.Gemini
       Test.Langchain.Provider.Mock
       Test.Langchain.Provider.Ollama
       Test.Langchain.Provider.OllamaConversionSpec
       Test.Langchain.Provider.OpenAI
       Test.Langchain.Provider.TestSseServer
-      Test.Langchain.Pure.PurePipelineSpec
       Test.Langchain.RegressionSpec
       Test.Langchain.Resilience.CircuitBreakerSpec
       Test.Langchain.Resilience.RetrySpec

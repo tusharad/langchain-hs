@@ -20,18 +20,16 @@
 -}
 module Ollama.HITL (runApp) where
 
-import Control.Monad.Except (ExceptT, runExceptT)
+import Control.Monad.Except (runExceptT)
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import GHC.Generics (Generic)
 
-import Langchain.Core.Error (LangchainError)
 import Langchain.Core.Model (extractMessageText, systemMessage, userMessage)
 import Langchain.Graph.Checkpointer
-  ( MemoryCheckpointer
-  , newMemoryCheckpointer
+  ( newMemoryCheckpointer
   )
 import Langchain.Graph.HITL
   ( hitlNode
@@ -62,8 +60,6 @@ data BlogPostState = BlogPostState
   , isPublished :: Bool
   }
   deriving (Show, Eq, Generic, ToJSON, FromJSON)
-
-type App = ExceptT LangchainError IO
 
 runApp :: IO ()
 runApp = do
