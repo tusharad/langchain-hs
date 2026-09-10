@@ -6,6 +6,7 @@ module Test.Langchain.Property.MessageSpec (tests) where
 import Data.Aeson (decode, encode, toJSON)
 import qualified Data.ByteString as BS
 import qualified Data.List.NonEmpty as NonEmpty
+import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import qualified Data.Text as T
 import Test.QuickCheck
@@ -50,7 +51,8 @@ instance Arbitrary Message where
     let neBlocks = NonEmpty.fromList blocks
     mbName <- oneof [pure Nothing, Just . T.pack <$> listOf1 (elements ['a' .. 'z'])]
     mbToolId <- oneof [pure Nothing, Just . T.pack <$> listOf1 (elements ['a' .. 'z'])]
-    pure $ Message r neBlocks mbName Nothing mbToolId
+    pure $
+      Message r neBlocks mbName Nothing mbToolId (Map.singleton "example" $ toJSON ("value" :: Text))
 
 tests :: TestTree
 tests =

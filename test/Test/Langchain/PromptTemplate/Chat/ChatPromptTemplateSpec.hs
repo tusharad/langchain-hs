@@ -191,7 +191,13 @@ richContentTests =
           Right promptValue ->
             toMessages promptValue
               @?= [ textMessage System "You are an AI assistant named R2D2."
-                  , Message User (TextBlock "What's in this image?" :| [TextBlock "Oh nvm"]) Nothing Nothing Nothing
+                  , Message
+                      User
+                      (TextBlock "What's in this image?" :| [TextBlock "Oh nvm"])
+                      Nothing
+                      Nothing
+                      Nothing
+                      Map.empty
                   ]
     , testCase "formats templated multipart text blocks" $ do
         let template =
@@ -208,7 +214,13 @@ richContentTests =
           Right promptValue ->
             toMessages promptValue
               @?= [ textMessage System "You are an AI assistant named R2D2."
-                  , Message User (TextBlock "What's in this image?" :| [TextBlock "Oh nvm"]) Nothing Nothing Nothing
+                  , Message
+                      User
+                      (TextBlock "What's in this image?" :| [TextBlock "Oh nvm"])
+                      Nothing
+                      Nothing
+                      Nothing
+                      Map.empty
                   ]
     , testCase "formats system template with partial variables" $ do
         let graphCreatorContent = "\n    Your instructions are:\n    {instructions}\n    History:\n    {history}\n    "
@@ -249,6 +261,7 @@ richContentTests =
                       Nothing
                       Nothing
                       Nothing
+                      Map.empty
                   ]
     , testCase "formats image_url blocks" $ do
         let base64Image = "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAA"
@@ -286,6 +299,7 @@ richContentTests =
                       Nothing
                       Nothing
                       Nothing
+                      Map.empty
                   ]
     , testCase "formats image_url blocks with detail" $ do
         let templateWith templateFormat urlTemplate =
@@ -306,6 +320,7 @@ richContentTests =
                   Nothing
                   Nothing
                   Nothing
+                  Map.empty
               ]
             assertFormats template variables =
               case formatPrompt template variables of
@@ -358,6 +373,7 @@ richContentTests =
                       Nothing
                       Nothing
                       Nothing
+                      Map.empty
                   ]
     , testCase "round-trips rendered image data blocks through json" $ do
         let block = ImageBlock $ ImageContent (ImageUrl "https://example.com/image.png") Nothing Nothing

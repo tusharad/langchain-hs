@@ -184,6 +184,7 @@ test-suite langchain-hs-test
       Test.Langchain.Provider.Ollama
       Test.Langchain.Provider.OllamaConversionSpec
       Test.Langchain.Provider.OpenAI
+      Test.Langchain.Provider.TestSseServer
       Test.Langchain.Pure.PurePipelineSpec
       Test.Langchain.RegressionSpec
       Test.Langchain.Resilience.CircuitBreakerSpec
@@ -211,6 +212,7 @@ test-suite langchain-hs-test
   build-depends:
       QuickCheck
     , aeson
+    , aeson-qq
     , async
     , base >=4.7 && <5
     , base64-bytestring ==1.2.*
@@ -234,12 +236,11 @@ test-suite langchain-hs-test
     , random >=1.2
     , resourcet >=1.2 && <1.4
     , scientific
-    , servant
+    , servant ==0.20.*
     , servant-client ==0.20.*
     , servant-client-core ==0.20.*
     , servant-conduit ==0.16.*
-    , servant-event-stream
-    , servant-server
+    , servant-event-stream ==0.4.*
     , sqlite-simple >=0.4.18 && <0.5
     , stm ==2.5.*
     , tagsoup <0.15

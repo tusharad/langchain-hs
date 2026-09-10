@@ -1,9 +1,12 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 
 {- |
 Module      : Langchain.Provider.Gemini
@@ -24,24 +27,41 @@ module Langchain.Provider.Gemini
   , parseGeminiResponse
   ) where
 
-import Control.Exception (SomeException, try)
-import Control.Monad (forM)
+import Control.Applicative ((<|>))
+import Control.Concurrent.Async (AsyncCancelled (..))
+import Control.Exception (SomeException, fromException, throwIO, try)
 import Control.Monad.Except (throwError)
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson
 import qualified Data.Aeson.KeyMap as KeyMap
-import Data.Aeson.Types (parseEither)
-import Data.Conduit (yield)
+import Data.Aeson.Types (Parser, parseEither)
+import Data.Conduit (ConduitT, await, runConduit, yield, (.|))
+import qualified Data.Conduit.Combinators as C
+import qualified Data.List as List
 import qualified Data.List.NonEmpty as NonEmpty
+import qualified Data.Map.Strict as Map
+import Data.Maybe (fromMaybe)
+import qualified Data.Proxy as Proxy
 import Data.Text (Text)
 import qualified Data.Text as T
 import GHC.Generics (Generic)
+import Network.HTTP.Client (newManager)
+import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Network.HTTP.Simple
+import Servant.API (Capture, JSON, QueryParam, ReqBody, (:>))
+import Servant.API.EventStream
+  ( FromServerEvent (fromServerEvent)
+  , PostServerSentEvents
+  , jsonData
+  )
+import Servant.Client.Core.BaseUrl (parseBaseUrl)
+import Servant.Client.Streaming (ClientM, client, mkClientEnv, withClientM)
+import Servant.Conduit ()
 
-import Langchain.Core.Error (llmError)
+import Langchain.Core.Error (LangchainError, llmError)
 import Langchain.Core.Model
-import Langchain.Core.Stream (StreamEvent (..))
-import Langchain.Core.Tool (toolToValue)
+import Langchain.Core.Stream (StreamEvent (..), TokenUsage (..), callbackSource)
+import qualified Langchain.Core.Tool as CoreTool
 import Langchain.Tool.Binding (ToolBinder (..))
 
 -- | Gemini configuration
@@ -58,15 +78,27 @@ defaultGeminiConfig :: Text -> GeminiConfig
 defaultGeminiConfig = defaultConfig
 
 -- | Gemini ChatModel provider
-data Gemini = Gemini
+data Gemini
+  = Gemini
   { apiKey :: Text
   , model :: Text
+  , baseUrl :: Maybe Text
   }
   deriving (Eq, Show)
 
 -- | Create a new Gemini provider instance
-newGemini :: Text -> Text -> Gemini
+newGemini :: Text -> Text -> Maybe Text -> Gemini
 newGemini = Gemini
+
+geminiApiKey :: Gemini -> Text
+geminiApiKey = apiKey
+
+geminiModel :: Gemini -> Text
+geminiModel = model
+
+geminiBaseUrl :: Gemini -> Text
+geminiBaseUrl Gemini {baseUrl = Just baseUrl} = T.dropWhileEnd (== '/') baseUrl
+geminiBaseUrl Gemini {} = "https://generativelanguage.googleapis.com"
 
 -- Convert ContentBlock to Gemini Part JSON
 contentBlockToPart :: ContentBlock -> Value
@@ -95,29 +127,120 @@ contentBlockToPart (AudioBlock mime b64) =
 contentBlockToPart (DataBlock _) =
   object ["text" .= ("[Data block]" :: Text)]
 
--- Convert Message to Gemini Content JSON
+-- Convert a non-tool Message to Gemini Content JSON.
 messageToGemini :: Message -> Value
 messageToGemini msg =
-  let r = case messageRole msg of
+  let role = messageRole msg
+      geminiRole = case role of
         User -> "user"
         Assistant -> "model"
         System -> "user"
-        _ -> "user"
-      parts = map contentBlockToPart (NonEmpty.toList (messageContents msg))
-   in object ["role" .= (r :: Text), "parts" .= parts]
+        Developer -> "user"
+        Tool -> "user"
+        Function -> "user"
+      toolCallParts = case role of
+        Assistant -> maybe [] (functionCallParts $ messageMetadata msg) (messageToolCalls msg)
+        _ -> []
+      contentBlocks = NonEmpty.toList (messageContents msg)
+      contentParts = map contentBlockToPart contentBlocks
+      parts
+        | null toolCallParts = contentParts
+        | otherwise = map contentBlockToPart (filter (not . emptyTextPart) contentBlocks) <> toolCallParts
+   in object ["role" .= (geminiRole :: Text), "parts" .= parts]
+  where
+    functionCallParts metadata toolCalls =
+      zipWith functionCallPart toolCalls (thoughtSignatures metadata <> repeat Nothing)
+
+    functionCallPart (ToolCall {toolCallName = name, toolCallArguments = args, toolCallId = callId}) thoughtSignature =
+      object $
+        [ "functionCall"
+            .= object
+              ( [ "name" .= name
+                , "args" .= args
+                ]
+                  <> (["id" .= callId | notNull callId])
+              )
+        ]
+          <> maybe [] (pure . ("thoughtSignature" .=)) thoughtSignature
+
+    notNull = not . T.null
+
+    emptyTextPart (TextBlock text) = T.null text
+    emptyTextPart _ = False
+
+geminiThoughtSignaturesKey :: Text
+geminiThoughtSignaturesKey = "langchain.gemini.thoughtSignatures"
+
+thoughtSignatures :: Map.Map Text Value -> [Maybe Text]
+thoughtSignatures metadata =
+  case Map.lookup geminiThoughtSignaturesKey metadata of
+    Just value -> case fromJSON value of
+      Success signatures -> signatures
+      Error _ -> []
+    Nothing -> []
+
+withThoughtSignatures :: [ToolCall] -> [Maybe Text] -> Message -> Message
+withThoughtSignatures [] _ message = message {messageToolCalls = Nothing}
+withThoughtSignatures toolCalls signatures message =
+  message
+    { messageToolCalls = Just toolCalls
+    , messageMetadata =
+        Map.insert geminiThoughtSignaturesKey (toJSON signatures) (messageMetadata message)
+    }
+
+functionResponsePart :: [ToolCall] -> Message -> Either Text Value
+functionResponsePart priorToolCalls msg = do
+  toolName <-
+    maybe
+      (Left "Gemini function response is missing a function name")
+      Right
+      (messageName msg <|> (messageToolId msg >>= lookupToolName))
+  let functionResponseFields =
+        [ "name" .= toolName
+        , "response" .= object ["result" .= extractMessageText msg]
+        ]
+          <> maybe [] (pure . ("id" .=)) (messageToolId msg)
+  pure $ object ["functionResponse" .= object functionResponseFields]
+  where
+    lookupToolName toolId =
+      toolCallName <$> List.find ((== toolId) . toolCallId) priorToolCalls
+
+messagesToGemini :: [ToolCall] -> [Message] -> Either Text [Value]
+messagesToGemini _ [] = Right []
+messagesToGemini priorToolCalls (msg : remaining)
+  | isFunctionResponse msg = do
+      let (responseMessages, followingMessages) = span isFunctionResponse remaining
+      parts <- traverse (functionResponsePart priorToolCalls) (msg : responseMessages)
+      contents <- messagesToGemini priorToolCalls followingMessages
+      pure $ object ["role" .= ("user" :: Text), "parts" .= parts] : contents
+  | otherwise = do
+      contents <- messagesToGemini priorToolCalls remaining
+      pure $ messageToGemini msg : contents
+  where
+    isFunctionResponse message = messageRole message `elem` [Tool, Function]
+
+geminiRequestPayload :: [Message] -> Maybe Value -> Either Text Value
+geminiRequestPayload inputMsgs config = do
+  let priorToolCalls = concatMap (fromMaybe [] . messageToolCalls) inputMsgs
+  contents <- messagesToGemini priorToolCalls inputMsgs
+  case config of
+    Just (Object fields) -> pure $ Object $ KeyMap.insert "contents" (toJSON contents) fields
+    Nothing -> pure $ object ["contents" .= contents]
+    Just _ -> Left "Gemini config must be a JSON object"
 
 instance ChatModel Gemini where
   type ModelConfig Gemini = Value
 
-  invoke provider inputMsgs mbConfig = do
-    let contentsPayload = map messageToGemini inputMsgs
-        basePayload = object ["contents" .= contentsPayload]
-        payload = mergeGeminiConfig basePayload mbConfig
-        url =
-          "https://generativelanguage.googleapis.com/v1beta/models/"
-            <> model provider
+  invoke provider inputMsgs config = do
+    payload <-
+      either (throwError . \err -> llmError err Nothing Nothing) pure $
+        geminiRequestPayload inputMsgs config
+    let url =
+          geminiBaseUrl provider
+            <> "/v1beta/models/"
+            <> geminiModel provider
             <> ":generateContent?key="
-            <> apiKey provider
+            <> geminiApiKey provider
         initReq = parseRequest_ (T.unpack url)
         req =
           setRequestMethod "POST" $
@@ -131,30 +254,159 @@ instance ChatModel Gemini where
         Left parseErr -> throwError $ llmError (T.pack parseErr) Nothing Nothing
         Right respMsg -> pure respMsg
 
-  stream provider inputMsgs _ = do
-    let rId = "gemini-stream-run"
-    yield $ LLMStart rId (model provider) inputMsgs
-    let contentsPayload = map messageToGemini inputMsgs
-        payload = object ["contents" .= contentsPayload]
-        url =
-          "https://generativelanguage.googleapis.com/v1beta/models/"
-            <> model provider
-            <> ":generateContent?key="
-            <> apiKey provider
-        initReq = parseRequest_ (T.unpack url)
-        req =
-          setRequestMethod "POST" $
-            setRequestHeader "Content-Type" ["application/json"] $
-              setRequestBodyJSON payload initReq
+  stream provider inputMsgs config = do
+    let model = geminiModel provider
+        requestPayload = geminiRequestPayload inputMsgs
+    yield $ LLMStart rId model inputMsgs
 
-    eRes <- liftIO $ safeHttpRequest req
-    case eRes of
-      Left err -> yield $ LLMChunk rId err Nothing
-      Right bodyVal -> case parseGeminiResponse bodyVal of
-        Left parseErr -> yield $ LLMChunk rId (T.pack parseErr) Nothing
-        Right respMsg -> do
-          yield $ LLMChunk rId (extractMessageText respMsg) Nothing
-          yield $ LLMEnd rId respMsg Nothing
+    payload <-
+      either (throwError . llmError') pure $ requestPayload config
+
+    let events = geminiEvents payload
+    (accumulated, toolCalls, thoughtSignatures', usage) <-
+      callbackSource events
+        .| receiveChunks "" [] [] Nothing
+
+    let message = withThoughtSignatures toolCalls thoughtSignatures' $ assistantMessage accumulated
+    yield $ LLMEnd rId message usage
+    where
+      receiveChunks accumulated toolCalls thoughtSignatures' usage = do
+        next <- await
+        case next of
+          Nothing -> pure (accumulated, toolCalls, thoughtSignatures', usage)
+          Just (Left err) -> throwError $ llmError' err
+          Just (Right (GeminiStreamEvent GeminiStreamChunk {streamCandidates, streamUsage})) -> do
+            let parts = maybe [] streamParts $ candidate0 streamCandidates
+                texts = [text | GeminiText text <- parts]
+                calls = [(toolCall, signature) | GeminiFunctionCall toolCall signature <- parts]
+                nextUsage = streamUsage <|> usage
+            emitParts texts (map fst calls)
+            receiveChunks
+              (accumulated <> mconcat texts)
+              (toolCalls <> map fst calls)
+              (thoughtSignatures' <> map snd calls)
+              nextUsage
+
+      candidate0 = List.find ((== 0) . streamCandidateIndex)
+
+      emitParts texts [] = mapM_ (`yieldChunk` Nothing) texts
+      emitParts texts (toolCall : remaining) = do
+        yieldChunk (mconcat texts) (Just toolCall)
+        mapM_ (yieldChunk "" . Just) remaining
+
+      yieldChunk text mbToolCall = yield $ LLMChunk rId text mbToolCall
+
+      geminiEvents requestPayload emit = do
+        result <- try $ do
+          manager <- newManager tlsManagerSettings
+
+          let baseUrl = parseBaseUrl (T.unpack $ geminiBaseUrl provider)
+              model = geminiModel provider
+              apiKey = geminiApiKey provider
+              request =
+                geminiStreamClient
+                  (model <> ":streamGenerateContent")
+                  (Just "sse")
+                  (Just apiKey)
+                  requestPayload
+
+          clientEnv <- mkClientEnv manager <$> baseUrl
+          withClientM request clientEnv $
+            either
+              emitError
+              (\source -> runConduit $ source .| C.mapM_ (emit . Right))
+        case result of
+          Left err
+            | Just AsyncCancelled <- fromException err -> throwIO err
+            | otherwise -> emitError err
+          Right () -> pure ()
+        where
+          emitError :: Show a => a -> IO ()
+          emitError = emit . Left . T.pack . show
+
+      rId = "gemini-stream-run"
+
+llmError' :: Text -> LangchainError
+llmError' err = llmError err Nothing Nothing
+
+data GeminiStreamChunk = GeminiStreamChunk
+  { streamCandidates :: [GeminiStreamCandidate]
+  , streamUsage :: Maybe TokenUsage
+  }
+
+instance FromJSON GeminiStreamChunk where
+  parseJSON = withObject "GeminiStreamChunk" $ \obj ->
+    GeminiStreamChunk
+      <$> obj .:? "candidates" .!= []
+      <*> (obj .:? "usageMetadata" >>= traverse parseGeminiUsage)
+
+data GeminiStreamCandidate = GeminiStreamCandidate
+  { streamCandidateIndex :: Int
+  , streamParts :: [GeminiPart]
+  }
+
+instance FromJSON GeminiStreamCandidate where
+  parseJSON = withObject "GeminiStreamCandidate" $ \obj -> do
+    streamCandidateIndex <- obj .:? "index" .!= 0
+    content <- obj .:? "content"
+    streamParts <- case content of
+      Nothing -> pure []
+      Just contentValue -> withObject "GeminiStreamContent" parseParts contentValue
+    pure GeminiStreamCandidate {streamCandidateIndex, streamParts}
+    where
+      parseParts contentObj = do
+        parts <- contentObj .:? "parts" .!= []
+        traverse parseGeminiPart parts
+
+data GeminiPart
+  = GeminiText Text
+  | GeminiFunctionCall ToolCall (Maybe Text)
+
+parseGeminiPart :: Value -> Parser GeminiPart
+parseGeminiPart = withObject "GeminiPart" $ \obj -> do
+  functionCall <- obj .:? "functionCall"
+  case functionCall of
+    Just value -> GeminiFunctionCall <$> parseGeminiFunctionCall value <*> pure (parseThoughtSignature obj)
+    Nothing -> GeminiText <$> obj .:? "text" .!= ""
+
+parseGeminiFunctionCall :: Value -> Parser ToolCall
+parseGeminiFunctionCall = withObject "GeminiFunctionCall" $ \obj ->
+  ToolCall
+    <$> obj .:? "id" .!= ""
+    <*> pure "function"
+    <*> obj .: "name"
+    <*> obj .:? "args" .!= object []
+
+parseThoughtSignature :: Object -> Maybe Text
+parseThoughtSignature obj =
+  case KeyMap.lookup "thoughtSignature" obj of
+    Just (String signature) -> Just signature
+    _ -> Nothing
+
+parseGeminiUsage :: Value -> Parser TokenUsage
+parseGeminiUsage = withObject "GeminiUsageMetadata" $ \obj ->
+  TokenUsage
+    <$> obj .:? "promptTokenCount" .!= 0
+    <*> obj .:? "candidatesTokenCount" .!= 0
+    <*> obj .:? "totalTokenCount" .!= 0
+
+newtype GeminiStreamEvent = GeminiStreamEvent GeminiStreamChunk
+
+instance FromServerEvent GeminiStreamEvent where
+  fromServerEvent event = GeminiStreamEvent <$> jsonData event
+
+type GeminiStreamApi =
+  "v1beta"
+    :> "models"
+    :> Capture "modelAction" Text
+    :> QueryParam "alt" Text
+    :> QueryParam "key" Text
+    :> ReqBody '[JSON] Value
+    :> PostServerSentEvents (ConduitT () GeminiStreamEvent IO ())
+
+geminiStreamClient ::
+  Text -> Maybe Text -> Maybe Text -> Value -> ClientM (ConduitT () GeminiStreamEvent IO ())
+geminiStreamClient = client (Proxy.Proxy :: Proxy.Proxy GeminiStreamApi)
 
 -- Helper for HTTP requests
 safeHttpRequest :: Request -> IO (Either Text Value)
@@ -173,29 +425,40 @@ parseGeminiResponse = parseEither $ withObject "GeminiResponse" $ \o -> do
   candidates <- o .: "candidates"
   case candidates of
     [] -> fail "Empty candidates array in Gemini response"
-    (c : _) -> flip (withObject "Candidate") c $ \cand -> do
-      contentObj <- cand .: "content"
-      parts <- contentObj .: "parts"
-      txts <- forM parts $ withObject "Part" $ \p -> p .:? "text" .!= ""
-      pure $ assistantMessage (T.intercalate "\n" txts)
+    (c : _) ->
+      flip (withObject "Candidate") c $ \cand -> do
+        contentObj <- cand .: "content"
+        parts <- contentObj .: "parts"
+        parsedParts <- traverse parseGeminiPart parts
+        let texts = [text | GeminiText text <- parsedParts]
+            toolCalls = [toolCall | GeminiFunctionCall toolCall _ <- parsedParts]
+            signatures = [signature | GeminiFunctionCall _ signature <- parsedParts]
+        pure $
+          withThoughtSignatures toolCalls signatures $
+            assistantMessage $
+              T.intercalate "\n" texts
 
--- | Merge optional config fields into the Gemini request payload
-mergeGeminiConfig :: Value -> Maybe Value -> Value
-mergeGeminiConfig base Nothing = base
-mergeGeminiConfig (Object baseFields) (Just (Object cfgFields)) =
-  Object (KeyMap.union cfgFields baseFields)
-mergeGeminiConfig base _ = base
-
--- | Bind tools to a Gemini model by adding tool declarations to the config Value
+-- | Bind tools to a Gemini model by adding function declarations to the config.
 instance ToolBinder Gemini m where
-  bindToolsConfig tools mbConfig =
+  bindToolsConfig tools config =
     case tools of
-      [] -> mbConfig
+      [] -> config
       _ ->
-        let toolDefs = map toolToValue tools
-            toolsDecl = toJSON [object ["function_declarations" .= toolDefs]]
-            toolsMap = KeyMap.singleton "tools" toolsDecl
-         in Just $ case mbConfig of
-              Nothing -> Object toolsMap
-              Just (Object existing) -> Object (KeyMap.union toolsMap existing)
+        let generated =
+              KeyMap.singleton
+                "tools"
+                ( toJSON
+                    [ object ["functionDeclarations" .= map functionDeclaration tools]
+                    ]
+                )
+         in Just $ case config of
+              Nothing -> Object generated
+              Just (Object existing) -> Object (KeyMap.union generated existing)
               Just other -> other
+    where
+      functionDeclaration tool =
+        object
+          [ "name" .= CoreTool.toolName tool
+          , "description" .= CoreTool.toolDescription tool
+          , "parameters" .= CoreTool.toolSchema tool
+          ]

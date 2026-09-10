@@ -3,6 +3,7 @@
 module Test.Langchain.Provider.OllamaConversionSpec (tests) where
 
 import qualified Data.List.NonEmpty as NonEmpty
+import qualified Data.Map.Strict as Map
 import Test.Tasty
 import Test.Tasty.HUnit
 
@@ -103,6 +104,7 @@ tests =
                     Nothing
                     Nothing
                     Nothing
+                    Map.empty
                 (O.Message _ txt imgs _ _ _) = toOllamaMessage msg
             txt @?= "Analyze this:"
             case imgs of

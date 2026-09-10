@@ -19,6 +19,7 @@ dependencies:
 - deepseq >= 1.4 && < 1.6
 - mtl >= 2.2 && < 2.4
 - resourcet >= 1.2 && < 1.4
+- stm >= 2.5 && < 2.6
 - text >= 1.2 && < 3
 - time >= 1.9 && < 1.15
 
@@ -55,8 +56,10 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
+    - async >= 2.2 && < 2.3
     - langchain-hs-core
     - resourcet
+    - stm >= 2.5 && < 2.6
     - QuickCheck >= 2.14
     - tasty >= 1.4
     - tasty-hunit >= 0.10
