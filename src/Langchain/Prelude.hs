@@ -227,6 +227,11 @@ module Langchain.Prelude
     -- * Embeddings
   , Embeddings (..)
   , OllamaEmbeddings (..)
+  , OpenAIEmbeddings (..)
+  , defaultOpenAIEmbeddings
+  , textEmbedding3Small
+  , textEmbedding3Large
+  , textEmbeddingAda
 
     -- * Document Loaders
   , Document (..)
@@ -380,6 +385,13 @@ import Langchain.DocumentLoader.Json
 import Langchain.DocumentLoader.WebPage
 import Langchain.Embeddings.Core
 import Langchain.Embeddings.Ollama (OllamaEmbeddings (..))
+import Langchain.Embeddings.OpenAI
+  ( OpenAIEmbeddings (..)
+  , defaultOpenAIEmbeddings
+  , textEmbedding3Large
+  , textEmbedding3Small
+  , textEmbeddingAda
+  )
 import Langchain.Graph.Checkpointer
 import Langchain.Graph.HITL
 import Langchain.Graph.MultiAgent

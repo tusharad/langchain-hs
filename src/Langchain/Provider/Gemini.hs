@@ -72,7 +72,7 @@ data GeminiConfig = GeminiConfig
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 defaultConfig :: Text -> GeminiConfig
-defaultConfig key = GeminiConfig key "gemini-3.6-flash"
+defaultConfig key = GeminiConfig key "gemini-2.0-flash"
 
 defaultGeminiConfig :: Text -> GeminiConfig
 defaultGeminiConfig = defaultConfig

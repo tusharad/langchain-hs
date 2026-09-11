@@ -17,7 +17,7 @@ synopsis:            Set of examples of Langchain-hs
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/githubuser/examples#readme>
+description:         Please see the README on GitHub at <https://github.com/tusharad/langchain-hs/tree/develop/examples#readme>
 
 dependencies:
 - base >= 4.7 && < 5

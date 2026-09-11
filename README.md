@@ -39,7 +39,7 @@ Modern AI orchestration frameworks often struggle with race conditions, hidden s
 | **Purity Guarantees** | None | None | None | **Zero `unsafePerformIO`, Law-Verified** |
 | **Pipeline Composition** | LCEL (`\|`) | Fluent Builders | Async Chains | **Pure GADT AST (`\|>>`, `&>&`, `>>>#`)** |
 | **Graph Orchestration** | LangGraph (Python) | External / Basic | None | **`StateGraph`, Parallel Nodes, Time-Travel, DOT** |
-| **Multi-Agent Patterns** | CrewAI / AutoGen | Basic Agents | Simple ReAct | **Plan-and-Execute, Supervisor, Debate, Blackboard** |
+| **Multi-Agent Patterns** | CrewAI / AutoGen | Basic Agents | Simple ReAct | **Plan-and-Execute, Supervisor, Sub-Graph Embedding** |
 | **Model Context Protocol (MCP)** | Python Client | Custom SDK | Basic | **Built-in stdio + HTTP JSON-RPC Client** |
 | **Human-in-the-Loop (HITL)** | Supported | Partial | Unsupported | **First-class `interruptBefore` & `resumeGraph`** |
 | **Concurrency & State** | GIL / AsyncIO | Locks / Atomicals | Arc / Mutex | **Software Transactional Memory (STM `TVar`)** |
@@ -74,10 +74,10 @@ flowchart TB
 
     subgraph HighLevel ["langchain-hs (Ecosystem & Production)"]
         PR["Providers: Ollama, OpenAI, Gemini"]
-        AG["Agents: ReAct, Plan-and-Execute, Supervisor, Debate"]
+        AG["Agents: ReAct, Plan-and-Execute, Supervisor, Sub-Graph"]
         MCP["MCP Client (Stdio & HTTP JSON-RPC 2.0)"]
-        VS["Vector Stores: SQLite-vec, InMemory, PgVector, Qdrant"]
-        CH["Chains: RetrievalQA, MapReduce, SQL Database"]
+        VS["Vector Stores: SQLite-vec, InMemory"]
+        CH["Chains: RetrievalQA, MapReduce"]
         OB["Observability: OpenTelemetry, Tracing Callbacks"]
         RES["Resilience: Circuit Breaker, Retries, In-Memory Caching"]
     end
