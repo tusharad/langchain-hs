@@ -13,6 +13,7 @@ import Langchain.Core.Model
 import Langchain.Core.Tool (Tool)
 import Langchain.Provider.Ollama
 import Langchain.Tool.Calculator (calculatorTool)
+import Test.Langchain.TestHelpers (withOllamaModel)
 
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Ollama.Client as OC
@@ -45,22 +46,24 @@ tests =
         let p = newOllamaWithClient testModelName c
         ollamaModelName p @?= testModelName
     , testCase "invoke returns Assistant message" $ do
-        p <- newOllama testModelName defaultConfig
-        let input = [userMessage "What is 2 + 2? Answer with just the number."]
-        res <- runExceptT $ invoke p input Nothing
-        case res of
-          Left err -> assertFailure $ "Expected success, got error: " ++ show err
-          Right msg -> do
-            messageRole msg @?= Assistant
-            assertBool "Should contain 4" ("4" `T.isInfixOf` extractMessageText msg)
+        withOllamaModel testModelName $ \modelName -> do
+          p <- newOllama modelName defaultConfig
+          let input = [userMessage "What is 2 + 2? Answer with just the number."]
+          res <- runExceptT $ invoke p input Nothing
+          case res of
+            Left err -> assertFailure $ "Expected success, got error: " ++ show err
+            Right msg -> do
+              messageRole msg @?= Assistant
+              assertBool "Should contain 4" ("4" `T.isInfixOf` extractMessageText msg)
     , testCase "batch processes multiple inputs" $ do
-        p <- newOllama testModelName defaultConfig
-        let inputs = [[userMessage "What is 1 + 1?"], [userMessage "What is 2 + 2?"]]
-        res <- runExceptT $ batch p inputs Nothing
-        case res of
-          Left err -> assertFailure $ "Expected success, got error: " ++ show err
-          Right msgs -> do
-            length msgs @?= 2
+        withOllamaModel testModelName $ \modelName -> do
+          p <- newOllama modelName defaultConfig
+          let inputs = [[userMessage "What is 1 + 1?"], [userMessage "What is 2 + 2?"]]
+          res <- runExceptT $ batch p inputs Nothing
+          case res of
+            Left err -> assertFailure $ "Expected success, got error: " ++ show err
+            Right msgs -> do
+              length msgs @?= 2
     , testCase "withOptions sets ModelOptions on ChatRequest" $ do
         p <- newOllama testModelName defaultConfig
         let opts = defaultOptions {optTemperature = Just 0.3, optNumCtx = Just 4096}
@@ -88,14 +91,15 @@ tests =
         let req = chatRequestFor p [userMessage "Hello"]
         chatModel req @?= ModelName testModelName
     , testCase "invoke propagates chatFormat from mbReq" $ do
-        p <- newOllama testModelName defaultConfig
-        let input = [userMessage "Return JSON: {\"answer\": 42}"]
-            req = withJsonFormat (chatRequestFor p input)
-        chatFormat req @?= Just OFormat.JsonFormat
-        res <- runExceptT $ invoke p input (Just req)
-        case res of
-          Left err -> assertFailure $ "Expected success, got error: " ++ show err
-          Right msg -> messageRole msg @?= Assistant
+        withOllamaModel testModelName $ \modelName -> do
+          p <- newOllama modelName defaultConfig
+          let input = [userMessage "Return JSON: {\"answer\": 42}"]
+              req = withJsonFormat (chatRequestFor p input)
+          chatFormat req @?= Just OFormat.JsonFormat
+          res <- runExceptT $ invoke p input (Just req)
+          case res of
+            Left err -> assertFailure $ "Expected success, got error: " ++ show err
+            Right msg -> messageRole msg @?= Assistant
     , testGroup
         "Precedence Rules (resolveChatRequest)"
         [ testCase "inputMsgs takes priority over ChatRequest chatMessages when non-empty" $ do

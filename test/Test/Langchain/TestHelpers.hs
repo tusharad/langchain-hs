@@ -33,6 +33,7 @@ module Test.Langchain.TestHelpers
   , withGeminiRetry
 
     -- * Ollama helpers
+  , isOllamaInstalled
   , isOllamaRunning
   , isModelAvailable
   , newTestOllama
@@ -54,9 +55,11 @@ import Control.Monad.IO.Class (MonadIO)
 import Data.Aeson (Value, decode)
 import Data.Char (isDigit)
 import Data.List (isInfixOf, isPrefixOf)
+import Data.Maybe (isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
+import System.Directory (findExecutable)
 import Text.Read (readMaybe)
 
 import Langchain.Provider.Gemini (Gemini, newGemini)
@@ -192,6 +195,10 @@ newTestGeminiCompat key =
 -- Ollama helpers
 -- ---------------------------------------------------------------------------
 
+-- | Check if the Ollama CLI executable is installed on the system PATH
+isOllamaInstalled :: IO Bool
+isOllamaInstalled = isJust <$> findExecutable "ollama"
+
 -- | Check if Ollama daemon is running on localhost:11434
 isOllamaRunning :: IO Bool
 isOllamaRunning = do
@@ -217,22 +224,32 @@ withOllamaModel :: Text -> (Text -> IO ()) -> IO ()
 withOllamaModel preferredModel action = do
   running <- isOllamaRunning
   if not running
-    then putStrLn " [SKIPPED] Ollama daemon is not running on http://localhost:11434"
+    then do
+      installed <- isOllamaInstalled
+      if not installed
+        then putStrLn " [SKIPPED] Ollama is not installed"
+        else putStrLn " [SKIPPED] Ollama daemon is not running on http://localhost:11434"
     else do
       hasPref <- isModelAvailable preferredModel
       if hasPref
         then action preferredModel
         else do
-          hasFallback <- isModelAvailable ollamaModelName
-          if hasFallback
-            then action ollamaModelName
-            else
-              putStrLn $
-                " [SKIPPED] Neither "
-                  ++ T.unpack preferredModel
-                  ++ " nor fallback "
-                  ++ T.unpack ollamaModelName
-                  ++ " is available in Ollama."
+          hasDef <- isModelAvailable defaultTestModel
+          if hasDef
+            then action defaultTestModel
+            else do
+              hasFallback <- isModelAvailable ollamaModelName
+              if hasFallback
+                then action ollamaModelName
+                else
+                  putStrLn $
+                    " [SKIPPED] Neither "
+                      ++ T.unpack preferredModel
+                      ++ ", "
+                      ++ T.unpack defaultTestModel
+                      ++ ", nor "
+                      ++ T.unpack ollamaModelName
+                      ++ " is available in Ollama."
 
 -- | Build an Ollama provider with a generous timeout.
 newTestOllama :: MonadIO m => Text -> m Ollama
@@ -331,7 +348,12 @@ withAnyModel ::
   IO ()
 withAnyModel =
   withOpenRouterOrOllama
-    (putStrLn " [SKIPPED] No OpenRouter key and no Ollama daemon — skipping test")
+    ( do
+        installed <- isOllamaInstalled
+        if not installed
+          then putStrLn " [SKIPPED] No OpenRouter key and Ollama is not installed — skipping test"
+          else putStrLn " [SKIPPED] No OpenRouter key and no Ollama daemon — skipping test"
+    )
 
 {- | Run @geminiAction@ if a Gemini API key is available, otherwise fall back
   to @ollamaAction@.  Automatically retries on Gemini free-tier rate limits.
