@@ -16,12 +16,8 @@ observability, structured logging, circuit breakers, pipeline DSLs, and runtime 
 module Langchain.Prelude
   ( -- * Core Monad & Errors
     LangchainT
-  , LangchainConfig (LangchainConfig)
-  , defaultLangchainConfig
   , runLangchainT
-  , runLangchainTIO
-  , askConfig
-  , withConfig
+  , throwLangchainError
   , LangchainError (..)
   , ErrorContext (..)
   , errorMessage
@@ -79,6 +75,16 @@ module Langchain.Prelude
   , interpret
   , runLambda
   , runPrim
+  , runPure
+  , runPassthrough
+  , runIdent
+  , runBranch
+  , runFallback
+  , runChat
+  , runModel
+  , runRetriever
+  , ModelRunnable (..)
+  , TextModelRunnable (..)
 
     -- * Effect-Polymorphic Tools
   , Tool (..)
@@ -361,9 +367,8 @@ import Langchain.Chain.MapReduce
 import Langchain.Chain.RetrievalQA
 import Langchain.Core.Error
 import Langchain.Core.Model
-import Langchain.Core.Monad hiding (defaultConfig)
-import qualified Langchain.Core.Monad as CoreMonad
-import Langchain.Core.Runnable
+import Langchain.Core.Monad
+import Langchain.Core.Runnable hiding (invoke)
 import Langchain.Core.Stream
 import Langchain.Core.Tool
 import Langchain.DocumentLoader.Core
@@ -429,7 +434,3 @@ import Langchain.Tool.Shell (shellTool)
 import Langchain.VectorStore.Core
 import Langchain.VectorStore.InMemory
 import Langchain.VectorStore.SqliteVec
-
--- | Default runtime configuration alias
-defaultLangchainConfig :: LangchainConfig
-defaultLangchainConfig = CoreMonad.defaultConfig

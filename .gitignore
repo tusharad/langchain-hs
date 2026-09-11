@@ -1,11 +1,14 @@
 .stack-work/
+**/.stack-work/
 .hie/
+**/.hie/
 *~
 Wiki.md
 *.yaml.lock
 
 # Cabal & Hakyll
 dist-newstyle/
+**/dist-newstyle/
 site/_site/
 site/_cache/
 site/dist-newstyle/
@@ -16,3 +19,5 @@ site/dist-newstyle/
 .env.development.local
 .env.test.local
 .env.production.local
+key
+gemini_api_key

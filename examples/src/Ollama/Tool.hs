@@ -19,7 +19,7 @@ runApp = do
   let promptMsgs = [userMessage inputPrompt]
       chatReq = withTools [calculatorTool @IO] (chatRequestFor o promptMsgs)
 
-  res <- runLangchainTIO $ do
+  res <- runLangchainT () $ do
     respMsg <- invoke o promptMsgs (Just chatReq)
     case messageToolCalls respMsg of
       Nothing -> do

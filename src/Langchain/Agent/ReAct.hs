@@ -23,11 +23,12 @@ module Langchain.Agent.ReAct
   , runReActAgent
   ) where
 
+import Control.Monad (forM)
 import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.IO.Class (MonadIO)
 import Data.List (find)
 
-import Langchain.Core.Error (LangchainError, agentError, toolError)
+import Langchain.Core.Error (LangchainError, agentError, errorMessage)
 import Langchain.Core.Model
 import qualified Langchain.Core.Model.Types as M
 import Langchain.Core.Tool
@@ -35,7 +36,7 @@ import Langchain.Tool.Binding (ToolBinder (..))
 
 -- | Step result of ReAct reasoning iteration
 data AgentStep
-  = AgentAction Message ToolCall
+  = AgentAction Message [ToolCall]
   | AgentFinish Message
   deriving (Eq, Show)
 
@@ -67,7 +68,7 @@ reactStep model tools history = do
   let cfg = bindToolsConfig @model tools Nothing
   responseMsg <- invoke model history cfg
   case messageToolCalls responseMsg of
-    Just (tc : _) -> pure $ AgentAction responseMsg tc
+    Just tcs@(_ : _) -> pure $ AgentAction responseMsg tcs
     _ -> pure $ AgentFinish responseMsg
 
 -- | Execute the full ReAct reasoning loop until AgentFinish or max iterations reached
@@ -84,19 +85,23 @@ runReActAgent agent initialHistory = go initialHistory (agentMaxIterations agent
           step <- reactStep (agentModel agent) (agentTools agent) history
           case step of
             AgentFinish finalMsg -> pure finalMsg
-            AgentAction respMsg tc -> do
-              let tName = toolCallName tc
-              case find (\t -> toolName t == tName) (agentTools agent) of
-                Nothing -> throwError $ toolError ("Tool not found: " <> tName) (Just tName) Nothing
-                Just tool -> do
-                  eOut <- toolExecute tool (toolCallArguments tc)
-                  case eOut of
-                    Left err -> throwError err
-                    Right outTxt -> do
-                      let obsMsg =
-                            (textMessage M.Tool outTxt)
-                              { M.messageName = Just tName
-                              , M.messageToolId = Just (toolCallId tc)
-                              }
-                          newHistory = history ++ [respMsg, obsMsg]
-                      go newHistory (maxIter - 1)
+            AgentAction respMsg tcs -> do
+              obsMsgs <- forM tcs $ \tc -> do
+                let tName = toolCallName tc
+                outTxt <- case find (\t -> toolName t == tName) (agentTools agent) of
+                  Nothing ->
+                    pure $ "Error: Tool not found: " <> tName
+                  Just tool -> do
+                    eOut <- toolExecute tool (toolCallArguments tc)
+                    case eOut of
+                      Left err ->
+                        pure $ "Error executing tool " <> tName <> ": " <> errorMessage err
+                      Right out ->
+                        pure out
+                pure $
+                  (textMessage M.Tool outTxt)
+                    { M.messageName = Just tName
+                    , M.messageToolId = Just (toolCallId tc)
+                    }
+              let newHistory = history ++ [respMsg] ++ obsMsgs
+              go newHistory (maxIter - 1)

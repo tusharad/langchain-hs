@@ -9,8 +9,7 @@ runApp :: IO ()
 runApp = do
   o <- newOllama "gemma3" defaultConfig
   let msg = [userMessage "Write a poem about functional programming"]
-  res <- runLangchainTIO $ do
-    _defaultConf <- askConfig
+  res <- runLangchainT () $ do
     let chatReq =
           withOptions
             (defaultOptions {optTemperature = Just 0.7, optTopP = Just 0.9, optNumCtx = Just 100096})

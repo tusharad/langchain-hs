@@ -1,8 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 
--- TODO: we shall use tagsoup here
-
 {- |
 Module      : Langchain.DocumentLoader.Html
 Description : HTML document loader with tag stripping and title/heading extraction

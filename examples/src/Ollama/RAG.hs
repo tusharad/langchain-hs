@@ -15,7 +15,7 @@ runApp = do
   let systemPrompt = "Answer the question based on the Context provided it to you."
       userQuestion = "Compare the feautres of Langchain-Rust and Langchain-Haskell."
   let fPath = FileLoader "/Users/tusharadhatrao/work/langchain-clients/langchain-hs/README.md"
-  res <- runLangchainTIO $ do
+  res <- runLangchainT () $ do
     docs <- load fPath
     let ollamaEmbed = OllamaEmbeddings "nomic-embed-text:latest" Nothing Nothing Nothing
     vs1 <- fromDocuments ollamaEmbed docs

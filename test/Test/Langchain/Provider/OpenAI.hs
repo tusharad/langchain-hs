@@ -35,6 +35,7 @@ import Langchain.Core.Model
 import Langchain.Core.Stream (StreamEvent (..), TokenUsage (..), collectEvents)
 import Langchain.Core.Tool (Tool, createTool, toolToValue)
 import qualified Langchain.Core.Tool as CoreTool
+
 import Langchain.Provider.OpenAI
 import Test.Langchain.Provider.TestSseServer
   ( cancellationAwareSseServer

@@ -4,6 +4,7 @@
 
 document.addEventListener('DOMContentLoaded', () => {
   initThemeToggle();
+  initProviderToggles();
   initCodeCopyButtons();
   initMobileMenu();
   initTableOfContents();
@@ -48,6 +49,144 @@ function initThemeToggle() {
       });
     }
   });
+}
+
+/* ==========================================================================
+   Provider Toggles (Ollama vs OpenAI / OpenRouter)
+   ========================================================================== */
+function initProviderToggles() {
+  let currentProvider = localStorage.getItem('langchain_provider') || 'ollama';
+
+  const globalToggle = document.getElementById('global-provider-toggle');
+
+  function updateGlobalToggleUI(provider) {
+    if (!globalToggle) return;
+    if (provider === 'openai') {
+      globalToggle.innerHTML = `<span class="toggle-icon">⚡</span><span>OpenAI</span>`;
+      globalToggle.classList.add('provider-openai');
+      globalToggle.classList.remove('provider-ollama');
+      globalToggle.title = 'Switch active provider to Ollama';
+    } else {
+      globalToggle.innerHTML = `<span class="toggle-icon">🦙</span><span>Ollama</span>`;
+      globalToggle.classList.add('provider-ollama');
+      globalToggle.classList.remove('provider-openai');
+      globalToggle.title = 'Switch active provider to OpenAI';
+    }
+  }
+
+  function setProvider(provider) {
+    currentProvider = provider;
+    localStorage.setItem('langchain_provider', provider);
+    updateGlobalToggleUI(provider);
+
+    document.querySelectorAll('.provider-group').forEach(group => {
+      const panels = group.querySelectorAll('.provider-panel');
+      const tabs = group.querySelectorAll('.provider-tab-btn');
+      const commandPill = group.querySelector('.provider-command-pill code');
+
+      let targetPanel = null;
+      panels.forEach(p => {
+        if (p.getAttribute('data-provider') === provider) {
+          p.classList.add('active');
+          targetPanel = p;
+        } else {
+          p.classList.remove('active');
+        }
+      });
+
+      // Fallback if target provider doesn't exist in group
+      if (!targetPanel && panels.length > 0) {
+        panels[0].classList.add('active');
+        targetPanel = panels[0];
+      }
+
+      tabs.forEach(t => {
+        if (t.getAttribute('data-provider') === (targetPanel ? targetPanel.getAttribute('data-provider') : provider)) {
+          t.classList.add('active');
+        } else {
+          t.classList.remove('active');
+        }
+      });
+
+      if (commandPill && targetPanel) {
+        const exe = targetPanel.getAttribute('data-exe') || '';
+        commandPill.innerText = exe;
+      }
+    });
+  }
+
+  // Set up all provider groups on the page
+  document.querySelectorAll('.provider-group').forEach(group => {
+    // Avoid double header generation
+    if (group.querySelector('.provider-tabs-header')) return;
+
+    const panels = group.querySelectorAll('.provider-panel');
+    if (panels.length === 0) return;
+
+    const header = document.createElement('div');
+    header.className = 'provider-tabs-header';
+
+    const tabsContainer = document.createElement('div');
+    tabsContainer.className = 'provider-tabs';
+
+    panels.forEach(panel => {
+      const pId = panel.getAttribute('data-provider') || 'ollama';
+      const label = panel.getAttribute('data-label') || (pId === 'openai' ? '⚡ OpenAI / OpenRouter' : '🦙 Ollama (Local)');
+      
+      const tabBtn = document.createElement('button');
+      tabBtn.className = 'provider-tab-btn' + (pId === currentProvider ? ' active' : '');
+      tabBtn.setAttribute('data-provider', pId);
+      tabBtn.innerText = label;
+      tabBtn.addEventListener('click', () => {
+        setProvider(pId);
+      });
+      tabsContainer.appendChild(tabBtn);
+    });
+
+    const actionsContainer = document.createElement('div');
+    actionsContainer.className = 'provider-header-actions';
+
+    const activePanel = group.querySelector(`.provider-panel[data-provider="${currentProvider}"]`) || panels[0];
+    const initialExe = activePanel ? (activePanel.getAttribute('data-exe') || '') : '';
+
+    const commandPill = document.createElement('div');
+    commandPill.className = 'provider-command-pill';
+    commandPill.title = 'Click to copy execution command';
+    commandPill.innerHTML = `<span class="pill-label">Run:</span> <code>${initialExe}</code>`;
+    commandPill.addEventListener('click', async () => {
+      const curActive = group.querySelector('.provider-panel.active') || panels[0];
+      const exe = curActive ? curActive.getAttribute('data-exe') : '';
+      if (exe) {
+        try {
+          await navigator.clipboard.writeText(exe);
+          const oldLabel = commandPill.querySelector('.pill-label').innerText;
+          commandPill.querySelector('.pill-label').innerText = 'Copied!';
+          setTimeout(() => {
+            commandPill.querySelector('.pill-label').innerText = oldLabel;
+          }, 1800);
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    });
+
+    actionsContainer.appendChild(commandPill);
+    header.appendChild(tabsContainer);
+    header.appendChild(actionsContainer);
+
+    group.insertBefore(header, group.firstChild);
+  });
+
+  // Global toggle click handler
+  if (globalToggle) {
+    globalToggle.addEventListener('click', () => {
+      const nextProvider = currentProvider === 'ollama' ? 'openai' : 'ollama';
+      setProvider(nextProvider);
+    });
+  }
+
+  // Initial activation
+  setProvider(currentProvider);
 }
 
 /* ==========================================================================
@@ -184,6 +323,29 @@ function initTableOfContents() {
    Instant Search Modal (Cmd+K / Ctrl+K)
    ========================================================================== */
 const searchDocs = [
+  // 20 Components
+  { title: "Chat Models", category: "Components", url: "/components/chat-models.html", snippet: "Simple chat invocation with ChatOllama and ChatOpenAI." },
+  { title: "Streaming", category: "Components", url: "/components/streaming.html", snippet: "Real-time token streaming with streamChat and StreamEvents." },
+  { title: "Langchain Monad", category: "Components", url: "/components/monad.html", snippet: "Monadic LLM computation with LangchainT, ReaderT, and Exception handling." },
+  { title: "Tools & Function Calling", category: "Components", url: "/components/tools.html", snippet: "Defining typed Haskell tools with FunctionDefinition and tool invocation." },
+  { title: "Structured Outputs", category: "Components", url: "/components/structured-output.html", snippet: "Generating typed JSON schemas and Aeson FromJSON decoding." },
+  { title: "RAG & Embeddings", category: "Components", url: "/components/rag.html", snippet: "Vector embeddings, cosine similarity, Document chunking and retrieval." },
+  { title: "Retrievers & Ensembles", category: "Components", url: "/components/retrievers.html", snippet: "BM25 keyword search, Vector store retriever, and ensemble rank fusion." },
+  { title: "Memory Systems", category: "Components", url: "/components/memory.html", snippet: "ConversationBufferMemory and conversational context tracking." },
+  { title: "Retrieval QA Chains", category: "Components", url: "/components/retrieval-qa.html", snippet: "End-to-end question answering over indexed knowledge bases." },
+  { title: "Map-Reduce Document Processing", category: "Components", url: "/components/map-reduce.html", snippet: "Hierarchical summarization and chunk reduction over large corpora." },
+  { title: "ReAct Agent", category: "Components", url: "/components/react-agent.html", snippet: "Reasoning and acting loop with tool inspection and step execution." },
+  { title: "Plan-and-Execute Agent", category: "Components", url: "/components/plan-and-execute.html", snippet: "Multi-step planner with dynamic task decomposition and re-planning." },
+  { title: "Guardrails & Safety", category: "Components", url: "/components/guardrails.html", snippet: "Input/output moderation, PII redaction, and semantic guardrail enforcement." },
+  { title: "Resilience & Circuit Breakers", category: "Components", url: "/components/resilience.html", snippet: "Retry policies, exponential backoff, rate limiting, and fallback providers." },
+  { title: "Observability & Tracing", category: "Components", url: "/components/observability.html", snippet: "Callbacks, OpenTelemetry tracing, and execution timing metrics." },
+  { title: "Model Context Protocol (MCP)", category: "Components", url: "/components/mcp.html", snippet: "Stdio and HTTP MCP client connecting external tool servers." },
+  { title: "Stateful Graphs (StateGraph)", category: "Components", url: "/components/state-graph.html", snippet: "Cyclic workflows, typed channels, state reducers, and conditional branching." },
+  { title: "Multi-Agent Systems", category: "Components", url: "/components/multi-agent.html", snippet: "Supervisor routing, consensus debate, and multi-agent coordination." },
+  { title: "Human-in-the-Loop (HITL)", category: "Components", url: "/components/hitl.html", snippet: "Interrupting graph workflows for approval, review, and resuming state." },
+  { title: "Runnables & AST Composition", category: "Components", url: "/components/runnables.html", snippet: "Pipe (|>>), parallel (&>&), fallback, and AST pipeline execution." },
+
+  // Getting Started & Concepts
   { title: "Installation & Packages", category: "Getting Started", url: "/getting-started/installation.html", snippet: "Stack, Cabal, Nix setup, GHC 9.6+, monorepo architecture." },
   { title: "Quickstart (5-Minute Guide)", category: "Getting Started", url: "/getting-started/quickstart.html", snippet: "Building your first LLM app with Ollama, OpenAI, or Gemini." },
   { title: "Building Your First Agent", category: "Getting Started", url: "/getting-started/first-agent.html", snippet: "Constructing ReAct and Plan-and-Execute agents with typed tools." },

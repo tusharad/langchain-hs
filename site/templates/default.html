@@ -6,6 +6,10 @@
   <title>$if(title)$$title$ | $endif$langchain-hs Documentation</title>
   <meta name="description" content="$if(description)$$description$$else$Functional Programming First AI Agent, Multi-Agent Graph & Production Orchestration Engine in Haskell$endif$">
   <link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
+  <!-- Modern Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/syntax.css">
   <!-- Mermaid for vector workflow diagrams -->
@@ -25,13 +29,14 @@
         </div>
         <span class="brand-title">
           langchain-hs
-          <span class="brand-badge">v0.5.0</span>
+          <span class="brand-badge">v0.0.5</span>
         </span>
       </a>
     </div>
 
     <nav class="nav-center">
       <a href="/getting-started/quickstart.html" class="nav-link">Get Started</a>
+      <a href="/components/chat-models.html" class="nav-link">Components</a>
       <a href="/concepts/architecture.html" class="nav-link">Concepts</a>
       <a href="/guides/local-models-ollama.html" class="nav-link">Guides</a>
       <a href="/api/cheat-sheet.html" class="nav-link">Cheat Sheet</a>
@@ -39,6 +44,18 @@
     </nav>
 
     <div class="header-actions">
+      <!-- Global Provider Switcher -->
+      <div class="provider-switch-pill" id="global-provider-toggle" title="Switch default provider across documentation">
+        <button type="button" class="provider-switch-btn active" data-provider="ollama" aria-label="Switch to Ollama code examples">
+          <span class="pill-icon">🦙</span>
+          <span class="pill-text">Ollama</span>
+        </button>
+        <button type="button" class="provider-switch-btn" data-provider="openai" aria-label="Switch to OpenAI code examples">
+          <span class="pill-icon">⚡</span>
+          <span class="pill-text">OpenAI</span>
+        </button>
+      </div>
+
       <button class="search-button" id="search-btn" aria-label="Search documentation">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
         <span>Search</span>

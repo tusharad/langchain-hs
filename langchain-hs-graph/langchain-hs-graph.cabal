@@ -1,19 +1,34 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.38.1.
+-- This file has been generated from package.yaml by hpack version 0.39.6.
 --
 -- see: https://github.com/sol/hpack
 
 name:           langchain-hs-graph
-version:        0.5.0.0
+version:        0.0.5.0
 synopsis:       Graph-based stateful agent orchestration engine for langchain-hs
 description:    StateGraph, StateReducer, Checkpointer, HITL interrupt/resume, and Multi-Agent supervisor patterns.
 category:       Web, AI, Control
+homepage:       https://github.com/tusharad/langchain-hs#readme
+bug-reports:    https://github.com/tusharad/langchain-hs/issues
 author:         Tushar Adhatrao
 maintainer:     tusharadhatrao@gmail.com
 copyright:      2025-2026 Tushar Adhatrao
 license:        MIT
+license-file:   LICENSE
 build-type:     Simple
+tested-with:
+    GHC == 9.10.1
+  , GHC == 9.8.4
+  , GHC == 9.6.6
+  , GHC == 9.4.8
+extra-source-files:
+    README.md
+    CHANGELOG.md
+
+source-repository head
+  type: git
+  location: https://github.com/tusharad/langchain-hs
 
 library
   exposed-modules:
@@ -45,7 +60,7 @@ library
     , base >=4.17 && <5
     , bytestring >=0.10 && <0.13
     , containers >=0.6 && <0.9
-    , langchain-hs-core
+    , langchain-hs-core ==0.0.5.*
     , mtl >=2.2 && <2.4
     , sqlite-simple >=0.4.18 && <0.5
     , stm ==2.5.*
@@ -86,7 +101,7 @@ test-suite langchain-hs-graph-test
     , bytestring >=0.10 && <0.13
     , containers >=0.6 && <0.9
     , filepath
-    , langchain-hs-core
+    , langchain-hs-core ==0.0.5.*
     , langchain-hs-graph
     , mtl >=2.2 && <2.4
     , sqlite-simple >=0.4.18 && <0.5

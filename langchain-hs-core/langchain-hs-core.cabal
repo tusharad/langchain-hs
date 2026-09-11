@@ -5,15 +5,30 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           langchain-hs-core
-version:        0.1.0.0
+version:        0.0.5.0
 synopsis:       Core typeclasses and pure AST primitives for langchain-hs
-description:    Zero HTTP dependency core package containing ChatModel, RunnableTree, ContentBlock, and StreamEvent primitives.
+description:    Zero HTTP dependency core package containing ChatModel, RunnableTree, ContentBlock, Tool, and StreamEvent primitives.
 category:       Web, AI, Control
+homepage:       https://github.com/tusharad/langchain-hs#readme
+bug-reports:    https://github.com/tusharad/langchain-hs/issues
 author:         Tushar Adhatrao
 maintainer:     tusharadhatrao@gmail.com
 copyright:      2025-2026 Tushar Adhatrao
 license:        MIT
+license-file:   LICENSE
 build-type:     Simple
+tested-with:
+    GHC == 9.10.1
+  , GHC == 9.8.4
+  , GHC == 9.6.6
+  , GHC == 9.4.8
+extra-source-files:
+    README.md
+    CHANGELOG.md
+
+source-repository head
+  type: git
+  location: https://github.com/tusharad/langchain-hs
 
 library
   exposed-modules:

@@ -13,11 +13,10 @@ tests :: TestTree
 tests =
   testGroup
     "Langchain.Tool.Calculator"
-    [ testCase "evaluateExpr evaluates addition correctly" $ do
-        evaluateExpr "2 + 2" @?= Right 4.0
-    , testCase "evaluateExpr evaluates multiplication correctly" $ do
-        evaluateExpr "3 * 4" @?= Right 12.0
-    , testCase "calculatorTool returns 4.0 for '2 + 2'" $ do
+    [ testCase "calculatorTool evaluates expression via Tool interface" $ do
         res <- toolExecute calculatorTool (object ["expression" .= ("2 + 2" :: Text)])
         res @?= Right "4.0"
+    , testCase "calculatorTool handles multiplication" $ do
+        res <- toolExecute calculatorTool (object ["expression" .= ("3 * 4" :: Text)])
+        res @?= Right "12.0"
     ]

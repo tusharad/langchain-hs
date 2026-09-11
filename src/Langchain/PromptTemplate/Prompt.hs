@@ -1,6 +1,9 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeFamilies #-}
 
 {- |
 Module      : Langchain.PromptTemplate.Prompt
@@ -34,6 +37,7 @@ import Data.Text (Text)
 import GHC.Generics (Generic)
 
 import Langchain.Core.Error (LangchainError)
+import Langchain.Core.Runnable (Runnable (..))
 import Langchain.PromptTemplate.String
   ( TemplateFormat (..)
   , extractTemplateVariables
@@ -92,3 +96,9 @@ partialPromptTemplate (PromptTemplate source _ existingPartials format) partials
 renderPrompt :: PromptTemplate -> Map.Map Text Text -> Either LangchainError Text
 renderPrompt (PromptTemplate source _ partials format) vars =
   renderTemplateWithFormat format (vars `Map.union` partials) source
+
+-- | 'PromptTemplate' implements 'Runnable' transforming variable 'Map' to rendered 'Text'.
+instance Monad m => Runnable PromptTemplate m where
+  type RunnableInput PromptTemplate = Map.Map Text Text
+  type RunnableOutput PromptTemplate = Text
+  invoke pt vars = pure (renderPrompt pt vars)

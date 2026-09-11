@@ -16,7 +16,7 @@ runApp = do
           "docker"
           ["run", "-i", "--rm", "tusharknight8/hackage-doc-mcp:latest"]
 
-  res <- runLangchainTIO $ do
+  res <- runLangchainT () $ do
     mcpTools <- listMcpTools client_
     let lcTools = map (mcpToolToLangchainTool client_) mcpTools
     liftIO $

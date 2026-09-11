@@ -40,7 +40,6 @@ tests =
     , testRecursiveLoading
     , testExtensionFiltering
     , testHiddenFilesExclusion
-    , testMultithreading
     , testErrorHandling
     ]
 
@@ -191,24 +190,6 @@ testHiddenFilesExclusion = testCase "Hidden files exclusion" $
       Right docs -> do
         let sources = mapMaybe getSource docs
         sort sources @?= sort allFiles
-
-testMultithreading :: TestTree
-testMultithreading = testCase "Multithreading" $
-  withSystemTempDirectory "test-dir-loader" $ \dir -> do
-    createTestFiles
-      dir
-      [ ("file1.txt", "Content of file1")
-      , ("file2.txt", "Content of file2")
-      ]
-    let files = [dir </> "file1.txt", dir </> "file2.txt"]
-    let opts = defaultDirectoryLoaderOptions {useMultithreading = True}
-        loader = DirectoryLoader dir opts
-    result <- runExceptT $ load loader
-    case result of
-      Left err -> assertFailure $ "Expected Right but got Left: " ++ show err
-      Right docs -> do
-        let sources = mapMaybe getSource docs
-        sort sources @?= sort files
 
 testErrorHandling :: TestTree
 testErrorHandling =

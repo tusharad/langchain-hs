@@ -14,9 +14,10 @@ module Langchain.Retriever.Core
   ( Retriever (..)
   , VectorStoreRetriever (..)
   , retrieveWithCallbacks
+  , runRetriever
   ) where
 
-import Control.Monad.Except (MonadError)
+import Control.Monad.Except (MonadError, runExceptT)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Text (Text)
 import qualified Data.Text.Lazy as TL
@@ -24,6 +25,7 @@ import Data.Time.Clock (diffUTCTime, getCurrentTime)
 
 import Langchain.Callback.Manager (CallbackEvent (..), CallbackManager, dispatchEvent)
 import Langchain.Core.Error (LangchainError)
+import Langchain.Core.Runnable (RunnableTree, runLambda)
 import Langchain.DocumentLoader.Core (Document (..))
 import Langchain.VectorStore.Core (VectorStore, similaritySearch)
 
@@ -58,3 +60,7 @@ retrieveWithCallbacks mgr name ret query = do
   let durMicros = round (diffUTCTime end start * 1000000)
   dispatchEvent mgr (OnRetrieverEnd name (map (TL.toStrict . pageContent) docs) durMicros end)
   pure docs
+
+-- | Lift any 'Retriever' into a 'Text' -> '[Document]' pipeline step in a 'RunnableTree'.
+runRetriever :: (Retriever a, MonadIO m) => a -> RunnableTree m Text [Document]
+runRetriever ret = runLambda $ \query -> runExceptT (getRelevantDocuments ret query)

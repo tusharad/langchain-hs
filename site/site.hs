@@ -33,7 +33,7 @@ main = hakyll $ do
                 >>= relativizeUrls
 
     -- Documentation Pages
-    match ("getting-started/*" .||. "concepts/*" .||. "guides/*" .||. "api/*") $ do
+    match ("getting-started/*" .||. "components/*" .||. "concepts/*" .||. "guides/*" .||. "api/*") $ do
         route   $ setExtension "html"
         compile $ do
             let ctx = docContext
@@ -53,6 +53,7 @@ docContext =
         let dir  = takeDirectory path
         pure $ case dir of
             "getting-started" -> "Getting Started"
+            "components"      -> "Components"
             "concepts"        -> "Core Concepts"
             "guides"          -> "Guides & Recipes"
             "api"             -> "API Reference"

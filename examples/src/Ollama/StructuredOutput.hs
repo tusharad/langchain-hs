@@ -31,7 +31,7 @@ runApp = do
   o <- newOllama "gemma3" defaultConfig
   let msg = [userMessage inputPrompt]
   let chatReq = withStructuredOutput @Person (chatRequestFor o msg)
-  res <- runLangchainTIO $ do
+  res <- runLangchainT () $ do
     invoke o msg (Just chatReq)
   case res of
     Left err -> T.putStrLn $ errorMessage err

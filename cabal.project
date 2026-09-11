@@ -1,0 +1,20 @@
+packages:
+    ./
+    langchain-hs-core
+    langchain-hs-graph
+    examples
+
+source-repository-package
+    type: git
+    location: https://github.com/tusharad/ollama-haskell
+    tag: 408d6790dcd46e55293a983df47ca1988d2051ce
+
+source-repository-package
+    type: git
+    location: https://github.com/MercuryTechnologies/openai
+    tag: 2031a05135b892a82b461558d19b813ab67cfb8f
+
+source-repository-package
+    type: git
+    location: https://github.com/lbobylev/pystrformat.git
+    tag: f603a296800ed3fb488eb9ba8976812bca4bb983
