@@ -1,0 +1,478 @@
+name:                examples
+version:             0.1.0.0
+github:              "tusharad/langchain-hs/example"
+license:             MIT
+author:              "Tushar Adhatrao"
+maintainer:          "tusharadhatrao@gmail.com"
+copyright:           "2026 Tushar Adhatrao"
+
+extra-source-files:
+- README.md
+- CHANGELOG.md
+
+# Metadata used when publishing your package
+synopsis:            Set of examples of Langchain-hs
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/tusharad/langchain-hs/tree/develop/examples#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+- langchain-hs
+- langchain-hs-core
+- langchain-hs-graph
+- text
+- aeson
+- bytestring
+- mtl
+- conduit
+- resourcet
+- containers
+- time
+
+
+ghc-options:
+- -Wall
+- -Wcompat
+- -Widentities
+- -Wincomplete-record-updates
+- -Wincomplete-uni-patterns
+- -Wmissing-export-lists
+- -Wmissing-home-modules
+- -Wpartial-fields
+- -Wredundant-constraints
+
+library:
+  source-dirs: src
+
+executables:
+  simpleollama:
+    main:                Main.hs
+    source-dirs:         app/simpleollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  streamollama:
+    main:                Main.hs
+    source-dirs:         app/streamollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  monadollama:
+    main:                Main.hs
+    source-dirs:         app/monadollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  jsonollama:
+    main:                Main.hs
+    source-dirs:         app/jsonollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  toolollama:
+    main:                Main.hs
+    source-dirs:         app/toolollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  prompttemplate:
+    main:                Main.hs
+    source-dirs:         app/prompttemplate
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  ragollama:
+    main:                Main.hs
+    source-dirs:         app/ragollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  memoryollama:
+    main:                Main.hs
+    source-dirs:         app/memoryollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  observabilityollama:
+    main:                Main.hs
+    source-dirs:         app/observabilityollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  guardrailollama:
+    main:                Main.hs
+    source-dirs:         app/guardrailollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  retrieverollama:
+    main:                Main.hs
+    source-dirs:         app/retrieverollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  mcpollama:
+    main:                Main.hs
+    source-dirs:         app/mcpollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  runnableollama:
+    main:                Main.hs
+    source-dirs:         app/runnableollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  retrievalqaollama:
+    main:                Main.hs
+    source-dirs:         app/retrievalqaollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  mapreduceollama:
+    main:                Main.hs
+    source-dirs:         app/mapreduceollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  resilienceollama:
+    main:                Main.hs
+    source-dirs:         app/resilienceollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  reactollama:
+    main:                Main.hs
+    source-dirs:         app/reactollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  planandexecuteollama:
+    main:                Main.hs
+    source-dirs:         app/planandexecuteollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  stategraphollama:
+    main:                Main.hs
+    source-dirs:         app/stategraphollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+    - langchain-hs-graph
+
+  multiagentollama:
+    main:                Main.hs
+    source-dirs:         app/multiagentollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+    - langchain-hs-graph
+
+  hitlollama:
+    main:                Main.hs
+    source-dirs:         app/hitlollama
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+    - langchain-hs-graph
+
+  simpleopenai:
+    main:                Main.hs
+    source-dirs:         app/simpleopenai
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  streamopenai:
+    main:                Main.hs
+    source-dirs:         app/streamopenai
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  monadopenai:
+    main:                Main.hs
+    source-dirs:         app/monadopenai
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  jsonopenai:
+    main:                Main.hs
+    source-dirs:         app/jsonopenai
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  toolopenai:
+    main:                Main.hs
+    source-dirs:         app/toolopenai
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  ragopenai:
+    main:                Main.hs
+    source-dirs:         app/ragopenai
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  memoryopenai:
+    main:                Main.hs
+    source-dirs:         app/memoryopenai
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  observabilityopenai:
+    main:                Main.hs
+    source-dirs:         app/observabilityopenai
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  guardrailopenai:
+    main:                Main.hs
+    source-dirs:         app/guardrailopenai
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  retrieveropenai:
+    main:                Main.hs
+    source-dirs:         app/retrieveropenai
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  mcpopenai:
+    main:                Main.hs
+    source-dirs:         app/mcpopenai
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  runnableopenai:
+    main:                Main.hs
+    source-dirs:         app/runnableopenai
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  retrievalqaopenai:
+    main:                Main.hs
+    source-dirs:         app/retrievalqaopenai
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  mapreduceopenai:
+    main:                Main.hs
+    source-dirs:         app/mapreduceopenai
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  resilienceopenai:
+    main:                Main.hs
+    source-dirs:         app/resilienceopenai
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  reactopenai:
+    main:                Main.hs
+    source-dirs:         app/reactopenai
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  planandexecuteopenai:
+    main:                Main.hs
+    source-dirs:         app/planandexecuteopenai
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  stategraphopenai:
+    main:                Main.hs
+    source-dirs:         app/stategraphopenai
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+    - langchain-hs-graph
+
+  multiagentopenai:
+    main:                Main.hs
+    source-dirs:         app/multiagentopenai
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+    - langchain-hs-graph
+
+  hitlopenai:
+    main:                Main.hs
+    source-dirs:         app/hitlopenai
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+    - langchain-hs-graph
+
+
+tests:
+  examples-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples

@@ -1,0 +1,344 @@
+---
+title: Functional AI & Multi-Agent Graphs
+description: Purely functional, effect-polymorphic, zero-unsafePerformIO AI agent framework in Haskell.
+---
+
+<section class="hero-section">
+  <div class="hero-badge">
+    <span>✨ Pure AST Pipelines &amp; LangGraph in Haskell</span>
+  </div>
+  
+  <h1 class="hero-title">
+    Type-Safe AI Agents &amp; Multi-Agent Graphs in <span class="gradient-text">Haskell</span>
+  </h1>
+
+  <p class="hero-description">
+    <code>langchain-hs</code> is a zero-<code>unsafePerformIO</code>, effect-polymorphic Haskell ecosystem built on pure GADT pipelines, state graphs, algebraic laws, Model Context Protocol (MCP), and production OpenTelemetry.
+  </p>
+
+  <div class="hero-cta">
+    <a href="/getting-started/quickstart.html" class="btn-primary">
+      <span>Get Started in 5 Min</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+    </a>
+    <a href="/components/chat-models.html" class="btn-secondary">
+      <span>Explore 20 Components</span>
+    </a>
+    <a href="/api/cheat-sheet.html" class="btn-secondary">
+      <span>Prelude Cheat Sheet</span>
+    </a>
+  </div>
+</section>
+
+<!-- Interactive Dual-Provider Code Showcase -->
+<section class="showcase-section">
+  <div class="showcase-header">
+    <h2>Real Working Code: Ollama vs OpenAI</h2>
+    <p style="color: var(--text-muted);">Switch between local inference (Ollama) and cloud APIs (OpenAI / OpenRouter) across all 20 components.</p>
+  </div>
+
+  <div class="provider-group">
+    <div class="provider-panel active" data-provider="ollama" data-label="🦙 Ollama (Local)" data-exe="stack run simpleollama">
+      <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE OverloadedStrings #-}</span>
+<span class="kw">module</span> <span class="dt">Main</span> <span class="kw">where</span>
+
+<span class="kw">import</span> <span class="dt">Control.Monad.Except</span> (runExceptT)
+<span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Text.IO</span> <span class="kw">as</span> <span class="dt">T</span>
+<span class="kw">import</span> <span class="dt">Langchain.Prelude</span>
+
+<span class="ot">main ::</span> <span class="dt">IO</span> ()
+<span class="ot">main</span> <span class="ot">=</span> <span class="kw">do</span>
+  <span class="co">-- Connect to local Ollama instance (DeepSeek, Llama 3, Gemma, etc.)</span>
+  o <span class="ot">&lt;-</span> newOllama <span class="st">&quot;gemma3&quot;</span> defaultConfig
+  
+  <span class="kw">let</span> msg <span class="ot">=</span> [userMessage <span class="st">&quot;Write a poem about functional programming in Haskell&quot;</span>]
+  res <span class="ot">&lt;-</span> runExceptT <span class="op">$$</span> invoke o msg <span class="dt">Nothing</span>
+  <span class="kw">case</span> res <span class="kw">of</span>
+    <span class="dt">Left</span> err <span class="ot">-&gt;</span> T.putStrLn <span class="op">$$</span> errorMessage err
+    <span class="dt">Right</span> m  <span class="ot">-&gt;</span> T.putStrLn <span class="op">$$</span> extractMessageText m</code></pre></div>
+    </div>
+
+    <div class="provider-panel" data-provider="openai" data-label="⚡ OpenAI / OpenRouter" data-exe="stack run simpleopenai">
+      <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE OverloadedStrings #-}</span>
+<span class="kw">module</span> <span class="dt">Main</span> <span class="kw">where</span>
+
+<span class="kw">import</span> <span class="dt">Control.Monad.Except</span> (runExceptT)
+<span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Text.IO</span> <span class="kw">as</span> <span class="dt">T</span>
+<span class="kw">import</span> <span class="dt">Langchain.Prelude</span>
+<span class="kw">import</span> <span class="dt">OpenAI.Common</span> (defaultModelName, getOpenRouterModel)
+
+<span class="ot">main ::</span> <span class="dt">IO</span> ()
+<span class="ot">main</span> <span class="ot">=</span> <span class="kw">do</span>
+  <span class="co">-- Connect to OpenAI or OpenRouter using environment API key</span>
+  o <span class="ot">&lt;-</span> getOpenRouterModel defaultModelName
+  
+  <span class="kw">let</span> msg <span class="ot">=</span> [userMessage <span class="st">&quot;Write a poem about functional programming in Haskell&quot;</span>]
+  res <span class="ot">&lt;-</span> runExceptT <span class="op">$$</span> invoke o msg <span class="dt">Nothing</span>
+  <span class="kw">case</span> res <span class="kw">of</span>
+    <span class="dt">Left</span> err <span class="ot">-&gt;</span> T.putStrLn <span class="op">$$</span> errorMessage err
+    <span class="dt">Right</span> m  <span class="ot">-&gt;</span> T.putStrLn <span class="op">$$</span> extractMessageText m</code></pre></div>
+    </div>
+  </div>
+</section>
+
+<!-- 20 Components Directory Gallery -->
+<section class="showcase-section" style="margin-top: 3rem;">
+  <div class="showcase-header">
+    <h2>Complete Component Directory (20 Components)</h2>
+    <p style="color: var(--text-muted);">Every component features dual Ollama/OpenAI examples, verified build targets, and complete Haskell signatures.</p>
+  </div>
+
+  <div class="components-gallery">
+    <a href="/components/chat-models.html" class="component-card">
+      <div class="component-card-icon">💬</div>
+      <div class="component-card-title">Chat Models</div>
+      <div class="component-card-desc">Unified interface for model invocation, message types, options, and batch generation.</div>
+      <div class="component-card-pills">
+        <span class="mini-pill">Ollama</span>
+        <span class="mini-pill">OpenAI</span>
+        <span class="mini-pill">Batch</span>
+      </div>
+    </a>
+
+    <a href="/components/streaming.html" class="component-card">
+      <div class="component-card-icon">🌊</div>
+      <div class="component-card-title">Streaming</div>
+      <div class="component-card-desc">Real-time incremental token streaming and Conduit pipeline consumers.</div>
+      <div class="component-card-pills">
+        <span class="mini-pill">streamChat</span>
+        <span class="mini-pill">Tokens</span>
+      </div>
+    </a>
+
+    <a href="/components/monad.html" class="component-card">
+      <div class="component-card-icon">🏛️</div>
+      <div class="component-card-title">Langchain Monad</div>
+      <div class="component-card-desc">Type-safe LangchainT transformer decoupled over custom environments and error handlers.</div>
+      <div class="component-card-pills">
+        <span class="mini-pill">LangchainT</span>
+        <span class="mini-pill">ReaderT</span>
+      </div>
+    </a>
+
+    <a href="/components/tools.html" class="component-card">
+      <div class="component-card-icon">🔧</div>
+      <div class="component-card-title">Tools &amp; Function Calling</div>
+      <div class="component-card-desc">Effect-polymorphic Haskell tools, JSON parameter schemas, and LLM tool execution.</div>
+      <div class="component-card-pills">
+        <span class="mini-pill">Tool</span>
+        <span class="mini-pill">Schema</span>
+      </div>
+    </a>
+
+    <a href="/components/structured-output.html" class="component-card">
+      <div class="component-card-icon">📋</div>
+      <div class="component-card-title">Structured Outputs</div>
+      <div class="component-card-desc">Guaranteed JSON schema generation parsed into type-safe Aeson data structures.</div>
+      <div class="component-card-pills">
+        <span class="mini-pill">FromJSON</span>
+        <span class="mini-pill">Parser</span>
+      </div>
+    </a>
+
+    <a href="/components/rag.html" class="component-card">
+      <div class="component-card-icon">📚</div>
+      <div class="component-card-title">RAG &amp; Embeddings</div>
+      <div class="component-card-desc">Dense vector embeddings, cosine distance calculation, and document chunking.</div>
+      <div class="component-card-pills">
+        <span class="mini-pill">Embeddings</span>
+        <span class="mini-pill">Cosine</span>
+      </div>
+    </a>
+
+    <a href="/components/retrievers.html" class="component-card">
+      <div class="component-card-icon">🔍</div>
+      <div class="component-card-title">Retrievers &amp; Ensembles</div>
+      <div class="component-card-desc">Reciprocal Rank Fusion (RRF) combining BM25 keyword matching and vector stores.</div>
+      <div class="component-card-pills">
+        <span class="mini-pill">BM25</span>
+        <span class="mini-pill">RRF</span>
+      </div>
+    </a>
+
+    <a href="/components/memory.html" class="component-card">
+      <div class="component-card-icon">🧠</div>
+      <div class="component-card-title">Memory Systems</div>
+      <div class="component-card-desc">Buffer memories and persistent conversational history tracking across multi-turn sessions.</div>
+      <div class="component-card-pills">
+        <span class="mini-pill">BufferMemory</span>
+        <span class="mini-pill">History</span>
+      </div>
+    </a>
+
+    <a href="/components/retrieval-qa.html" class="component-card">
+      <div class="component-card-icon">💡</div>
+      <div class="component-card-title">Retrieval QA Chains</div>
+      <div class="component-card-desc">End-to-end question answering pipeline synthesizing relevant context and citations.</div>
+      <div class="component-card-pills">
+        <span class="mini-pill">QA Chain</span>
+        <span class="mini-pill">Synthesis</span>
+      </div>
+    </a>
+
+    <a href="/components/map-reduce.html" class="component-card">
+      <div class="component-card-icon">🗺️</div>
+      <div class="component-card-title">Map-Reduce Processing</div>
+      <div class="component-card-desc">Hierarchical summarization and chunk reduction over books, papers, and large corpora.</div>
+      <div class="component-card-pills">
+        <span class="mini-pill">Map</span>
+        <span class="mini-pill">Reduce</span>
+      </div>
+    </a>
+
+    <a href="/components/react-agent.html" class="component-card">
+      <div class="component-card-icon">🤖</div>
+      <div class="component-card-title">ReAct Agent</div>
+      <div class="component-card-desc">Autonomous reasoning and acting loop with tool selection, execution, and observations.</div>
+      <div class="component-card-pills">
+        <span class="mini-pill">ReAct</span>
+        <span class="mini-pill">Tools</span>
+      </div>
+    </a>
+
+    <a href="/components/plan-and-execute.html" class="component-card">
+      <div class="component-card-icon">🎯</div>
+      <div class="component-card-title">Plan-and-Execute Agent</div>
+      <div class="component-card-desc">Decoupled macro-planner creating structured task DAGs with execution &amp; replanning.</div>
+      <div class="component-card-pills">
+        <span class="mini-pill">Planner</span>
+        <span class="mini-pill">Executor</span>
+      </div>
+    </a>
+
+    <a href="/components/guardrails.html" class="component-card">
+      <div class="component-card-icon">🛡️</div>
+      <div class="component-card-title">Guardrails &amp; Safety</div>
+      <div class="component-card-desc">Pre- and post-execution filtering, PII redaction, and semantic policy moderation.</div>
+      <div class="component-card-pills">
+        <span class="mini-pill">Guardrail</span>
+        <span class="mini-pill">Safety</span>
+      </div>
+    </a>
+
+    <a href="/components/resilience.html" class="component-card">
+      <div class="component-card-icon">⚡</div>
+      <div class="component-card-title">Resilience &amp; Retries</div>
+      <div class="component-card-desc">Exponential backoff retries, fallback providers, and circuit breaker patterns.</div>
+      <div class="component-card-pills">
+        <span class="mini-pill">Fallback</span>
+        <span class="mini-pill">CircuitBreaker</span>
+      </div>
+    </a>
+
+    <a href="/components/observability.html" class="component-card">
+      <div class="component-card-icon">📊</div>
+      <div class="component-card-title">Observability &amp; Tracing</div>
+      <div class="component-card-desc">Callbacks, execution timing, token metrics, and OpenTelemetry span exports.</div>
+      <div class="component-card-pills">
+        <span class="mini-pill">OTel</span>
+        <span class="mini-pill">Callbacks</span>
+      </div>
+    </a>
+
+    <a href="/components/mcp.html" class="component-card">
+      <div class="component-card-icon">🔌</div>
+      <div class="component-card-title">Model Context Protocol (MCP)</div>
+      <div class="component-card-desc">Stdio and HTTP JSON-RPC client connecting external tool and resource servers.</div>
+      <div class="component-card-pills">
+        <span class="mini-pill">MCP</span>
+        <span class="mini-pill">JSON-RPC</span>
+      </div>
+    </a>
+
+    <a href="/components/state-graph.html" class="component-card">
+      <div class="component-card-icon">🕸️</div>
+      <div class="component-card-title">Stateful Graphs (StateGraph)</div>
+      <div class="component-card-desc">Cyclic workflows, pure state reducers, and checkpointed state machines.</div>
+      <div class="component-card-pills">
+        <span class="mini-pill">LangGraph</span>
+        <span class="mini-pill">Cyclic</span>
+      </div>
+    </a>
+
+    <a href="/components/multi-agent.html" class="component-card">
+      <div class="component-card-icon">👥</div>
+      <div class="component-card-title">Multi-Agent Systems</div>
+      <div class="component-card-desc">Supervisor routing, consensus debate, and multi-agent coordination.</div>
+      <div class="component-card-pills">
+        <span class="mini-pill">Supervisor</span>
+        <span class="mini-pill">Debate</span>
+      </div>
+    </a>
+
+    <a href="/components/hitl.html" class="component-card">
+      <div class="component-card-icon">⏸️</div>
+      <div class="component-card-title">Human-in-the-Loop (HITL)</div>
+      <div class="component-card-desc">Interrupt execution graphs for human approval, edit state, and resume seamlessly.</div>
+      <div class="component-card-pills">
+        <span class="mini-pill">Interrupt</span>
+        <span class="mini-pill">Checkpointer</span>
+      </div>
+    </a>
+
+    <a href="/components/runnables.html" class="component-card">
+      <div class="component-card-icon">🔗</div>
+      <div class="component-card-title">Runnables &amp; AST Pipelines</div>
+      <div class="component-card-desc">First-class AST composition via pipe (|&gt;&gt;), parallel (&amp;&gt;&amp;), and fallback (&gt;&gt;&gt;#).</div>
+      <div class="component-card-pills">
+        <span class="mini-pill">RunnableTree</span>
+        <span class="mini-pill">GADT</span>
+      </div>
+    </a>
+  </div>
+</section>
+
+<!-- Features Grid -->
+<div class="features-grid" style="margin-top: 3rem;">
+  <div class="feature-card">
+    <div class="feature-icon">🛡️</div>
+    <div class="feature-title">Pure Zero-Dependency Core</div>
+    <div class="feature-desc">
+      <code>langchain-hs-core</code> defines AST pipelines (<code>RunnableTree</code>), multi-modal <code>ContentBlock</code>, and streaming without ANY HTTP dependencies.
+    </div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-icon">🕸️</div>
+    <div class="feature-title">LangGraph in Haskell</div>
+    <div class="feature-desc">
+      Cyclic state machines with pure state reducers, STM <code>TVar</code> &amp; SQLite checkpointers, Human-in-the-Loop interrupts, time-travel history replay, and Graphviz DOT export.
+    </div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-icon">🔌</div>
+    <div class="feature-title">Model Context Protocol (MCP)</div>
+    <div class="feature-desc">
+      Native client supporting stdio and HTTP JSON-RPC 2.0 transports with automatic schema discovery and conversion to native <code>Tool m</code> instances.
+    </div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-icon">👥</div>
+    <div class="feature-title">Advanced Multi-Agent Architectures</div>
+    <div class="feature-desc">
+      Plan-and-Execute, ReAct, Supervisor teams with capability routing, multi-agent debate with convergence checking, majority voting, and STM shared blackboards.
+    </div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-icon">🔍</div>
+    <div class="feature-title">Hybrid Retrieval &amp; RAG</div>
+    <div class="feature-desc">
+      Reciprocal Rank Fusion (RRF) combining BM25 keyword search and dense vector embeddings (SQLite-vec, InMemory, PgVector, Qdrant) with LLM rerankers.
+    </div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-icon">📊</div>
+    <div class="feature-title">Production Observability</div>
+    <div class="feature-desc">
+      OpenTelemetry spans (<code>withSpan</code>), structured JSON logs, three-state Circuit Breaker, exponential backoff retries, connection pooling, and token cost calculation.
+    </div>
+  </div>
+</div>

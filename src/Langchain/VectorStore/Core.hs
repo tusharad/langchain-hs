@@ -1,123 +1,56 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 {- |
 Module      : Langchain.VectorStore.Core
-Description : Core vector store abstraction for semantic search
-Copyright   : (c) 2025 Tushar Adhatrao
+Description : Effect-polymorphic vector store abstraction for semantic search
+Copyright   : (c) 2025-2026 Tushar Adhatrao
 License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
 
-Haskell implementation of LangChain's vector store interface, providing:
-
-- Document storage with vector embeddings
-- Similarity-based search capabilities
-- Integration with Runnable workflows
-
-Example usage with hypothetical FAISS store:
-
-@
--- Create vector store instance
-faissStore :: FAISSStore
-faissStore = emptyFAISSStore
-
--- Add documents with embeddings
-docs = [Document "Haskell is functional" mempty, ...]
-updatedStore <- addDocuments faissStore docs
-
--- Perform similarity search
-results <- similaritySearch updatedStore "functional programming" 5
--- Returns top 5 relevant documents
-@
+Effect-polymorphic VectorStore typeclass supporting document insertion,
+deletion, and vector/text similarity search.
 -}
-module Langchain.VectorStore.Core (VectorStore (..))
-where
+module Langchain.VectorStore.Core
+  ( VectorStore (..)
+  ) where
 
-import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.Except (MonadError)
+import Control.Monad.IO.Class (MonadIO)
 import Data.Int (Int64)
 import Data.Text (Text)
-import Langchain.DocumentLoader.Core
-import Langchain.Error (LangchainResult)
 
--- TODO: Add delete document mechanism, for this we need to generate and use id (Int)
+import Langchain.Core.Error (LangchainError)
+import Langchain.DocumentLoader.Core (Document)
 
-{- | Vector store abstraction following LangChain's design patterns
-Implementations should handle document storage, vectorization, and similarity search.
-
-Example instance for an in-memory store:
-
-@
-data InMemoryStore = InMemoryStore
-  { documents :: [Document]
-  , embeddings :: [[Float]]
-  }
-
-instance VectorStore InMemoryStore where
-  addDocuments store docs = ...
-  similaritySearch store query k = ...
-@
--}
+-- | Effect-polymorphic VectorStore typeclass
 class VectorStore vs where
-  {- | Add documents to the vector store
+  -- | Add documents with generated embeddings
+  addDocuments ::
+    (MonadIO m, MonadError LangchainError m) =>
+    vs ->
+    [Document] ->
+    m vs
 
-  Example:
+  -- | Delete documents by unique integer ID
+  delete ::
+    (MonadIO m, MonadError LangchainError m) =>
+    vs ->
+    [Int64] ->
+    m vs
 
-  >>> addDocuments myStore [Document "Test content" mempty]
-  Right (updatedStoreWithNewDocs)
-  -}
-  addDocuments :: vs -> [Document] -> IO (LangchainResult vs)
+  -- | Semantic similarity search using text query
+  similaritySearch ::
+    (MonadIO m, MonadError LangchainError m) =>
+    vs ->
+    Text ->
+    Int ->
+    m [Document]
 
-  addDocumentsM :: MonadIO m => vs -> [Document] -> m (LangchainResult vs)
-  addDocumentsM store docs = liftIO $ addDocuments store docs
-
-  {- |
-  Requires document ID tracking to be implemented in store instances.
-
-  Example usage (when implemented):
-
-  >>> delete myStore [123]
-  Right (storeWithoutDoc123)
-  -}
-  delete :: vs -> [Int64] -> IO (LangchainResult vs)
-
-  deleteM :: MonadIO m => vs -> [Int64] -> m (LangchainResult vs)
-  deleteM store ids = liftIO $ delete store ids
-
-  {- | Find documents similar to query text
-  Uses embedded vector representations for semantic search.
-
-  Example:
-
-  >>> similaritySearch store "Haskell monads" 3
-  Right [Document "Monads in FP...", ...]
-  -}
-  similaritySearch :: vs -> Text -> Int -> IO (LangchainResult [Document])
-
-  similaritySearchM :: MonadIO m => vs -> Text -> Int -> m (LangchainResult [Document])
-  similaritySearchM store query k = liftIO $ similaritySearch store query k
-
-  {- | Find documents similar to vector representation
-  For direct vector comparisons without text conversion.
-
-  Example:
-
-  >>> similaritySearchByVector store [0.1, 0.3, ...] 5
-  Right [mostSimilarDoc1, ...]
-  -}
-  similaritySearchByVector :: vs -> [Float] -> Int -> IO (LangchainResult [Document])
-
-  similaritySearchByVectorM :: MonadIO m => vs -> [Float] -> Int -> m (LangchainResult [Document])
-  similaritySearchByVectorM store vector k = liftIO $ similaritySearchByVector store vector k
-
-{- $examples
-Test case patterns:
-1. Document addition
-   >>> addDocuments emptyStore [doc1, doc2]
-   Right (storeWithDocs)
-
-2. Similarity search
-   >>> similaritySearch populatedStore "AI" 3
-   Right [relevantDoc1, relevantDoc2, relevantDoc3]
-
-3. Vector-based search
-   >>> similaritySearchByVector store [0.5, 0.2, ...] 5
-   Right [top5MatchingDocs]
--}
+  -- | Direct similarity search using embedding vector
+  similaritySearchByVector ::
+    (MonadIO m, MonadError LangchainError m) =>
+    vs ->
+    [Float] ->
+    Int ->
+    m [Document]

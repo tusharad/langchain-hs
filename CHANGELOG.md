@@ -6,7 +6,48 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to the
 [Haskell Package Versioning Policy](https://pvp.haskell.org/).
 
-## Unreleased
+## 0.0.5.0 - 2026-09-10
+
+### Major Architecture & Ecosystem Evolution
+
+- **3-Tier Monorepo Architecture**:
+  - `langchain-hs-core` (0.0.5.0): Zero-dependency pure core with `RunnableTree`, `ChatModel`, `ContentBlock`, `Tool`, `StreamEvent`, and `LangchainT`.
+  - `langchain-hs-graph` (0.0.5.0): Graph-based state machine engine with `StateGraph`, `StateReducer`, checkpointers, HITL, and multi-agent coordination.
+  - `langchain-hs` (0.0.5.0): Production integrations for Ollama, OpenAI, Gemini, Vector Stores, MCP, and Observability.
+- **Pure AST Pipelines (`RunnableTree`)**:
+  - The core selling point: Every component implements the `Runnable` typeclass.
+  - Compose pure GADT abstract syntax trees using `|>>` (sequential composition), `&>&` (parallel fan-out), and `>>>#` (fallback failover) without side effects before interpretation.
+- **LangGraph in Haskell (`StateGraph`)**:
+  - Cyclic state machines with pure state reducers (`StateReducer s`) satisfying monoid associativity laws.
+  - Thread-safe STM in-memory checkpointer (`MemoryCheckpointer`) and persistent `SQLiteCheckpointer`.
+  - First-class Human-in-the-Loop (`HITL`) node interruption, inspect/edit state, and resumption via `resumeGraph`.
+  - Time-travel state replay and Graphviz DOT visualization export.
+- **Model Context Protocol (MCP)**:
+  - Native stdio and HTTP JSON-RPC 2.0 client implementation.
+  - Dynamic tool inspection and bidirectional schema mapping to Haskell `Tool` definitions.
+- **Decoupled Monad Transformer (`LangchainT env m a`)**:
+  - Removed redundant global config structs in favor of parameterization over custom user environment `env`.
+  - Complete `MonadReader`, `MonadError`, `MonadIO`, and `MonadTrans` instances.
+- **Dual-Provider Parity Across 20 Core Components**:
+  - 1-to-1 verified parity across all 20 components between local **🦙 Ollama** and cloud **⚡ OpenAI / OpenRouter**.
+  - All 41 executables in `examples/` tested and verified live.
+- **Production Observability & Resilience**:
+  - OpenTelemetry distributed tracing spans (`withSpan`) and structured JSON telemetry.
+  - Three-state Circuit Breaker, exponential backoff retries with randomized jitter, and in-memory caching.
+- **Documentation Website**:
+  - Redesigned Hakyll site with live Ollama/OpenAI provider toggles, instant search (`Cmd+K`), and 20 dedicated component pages.
+- **Dependency & Performance Upgrades**:
+  - Upgraded to `ollama-haskell` `0.4.1.0` with JSON schema grammar constraints.
+  - Migrated to `MercuryTechnologies/openai` client.
+  - Full PVP upper bounds across all packages for Hackage compliance.
+
+### ⚠️ Breaking Changes from 0.0.3.0
+
+- **`LangchainT` is now parameterized over `env`** (`LangchainT env m a` instead of the former implicit `LangchainConfig`).
+  - Replace `runLangchainT config action` with `runLangchainT env action` where `env` is your custom environment type (use `()` if you have no shared config).
+  - The `MonadReader env (LangchainT env m)` instance gives you `ask`/`asks` to read your environment from within the monad.
+- **`ChatMessage` renamed to `Message`** throughout — update all pattern matches and constructor calls.
+- **Agent modules restructured** — `Langchain.Agent` is now split into `Langchain.Agent.ReAct` and `Langchain.Agent.PlanAndExecute` with updated type signatures for tool-call support.
 
 ## 0.0.3.0 - 2025-11-16
 

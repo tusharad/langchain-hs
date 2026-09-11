@@ -1,0 +1,27 @@
+{
+  "id": "chatcmpl-tool-123",
+  "object": "chat.completion",
+  "created": 1677652290,
+  "model": "gpt-4o",
+  "choices": [{
+    "index": 0,
+    "message": {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [{
+        "id": "call_abc123",
+        "type": "function",
+        "function": {
+          "name": "calculator",
+          "arguments": "{\"expression\":\"2 + 2\"}"
+        }
+      }]
+    },
+    "finish_reason": "tool_calls"
+  }],
+  "usage": {
+    "prompt_tokens": 15,
+    "completion_tokens": 18,
+    "total_tokens": 33
+  }
+}

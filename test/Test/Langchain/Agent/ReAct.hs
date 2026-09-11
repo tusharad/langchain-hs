@@ -1,210 +1,170 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Test.Langchain.Agent.ReAct (tests) where
 
-import Data.Aeson (object, (.=))
-import qualified Data.List.NonEmpty as NE
-import qualified Data.Map as Map
-import Data.Text (Text)
-import Langchain.Agent.Core
-import Langchain.Agent.ReAct
-import Langchain.Error (LangchainError, llmError)
-import Langchain.LLM.Core
-import Langchain.Memory.Core (BaseMemory (..), WindowBufferMemory (..))
-import Langchain.Tool.Core
+import Control.Monad.Except (ExceptT, runExceptT)
+import Control.Monad.IO.Class (liftIO)
+import Data.Aeson (Value (..), object, (.=))
+import qualified Data.Aeson.KeyMap as KeyMap
+import Data.IORef
+import qualified Data.Text as T
 import Test.Tasty
 import Test.Tasty.HUnit
 
--- Mock LLM for testing
-newtype MockLLM = MockLLM
-  { mockResponse :: Either LangchainError Message
-  }
+import Langchain.Agent.ReAct
+import Langchain.Core.Error (LangchainError)
+import Langchain.Core.Model
+import Langchain.Core.Tool (Tool)
+import Langchain.Provider.Gemini (Gemini)
+import Langchain.Provider.Ollama (ChatRequest (..), Ollama, chatTools)
+import Langchain.Provider.OpenAI (OpenAI)
+import Langchain.Tool.Binding (ToolBinder (..))
+import Langchain.Tool.Calculator (calculatorTool)
+import Test.Langchain.Provider.Mock (newMockModel)
 
-instance LLM MockLLM where
-  type LLMParams MockLLM = ()
-  type LLMStreamTokenType MockLLM = Text
+-- | Mock model that records the config received by invoke
+data ConfigRecordingModel = ConfigRecordingModel (IORef (Maybe Value)) T.Text
 
-  generate _ _ _ = pure $ Left $ llmError "Not implemented" Nothing Nothing
+instance ChatModel ConfigRecordingModel where
+  type ModelConfig ConfigRecordingModel = Value
+  invoke (ConfigRecordingModel ref resp) _ mbCfg = do
+    liftIO $ writeIORef ref mbCfg
+    pure $ assistantMessage resp
+  stream = error "stream not supported in ConfigRecordingModel"
 
-  chat llm _ _ = pure $ mockResponse llm
+instance ToolBinder ConfigRecordingModel m where
+  bindToolsConfig tools _ =
+    Just $ object ["tool_count" .= length tools]
 
-  stream _ _ _ _ = pure $ Left $ llmError "Not implemented" Nothing Nothing
+-- | Mock model that yields a pre-configured sequence of responses and logs history
+data StepSequenceModel = StepSequenceModel (IORef [Message]) (IORef [[Message]])
 
--- Mock Tool for testing
-newtype MockTool = MockTool Text
-  deriving (Show, Eq)
+instance ChatModel StepSequenceModel where
+  type ModelConfig StepSequenceModel = Value
+  invoke (StepSequenceModel stepsRef histRef) history _ = liftIO $ do
+    modifyIORef histRef (++ [history])
+    steps <- readIORef stepsRef
+    case steps of
+      [] -> pure $ assistantMessage "Default response"
+      (m : rest) -> do
+        writeIORef stepsRef rest
+        pure m
+  stream = error "stream not supported in StepSequenceModel"
 
-instance Tool MockTool where
-  type Input MockTool = ToolCall
-  type Output MockTool = Text
-
-  toolName (MockTool toolName_) = toolName_
-  toolDescription _ = "A mock tool for testing"
-  runTool _ tc = pure $ "Executed: " <> toolFunctionName (toolCallFunction tc)
+instance ToolBinder StepSequenceModel m where
+  bindToolsConfig _ _ = Nothing
 
 tests :: TestTree
 tests =
   testGroup
-    "Agent.ReAct"
-    [ testPlanReturnsFinishWhenNoToolCalls
-    , testPlanReturnsActionWhenToolCallsPresent
-    , testPlanPropagatesLLMError
-    , testExecuteToolFindsCorrectTool
-    , testExecuteToolReturnsErrorWhenToolNotFound
-    , testInitializeSetsUpStateCorrectly
+    "Langchain.Agent.ReAct"
+    [ testCase "reactStep returns AgentFinish when LLM responds with plain text" $ do
+        let mockModel = newMockModel "The answer is 4."
+            agent = createReActAgent mockModel [calculatorTool]
+        res <- runExceptT $ reactStep (agentModel agent) (agentTools agent) [userMessage "What is 2+2?"]
+        case res of
+          Left err -> assertFailure $ "Unexpected error: " ++ show err
+          Right step -> case step of
+            AgentFinish msg -> T.strip (extractMessageText msg) @?= "The answer is 4."
+            _ -> assertFailure "Expected AgentFinish"
+    , testCase "reactStep returns AgentAction with all tool calls" $ do
+        let tc1 = ToolCall "call_1" "function" "calculator" (object ["expression" .= ("2+2" :: T.Text)])
+            tc2 = ToolCall "call_2" "function" "calculator" (object ["expression" .= ("3*3" :: T.Text)])
+            respWithTools = (assistantMessage "") {messageToolCalls = Just [tc1, tc2]}
+        sRef <- newIORef [respWithTools]
+        hRef <- newIORef []
+        let model = StepSequenceModel sRef hRef
+            agent = createReActAgent model [calculatorTool :: Tool (ExceptT LangchainError IO)]
+        res <- runExceptT $ reactStep (agentModel agent) (agentTools agent) [userMessage "Calculate both"]
+        case res of
+          Left err -> assertFailure $ "Unexpected error: " ++ show err
+          Right step -> case step of
+            AgentAction _ tcs -> length tcs @?= 2
+            _ -> assertFailure "Expected AgentAction with multiple tool calls"
+    , testCase "runReActAgent executes multiple parallel tool calls and reaches finish" $ do
+        let tc1 = ToolCall "call_1" "function" "calculator" (object ["expression" .= ("2+2" :: T.Text)])
+            tc2 = ToolCall "call_2" "function" "calculator" (object ["expression" .= ("5*2" :: T.Text)])
+            respWithTools = (assistantMessage "calculating") {messageToolCalls = Just [tc1, tc2]}
+            finalResp = assistantMessage "4 and 10"
+        sRef <- newIORef [respWithTools, finalResp]
+        hRef <- newIORef []
+        let model = StepSequenceModel sRef hRef
+            agent = createReActAgent model [calculatorTool :: Tool (ExceptT LangchainError IO)]
+        res <- runExceptT $ runReActAgent agent [userMessage "Calculate 2+2 and 5*2"]
+        case res of
+          Left err -> assertFailure $ "Unexpected error: " ++ show err
+          Right finalMsg -> do
+            T.strip (extractMessageText finalMsg) @?= "4 and 10"
+            -- Verify history in step 2 received observations for BOTH tool calls
+            histories <- readIORef hRef
+            case histories of
+              [_, secondCallHistory] -> do
+                let toolMsgs = filter (\m -> messageRole m == Tool) secondCallHistory
+                length toolMsgs @?= 2
+                map messageToolId toolMsgs @?= [Just "call_1", Just "call_2"]
+              _ -> assertFailure $ "Expected 2 invocations, got: " ++ show (length histories)
+    , testCase "runReActAgent handles unknown tool gracefully via observation error" $ do
+        let tc = ToolCall "call_bad" "function" "unknown_tool" (object [])
+            respWithBadTool = (assistantMessage "") {messageToolCalls = Just [tc]}
+            finalResp = assistantMessage "Handled missing tool"
+        sRef <- newIORef [respWithBadTool, finalResp]
+        hRef <- newIORef []
+        let model = StepSequenceModel sRef hRef
+            agent = createReActAgent model [calculatorTool :: Tool (ExceptT LangchainError IO)]
+        res <- runExceptT $ runReActAgent agent [userMessage "Run unknown tool"]
+        case res of
+          Left err -> assertFailure $ "Expected recovery but got error: " ++ show err
+          Right finalMsg -> do
+            T.strip (extractMessageText finalMsg) @?= "Handled missing tool"
+            histories <- readIORef hRef
+            case histories of
+              [_, secondCallHistory] -> do
+                let toolMsgs = filter (\m -> messageRole m == Tool) secondCallHistory
+                length toolMsgs @?= 1
+                case toolMsgs of
+                  (m : _) ->
+                    assertBool "Error observation" ("Tool not found: unknown_tool" `T.isInfixOf` extractMessageText m)
+                  _ -> assertFailure "Expected tool message"
+              _ -> assertFailure "Expected 2 invocations"
+    , testCase "runReActAgent completes full loop on finish" $ do
+        let mockModel = newMockModel "Finished processing"
+            agent = createReActAgent mockModel [calculatorTool]
+        res <- runExceptT $ runReActAgent agent [userMessage "Hello"]
+        case res of
+          Left err -> assertFailure $ "Unexpected error: " ++ show err
+          Right finalMsg -> T.strip (extractMessageText finalMsg) @?= "Finished processing"
+    , testCase "reactStep passes bound tools config to model invoke" $ do
+        ref <- newIORef Nothing
+        let recordingModel = ConfigRecordingModel ref "Direct Answer"
+            tools = [calculatorTool :: Tool (ExceptT LangchainError IO)]
+        res <- runExceptT $ reactStep recordingModel tools [userMessage "Calculate 2+2"]
+        case res of
+          Left err -> assertFailure $ "Unexpected error: " ++ show err
+          Right _ -> do
+            captured <- readIORef ref
+            captured @?= Just (object ["tool_count" .= (1 :: Int)])
+    , testCase "ToolBinder Ollama attaches tools to ChatRequest config" $ do
+        let tools = [calculatorTool :: Tool IO]
+            mbCfg = bindToolsConfig @Ollama tools Nothing
+        case mbCfg of
+          Nothing -> assertFailure "Expected Just ChatRequest"
+          Just req -> case chatTools req of
+            Nothing -> assertFailure "Expected Just tools in ChatRequest"
+            Just ts -> length ts @?= 1
+    , testCase "ToolBinder OpenAI attaches tools to JSON config" $ do
+        let tools = [calculatorTool :: Tool IO]
+            mbCfg = bindToolsConfig @OpenAI tools Nothing
+        case mbCfg of
+          Just (Object obj) -> assertBool "Has 'tools' key" (KeyMap.member "tools" obj)
+          _ -> assertFailure "Expected Just Object with tools"
+    , testCase "ToolBinder Gemini attaches tools to JSON config" $ do
+        let tools = [calculatorTool :: Tool IO]
+            mbCfg = bindToolsConfig @Gemini tools Nothing
+        case mbCfg of
+          Just (Object obj) -> assertBool "Has 'tools' key" (KeyMap.member "tools" obj)
+          _ -> assertFailure "Expected Just Object with tools"
     ]
-
--- Test that plan returns AgentFinish when LLM returns no tool calls
-testPlanReturnsFinishWhenNoToolCalls :: TestTree
-testPlanReturnsFinishWhenNoToolCalls = testCase "plan returns AgentFinish when no tool calls" $ do
-  let mockMsg = Message Assistant "Final answer" defaultMessageData
-      mockLLM = MockLLM (Right mockMsg)
-      agent = createReActAgent mockLLM Nothing []
-      testMemory = WindowBufferMemory 10 (NE.fromList [defaultMessage {content = "test"}])
-      state =
-        AgentState
-          { agentMemory = SomeMemory testMemory
-          , agentInput = "test input"
-          , agentIterations = 0
-          }
-
-  result <- plan agent state
-  case result of
-    Right (Done finish) -> do
-      assertEqual "Output should match content" "Final answer" (agentOutput finish)
-      assertEqual "Log should match content" "Final answer" (finishLog finish)
-    _ -> assertFailure $ "Expected Right (Right AgentFinish), got: " ++ show result
-
--- Test that plan returns AgentAction when LLM returns tool calls
-testPlanReturnsActionWhenToolCallsPresent :: TestTree
-testPlanReturnsActionWhenToolCallsPresent = testCase "plan returns AgentAction when tool calls present" $ do
-  let toolCall =
-        ToolCall
-          { toolCallId = "call_123"
-          , toolCallType = "function"
-          , toolCallFunction =
-              ToolFunction
-                { toolFunctionName = "search"
-                , toolFunctionArguments = Map.fromList [("query", object ["text" .= ("test" :: Text)])]
-                }
-          }
-      msgData = defaultMessageData {toolCalls = Just [toolCall]}
-      mockMsg = Message Assistant "Let me search" msgData
-      mockLLM = MockLLM (Right mockMsg)
-      agent = createReActAgent mockLLM Nothing []
-      testMemory = WindowBufferMemory 10 (NE.fromList [defaultMessage {content = "test"}])
-      state =
-        AgentState
-          { agentMemory = SomeMemory testMemory
-          , agentInput = "test input"
-          , agentIterations = 0
-          }
-
-  result <- plan agent state
-  case result of
-    Right (Continue action) -> do
-      assertEqual "Should have one tool call" 1 (length $ actionToolCall action)
-      assertEqual "Log should match content" "Let me search" (actionLog action)
-    _ -> assertFailure $ "Expected Right (Left AgentAction), got: " ++ show result
-
--- Test that plan propagates LLM errors
-testPlanPropagatesLLMError :: TestTree
-testPlanPropagatesLLMError = testCase "plan propagates LLM error" $ do
-  let mockError = llmError "LLM failed" Nothing Nothing
-      mockLLM = MockLLM (Left mockError)
-      agent = createReActAgent mockLLM Nothing []
-      testMemory = WindowBufferMemory 10 (NE.fromList [defaultMessage {content = "test"}])
-      state =
-        AgentState
-          { agentMemory = SomeMemory testMemory
-          , agentInput = "test input"
-          , agentIterations = 0
-          }
-
-  result <- plan agent state
-  case result of
-    Left _ -> pure () -- Expected error
-    Right _ -> assertFailure "Expected Left error, got Right"
-
--- Test that executeTool finds and executes the correct tool
-testExecuteToolFindsCorrectTool :: TestTree
-testExecuteToolFindsCorrectTool = testCase "executeTool finds and executes correct tool" $ do
-  let tool1 = ToolAcceptingToolCall (MockTool "tool1")
-      tool2 = ToolAcceptingToolCall (MockTool "tool2")
-      mockLLM = MockLLM (Right defaultMessage)
-      agent = createReActAgent mockLLM Nothing [tool1, tool2]
-      toolCall =
-        ToolCall
-          { toolCallId = "call_123"
-          , toolCallType = "function"
-          , toolCallFunction =
-              ToolFunction
-                { toolFunctionName = "tool2"
-                , toolFunctionArguments = Map.empty
-                }
-          }
-
-  result <- executeTool agent toolCall
-  case result of
-    Right output -> do
-      assertEqual "Should execute tool2" "Executed: tool2" output
-    Left err -> assertFailure $ "Expected Right, got error: " ++ show err
-
--- Test that executeTool returns error when tool not found
-testExecuteToolReturnsErrorWhenToolNotFound :: TestTree
-testExecuteToolReturnsErrorWhenToolNotFound = testCase "executeTool returns error when tool not found" $ do
-  let tool1 = ToolAcceptingToolCall (MockTool "tool1")
-      mockLLM = MockLLM (Right defaultMessage)
-      agent = createReActAgent mockLLM Nothing [tool1]
-      toolCall =
-        ToolCall
-          { toolCallId = "call_123"
-          , toolCallType = "function"
-          , toolCallFunction =
-              ToolFunction
-                { toolFunctionName = "nonexistent"
-                , toolFunctionArguments = Map.empty
-                }
-          }
-
-  result <- executeTool agent toolCall
-  case result of
-    Left _ -> pure () -- Expected error
-    Right _ -> assertFailure "Expected error for nonexistent tool"
-
--- Test that initialize sets up state correctly
-testInitializeSetsUpStateCorrectly :: TestTree
-testInitializeSetsUpStateCorrectly = testCase "initialize sets up state correctly" $ do
-  let mockLLM = MockLLM (Right defaultMessage)
-      agent = createReActAgent mockLLM Nothing []
-      testMemory = WindowBufferMemory 10 (NE.fromList [defaultMessage])
-      inputState =
-        AgentState
-          { agentMemory = SomeMemory testMemory
-          , agentInput = "What is 2+2?"
-          , agentIterations = 0
-          }
-
-  result <- initialize agent inputState
-  case result of
-    Right newState -> do
-      assertEqual "Input should be preserved" "What is 2+2?" (agentInput newState)
-      assertEqual "Iterations should be 0" 0 (agentIterations newState)
-
-      -- Check chat history has system message and user message by accessing memory
-      case agentMemory newState of
-        SomeMemory mem -> do
-          eHistory <- messages mem
-          case eHistory of
-            Right history -> do
-              let historyList = NE.toList history
-              assertEqual "Should have 3 messages (initial + system + user)" 3 (length historyList)
-              case reverse historyList of
-                (userMsg : sysMsg : _) -> do
-                  assertEqual "Last message should be User" User (role userMsg)
-                  assertEqual "Second to last message should be System" System (role sysMsg)
-                  assertEqual "User message content should match input" "What is 2+2?" (content userMsg)
-                _ -> assertFailure "Expected at least 2 messages in history"
-            Left err -> assertFailure $ "Failed to get messages from memory: " ++ show err
-    Left err -> assertFailure $ "Expected Right, got error: " ++ show err

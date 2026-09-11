@@ -1,9 +1,10 @@
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralisedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 {- |
 Module:      Langchain.OutputParser.Core
-Copyright:   (c) 2025 Tushar Adhatrao
+Copyright:   (c) 2026 Tushar Adhatrao
 License:     MIT
 Maintainer:  Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability:   experimental
@@ -35,7 +36,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Text.Internal.Search (indices)
-import Langchain.Error (LangchainResult, parsingError)
+import Langchain.Core.Error (LangchainResult, parsingError)
 
 {- | Typeclass for parsing output from language models into specific types.
 Instances of this class define how to convert a 'Text' output into a value of type 'a'.
@@ -131,7 +132,7 @@ Right (JSONOutputStructure {jsonValue = Person {name = "Bob", age = 25}})
 newtype FromJSON a => JSONOutputStructure a = JSONOutputStructure
   { jsonValue :: a
   }
-  deriving (Show, Eq, FromJSON)
+  deriving newtype (Show, Eq, FromJSON)
 
 -- | Instance for parsing JSON into any type that implements FromJSON.
 instance FromJSON a => OutputParser (JSONOutputStructure a) where

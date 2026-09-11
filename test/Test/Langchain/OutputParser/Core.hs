@@ -7,7 +7,7 @@ import Test.Tasty.HUnit
 
 import Data.Aeson
 import Data.Text (Text)
-import Langchain.Error (LangchainError)
+import Langchain.Core.Error (LangchainError)
 import Langchain.OutputParser.Core
 
 data Person = Person

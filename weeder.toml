@@ -1,0 +1,15 @@
+roots = [
+  "^Paths_.*",
+  "Main.main"
+]
+
+root-modules = [
+  "^Langchain(\\..*)?$"
+]
+
+root-instances = [
+  { class = ".*" }
+]
+
+type-class-roots = true
+unused-types = true

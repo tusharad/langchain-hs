@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" width="100%" height="100%">
+  <defs>
+    <linearGradient id="primaryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366F1" />
+      <stop offset="50%" stop-color="#8B5CF6" />
+      <stop offset="100%" stop-color="#06B6D4" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+  <rect width="100" height="100" rx="24" fill="#0E131F" />
+  <rect width="98" height="98" x="1" y="1" rx="23" stroke="url(#primaryGrad)" stroke-width="1.5" stroke-opacity="0.4" fill="none" />
+  
+  <!-- Haskell Lambda + AI Link Symbol -->
+  <path d="M26 28 L40 72 L32 72 L22 36 Z" fill="url(#primaryGrad)" />
+  <path d="M38 48 L46 72 L39 72 L33 54 Z" fill="url(#primaryGrad)" fill-opacity="0.7" />
+  <path d="M48 38 L68 38 L63 46 L43 46 Z" fill="#06B6D4" />
+  <path d="M54 54 L78 54 L73 62 L49 62 Z" fill="#10B981" />
+  
+  <!-- Connecting Neural Node Dots -->
+  <circle cx="26" cy="28" r="3.5" fill="#6366F1" filter="url(#glow)" />
+  <circle cx="40" cy="72" r="3.5" fill="#8B5CF6" filter="url(#glow)" />
+  <circle cx="68" cy="38" r="3.5" fill="#06B6D4" filter="url(#glow)" />
+  <circle cx="78" cy="54" r="3.5" fill="#10B981" filter="url(#glow)" />
+</svg>
