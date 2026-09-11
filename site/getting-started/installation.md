@@ -43,8 +43,8 @@ extra-deps:
     commit: e38a92529d83303c5d05c38b73d73a278721700e
   - git: https://github.com/MercuryTechnologies/openai
     commit: 2031a05135b892a82b461558d19b813ab67cfb8f
-  - git: https://github.com/lbobylev/pystrformat.git
-    commit: f603a296800ed3fb488eb9ba8976812bca4bb983
+  - git: https://github.com/lbobylev/format-heavy
+    commit: 81196f86a16de8378a0ad264bf12af42c5ca7b65
   - mcp-server-0.2.0.1
 ```
 

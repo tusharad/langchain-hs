@@ -26,8 +26,8 @@ extra-deps:
 
   - tasty-1.5.4@sha256:49f8307d78c7d6b1959d4448152858efe102ca5e9b289be082b9bf221e798084,2759
 
-  - git: https://github.com/lbobylev/pystrformat.git
-    commit: f603a296800ed3fb488eb9ba8976812bca4bb983
+  - git: https://github.com/lbobylev/format-heavy
+    commit: 81196f86a16de8378a0ad264bf12af42c5ca7b65
 
   - mcp-server-0.2.0.1@sha256:7b09ac83c868f7a5b453aefd68c769e9cac5c5b60a0bac3cc418df1ba9587945,6795
 

@@ -16,5 +16,7 @@ source-repository-package
 
 source-repository-package
     type: git
-    location: https://github.com/lbobylev/pystrformat.git
-    tag: f603a296800ed3fb488eb9ba8976812bca4bb983
+    location: https://github.com/lbobylev/format-heavy
+    tag: 81196f86a16de8378a0ad264bf12af42c5ca7b65
+
+
