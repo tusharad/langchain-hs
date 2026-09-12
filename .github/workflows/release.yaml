@@ -7,7 +7,12 @@ on:
   workflow_dispatch:
     inputs:
       publish_to_hackage:
-        description: 'Publish packages to Hackage (set to false for dry-run)'
+        description: 'Publish source packages (.tar.gz) to Hackage'
+        required: true
+        type: boolean
+        default: true
+      publish_docs:
+        description: 'Build and publish Haddock documentation (-docs.tar.gz) to Hackage'
         required: true
         type: boolean
         default: true
@@ -62,17 +67,41 @@ jobs:
           echo "Generated packages in artifacts/:"
           ls -la artifacts/
 
+      - name: Generate Haddock documentation tarballs
+        if: github.event_name == 'push' || inputs.publish_docs == true
+        run: |
+          mkdir -p artifacts/docs
+          DOCS_DIR=$(mktemp -d dist-docs.XXXXXX)
+          echo "Building Haddock for langchain-hs-core..."
+          cabal v2-haddock langchain-hs-core --builddir="$DOCS_DIR" --haddock-for-hackage --enable-doc
+          echo "Building Haddock for langchain-hs-graph..."
+          cabal v2-haddock langchain-hs-graph --builddir="$DOCS_DIR" --haddock-for-hackage --enable-doc
+          echo "Building Haddock for langchain-hs..."
+          cabal v2-haddock langchain-hs --builddir="$DOCS_DIR" --haddock-for-hackage --enable-doc
+
+          find "$DOCS_DIR" -name "*-docs.tar.gz" -exec cp {} artifacts/docs/ \;
+          rm -rf "$DOCS_DIR"
+          echo "Generated documentation tarballs in artifacts/docs/:"
+          ls -la artifacts/docs/
+
       - name: Upload sdist artifacts
         uses: actions/upload-artifact@v4
         with:
           name: hackage-sdists
           path: artifacts/*.tar.gz
 
+      - name: Upload documentation artifacts
+        if: github.event_name == 'push' || inputs.publish_docs == true
+        uses: actions/upload-artifact@v4
+        with:
+          name: hackage-docs
+          path: artifacts/docs/*-docs.tar.gz
+
   publish-hackage:
     name: Publish Packages to Hackage
     needs: validate-and-package
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' || inputs.publish_to_hackage == true
+    if: github.event_name == 'push' || inputs.publish_to_hackage == true || inputs.publish_docs == true
     steps:
       - name: Set up Cabal
         uses: haskell-actions/setup@v2
@@ -80,12 +109,21 @@ jobs:
           cabal-version: 'latest'
 
       - name: Download sdist artifacts
+        if: github.event_name == 'push' || inputs.publish_to_hackage == true
         uses: actions/download-artifact@v4
         with:
           name: hackage-sdists
           path: artifacts
 
+      - name: Download documentation artifacts
+        if: github.event_name == 'push' || inputs.publish_docs == true
+        uses: actions/download-artifact@v4
+        with:
+          name: hackage-docs
+          path: artifacts/docs
+
       - name: Publish langchain-hs-core to Hackage
+        if: github.event_name == 'push' || inputs.publish_to_hackage == true
         env:
           HACKAGE_KEY: ${{ secrets.HACKAGE_KEY }}
           HACKAGE_TOKEN: ${{ secrets.HACKAGE_TOKEN }}
@@ -117,7 +155,38 @@ jobs:
           echo "Waiting 30 seconds for Hackage index update before uploading dependent packages..."
           sleep 30
 
+      - name: Publish langchain-hs-core documentation to Hackage
+        if: github.event_name == 'push' || inputs.publish_docs == true
+        env:
+          HACKAGE_KEY: ${{ secrets.HACKAGE_KEY }}
+          HACKAGE_TOKEN: ${{ secrets.HACKAGE_TOKEN }}
+          HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
+          HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
+          CANDIDATE: ${{ inputs.as_candidate == true && '--candidate' || '' }}
+        run: |
+          AUTH_FLAG=""
+          if [ -n "$HACKAGE_TOKEN" ]; then
+            AUTH_FLAG="--token $HACKAGE_TOKEN"
+          elif [ -n "$HACKAGE_KEY" ]; then
+            AUTH_FLAG="--token $HACKAGE_KEY"
+          elif [ -n "$HACKAGE_USERNAME" ] && [ -n "$HACKAGE_PASSWORD" ]; then
+            AUTH_FLAG="-u $HACKAGE_USERNAME -p $HACKAGE_PASSWORD"
+          else
+            echo "::error::No Hackage credentials found!"
+            exit 1
+          fi
+
+          PUBLISH_FLAG="--publish"
+          if [ "${{ inputs.as_candidate }}" = "true" ]; then
+            PUBLISH_FLAG=""
+          fi
+
+          CORE_DOC_TAR=$(ls artifacts/docs/langchain-hs-core-*-docs.tar.gz)
+          echo "Uploading documentation $CORE_DOC_TAR to Hackage..."
+          cabal upload $AUTH_FLAG $PUBLISH_FLAG -d $CANDIDATE "$CORE_DOC_TAR"
+
       - name: Publish langchain-hs-graph to Hackage
+        if: github.event_name == 'push' || inputs.publish_to_hackage == true
         env:
           HACKAGE_KEY: ${{ secrets.HACKAGE_KEY }}
           HACKAGE_TOKEN: ${{ secrets.HACKAGE_TOKEN }}
@@ -146,7 +215,35 @@ jobs:
           echo "Waiting 30 seconds for Hackage index update before uploading langchain-hs..."
           sleep 30
 
+      - name: Publish langchain-hs-graph documentation to Hackage
+        if: github.event_name == 'push' || inputs.publish_docs == true
+        env:
+          HACKAGE_KEY: ${{ secrets.HACKAGE_KEY }}
+          HACKAGE_TOKEN: ${{ secrets.HACKAGE_TOKEN }}
+          HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
+          HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
+          CANDIDATE: ${{ inputs.as_candidate == true && '--candidate' || '' }}
+        run: |
+          AUTH_FLAG=""
+          if [ -n "$HACKAGE_TOKEN" ]; then
+            AUTH_FLAG="--token $HACKAGE_TOKEN"
+          elif [ -n "$HACKAGE_KEY" ]; then
+            AUTH_FLAG="--token $HACKAGE_KEY"
+          elif [ -n "$HACKAGE_USERNAME" ] && [ -n "$HACKAGE_PASSWORD" ]; then
+            AUTH_FLAG="-u $HACKAGE_USERNAME -p $HACKAGE_PASSWORD"
+          fi
+
+          PUBLISH_FLAG="--publish"
+          if [ "${{ inputs.as_candidate }}" = "true" ]; then
+            PUBLISH_FLAG=""
+          fi
+
+          GRAPH_DOC_TAR=$(ls artifacts/docs/langchain-hs-graph-*-docs.tar.gz)
+          echo "Uploading documentation $GRAPH_DOC_TAR to Hackage..."
+          cabal upload $AUTH_FLAG $PUBLISH_FLAG -d $CANDIDATE "$GRAPH_DOC_TAR"
+
       - name: Publish langchain-hs to Hackage
+        if: github.event_name == 'push' || inputs.publish_to_hackage == true
         env:
           HACKAGE_KEY: ${{ secrets.HACKAGE_KEY }}
           HACKAGE_TOKEN: ${{ secrets.HACKAGE_TOKEN }}
@@ -172,6 +269,33 @@ jobs:
           echo "Uploading $MAIN_TAR to Hackage..."
           cabal upload $AUTH_FLAG $PUBLISH_FLAG $CANDIDATE "$MAIN_TAR"
 
+      - name: Publish langchain-hs documentation to Hackage
+        if: github.event_name == 'push' || inputs.publish_docs == true
+        env:
+          HACKAGE_KEY: ${{ secrets.HACKAGE_KEY }}
+          HACKAGE_TOKEN: ${{ secrets.HACKAGE_TOKEN }}
+          HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
+          HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
+          CANDIDATE: ${{ inputs.as_candidate == true && '--candidate' || '' }}
+        run: |
+          AUTH_FLAG=""
+          if [ -n "$HACKAGE_TOKEN" ]; then
+            AUTH_FLAG="--token $HACKAGE_TOKEN"
+          elif [ -n "$HACKAGE_KEY" ]; then
+            AUTH_FLAG="--token $HACKAGE_KEY"
+          elif [ -n "$HACKAGE_USERNAME" ] && [ -n "$HACKAGE_PASSWORD" ]; then
+            AUTH_FLAG="-u $HACKAGE_USERNAME -p $HACKAGE_PASSWORD"
+          fi
+
+          PUBLISH_FLAG="--publish"
+          if [ "${{ inputs.as_candidate }}" = "true" ]; then
+            PUBLISH_FLAG=""
+          fi
+
+          MAIN_DOC_TAR=$(ls artifacts/docs/langchain-hs-[0-9]*-docs.tar.gz)
+          echo "Uploading documentation $MAIN_DOC_TAR to Hackage..."
+          cabal upload $AUTH_FLAG $PUBLISH_FLAG -d $CANDIDATE "$MAIN_DOC_TAR"
+
   create-github-release:
     name: Create GitHub Release
     needs: validate-and-package
@@ -186,6 +310,13 @@ jobs:
         with:
           name: hackage-sdists
           path: artifacts
+
+      - name: Download documentation artifacts
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: hackage-docs
+          path: artifacts/docs
 
       - name: Extract Release Notes from CHANGELOG
         id: notes
@@ -205,6 +336,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           body_path: RELEASE_NOTES.md
-          files: artifacts/*.tar.gz
+          files: |
+            artifacts/*.tar.gz
+            artifacts/docs/*-docs.tar.gz
           draft: false
           prerelease: false
