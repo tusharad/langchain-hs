@@ -91,7 +91,6 @@ library
       aeson ==2.*
     , async ==2.2.*
     , base >=4.17 && <5
-    , base64-bytestring ==1.2.*
     , bytestring >=0.10 && <0.13
     , conduit >=1.2 && <1.4
     , containers >=0.6 && <0.9
@@ -109,7 +108,6 @@ library
     , openai >=2.2.1 && <3
     , process ==1.6.*
     , random ==1.2.*
-    , resourcet >=1.2 && <1.4
     , scientific ==0.3.*
     , servant ==0.20.*
     , servant-client ==0.20.*
@@ -137,7 +135,6 @@ test-suite langchain-hs-test
       Test.Langchain.DocumentLoader.Core
       Test.Langchain.DocumentLoader.CsvSpec
       Test.Langchain.DocumentLoader.DirectoryLoader
-      Test.Langchain.Embeddings.Core
       Test.Langchain.Error
       Test.Langchain.Graph.CompilationSpec
       Test.Langchain.Guardrail.GuardrailSpec
@@ -202,7 +199,6 @@ test-suite langchain-hs-test
     , aeson-qq
     , async
     , base >=4.17 && <5
-    , base64-bytestring ==1.2.*
     , bytestring
     , conduit >=1.2 && <1.4
     , containers
