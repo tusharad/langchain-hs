@@ -79,22 +79,6 @@ jobs:
         with:
           cabal-version: 'latest'
 
-      - name: Configure Cabal credentials
-        env:
-          HACKAGE_KEY: ${{ secrets.HACKAGE_KEY }}
-          HACKAGE_TOKEN: ${{ secrets.HACKAGE_TOKEN }}
-          HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
-          HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
-        run: |
-          mkdir -p ~/.config/cabal
-          TOKEN="${HACKAGE_TOKEN:-$HACKAGE_KEY}"
-          if [ -n "$TOKEN" ]; then
-            echo "token: $TOKEN" >> ~/.config/cabal/config
-          elif [ -n "$HACKAGE_USERNAME" ] && [ -n "$HACKAGE_PASSWORD" ]; then
-            echo "username: $HACKAGE_USERNAME" >> ~/.config/cabal/config
-            echo "password: $HACKAGE_PASSWORD" >> ~/.config/cabal/config
-          fi
-
       - name: Download sdist artifacts
         uses: actions/download-artifact@v4
         with:
