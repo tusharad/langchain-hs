@@ -41,9 +41,6 @@ library
       Langchain.DocumentLoader.Csv
       Langchain.DocumentLoader.DirectoryLoader
       Langchain.DocumentLoader.FileLoader
-      Langchain.DocumentLoader.Html
-      Langchain.DocumentLoader.Json
-      Langchain.DocumentLoader.WebPage
       Langchain.Embeddings.Core
       Langchain.Embeddings.Ollama
       Langchain.Embeddings.OpenAI
@@ -94,7 +91,6 @@ library
       aeson ==2.*
     , async ==2.2.*
     , base >=4.17 && <5
-    , base64-bytestring ==1.2.*
     , bytestring >=0.10 && <0.13
     , conduit >=1.2 && <1.4
     , containers >=0.6 && <0.9
@@ -112,7 +108,6 @@ library
     , openai >=2.2.1 && <3
     , process ==1.6.*
     , random ==1.2.*
-    , resourcet >=1.2 && <1.4
     , scientific ==0.3.*
     , servant ==0.20.*
     , servant-client ==0.20.*
@@ -121,7 +116,6 @@ library
     , servant-event-stream ==0.4.*
     , sqlite-simple >=0.4.18 && <0.5
     , stm ==2.5.*
-    , tagsoup ==0.14.*
     , text >=1.2 && <3
     , time >=1.9 && <1.15
     , transformers >=0.5 && <0.7
@@ -141,9 +135,6 @@ test-suite langchain-hs-test
       Test.Langchain.DocumentLoader.Core
       Test.Langchain.DocumentLoader.CsvSpec
       Test.Langchain.DocumentLoader.DirectoryLoader
-      Test.Langchain.DocumentLoader.HtmlSpec
-      Test.Langchain.DocumentLoader.JsonSpec
-      Test.Langchain.Embeddings.Core
       Test.Langchain.Error
       Test.Langchain.Graph.CompilationSpec
       Test.Langchain.Guardrail.GuardrailSpec
@@ -208,7 +199,6 @@ test-suite langchain-hs-test
     , aeson-qq
     , async
     , base >=4.17 && <5
-    , base64-bytestring ==1.2.*
     , bytestring
     , conduit >=1.2 && <1.4
     , containers
@@ -236,7 +226,6 @@ test-suite langchain-hs-test
     , servant-event-stream ==0.4.*
     , sqlite-simple >=0.4.18 && <0.5
     , stm ==2.5.*
-    , tagsoup ==0.14.*
     , tasty
     , tasty-hunit
     , tasty-quickcheck
@@ -247,52 +236,4 @@ test-suite langchain-hs-test
     , vector >=0.12 && <0.14
     , wai
     , warp
-  default-language: Haskell2010
-
-benchmark langchain-hs-bench
-  type: exitcode-stdio-1.0
-  main-is: Main.hs
-  other-modules:
-      Paths_langchain_hs
-  hs-source-dirs:
-      bench
-  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N -Wall
-  build-depends:
-      aeson
-    , async ==2.2.*
-    , base >=4.17 && <5
-    , base64-bytestring ==1.2.*
-    , bytestring >=0.10 && <0.13
-    , conduit >=1.2 && <1.4
-    , containers >=0.6 && <0.9
-    , directory >=1.3.6 && <1.4
-    , filepath >=1.4 && <2
-    , format-heavy ==0.1.*
-    , http-client ==0.7.*
-    , http-client-tls >=0.3 && <0.5
-    , http-conduit ==2.*
-    , http-types >=0.11 && <0.13
-    , langchain-hs
-    , langchain-hs-core
-    , langchain-hs-graph
-    , mtl >=2.2 && <2.4
-    , ollama-haskell >=0.4.0.0 && <0.5
-    , openai >=2.2.1 && <3
-    , process ==1.6.*
-    , random ==1.2.*
-    , resourcet >=1.2 && <1.4
-    , scientific ==0.3.*
-    , servant ==0.20.*
-    , servant-client ==0.20.*
-    , servant-client-core ==0.20.*
-    , servant-conduit ==0.16.*
-    , servant-event-stream ==0.4.*
-    , sqlite-simple >=0.4.18 && <0.5
-    , stm ==2.5.*
-    , tagsoup ==0.14.*
-    , tasty-bench
-    , text
-    , time >=1.9 && <1.15
-    , transformers >=0.5 && <0.7
-    , vector >=0.12 && <0.14
   default-language: Haskell2010

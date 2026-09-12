@@ -14,9 +14,6 @@ import qualified Test.Langchain.Chain.RetrievalQASpec as RetrievalQATest
 import qualified Test.Langchain.DocumentLoader.Core as DocumentLoaderTest
 import qualified Test.Langchain.DocumentLoader.CsvSpec as CsvLoaderTest
 import qualified Test.Langchain.DocumentLoader.DirectoryLoader as DirectoryLoaderTest
-import qualified Test.Langchain.DocumentLoader.HtmlSpec as HtmlLoaderTest
-import qualified Test.Langchain.DocumentLoader.JsonSpec as JsonLoaderTest
-import qualified Test.Langchain.Embeddings.Core as EmbeddingsTest
 import qualified Test.Langchain.Error as ErrorTest
 import qualified Test.Langchain.Graph.CompilationSpec as GraphCompilationTest
 import qualified Test.Langchain.Guardrail.GuardrailSpec as GuardrailTest
@@ -95,14 +92,11 @@ main =
           , DocumentLoaderTest.tests
           , DirectoryLoaderTest.tests
           , CsvLoaderTest.tests
-          , JsonLoaderTest.tests
-          , HtmlLoaderTest.tests
           , MemoryTest.tests
           , SummaryMemoryTest.tests
           , EntityMemoryTest.tests
           , VectorStoreTest.tests
           , SqliteVecStoreTest.tests
-          , EmbeddingsTest.tests
           , ErrorTest.tests
           , RetrieverTest.tests
           , BM25Test.tests

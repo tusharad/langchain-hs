@@ -2,7 +2,7 @@
 
 > **The Pure Functional, Effect-Polymorphic AI Agent & Multi-Agent Graph Engine in Haskell**
 >
-> *A strictly typed, effect-polymorphic, zero-`unsafePerformIO` AI ecosystem built on pure AST pipelines (`RunnableTree`), cyclic state machines (`StateGraph`), Model Context Protocol (MCP), and production observability.*
+> *A strictly typed, effect-polymorphic, AI ecosystem built on pure AST pipelines (`RunnableTree`), cyclic state machines (`StateGraph`), Model Context Protocol (MCP), and production observability.*
 
 ---
 
@@ -15,77 +15,18 @@
 
 ---
 
-## 🌟 Why `langchain-hs`?
+## Why `langchain-hs`?
 
 Modern AI orchestration frameworks often struggle with race conditions, hidden side-effects, fragile dynamic schemas, and uninspectable opaque execution chains. `langchain-hs` brings mathematical precision and functional programming principles to AI development:
 
-1. **First-Class Runnable AST Composition (`RunnableTree`)**: The core selling point. Every component—models, prompts, tools, chains, retrievers, and parsers—implements the `Runnable` typeclass. Connect components into trees or graphs using type-safe operators:
+1. **First-Class Runnable AST Composition (`RunnableTree`)**: Every component—models, prompts, tools, chains, retrievers, and parsers—implements the `Runnable` typeclass. Connect components into trees or graphs using type-safe operators:
    - `|>>` : Sequential composition (data flows from left to right).
    - `&>&` : Parallel fan-out (concurrent evaluation of independent branches).
    - `>>>#` : Fallback chains (automatic failover if the primary branch errors).
-2. **Zero `unsafePerformIO`**: Guaranteed referential transparency. Pipelines construct pure GADT abstract syntax trees that can be inspected, visualized, optimized, or statically verified before interpretation.
-3. **LangGraph in Haskell (`StateGraph`)**: Full cyclic state machine engine with pure monoidal state reducers (`StateReducer s`), thread-safe STM memory checkpointers (`TVar`), persistent SQLite checkpointers, Human-in-the-Loop (`HITL`) interrupts, and Time-Travel state replay.
-4. **Decoupled Monad Transformer (`LangchainT env m a`)**: Newtype wrapper around `ReaderT env (ExceptT LangchainError m) a`. Parameterized over `env`, allowing providers and application developers to inject custom configurations without library bloat.
-5. **Model Context Protocol (MCP)**: Native client supporting stdio and HTTP JSON-RPC 2.0 transports with automatic tool schema discovery and conversion to native Haskell `Tool` definitions.
-6. **Dual-Provider Parity**: Complete 1-to-1 verified implementations across all 20 components for both local offline inference (**🦙 Ollama**) and cloud APIs (**⚡ OpenAI / OpenRouter**).
+2. **LangGraph in Haskell (`StateGraph`)**: Full cyclic state machine engine with pure monoidal state reducers (`StateReducer s`), thread-safe STM memory checkpointers (`TVar`), persistent SQLite checkpointers, Human-in-the-Loop (`HITL`) interrupts, and Time-Travel state replay.
 
 ---
 
-## 📊 Feature Matrix: LangChain Ecosystem Comparison
-
-| Feature Area | Python (`langchain`) | Java (`langchain4j`) | Rust (`langchain-rust`) | **Haskell (`langchain-hs`)** |
-|:---|:---:|:---:|:---:|:---:|
-| **Paradigm & Purity** | Imperative / Dynamic | OOP / Static | Imperative / Static | **Pure Functional & Effect-Polymorphic** |
-| **Purity Guarantees** | None | None | None | **Zero `unsafePerformIO`, Law-Verified** |
-| **Pipeline Composition** | LCEL (`\|`) | Fluent Builders | Async Chains | **Pure GADT AST (`\|>>`, `&>&`, `>>>#`)** |
-| **Graph Orchestration** | LangGraph (Python) | External / Basic | None | **`StateGraph`, Parallel Nodes, Time-Travel, DOT** |
-| **Multi-Agent Patterns** | CrewAI / AutoGen | Basic Agents | Simple ReAct | **Plan-and-Execute, Supervisor, Sub-Graph Embedding** |
-| **Model Context Protocol (MCP)** | Python Client | Custom SDK | Basic | **Built-in stdio + HTTP JSON-RPC Client** |
-| **Human-in-the-Loop (HITL)** | Supported | Partial | Unsupported | **First-class `interruptBefore` & `resumeGraph`** |
-| **Concurrency & State** | GIL / AsyncIO | Locks / Atomicals | Arc / Mutex | **Software Transactional Memory (STM `TVar`)** |
-| **Streaming Protocol** | Async Generators | Reactive Streams | Futures Stream | **Conduit Streaming (`StreamEvent` Lifecycle)** |
-| **Observability** | LangSmith (SaaS) | OpenTelemetry | Tracing Crate | **OpenTelemetry Spans + Structured Logging** |
-| **Resilience** | Tenacity | Resilience4j | Custom | **Circuit Breaker, Exponential Backoff & Jitter** |
-
----
-
-## 📦 Monorepo Architecture
-
-```mermaid
-flowchart TB
-    subgraph Core ["langchain-hs-core (Zero HTTP Dependencies)"]
-        RT["RunnableTree (Pure GADT AST)"]
-        CM["ChatModel (Effect-Polymorphic)"]
-        CB["ContentBlock (Multi-Modal)"]
-        TL["Tool (Typed Schema & Exec)"]
-        SE["StreamEvent (Conduit Streaming)"]
-        MN["LangchainT env m a (Decoupled Monad)"]
-    end
-
-    subgraph Graph ["langchain-hs-graph (Workflows & State Machines)"]
-        SG["StateGraph s m"]
-        SR["StateReducer (Pure Monoid)"]
-        CP["Checkpointer (STM TVar & SQLite)"]
-        HT["HITL Interrupt & Resume"]
-        TT["TimeTravel History & Replay"]
-        DOT["Graphviz DOT Export"]
-        PN["Parallel Concurrent Nodes"]
-    end
-
-    subgraph HighLevel ["langchain-hs (Ecosystem & Production)"]
-        PR["Providers: Ollama, OpenAI, Gemini"]
-        AG["Agents: ReAct, Plan-and-Execute, Supervisor, Sub-Graph"]
-        MCP["MCP Client (Stdio & HTTP JSON-RPC 2.0)"]
-        VS["Vector Stores: SQLite-vec, InMemory"]
-        CH["Chains: RetrievalQA, MapReduce"]
-        OB["Observability: OpenTelemetry, Tracing Callbacks"]
-        RES["Resilience: Circuit Breaker, Retries, In-Memory Caching"]
-    end
-
-    HighLevel --> Graph
-    HighLevel --> Core
-    Graph --> Core
-```
 
 ### Monorepo Packages
 
@@ -99,9 +40,7 @@ flowchart TB
 
 ---
 
-## 🧩 20 Core Components & Verified Targets
-
-Every single component has been implemented, tested, and verified live against local **Ollama** and **OpenAI / OpenRouter**:
+## 20 Core Components & Verified Targets
 
 | # | Component | Package Layer | Ollama Executable | OpenAI Executable | Documentation |
 |:---:|---|---|---|---|:---:|
@@ -128,7 +67,7 @@ Every single component has been implemented, tested, and verified live against l
 
 ---
 
-## ⚡ Code Showcases
+## Code Showcases
 
 ### 1. The Power of Runnables: Pure AST Composition
 
@@ -159,7 +98,7 @@ main = do
 
 ### 2. Dual-Provider Chat Comparison: Ollama vs OpenAI
 
-#### 🦙 Ollama (Local & Offline)
+#### Ollama (Local & Offline)
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
 import Control.Monad.Except (runExceptT)
@@ -179,7 +118,7 @@ main = do
 ```
 *Run:* `stack run simpleollama`
 
-#### ⚡ OpenAI / OpenRouter (Cloud)
+#### OpenAI / OpenRouter (Cloud)
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
 import Control.Monad.Except (runExceptT)
@@ -264,7 +203,7 @@ main = do
 
 ---
 
-## 📥 Installation
+## Installation
 
 ### Stack
 Add to your `stack.yaml`:
@@ -289,7 +228,7 @@ cabal install langchain-hs
 
 ---
 
-## 🛠️ Development & Quality Commands
+## Development & Quality Commands
 
 The repository enforces strict code quality and formatting via `make`:
 
@@ -318,7 +257,7 @@ make site-watch
 
 ---
 
-## 📚 Documentation & Research
+## Documentation & Research
 
 | Resource | Description |
 |:---|:---|
@@ -335,23 +274,6 @@ make docs
 
 ---
 
-## 🌐 Documentation Website
-
-The complete documentation website is generated using Hakyll and hosted locally or on GitHub Pages. It includes:
-* **Interactive Provider Toggle**: Seamlessly switch between **🦙 Ollama** and **⚡ OpenAI** code blocks across the site.
-* **Component Deep Dives**: Dedicated pages for each of the 20 components with complete types and working code.
-* **Instant Search (`Cmd+K`)**: Rapid search across all components, guides, and API references.
-* **Theme Switching**: Sleek dark and light modes with custom modern typography (Inter, Outfit, JetBrains Mono).
-
-To explore the site locally:
-```bash
-make site-build
-make site-watch
-# Open http://localhost:8000 in your browser
-```
-
----
-
-## 📄 License
+## License
 
 Distributed under the **MIT License**. See [LICENSE](LICENSE) for details.

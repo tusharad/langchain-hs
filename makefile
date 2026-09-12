@@ -1,4 +1,4 @@
-.PHONY: lint format format-check weeder docs site-build site-watch site-clean clean
+.PHONY: lint format format-check docs site-build site-watch site-clean clean
 
 ## Run HLint linter
 lint:
@@ -11,10 +11,6 @@ format:
 ## Check code formatting with Fourmolu
 format-check:
 	fourmolu -m check src/ test/ langchain-hs-core/ langchain-hs-graph examples/
-
-## Run Weeder dead code detection
-weeder:
-	weeder --config weeder.toml --hie-directory .hie --hie-directory langchain-hs-core/.hie --hie-directory langchain-hs-graph/.hie
 
 ## Build Haddock documentation
 docs:

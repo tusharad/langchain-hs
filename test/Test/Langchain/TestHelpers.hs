@@ -39,13 +39,12 @@ module Test.Langchain.TestHelpers
   , TestLevel (..)
   ) where
 
-import Control.Exception (IOException, SomeException, try)
+import Control.Exception (SomeException, try)
 import Control.Monad.IO.Class (MonadIO)
 import Data.Aeson (Value, decode)
 import Data.Maybe (isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.Text.IO as TIO
 import System.Directory (findExecutable)
 
 import Langchain.Provider.Ollama (Ollama, configTimeout, defaultConfig, newOllama)
@@ -99,28 +98,13 @@ defaultOpenRouterModel = "nex-agi/nex-n2.5-mini:free"
 defaultOpenRouterEndpoint :: Text
 defaultOpenRouterEndpoint = "https://openrouter.ai/api"
 
-{- | Read OpenRouter API key from @OPENROUTER_API_KEY@, @KEY@ env vars or
-  the local @key@ / @../key@ file.
--}
+-- | Read OpenRouter API key from the @OPEN_ROUTER_API_KEY@ environment variable.
 getOpenRouterApiKey :: IO (Maybe Text)
 getOpenRouterApiKey = do
-  mbEnv <- lookupFirstEnv ["OPENROUTER_API_KEY", "OPEN_ROUTER_API_KEY", "KEY", "OPENAI_API_KEY"]
-  case mbEnv of
-    Just k | not (T.null k) -> pure (Just k)
-    _ -> readFirstFile ["key", "../key"]
-  where
-    lookupFirstEnv [] = pure Nothing
-    lookupFirstEnv (e : es) = do
-      mv <- lookupEnv e
-      case mv of
-        Just v | not (null v) -> pure $ Just (T.strip $ T.pack v)
-        _ -> lookupFirstEnv es
-    readFirstFile [] = pure Nothing
-    readFirstFile (p : ps) = do
-      res <- try (TIO.readFile p) :: IO (Either IOException Text)
-      case res of
-        Right c | not (T.null (T.strip c)) -> pure $ Just (T.strip c)
-        _ -> readFirstFile ps
+  mv <- lookupEnv "OPEN_ROUTER_API_KEY"
+  case mv of
+    Just v | not (T.null (T.strip (T.pack v))) -> pure $ Just (T.strip (T.pack v))
+    _ -> pure Nothing
 
 -- | Build an 'OpenAI' provider pointing at OpenRouter with @openrouter/free@.
 newTestOpenRouter :: Text -> OpenAI
@@ -222,7 +206,7 @@ withOpenRouterOrOllama onMissing openRouterAction ollamaAction = do
         else onMissing
 
 {- | Run a test action with OpenRouter (OpenAI-compatible) when an API key is
-  present (in @OPENROUTER_API_KEY@, @KEY@, or the local @key@ file),
+  present in the @OPEN_ROUTER_API_KEY@ environment variable,
   otherwise fall back to Ollama.
 -}
 withAnyModel ::

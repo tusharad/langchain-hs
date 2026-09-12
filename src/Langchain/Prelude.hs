@@ -227,7 +227,7 @@ module Langchain.Prelude
     -- * Embeddings
   , Embeddings (..)
   , OllamaEmbeddings (..)
-  , OpenAIEmbeddings (..)
+  , OpenAIEmbeddings (OpenAIEmbeddings)
   , defaultOpenAIEmbeddings
   , textEmbedding3Small
   , textEmbedding3Large
@@ -242,12 +242,6 @@ module Langchain.Prelude
   , defaultDirectoryLoaderOptions
   , CsvLoader (..)
   , defaultCsvLoader
-  , JsonLoader (..)
-  , defaultJsonLoader
-  , HtmlLoader (..)
-  , defaultHtmlLoader
-  , WebPageLoader (..)
-  , defaultWebPageLoader
 
     -- * Prompt Templates
   , PromptTemplate (..)
@@ -380,13 +374,10 @@ import Langchain.DocumentLoader.Core
 import Langchain.DocumentLoader.Csv
 import Langchain.DocumentLoader.DirectoryLoader
 import Langchain.DocumentLoader.FileLoader
-import Langchain.DocumentLoader.Html
-import Langchain.DocumentLoader.Json
-import Langchain.DocumentLoader.WebPage
 import Langchain.Embeddings.Core
 import Langchain.Embeddings.Ollama (OllamaEmbeddings (..))
 import Langchain.Embeddings.OpenAI
-  ( OpenAIEmbeddings (..)
+  ( OpenAIEmbeddings (OpenAIEmbeddings)
   , defaultOpenAIEmbeddings
   , textEmbedding3Large
   , textEmbedding3Small

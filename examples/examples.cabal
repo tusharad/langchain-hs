@@ -7,7 +7,7 @@ cabal-version: 1.12
 name:           examples
 version:        0.1.0.0
 synopsis:       Set of examples of Langchain-hs
-description:    Please see the README on GitHub at <https://github.com/githubuser/examples#readme>
+description:    Please see the README on GitHub at <https://github.com/tusharad/langchain-hs/tree/develop/examples#readme>
 homepage:       https://github.com/tusharad/langchain-hs#readme
 bug-reports:    https://github.com/tusharad/langchain-hs/issues
 author:         Tushar Adhatrao
