@@ -32,7 +32,7 @@ jobs:
         uses: haskell-actions/setup@v2
         with:
           ghc-version: '9.8.4'
-          cabal-version: '3.10.3.0'
+          cabal-version: 'latest'
 
       - name: Cache cabal store
         uses: actions/cache@v4
@@ -77,7 +77,23 @@ jobs:
       - name: Set up Cabal
         uses: haskell-actions/setup@v2
         with:
-          cabal-version: '3.10.3.0'
+          cabal-version: 'latest'
+
+      - name: Configure Cabal credentials
+        env:
+          HACKAGE_KEY: ${{ secrets.HACKAGE_KEY }}
+          HACKAGE_TOKEN: ${{ secrets.HACKAGE_TOKEN }}
+          HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
+          HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
+        run: |
+          mkdir -p ~/.config/cabal
+          TOKEN="${HACKAGE_TOKEN:-$HACKAGE_KEY}"
+          if [ -n "$TOKEN" ]; then
+            echo "token: $TOKEN" >> ~/.config/cabal/config
+          elif [ -n "$HACKAGE_USERNAME" ] && [ -n "$HACKAGE_PASSWORD" ]; then
+            echo "username: $HACKAGE_USERNAME" >> ~/.config/cabal/config
+            echo "password: $HACKAGE_PASSWORD" >> ~/.config/cabal/config
+          fi
 
       - name: Download sdist artifacts
         uses: actions/download-artifact@v4
@@ -95,9 +111,9 @@ jobs:
         run: |
           AUTH_FLAG=""
           if [ -n "$HACKAGE_TOKEN" ]; then
-            AUTH_FLAG="-t $HACKAGE_TOKEN"
+            AUTH_FLAG="--token $HACKAGE_TOKEN"
           elif [ -n "$HACKAGE_KEY" ]; then
-            AUTH_FLAG="-t $HACKAGE_KEY"
+            AUTH_FLAG="--token $HACKAGE_KEY"
           elif [ -n "$HACKAGE_USERNAME" ] && [ -n "$HACKAGE_PASSWORD" ]; then
             AUTH_FLAG="-u $HACKAGE_USERNAME -p $HACKAGE_PASSWORD"
           else
@@ -127,9 +143,9 @@ jobs:
         run: |
           AUTH_FLAG=""
           if [ -n "$HACKAGE_TOKEN" ]; then
-            AUTH_FLAG="-t $HACKAGE_TOKEN"
+            AUTH_FLAG="--token $HACKAGE_TOKEN"
           elif [ -n "$HACKAGE_KEY" ]; then
-            AUTH_FLAG="-t $HACKAGE_KEY"
+            AUTH_FLAG="--token $HACKAGE_KEY"
           elif [ -n "$HACKAGE_USERNAME" ] && [ -n "$HACKAGE_PASSWORD" ]; then
             AUTH_FLAG="-u $HACKAGE_USERNAME -p $HACKAGE_PASSWORD"
           fi
@@ -156,9 +172,9 @@ jobs:
         run: |
           AUTH_FLAG=""
           if [ -n "$HACKAGE_TOKEN" ]; then
-            AUTH_FLAG="-t $HACKAGE_TOKEN"
+            AUTH_FLAG="--token $HACKAGE_TOKEN"
           elif [ -n "$HACKAGE_KEY" ]; then
-            AUTH_FLAG="-t $HACKAGE_KEY"
+            AUTH_FLAG="--token $HACKAGE_KEY"
           elif [ -n "$HACKAGE_USERNAME" ] && [ -n "$HACKAGE_PASSWORD" ]; then
             AUTH_FLAG="-u $HACKAGE_USERNAME -p $HACKAGE_PASSWORD"
           fi
