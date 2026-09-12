@@ -74,7 +74,7 @@ packages:
     hackage: servant-event-stream-0.4.0.1@sha256:c79ef3516626850347f2a92c15de473244539f2211c05d0350f4073d1659c669,1760
 snapshots:
 - completed:
-    sha256: 5dcfbf35d1c0b13bd4c2ea51df17fac5da59483a2ea6f092f3a89df0665fde68
-    size: 773931
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2026/8/27.yaml
-  original: nightly-2026-08-27
+    sha256: 6219f97234e8bfdc3f35d0e858b59206d74c50948a27d5d65c902f2fe98acb22
+    size: 775033
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2026/9/12.yaml
+  original: nightly-2026-09-12
