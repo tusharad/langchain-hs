@@ -1,11 +1,5 @@
 # Changelog for `langchain-hs`
 
-All notable changes to this project will be documented in this file.
-
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to the
-[Haskell Package Versioning Policy](https://pvp.haskell.org/).
-
 ## 0.0.5.0 - 2026-09-10
 
 ### Major Architecture & Ecosystem Evolution
@@ -28,14 +22,8 @@ and this project adheres to the
 - **Decoupled Monad Transformer (`LangchainT env m a`)**:
   - Removed redundant global config structs in favor of parameterization over custom user environment `env`.
   - Complete `MonadReader`, `MonadError`, `MonadIO`, and `MonadTrans` instances.
-- **Dual-Provider Parity Across 20 Core Components**:
-  - 1-to-1 verified parity across all 20 components between local **🦙 Ollama** and cloud **⚡ OpenAI / OpenRouter**.
-  - All 41 executables in `examples/` tested and verified live.
-- **Production Observability & Resilience**:
   - OpenTelemetry distributed tracing spans (`withSpan`) and structured JSON telemetry.
   - Three-state Circuit Breaker, exponential backoff retries with randomized jitter, and in-memory caching.
-- **Documentation Website**:
-  - Redesigned Hakyll site with live Ollama/OpenAI provider toggles, instant search (`Cmd+K`), and 20 dedicated component pages.
 - **Dependency & Performance Upgrades**:
   - Upgraded to `ollama-haskell` `0.4.1.0` with JSON schema grammar constraints.
   - Migrated to `MercuryTechnologies/openai` client.
