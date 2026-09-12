@@ -36,6 +36,7 @@
   - The `MonadReader env (LangchainT env m)` instance gives you `ask`/`asks` to read your environment from within the monad.
 - **`ChatMessage` renamed to `Message`** throughout — update all pattern matches and constructor calls.
 - **Agent modules restructured** — `Langchain.Agent` is now split into `Langchain.Agent.ReAct` and `Langchain.Agent.PlanAndExecute` with updated type signatures for tool-call support.
+- **Removed `HtmlLoader`, `JsonLoader`, and `WebPageLoader` from `Langchain.DocumentLoader`** — Along with the `tagsoup` dependency. Users can write custom document loaders tailored to their schemas and formats.
 
 ## 0.0.3.0 - 2025-11-16
 

@@ -41,9 +41,6 @@ library
       Langchain.DocumentLoader.Csv
       Langchain.DocumentLoader.DirectoryLoader
       Langchain.DocumentLoader.FileLoader
-      Langchain.DocumentLoader.Html
-      Langchain.DocumentLoader.Json
-      Langchain.DocumentLoader.WebPage
       Langchain.Embeddings.Core
       Langchain.Embeddings.Ollama
       Langchain.Embeddings.OpenAI
@@ -121,7 +118,6 @@ library
     , servant-event-stream ==0.4.*
     , sqlite-simple >=0.4.18 && <0.5
     , stm ==2.5.*
-    , tagsoup ==0.14.*
     , text >=1.2 && <3
     , time >=1.9 && <1.15
     , transformers >=0.5 && <0.7
@@ -141,8 +137,6 @@ test-suite langchain-hs-test
       Test.Langchain.DocumentLoader.Core
       Test.Langchain.DocumentLoader.CsvSpec
       Test.Langchain.DocumentLoader.DirectoryLoader
-      Test.Langchain.DocumentLoader.HtmlSpec
-      Test.Langchain.DocumentLoader.JsonSpec
       Test.Langchain.Embeddings.Core
       Test.Langchain.Error
       Test.Langchain.Graph.CompilationSpec
@@ -236,7 +230,6 @@ test-suite langchain-hs-test
     , servant-event-stream ==0.4.*
     , sqlite-simple >=0.4.18 && <0.5
     , stm ==2.5.*
-    , tagsoup ==0.14.*
     , tasty
     , tasty-hunit
     , tasty-quickcheck

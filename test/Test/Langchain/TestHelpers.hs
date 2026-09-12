@@ -104,7 +104,7 @@ defaultOpenRouterEndpoint = "https://openrouter.ai/api"
 -}
 getOpenRouterApiKey :: IO (Maybe Text)
 getOpenRouterApiKey = do
-  mbEnv <- lookupFirstEnv ["OPENROUTER_API_KEY", "OPEN_ROUTER_API_KEY", "KEY", "OPENAI_API_KEY"]
+  mbEnv <- lookupFirstEnv ["OPEN_ROUTER_API_KEY"]
   case mbEnv of
     Just k | not (T.null k) -> pure (Just k)
     _ -> readFirstFile ["key", "../key"]
