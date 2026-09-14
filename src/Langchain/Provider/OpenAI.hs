@@ -95,7 +95,9 @@ data OpenAIConfig = OpenAIConfig
   }
   deriving (Eq, Show, Generic, Aeson.ToJSON, Aeson.FromJSON)
 
-defaultConfig :: Text -> OpenAIConfig
+defaultConfig
+  :: Text -- ^ Api key
+  -> OpenAIConfig
 defaultConfig key = OpenAIConfig key "gpt-4o" Nothing (Just 0.7)
 
 defaultOpenAIConfig :: Text -> OpenAIConfig
@@ -242,7 +244,9 @@ streamRequestBody request options = case Aeson.toJSON request of
       _ -> mempty
 
 -- | Create standard OpenAI provider instance
-newOpenAI :: Text -> Text -> OpenAI
+newOpenAI :: Text -- ^ Api key
+          -> Text -- ^ Model name
+          -> OpenAI
 newOpenAI key mName =
   OpenAI
     { apiKey = key
@@ -251,13 +255,15 @@ newOpenAI key mName =
     , temperature = Just 0.7
     }
 
-{- | Create OpenAICompatible provider instance for OpenRouter/Fireworks/Together.
-
-The @endpoint@ should be the __base URL__ only (e.g.
-@"https://openrouter.ai/api"@), not the full chat completions path.
-The @openai@ package appends @\/v1\/chat\/completions@ automatically.
+{- | Create OpenAICompatible provider instance for OpenRouter\/Fireworks\/Together.
 -}
-openAICompatible :: Text -> Text -> Text -> OpenAI
+openAICompatible
+  :: Text -- ^ Api key
+  -> Text -- ^ Model name
+  -> Text -- ^ The @endpoint@ should be the __base URL__ only (e.g.
+          -- @"https://openrouter.ai/api"@), not the full chat completions path.
+          --The @openai@ package appends @\/v1\/chat\/completions@ automatically.
+  -> OpenAI
 openAICompatible key mName endpoint =
   OpenAI
     { apiKey = key
@@ -531,7 +537,7 @@ reqBody provider inputMsgs =
     toVec = V.fromList . map toLangchainOAIMessage
 
 {- | Normalize base URL to ensure compatibility with the @openai@ package.
-Strips any trailing @/v1/chat/completions@, @/chat/completions@, or @/v1@
+Strips any trailing @\/v1\/chat\/completions@, @\/chat\/completions@, or @\/v1@
 so that Servant's route constructs the expected URL path.
 -}
 normalizeBaseUrl :: Text -> Text

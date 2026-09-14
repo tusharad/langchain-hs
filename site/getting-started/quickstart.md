@@ -29,7 +29,7 @@ main = do
         ]
 
   -- 3. Invoke the model
-  res <- runExceptT $ invoke model messages
+  res <- runExceptT $ invoke model messages Nothing
   case res of
     Left err -> putStrLn ("Invocation Error: " ++ show err)
     Right responseMsg -> do
@@ -47,12 +47,12 @@ Switching between model providers requires changing only the model constructor:
 -- OpenAI
 import Langchain.Provider.OpenAI
 
-let model = newOpenAI "gpt-4o" "sk-..."
+let model = newOpenAI "sk-..." "gpt-4o"
 
 -- Google Gemini
 import Langchain.Provider.Gemini
 
-let model = newGemini "gemini-1.5-pro" "AIza..."
+let model = newGemini "AIza..." "gemini-1.5-pro"
 ```
 
 ---
