@@ -53,7 +53,7 @@ class Runnable r m where
   invoke :: r -> RunnableInput r -> m (Either LangchainError (RunnableOutput r))
 
 -- | Any Tool can be executed as a primitive Runnable taking JSON 'Value' to 'Text'.
-instance Monad m => Runnable (Tool m) m where
+instance Runnable (Tool m) m where
   type RunnableInput (Tool m) = Value
   type RunnableOutput (Tool m) = Text
   invoke = toolExecute
