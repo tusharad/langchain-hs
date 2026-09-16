@@ -4,8 +4,6 @@ module Test.Langchain.RegressionSpec (tests) where
 
 import Control.Monad.Except (runExceptT)
 import Control.Monad.Trans.Resource (runResourceT)
-import Data.Aeson (decode)
-import qualified Data.ByteString.Lazy.Char8 as LBSC
 import Test.Tasty
 import Test.Tasty.HUnit
 
@@ -14,7 +12,6 @@ import Langchain.Core.Model
 import Langchain.Core.Stream
 import Langchain.Memory.Core (BaseMemory (..), newWindowBufferMemory)
 import qualified Langchain.Memory.Core as TB
-import Langchain.Provider.OpenAI (parseOpenAIResponse)
 import Langchain.Tool.Calculator (calculatorTool)
 import Test.Langchain.Provider.Mock (newMockModel)
 
@@ -33,14 +30,6 @@ tests =
             case last events of
               LLMEnd _ finalMsg _ -> extractMessageText finalMsg @?= "Streaming chunk data"
               _ -> assertFailure "Expected LLMEnd as last event in stream"
-    , testCase "regression_system_fingerprint_nullable: OpenAI JSON parses without fingerprint" $ do
-        let jsonWithoutFingerprint =
-              "{\"id\":\"cmpl-1\",\"object\":\"chat.completion\",\"created\":1600000000,\"model\":\"gpt-4o\",\"choices\":[{\"index\":0,\"message\":{\"role\":\"assistant\",\"content\":\"OK\"},\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":1,\"total_tokens\":2}}"
-        case decode (LBSC.pack jsonWithoutFingerprint) of
-          Nothing -> assertFailure "Failed to decode JSON value"
-          Just val -> case parseOpenAIResponse val of
-            Left err -> assertFailure ("OpenAI parsing failed on nullable fingerprint: " ++ err)
-            Right (msg, _) -> extractMessageText msg @?= "OK"
     , testCase "regression_react_agent_plain_response: Completes immediately when no tool calls" $ do
         let mockModel = newMockModel "Direct Answer without tool calls"
             agent = createReActAgent mockModel [calculatorTool]

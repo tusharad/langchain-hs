@@ -71,14 +71,16 @@ data GeminiConfig = GeminiConfig
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
-defaultConfig
-  :: Text -- ^ Api key
-  -> GeminiConfig
+defaultConfig ::
+  -- | Api key
+  Text ->
+  GeminiConfig
 defaultConfig key = GeminiConfig key "gemini-2.0-flash"
 
-defaultGeminiConfig
-  :: Text -- ^ Api key
-  -> GeminiConfig
+defaultGeminiConfig ::
+  -- | Api key
+  Text ->
+  GeminiConfig
 defaultGeminiConfig = defaultConfig
 
 -- | Gemini ChatModel provider
@@ -91,11 +93,14 @@ data Gemini
   deriving (Eq, Show)
 
 -- | Create a new Gemini provider instance
-newGemini
-  :: Text -- ^ Api key
-  -> Text -- ^ model name
-  -> Maybe Text -- ^ base URL
-  -> Gemini
+newGemini ::
+  -- | Api key
+  Text ->
+  -- | model name
+  Text ->
+  -- | base URL
+  Maybe Text ->
+  Gemini
 newGemini = Gemini
 
 geminiApiKey :: Gemini -> Text

@@ -32,13 +32,11 @@ module Langchain.Provider.OpenAI
   , newOpenAI
   , openAICompatible
   , normalizeBaseUrl
-  , parseOpenAIResponse
   ) where
 
 import Control.Applicative ((<|>))
 import Control.Concurrent.Async (AsyncCancelled (..))
 import Control.Exception (SomeException, fromException, throwIO, try)
-import Control.Monad (forM)
 import Control.Monad.Except (throwError)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Class (lift)
@@ -47,7 +45,7 @@ import qualified Data.Conduit.Combinators as C
 import Data.Aeson (Value (..), object, (.=))
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.KeyMap as KeyMap
-import Data.Aeson.Types (Parser, parseEither, parseMaybe)
+import Data.Aeson.Types (Parser, parseMaybe)
 import Data.Bifunctor (first)
 import qualified Data.ByteString.Lazy as LBS
 import Data.Conduit
@@ -95,9 +93,10 @@ data OpenAIConfig = OpenAIConfig
   }
   deriving (Eq, Show, Generic, Aeson.ToJSON, Aeson.FromJSON)
 
-defaultConfig
-  :: Text -- ^ Api key
-  -> OpenAIConfig
+defaultConfig ::
+  Text ->
+  -- | Api key
+  OpenAIConfig
 defaultConfig key = OpenAIConfig key "gpt-4o" Nothing (Just 0.7)
 
 defaultOpenAIConfig :: Text -> OpenAIConfig
@@ -108,9 +107,7 @@ data OpenAI = OpenAI
   { apiKey :: Text
   , model :: Text
   , baseUrl :: Text
-  {- ^ Base URL (e.g. @"https://api.openai.com"@). The @openai@ package
-  automatically appends @\/v1\/chat\/completions@.
-  -}
+  -- ^ Base URL (e.g. @"https://api.openai.com"@). The @openai@ package automatically appends @/v1/chat/completions@.
   , temperature :: Maybe Double
   }
   deriving (Eq, Show)
@@ -244,32 +241,39 @@ streamRequestBody request options = case Aeson.toJSON request of
       _ -> mempty
 
 -- | Create standard OpenAI provider instance
-newOpenAI :: Text -- ^ Api key
-          -> Text -- ^ Model name
-          -> OpenAI
+newOpenAI ::
+  Text ->
+  -- | Api key
+  Text ->
+  -- | Model name
+  OpenAI
 newOpenAI key mName =
   OpenAI
     { apiKey = key
     , model = mName
     , baseUrl = "https://api.openai.com"
-    , temperature = Just 0.7
+    , temperature = Nothing
     }
 
-{- | Create OpenAICompatible provider instance for OpenRouter\/Fireworks\/Together.
--}
-openAICompatible
-  :: Text -- ^ Api key
-  -> Text -- ^ Model name
-  -> Text -- ^ The @endpoint@ should be the __base URL__ only (e.g.
-          -- @"https://openrouter.ai/api"@), not the full chat completions path.
-          --The @openai@ package appends @\/v1\/chat\/completions@ automatically.
-  -> OpenAI
+-- | Create OpenAICompatible provider instance for OpenRouter/Fireworks/Together.
+openAICompatible ::
+  Text ->
+  -- | Api key
+  Text ->
+  -- \| The @endpoint@ should be the __base URL__ only (e.g.
+  --  @"https://openrouter.ai/api"@), not the full chat completions path.
+  --  The @openai@ package appends @/v1/chat/completions@ automatically.
+  --
+
+  -- | Model name
+  Text ->
+  OpenAI
 openAICompatible key mName endpoint =
   OpenAI
     { apiKey = key
     , model = mName
     , baseUrl = endpoint
-    , temperature = Just 0.7
+    , temperature = Nothing
     }
 
 -- ---------------------------------------------------------------------------
@@ -537,68 +541,17 @@ reqBody provider inputMsgs =
     toVec = V.fromList . map toLangchainOAIMessage
 
 {- | Normalize base URL to ensure compatibility with the @openai@ package.
-Strips any trailing @\/v1\/chat\/completions@, @\/chat\/completions@, or @\/v1@
-so that Servant's route constructs the expected URL path.
+    @openai@ package will always append `/v1/chat/completions` at the end.
 -}
 normalizeBaseUrl :: Text -> Text
 normalizeBaseUrl rawUrl =
   let u0 = T.dropWhileEnd (== '/') rawUrl
       u1
-        | "/v1/chat/completions" `T.isSuffixOf` u0 =
-            T.dropEnd (T.length "/v1/chat/completions") u0
-        | "/chat/completions" `T.isSuffixOf` u0 =
-            T.dropEnd (T.length "/chat/completions") u0
-        | "/v1" `T.isSuffixOf` u0 =
-            T.dropEnd (T.length "/v1") u0
-        | otherwise =
-            u0
+        | "/v1/chat/completions" `T.isSuffixOf` u0 = T.dropEnd (T.length "/v1/chat/completions") u0
+        | "/chat/completions" `T.isSuffixOf` u0 = T.dropEnd (T.length "/chat/completions") u0
+        | "/v1" `T.isSuffixOf` u0 = T.dropEnd (T.length "/v1") u0
+        | otherwise = u0
    in T.dropWhileEnd (== '/') u1
-
--- ---------------------------------------------------------------------------
--- Backward-compatible parseOpenAIResponse
--- ---------------------------------------------------------------------------
-
-{- | Parse a raw OpenAI JSON response 'Value' into a langchain 'Message'
-and optional 'TokenUsage'.
-
-This function is provided for backward compatibility. New code should use
-the typed @openai@ package types directly.
--}
-parseOpenAIResponse :: Value -> Either String (Message, Maybe TokenUsage)
-parseOpenAIResponse = parseEither $ Aeson.withObject "OpenAIResponse" $ \o -> do
-  choices <- o Aeson..: "choices"
-  usageVal <- o Aeson..:? "usage"
-  mbUsage <- case usageVal of
-    Nothing -> pure Nothing
-    Just u -> flip (Aeson.withObject "Usage") u $ \uo -> do
-      pTok <- uo Aeson..:? "prompt_tokens" Aeson..!= 0
-      cTok <- uo Aeson..:? "completion_tokens" Aeson..!= 0
-      tTok <- uo Aeson..:? "total_tokens" Aeson..!= 0
-      pure $ Just $ TokenUsage pTok cTok tTok
-  case choices of
-    [] -> fail "Empty choices array in OpenAI response"
-    (c : _) -> flip (Aeson.withObject "Choice") c $ \ch -> do
-      msgObj <- ch Aeson..: "message"
-      contentTxt <- msgObj Aeson..:? "content" Aeson..!= ""
-      mbToolCalls <- msgObj Aeson..:? "tool_calls"
-      cToolCalls <- case mbToolCalls of
-        Nothing -> pure Nothing
-        Just tcs -> do
-          calls <- forM (tcs :: [Value]) $ Aeson.withObject "ToolCall" $ \tcObj -> do
-            tcId <- tcObj Aeson..:? "id" Aeson..!= ""
-            fnObj <- tcObj Aeson..: "function"
-            fnName <- fnObj Aeson..: "name"
-            fnArgsVal <- fnObj Aeson..:? "arguments"
-            let fnArgs = case fnArgsVal of
-                  Just (String s) -> case Aeson.decode (LBS.fromStrict (TE.encodeUtf8 s)) of
-                    Just val -> val
-                    Nothing -> object []
-                  Just obj@(Object _) -> obj
-                  _ -> object []
-            pure $ ToolCall tcId "function" fnName fnArgs
-          pure (Just calls)
-      let msg = (assistantMessage contentTxt) {messageToolCalls = cToolCalls}
-      pure (msg, mbUsage)
 
 -- | Bind tools to an OpenAI model by merging tool definitions into the options Value
 instance ToolBinder OpenAI m where
