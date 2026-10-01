@@ -416,7 +416,6 @@ import Langchain.Provider.Ollama
   , withJsonFormat
   , withOptions
   , withSchemaFormat
-  , withStructuredOutput
   , withTools
   )
 import Langchain.Provider.OpenAI (OpenAI, newOpenAI)

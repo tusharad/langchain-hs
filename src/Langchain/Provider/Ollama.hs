@@ -5,7 +5,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
 {- |
@@ -49,7 +48,6 @@ module Langchain.Provider.Ollama
   , fromOllamaMessage
   , withJsonFormat
   , withSchemaFormat
-  , withStructuredOutput
   , withOptions
   , chatRequestFor
   , resolveChatRequest
@@ -70,6 +68,7 @@ module Langchain.Provider.Ollama
   , OSB.JsonType (..)
   , OSD.ToSchema (..)
   , OSD.ToJsonType (..)
+  , OllamaOptions (..)
   ) where
 
 import Control.Monad (when)
@@ -91,6 +90,7 @@ import Langchain.Core.Stream (StreamEvent (..), TokenUsage (..))
 import Langchain.Core.Tool (Tool, toolToValue)
 import Langchain.Tool.Binding (ToolBinder (..))
 
+import Langchain.OutputParser.Structured (SupportsStructuredOutput (..))
 import Ollama.API.Chat
 import qualified Ollama.API.Chat as OllamaChat
 import Ollama.Client (OllamaClient, newClient)
@@ -226,12 +226,12 @@ given the provider instance, explicit message arguments, and optional 'ChatReque
 resolveChatRequest ::
   Ollama ->
   [Message] ->
-  Maybe OllamaChat.ChatRequest ->
+  Maybe OllamaOptions ->
   (OllamaChat.ChatRequest, Text, [Message])
 resolveChatRequest model inputMsgs mbReq =
   let providerModel = ollamaModelName model
       resolvedModelText = case mbReq of
-        Just r ->
+        Just (OllamaOptions r) ->
           let m = unModelName (OllamaChat.chatModel r)
            in if T.null m then providerModel else m
         Nothing -> providerModel
@@ -242,7 +242,7 @@ resolveChatRequest model inputMsgs mbReq =
           let oList = NonEmpty.map toOllamaMessage (m NonEmpty.:| ms)
            in (oList, inputMsgs)
         [] -> case mbReq of
-          Just r ->
+          Just (OllamaOptions r) ->
             let oList = OllamaChat.chatMessages r
                 coreList = map fromOllamaMessage (NonEmpty.toList oList)
              in (oList, coreList)
@@ -252,15 +252,21 @@ resolveChatRequest model inputMsgs mbReq =
       resolvedReq = case mbReq of
         Nothing ->
           OllamaChat.chatRequest resolvedModelName resolvedOMsgs
-        Just r ->
+        Just (OllamaOptions r) ->
           r
             { OllamaChat.chatModel = resolvedModelName
             , OllamaChat.chatMessages = resolvedOMsgs
             }
    in (resolvedReq, resolvedModelText, resolvedCoreMsgs)
 
+newtype OllamaOptions = OllamaOptions {unOptions :: OllamaChat.ChatRequest}
+
+instance SupportsStructuredOutput OllamaOptions where
+  setSchemaFormat schema (OllamaOptions req) =
+    OllamaOptions $ req {OllamaChat.chatFormat = Just (OFormat.SchemaFormat schema)}
+
 instance ChatModel Ollama where
-  type ModelConfig Ollama = OllamaChat.ChatRequest
+  type ModelConfig Ollama = OllamaOptions
 
   invoke model inputMsgs mbReq = do
     let (req, _modelName, _msgs) = resolveChatRequest model inputMsgs mbReq
@@ -346,15 +352,6 @@ withJsonFormat req = req {OllamaChat.chatFormat = Just OFormat.JsonFormat}
 withSchemaFormat :: OSB.Schema -> OllamaChat.ChatRequest -> OllamaChat.ChatRequest
 withSchemaFormat schema req = req {OllamaChat.chatFormat = Just (OFormat.SchemaFormat schema)}
 
--- | Attach automatic ToSchema derived format constraint to Ollama ChatRequest
-withStructuredOutput ::
-  forall a.
-  (OSD.ToSchema a) =>
-  OllamaChat.ChatRequest ->
-  OllamaChat.ChatRequest
-withStructuredOutput req =
-  req {OllamaChat.chatFormat = Just (OFormat.SchemaFormat (OSD.toSchema @a))}
-
 -- | Ollama model with pre-bound tools
 data OllamaWithTools m = OllamaWithTools
   { ollamaBaseModel :: !Ollama
@@ -372,10 +369,10 @@ instance ChatModel (OllamaWithTools m) where
   type ModelConfig (OllamaWithTools m) = OllamaChat.ChatRequest
   invoke (OllamaWithTools model ts) msgs mbReq =
     let req = fromMaybe (chatRequestFor model msgs) mbReq
-     in invoke model msgs (Just (withTools ts req))
+     in invoke model msgs (Just . OllamaOptions $ withTools ts req)
   stream (OllamaWithTools model ts) msgs mbReq =
     let req = fromMaybe (chatRequestFor model msgs) mbReq
-     in stream model msgs (Just (withTools ts req))
+     in stream model msgs (Just . OllamaOptions $ withTools ts req)
 
 -- | Bind tools to an Ollama model by creating/merging a ChatRequest with tool definitions
 instance ToolBinder Ollama m where
@@ -383,8 +380,14 @@ instance ToolBinder Ollama m where
     case tools of
       [] -> mbReq
       _ ->
-        let baseReq = fromMaybe (OllamaChat.chatRequest (ModelName "") (O.userMessage "" NonEmpty.:| [])) mbReq
-         in Just $ withTools tools baseReq
+        let baseReq =
+              case mbReq of
+                Nothing ->
+                  OllamaChat.chatRequest
+                    (ModelName "")
+                    (O.userMessage "" NonEmpty.:| [])
+                Just (OllamaOptions req) -> req
+         in Just . OllamaOptions $ withTools tools baseReq
 
 -- | OllamaWithTools already has tools bound, but merges additional tools if provided
 instance ToolBinder (OllamaWithTools m) n where

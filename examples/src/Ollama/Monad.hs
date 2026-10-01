@@ -4,6 +4,7 @@ module Ollama.Monad (runApp) where
 
 import qualified Data.Text.IO as T
 import Langchain.Prelude
+import Langchain.Provider.Ollama (OllamaOptions (OllamaOptions))
 
 runApp :: IO ()
 runApp = do
@@ -14,7 +15,7 @@ runApp = do
           withOptions
             (defaultOptions {optTemperature = Just 0.7, optTopP = Just 0.9, optNumCtx = Just 100096})
             (chatRequestFor o msg)
-    invoke o msg (Just chatReq)
+    invoke o msg (Just (OllamaOptions chatReq))
   case res of
     Left err -> T.putStrLn $ errorMessage err
     Right m -> T.putStrLn $ extractMessageText m

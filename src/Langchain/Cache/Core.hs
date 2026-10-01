@@ -48,7 +48,7 @@ import Langchain.Core.Model
   , Message (..)
   )
 import Langchain.Provider.Gemini (Gemini (..))
-import Langchain.Provider.Ollama (ModelName (..), Ollama (..))
+import Langchain.Provider.Ollama (ModelName (..), Ollama (..), OllamaOptions (..))
 import Langchain.Provider.OpenAI (OpenAI (..))
 import Langchain.Tool.Binding (ToolBinder (..))
 import qualified Ollama.API.Chat as OllamaChat
@@ -175,8 +175,9 @@ instance CacheableChatModel OpenAI where
       ]
 
 instance CacheableChatModel Ollama where
-  cacheModelIdentity o cfg =
-    let effectiveOptions = cfg >>= OllamaChat.chatOptions
+  cacheModelIdentity o config =
+    let cfg = unOptions <$> config
+        effectiveOptions = cfg >>= OllamaChat.chatOptions
         effectiveKeepAlive = cfg >>= OllamaChat.chatKeepAlive
         effectiveModel = case cfg of
           Just r ->

@@ -32,6 +32,8 @@ module Langchain.Provider.OpenAI
   , newOpenAI
   , openAICompatible
   , normalizeBaseUrl
+  , OpenAIOptions (..)
+  , OSD.ToSchema (..)
   ) where
 
 import Control.Applicative ((<|>))
@@ -66,13 +68,16 @@ import qualified OpenAI.V1.Models as OM
 import qualified OpenAI.V1.ToolCall as OTC
 import qualified OpenAI.V1.Usage as OU
 
+import qualified Data.Aeson.KeyMap as KM
 import Langchain.Core.Error (LangchainError, llmError)
 import Langchain.Core.Model
 import Langchain.Core.Stream (StreamEvent (..), StreamM, TokenUsage (..), callbackSource)
 import Langchain.Core.Tool (Tool, toolToValue)
+import Langchain.OutputParser.Structured (SupportsStructuredOutput (..))
 import Langchain.Tool.Binding (ToolBinder (..))
 import Network.HTTP.Client (newManager)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
+import qualified Ollama.Types.Format.SchemaDerive as OSD
 import Servant.API (Header, JSON, ReqBody, (:>))
 import Servant.API.EventStream
   ( FromServerEvent (fromServerEvent)
@@ -227,7 +232,7 @@ openAIStreamClient ::
   Maybe Text -> Value -> ClientM (ConduitT () OpenAIStreamEvent IO ())
 openAIStreamClient = client (Proxy :: Proxy OpenAIStreamApi)
 
-streamRequestBody :: CC.CreateChatCompletion -> Maybe Value -> Value
+streamRequestBody :: CC.CreateChatCompletion -> Maybe OpenAIOptions -> Value
 streamRequestBody request options = case Aeson.toJSON request of
   Object fields ->
     Object $
@@ -237,7 +242,7 @@ streamRequestBody request options = case Aeson.toJSON request of
   value -> value
   where
     optionFields = case options of
-      Just (Object fields) -> fields
+      Just (OpenAIOptions (Object fields)) -> fields
       _ -> mempty
 
 -- | Create standard OpenAI provider instance
@@ -380,13 +385,14 @@ fromOAIUsage u =
     , totalTokens = fromIntegral (OU.total_tokens u)
     }
 
+newtype OpenAIOptions = OpenAIOptions {unOptions :: Value}
+
 -- ---------------------------------------------------------------------------
 -- ChatModel instance
 -- ---------------------------------------------------------------------------
 
 instance ChatModel OpenAI where
-  type ModelConfig OpenAI = Value
-
+  type ModelConfig OpenAI = OpenAIOptions
   invoke provider inputMsgs mbOptions = do
     resp <- liftIO $ first asText <$> try createComplention
     case resp of
@@ -506,6 +512,29 @@ instance ChatModel OpenAI where
             | otherwise -> emit $ Left $ asText err
           Right () -> pure ()
 
+instance SupportsStructuredOutput OpenAIOptions where
+  setSchemaFormat schema (OpenAIOptions (Object configFields)) =
+    let strictSchema = case Aeson.toJSON schema of
+          Object schemaFields ->
+            Object (KM.insert "additionalProperties" (Bool False) schemaFields)
+          value ->
+            value
+     in OpenAIOptions . Object $
+          KM.insert
+            "response_format"
+            ( object
+                [ "type" .= ("json_schema" :: Text)
+                , "json_schema"
+                    .= object
+                      [ "name" .= ("structured_output" :: Text)
+                      , "strict" .= True
+                      , "schema" .= strictSchema
+                      ]
+                ]
+            )
+            configFields
+  setSchemaFormat _ config = config
+
 -- | Convert a 'SomeException' to 'Text' for error reporting.
 asText :: SomeException -> Text
 asText ex = T.pack $ show (ex :: SomeException)
@@ -515,9 +544,9 @@ llmError' :: Text -> LangchainError
 llmError' msg = llmError msg Nothing Nothing
 
 -- | Merge option fields (tools, tool_choice, response_format, etc.) into a 'CreateChatCompletion'.
-mergeOptions :: CC.CreateChatCompletion -> Maybe Value -> CC.CreateChatCompletion
+mergeOptions :: CC.CreateChatCompletion -> Maybe OpenAIOptions -> CC.CreateChatCompletion
 mergeOptions body Nothing = body
-mergeOptions body (Just opts) =
+mergeOptions body (Just (OpenAIOptions opts)) =
   case Aeson.toJSON body of
     Object baseFields ->
       let optFields = case opts of
@@ -561,7 +590,7 @@ instance ToolBinder OpenAI m where
       _ ->
         let toolsVal = openAITools tools OpenAIToolAuto
          in Just $ case (mbOpts, toolsVal) of
-              (Nothing, v) -> v
-              (Just (Object existing), Object newFields) ->
-                Object (KeyMap.union newFields existing)
+              (Nothing, v) -> OpenAIOptions v
+              (Just (OpenAIOptions (Object existing)), Object newFields) ->
+                OpenAIOptions . Object $ KeyMap.union newFields existing
               (Just existing, _) -> existing
