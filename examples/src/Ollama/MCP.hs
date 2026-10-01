@@ -7,6 +7,7 @@ import Data.List (find)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Langchain.Prelude
+import Langchain.Provider.Ollama (OllamaOptions (OllamaOptions))
 
 runApp :: IO ()
 runApp = do
@@ -28,7 +29,7 @@ runApp = do
     let msgs = [userMessage "Search Hoogle for the Haskell function 'traverse' using the search tool."]
         req = withTools lcTools (chatRequestFor o msgs)
 
-    resp <- invoke o msgs (Just req)
+    resp <- invoke o msgs (Just (OllamaOptions req))
     case messageToolCalls resp of
       Just (tc : _) -> do
         liftIO $ T.putStrLn $ "\nLLM selected tool: " <> toolCallName tc
@@ -44,7 +45,7 @@ runApp = do
                 conv = msgs ++ [resp, toolMsg]
                 followReq = withTools lcTools (chatRequestFor o conv)
 
-            finalResp <- invoke o conv (Just followReq)
+            finalResp <- invoke o conv (Just (OllamaOptions followReq))
             liftIO $ T.putStrLn "\nAI:"
             liftIO $ T.putStrLn $ extractMessageText finalResp
           Nothing ->

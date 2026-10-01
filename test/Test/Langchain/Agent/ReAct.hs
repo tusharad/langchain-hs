@@ -20,8 +20,8 @@ import Langchain.Core.Error (LangchainError)
 import Langchain.Core.Model
 import Langchain.Core.Tool (Tool)
 import Langchain.Provider.Gemini (Gemini)
-import Langchain.Provider.Ollama (ChatRequest (..), Ollama, chatTools)
-import Langchain.Provider.OpenAI (OpenAI)
+import Langchain.Provider.Ollama (ChatRequest (..), Ollama, OllamaOptions (..), chatTools)
+import Langchain.Provider.OpenAI (OpenAI, OpenAIOptions (..))
 import Langchain.Tool.Binding (ToolBinder (..))
 import Langchain.Tool.Calculator (calculatorTool)
 import Test.Langchain.Provider.Mock (newMockModel)
@@ -152,14 +152,14 @@ tests =
             mbCfg = bindToolsConfig @Ollama tools Nothing
         case mbCfg of
           Nothing -> assertFailure "Expected Just ChatRequest"
-          Just req -> case chatTools req of
+          Just (OllamaOptions req) -> case chatTools req of
             Nothing -> assertFailure "Expected Just tools in ChatRequest"
             Just ts -> length ts @?= 1
     , testCase "ToolBinder OpenAI attaches tools to JSON config" $ do
         let tools = [calculatorTool :: Tool IO]
             mbCfg = bindToolsConfig @OpenAI tools Nothing
         case mbCfg of
-          Just (Object obj) -> assertBool "Has 'tools' key" (KeyMap.member "tools" obj)
+          Just (OpenAIOptions (Object obj)) -> assertBool "Has 'tools' key" (KeyMap.member "tools" obj)
           _ -> assertFailure "Expected Just Object with tools"
     , testCase "ToolBinder Gemini attaches tools to JSON config" $ do
         let tools = [calculatorTool :: Tool IO]

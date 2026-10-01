@@ -28,8 +28,12 @@ import Langchain.Core.Model
   , userMessage
   )
 import Langchain.Provider.Gemini (Gemini (..))
-import Langchain.Provider.Ollama (Ollama, newOllamaWithClient)
-import Langchain.Provider.OpenAI (OpenAI (OpenAI))
+import Langchain.Provider.Ollama
+  ( Ollama
+  , OllamaOptions (..)
+  , newOllamaWithClient
+  )
+import Langchain.Provider.OpenAI (OpenAI (OpenAI), OpenAIOptions (..))
 import qualified Ollama.API.Chat as OllamaChat
 import Ollama.Client (newClient)
 import qualified Ollama.Client.Config as OllamaClientConfig
@@ -135,7 +139,7 @@ tests =
         assertKeysDiffer baseKey $ computeCacheKey otherModel Nothing testMessages
         assertKeysDiffer baseKey $ computeCacheKey otherEndpoint Nothing testMessages
         assertKeysDiffer baseKey $ computeCacheKey otherTemperature Nothing testMessages
-        baseKey @?= computeCacheKey base (Just $ object ["unused" .= True]) testMessages
+        baseKey @?= computeCacheKey base (Just $ OpenAIOptions $ object ["unused" .= True]) testMessages
     , testCase "cache key distinguishes Gemini identity and request config" $ do
         let base = Gemini "key" "gemini-2.0-flash" Nothing
             otherModel = Gemini "key" "gemini-2.5-pro" Nothing
@@ -162,7 +166,8 @@ tests =
     , testCase "cache key distinguishes Ollama endpoints and effective config" $ do
         firstEndpoint <- newOllamaForEndpoint "http://ollama-one.example.com:11434"
         secondEndpoint <- newOllamaForEndpoint "http://ollama-two.example.com:11434"
-        let baseKey = computeCacheKey firstEndpoint (Just baseOllamaRequest) testMessages
+        let baseKey =
+              computeCacheKey firstEndpoint (Just $ OllamaOptions baseOllamaRequest) testMessages
             ignoredFieldsRequest =
               baseOllamaRequest
                 { OllamaChat.chatMessages = OllamaMessage.userMessage "another-ignored-message" :| []
@@ -179,10 +184,14 @@ tests =
               , baseOllamaRequest {OllamaChat.chatKeepAlive = Just "10m"}
               , baseOllamaRequest {OllamaChat.chatThink = Just ThinkEnabled}
               ]
-        assertKeysDiffer baseKey $ computeCacheKey secondEndpoint (Just baseOllamaRequest) testMessages
+        assertKeysDiffer baseKey $
+          computeCacheKey secondEndpoint (Just $ OllamaOptions baseOllamaRequest) testMessages
         baseKey @?= computeCacheKey firstEndpoint Nothing testMessages
-        baseKey @?= computeCacheKey firstEndpoint (Just ignoredFieldsRequest) testMessages
+        baseKey @?= computeCacheKey firstEndpoint (Just $ OllamaOptions ignoredFieldsRequest) testMessages
         mapM_
-          (\request -> assertKeysDiffer baseKey $ computeCacheKey firstEndpoint (Just request) testMessages)
+          ( \request ->
+              assertKeysDiffer baseKey $
+                computeCacheKey firstEndpoint (Just $ OllamaOptions request) testMessages
+          )
           requestsThatChangeOutput
     ]

@@ -5,6 +5,7 @@ module OpenAI.Monad (runApp) where
 import Data.Aeson (object, (.=))
 import qualified Data.Text.IO as T
 import Langchain.Prelude
+import Langchain.Provider.OpenAI (OpenAIOptions (OpenAIOptions))
 import OpenAI.Common (defaultModelName, getOpenRouterModel)
 
 runApp :: IO ()
@@ -18,7 +19,7 @@ runApp = do
             , "top_p" .= (0.9 :: Double)
             , "max_tokens" .= (2048 :: Int)
             ]
-    invoke o msg (Just chatReq)
+    invoke o msg (Just (OpenAIOptions chatReq))
   case res of
     Left err -> T.putStrLn $ errorMessage err
     Right m -> T.putStrLn $ extractMessageText m

@@ -6,12 +6,11 @@
 module OpenAI.StructuredOutput (runApp) where
 
 import Data.Aeson
-import qualified Data.Aeson.KeyMap as KM
-import Data.Proxy (Proxy (..))
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import GHC.Generics (Generic)
 import Langchain.Prelude
+import Langchain.Provider.OpenAI (OpenAIOptions (OpenAIOptions), ToSchema)
 import OpenAI.Common (defaultModelName, getOpenRouterModel)
 
 data Person = Person
@@ -19,7 +18,7 @@ data Person = Person
   , age :: Int
   , location :: T.Text
   }
-  deriving (Show, Eq, Generic, FromJSON, ToJSON, StructuredOutput)
+  deriving (Show, Eq, Generic, FromJSON, ToSchema)
 
 inputPrompt :: T.Text
 inputPrompt =
@@ -30,27 +29,8 @@ inputPrompt =
 
 runApp :: IO ()
 runApp = do
-  o <- getOpenRouterModel defaultModelName
-  let msg = [userMessage inputPrompt]
-  let rawSchema = outputSchema (Proxy @Person)
-      schema = case rawSchema of
-        Object km -> Object (KM.insert "additionalProperties" (Bool False) km)
-        other -> other
-      chatReq =
-        object
-          [ "response_format"
-              .= object
-                [ "type" .= ("json_schema" :: T.Text)
-                , "json_schema"
-                    .= object
-                      [ "name" .= ("person" :: T.Text)
-                      , "strict" .= True
-                      , "schema" .= schema
-                      ]
-                ]
-          ]
-  res <- runLangchainT () $ do
-    invoke o msg (Just chatReq)
-  case res of
-    Left err -> T.putStrLn $ errorMessage err
-    Right r -> T.putStrLn $ extractMessageText r
+  openai <- getOpenRouterModel defaultModelName
+  let msgs = [userMessage inputPrompt]
+      opts = withStructuredOutput @Person (OpenAIOptions (object []))
+  res <- runLangchainT () $ invoke openai msgs (Just opts)
+  T.putStrLn $ either errorMessage extractMessageText res

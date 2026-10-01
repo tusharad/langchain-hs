@@ -166,7 +166,9 @@ tests =
                 prompt = userMessage "Use get_weather to look up the weather in Paris, then answer using the tool result."
 
             firstResult <-
-              runLive [prompt] (Just $ openAITools [weatherTool] (OpenAIToolFunction "get_weather"))
+              runLive
+                [prompt]
+                (Just $ OpenAIOptions $ openAITools [weatherTool] (OpenAIToolFunction "get_weather"))
             firstEvents <- case firstResult of
               Nothing -> assertFailure "OpenAI tool-call stream timed out" >> fail "unreachable"
               Just (Left err) -> assertFailure ("Expected tool-call stream success, got: " ++ show err) >> fail "unreachable"
@@ -309,7 +311,7 @@ tests =
         requestBody <- newEmptyMVar
         withRequestCapturingProvider (putMVar requestBody) $ \provider -> do
           void . runResourceT . runExceptT $
-            collectEvents (stream provider [userMessage "Hello"] (Just config))
+            collectEvents (stream provider [userMessage "Hello"] (Just $ OpenAIOptions config))
         mbRequest <- takeMVar requestBody
         case mbRequest of
           Just (Aeson.Object fields) -> do

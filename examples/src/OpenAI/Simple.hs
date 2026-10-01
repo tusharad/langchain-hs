@@ -9,6 +9,7 @@ import qualified Data.Text.IO as T
 import qualified Data.Text.Lazy as T
 import Langchain.Prelude
 import Langchain.PromptTemplate.Prompt
+import Langchain.Provider.OpenAI (OpenAIOptions (OpenAIOptions))
 import OpenAI.Common (defaultModelName, getOpenRouterModel)
 
 runPromptTemplateExample :: IO ()
@@ -37,7 +38,7 @@ runApp = do
           [ "temperature" .= (0.7 :: Double)
           , "max_tokens" .= (1024 :: Int)
           ]
-  resWithOptions <- runExceptT $ invoke o msg (Just reqWithOptions)
+  resWithOptions <- runExceptT $ invoke o msg (Just (OpenAIOptions reqWithOptions))
   case resWithOptions of
     Left err -> T.putStrLn $ errorMessage err
     Right m -> T.putStrLn $ extractMessageText m

@@ -25,7 +25,8 @@ import Langchain.OutputParser.Structured
   , toOllamaSchema
   )
 import Langchain.Provider.Ollama
-  ( chatRequestFor
+  ( OllamaOptions (..)
+  , chatRequestFor
   , withJsonFormat
   , withSchemaFormat
   , withTools
@@ -51,7 +52,7 @@ tests =
                 , userMessage "What is 15 * 4?"
                 ]
               req = withTools [calculatorTool :: Tool IO] (chatRequestFor provider prompt)
-          res <- runExceptT $ invoke provider prompt (Just req)
+          res <- runExceptT $ invoke provider prompt (Just $ OllamaOptions req)
           case res of
             Left err -> assertFailure ("Tool test invocation failed: " ++ show err)
             Right msg -> do
@@ -77,7 +78,7 @@ tests =
               req = case toOllamaSchema valSchema of
                 Just s -> withSchemaFormat s baseReq
                 Nothing -> withJsonFormat baseReq
-          res <- runExceptT $ invoke provider prompt (Just req)
+          res <- runExceptT $ invoke provider prompt (Just $ OllamaOptions req)
           case res of
             Left err -> assertFailure ("Structured Ollama invocation failed: " ++ show err)
             Right msg -> do

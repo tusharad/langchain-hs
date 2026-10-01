@@ -96,7 +96,7 @@ tests =
           let input = [userMessage "Return JSON: {\"answer\": 42}"]
               req = withJsonFormat (chatRequestFor p input)
           chatFormat req @?= Just OFormat.JsonFormat
-          res <- runExceptT $ invoke p input (Just req)
+          res <- runExceptT $ invoke p input (Just $ OllamaOptions req)
           case res of
             Left err -> assertFailure $ "Expected success, got error: " ++ show err
             Right msg -> messageRole msg @?= Assistant
@@ -108,7 +108,7 @@ tests =
                 reqMsgs = [userMessage "From ChatRequest"]
                 customReq = chatRequestFor p reqMsgs
                 (resolvedReq, resolvedModel, resolvedMsgs) =
-                  resolveChatRequest p invokeMsgs (Just customReq)
+                  resolveChatRequest p invokeMsgs (Just $ OllamaOptions customReq)
             resolvedModel @?= "base-model"
             resolvedMsgs @?= invokeMsgs
             NonEmpty.toList (chatMessages resolvedReq) @?= map toOllamaMessage invokeMsgs
@@ -117,7 +117,7 @@ tests =
             let reqMsgs = [userMessage "From ChatRequest only"]
                 customReq = chatRequestFor p reqMsgs
                 (resolvedReq, resolvedModel, resolvedMsgs) =
-                  resolveChatRequest p [] (Just customReq)
+                  resolveChatRequest p [] (Just $ OllamaOptions customReq)
             resolvedModel @?= "base-model"
             resolvedMsgs @?= reqMsgs
             NonEmpty.toList (chatMessages resolvedReq) @?= map toOllamaMessage reqMsgs
@@ -132,14 +132,14 @@ tests =
             p <- newOllama "base-model" defaultConfig
             let customReq = (chatRequestFor p [userMessage "hi"]) {chatModel = ModelName "custom-model"}
                 (resolvedReq, resolvedModel, _) =
-                  resolveChatRequest p [userMessage "hi"] (Just customReq)
+                  resolveChatRequest p [userMessage "hi"] (Just $ OllamaOptions customReq)
             resolvedModel @?= "custom-model"
             chatModel resolvedReq @?= ModelName "custom-model"
         , testCase "falls back to ollamaModelName when ChatRequest chatModel is empty" $ do
             p <- newOllama "base-model" defaultConfig
             let customReq = (chatRequestFor p [userMessage "hi"]) {chatModel = ModelName ""}
                 (resolvedReq, resolvedModel, _) =
-                  resolveChatRequest p [userMessage "hi"] (Just customReq)
+                  resolveChatRequest p [userMessage "hi"] (Just $ OllamaOptions customReq)
             resolvedModel @?= "base-model"
             chatModel resolvedReq @?= ModelName "base-model"
         , testCase "falls back to ollamaModelName when mbReq is Nothing" $ do
@@ -157,7 +157,7 @@ tests =
                     , chatFormat = Just OFormat.JsonFormat
                     }
                 (resolvedReq, _, _) =
-                  resolveChatRequest p [userMessage "override message"] (Just customReq)
+                  resolveChatRequest p [userMessage "override message"] (Just $ OllamaOptions customReq)
             chatOptions resolvedReq @?= Just opts
             chatKeepAlive resolvedReq @?= Just "5m"
             chatFormat resolvedReq @?= Just OFormat.JsonFormat

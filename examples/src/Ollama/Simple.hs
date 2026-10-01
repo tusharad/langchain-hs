@@ -8,6 +8,7 @@ import qualified Data.Text.IO as T
 import qualified Data.Text.Lazy as T
 import Langchain.Prelude
 import Langchain.PromptTemplate.Prompt
+import Langchain.Provider.Ollama (OllamaOptions (OllamaOptions))
 
 runPromptTemplateExample :: IO ()
 runPromptTemplateExample = do
@@ -34,7 +35,7 @@ runApp = do
         withOptions
           (defaultOptions {optTemperature = Just 0.7, optNumCtx = Just 4096})
           (chatRequestFor o msg)
-  resWithOptions <- runExceptT $ invoke o msg (Just reqWithOptions)
+  resWithOptions <- runExceptT $ invoke o msg (Just (OllamaOptions reqWithOptions))
   case resWithOptions of
     Left err -> T.putStrLn $ errorMessage err
     Right m -> T.putStrLn $ extractMessageText m

@@ -6,6 +6,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 
 {- |
@@ -30,6 +31,8 @@ module Langchain.OutputParser.Structured
   , structuredInvoke
   , structuredInvokeWithRetries
   , extractJsonFromMarkdown
+  , withStructuredOutput
+  , SupportsStructuredOutput (..)
   ) where
 
 import Control.Monad.Except (MonadError, throwError)
@@ -59,7 +62,23 @@ import Langchain.Core.Model
   , systemMessage
   , userMessage
   )
+import qualified Ollama.Types.Format.SchemaBuilder as OSB
 import qualified Ollama.Types.Format.SchemaBuilder as SB
+import qualified Ollama.Types.Format.SchemaDerive as OSD
+
+class SupportsStructuredOutput config where
+  setSchemaFormat ::
+    OSB.Schema ->
+    config ->
+    config
+
+withStructuredOutput ::
+  forall a config.
+  (OSD.ToSchema a, SupportsStructuredOutput config) =>
+  config ->
+  config
+withStructuredOutput =
+  setSchemaFormat (OSD.toSchema @a)
 
 -- | Typeclass for types that declare a JSON Schema and structured parser
 class (FromJSON a) => StructuredOutput a where
