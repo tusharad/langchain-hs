@@ -8,7 +8,9 @@ import Data.Text (Text)
 import qualified Data.Text.IO as T
 import qualified Data.Text.Lazy as TL
 import Data.Time.Clock (diffUTCTime, getCurrentTime)
+import Langchain.Embeddings.Ollama (OllamaEmbeddings (..))
 import Langchain.Prelude
+import Langchain.Provider.Ollama
 
 runApp :: IO ()
 runApp = do

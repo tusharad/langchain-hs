@@ -77,12 +77,4 @@ tests =
                 Just (Object eObj) -> KM.lookup "type" eObj @?= Just (String "array")
                 _ -> assertFailure "Expected companyEmployees to be array"
             _ -> assertFailure "Expected properties in schema"
-          _ -> assertFailure "Expected Object schema"
-    , testCase "toOllamaSchema and fromOllamaSchema bridge round-trip" $ do
-        let s = outputSchema (Proxy :: Proxy TestCompany)
-        case toOllamaSchema s of
-          Nothing -> assertFailure "toOllamaSchema failed for TestCompany"
-          Just ollamaS -> do
-            let rt = fromOllamaSchema ollamaS
-            toOllamaSchema rt @?= Just ollamaS
     ]

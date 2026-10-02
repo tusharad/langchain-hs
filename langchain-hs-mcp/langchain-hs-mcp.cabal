@@ -1,0 +1,74 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.39.6.
+--
+-- see: https://github.com/sol/hpack
+
+name:           langchain-hs-mcp
+version:        0.0.6.0
+synopsis:       Model Context Protocol (MCP) client for langchain-hs
+description:    First-class MCP JSON-RPC 2.0 client supporting stdio and HTTP transports. Enables Haskell agents to discover and call tools published by any MCP server (e.g. Hackage docs, SQLite, filesystem, GitHub). Depends only on langchain-hs-core; no provider-specific dependencies.
+category:       AI
+homepage:       https://github.com/tusharad/langchain-hs#readme
+bug-reports:    https://github.com/tusharad/langchain-hs/issues
+author:         Tushar Adhatrao
+maintainer:     tusharadhatrao@gmail.com
+copyright:      2025-2026 Tushar Adhatrao
+license:        MIT
+license-file:   LICENSE
+build-type:     Simple
+tested-with:
+    GHC == 9.12.4
+  , GHC == 9.10.3
+  , GHC == 9.8.4
+extra-source-files:
+    README.md
+    CHANGELOG.md
+
+source-repository head
+  type: git
+  location: https://github.com/tusharad/langchain-hs
+
+library
+  exposed-modules:
+      Langchain.MCP.Client
+  other-modules:
+      Paths_langchain_hs_mcp
+  hs-source-dirs:
+      src
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
+  build-depends:
+      aeson >=2.0 && <3
+    , base >=4.17 && <5
+    , bytestring >=0.10 && <0.13
+    , http-conduit ==2.*
+    , langchain-hs ==0.0.6.*
+    , langchain-hs-core ==0.0.6.*
+    , mtl >=2.2 && <2.4
+    , process ==1.6.*
+    , text >=1.2 && <3
+  default-language: Haskell2010
+
+test-suite langchain-hs-mcp-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Test.Langchain.MCP.McpSpec
+      Paths_langchain_hs_mcp
+  hs-source-dirs:
+      test
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.17 && <5
+    , bytestring
+    , http-conduit ==2.*
+    , langchain-hs
+    , langchain-hs-core
+    , langchain-hs-mcp
+    , mtl >=2.2 && <2.4
+    , process ==1.6.*
+    , tasty
+    , tasty-hunit
+    , text
+  default-language: Haskell2010

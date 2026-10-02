@@ -7,6 +7,7 @@ import Control.Monad.IO.Class (liftIO)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Langchain.Prelude
+import Langchain.Provider.OpenAI (OpenAI)
 import Langchain.Tool.Calculator (calculatorTool)
 import OpenAI.Common (defaultModelName, getOpenRouterModel)
 

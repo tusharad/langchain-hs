@@ -5,9 +5,14 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           langchain-hs
-version:        0.0.5.0
+version:        0.0.6.0
 synopsis:       Pure functional LLM agent framework and multi-agent graph engine in Haskell
-description:    Build LLM-powered applications, ReAct agents, and LangGraph-style stateful workflows in Haskell with zero unsafePerformIO.
+description:    Build LLM-powered applications, ReAct agents, and LangGraph-style stateful workflows
+                in Haskell. Provider-specific packages:
+                  - langchain-hs-ollama
+                  - langchain-hs-openai
+                  - langchain-hs-gemini
+                  - langchain-hs-mcp
 category:       AI
 homepage:       https://github.com/tusharad/langchain-hs#readme
 bug-reports:    https://github.com/tusharad/langchain-hs/issues
@@ -42,10 +47,7 @@ library
       Langchain.DocumentLoader.DirectoryLoader
       Langchain.DocumentLoader.FileLoader
       Langchain.Embeddings.Core
-      Langchain.Embeddings.Ollama
-      Langchain.Embeddings.OpenAI
       Langchain.Guardrail.Core
-      Langchain.MCP.Client
       Langchain.Memory.Core
       Langchain.Memory.Entity
       Langchain.Memory.Summary
@@ -59,9 +61,6 @@ library
       Langchain.PromptTemplate.FewShot
       Langchain.PromptTemplate.Prompt
       Langchain.PromptTemplate.String
-      Langchain.Provider.Gemini
-      Langchain.Provider.Ollama
-      Langchain.Provider.OpenAI
       Langchain.Resilience.CircuitBreaker
       Langchain.Resilience.Retry
       Langchain.Retriever.BM25
@@ -97,23 +96,12 @@ library
     , directory >=1.3.6 && <1.4
     , filepath >=1.4 && <2
     , format-heavy ==0.1.*
-    , http-client ==0.7.*
-    , http-client-tls >=0.3 && <0.5
-    , http-conduit ==2.*
-    , http-types >=0.11 && <0.13
-    , langchain-hs-core ==0.0.5.*
-    , langchain-hs-graph ==0.0.5.*
+    , langchain-hs-core ==0.0.6.*
+    , langchain-hs-graph ==0.0.6.*
     , mtl >=2.2 && <2.4
-    , ollama-haskell >=0.4.0.0 && <0.5
-    , openai >=2.2.1 && <3
     , process ==1.6.*
     , random ==1.2.*
     , scientific ==0.3.*
-    , servant ==0.20.*
-    , servant-client ==0.20.*
-    , servant-client-core ==0.20.*
-    , servant-conduit ==0.16.*
-    , servant-event-stream ==0.4.*
     , sqlite-simple >=0.4.18 && <0.5
     , stm ==2.5.*
     , text >=1.2 && <3
@@ -138,15 +126,6 @@ test-suite langchain-hs-test
       Test.Langchain.Error
       Test.Langchain.Graph.CompilationSpec
       Test.Langchain.Guardrail.GuardrailSpec
-      Test.Langchain.Integration.FullRagE2ESpec
-      Test.Langchain.Integration.OllamaChatSpec
-      Test.Langchain.Integration.OllamaEmbeddingSpec
-      Test.Langchain.Integration.OllamaStreamSpec
-      Test.Langchain.Integration.OllamaToolSpec
-      Test.Langchain.Integration.ReActAgentE2ESpec
-      Test.Langchain.Integration.StateGraphE2ESpec
-      Test.Langchain.Integration.StreamingCachingRetryE2ESpec
-      Test.Langchain.MCP.McpSpec
       Test.Langchain.Memory.Core
       Test.Langchain.Memory.EntitySpec
       Test.Langchain.Memory.SummarySpec
@@ -164,20 +143,13 @@ test-suite langchain-hs-test
       Test.Langchain.Property.PromptTemplateSpec
       Test.Langchain.Property.RunnableSpec
       Test.Langchain.Property.TextSplitterSpec
-      Test.Langchain.Provider.FixturesSpec
-      Test.Langchain.Provider.Gemini
       Test.Langchain.Provider.Mock
-      Test.Langchain.Provider.Ollama
-      Test.Langchain.Provider.OllamaConversionSpec
-      Test.Langchain.Provider.OpenAI
-      Test.Langchain.Provider.TestSseServer
       Test.Langchain.RegressionSpec
       Test.Langchain.Resilience.CircuitBreakerSpec
       Test.Langchain.Resilience.RetrySpec
       Test.Langchain.Retriever.BM25Spec
       Test.Langchain.Retriever.Core
       Test.Langchain.Retriever.HybridSpec
-      Test.Langchain.TestHelpers
       Test.Langchain.TextSplitter.Character
       Test.Langchain.TextSplitter.CodeSpec
       Test.Langchain.TextSplitter.MarkdownSpec
@@ -205,25 +177,14 @@ test-suite langchain-hs-test
     , directory
     , filepath
     , format-heavy ==0.1.*
-    , http-client ==0.7.*
-    , http-client-tls >=0.3 && <0.5
-    , http-conduit
-    , http-types
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
     , mtl >=2.2 && <2.4
-    , ollama-haskell >=0.4.0.0 && <0.5
-    , openai >=2.2.1 && <3
     , process ==1.6.*
     , random ==1.2.*
-    , resourcet >=1.2 && <1.4
+    , resourcet
     , scientific ==0.3.*
-    , servant ==0.20.*
-    , servant-client ==0.20.*
-    , servant-client-core ==0.20.*
-    , servant-conduit ==0.16.*
-    , servant-event-stream ==0.4.*
     , sqlite-simple >=0.4.18 && <0.5
     , stm ==2.5.*
     , tasty
@@ -234,6 +195,4 @@ test-suite langchain-hs-test
     , time >=1.9 && <1.15
     , transformers >=0.5 && <0.7
     , vector >=0.12 && <0.14
-    , wai
-    , warp
   default-language: Haskell2010

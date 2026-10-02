@@ -1,0 +1,82 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.39.6.
+--
+-- see: https://github.com/sol/hpack
+
+name:           langchain-hs-ollama
+version:        0.0.6.0
+synopsis:       Ollama provider and embeddings for langchain-hs
+description:    Ollama ChatModel provider and text embeddings integration for langchain-hs. Depends only on ollama-haskell; does not pull in OpenAI or Gemini dependencies.
+category:       AI
+homepage:       https://github.com/tusharad/langchain-hs#readme
+bug-reports:    https://github.com/tusharad/langchain-hs/issues
+author:         Tushar Adhatrao
+maintainer:     tusharadhatrao@gmail.com
+copyright:      2025-2026 Tushar Adhatrao
+license:        MIT
+license-file:   LICENSE
+build-type:     Simple
+tested-with:
+    GHC == 9.12.4
+  , GHC == 9.10.3
+  , GHC == 9.8.4
+extra-source-files:
+    README.md
+    CHANGELOG.md
+
+source-repository head
+  type: git
+  location: https://github.com/tusharad/langchain-hs
+
+library
+  exposed-modules:
+      Langchain.Provider.Ollama
+      Langchain.Embeddings.Ollama
+  other-modules:
+      Paths_langchain_hs_ollama
+  hs-source-dirs:
+      src
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
+  build-depends:
+      aeson >=2.0 && <3
+    , base >=4.17 && <5
+    , bytestring >=0.10 && <0.13
+    , conduit ==1.3.*
+    , containers >=0.6 && <0.9
+    , langchain-hs ==0.0.6.*
+    , langchain-hs-core ==0.0.6.*
+    , mtl >=2.2 && <2.4
+    , ollama-haskell >=0.4.0.0 && <0.5
+    , stm ==2.5.*
+    , text >=1.2 && <3
+    , transformers >=0.5 && <0.7
+  default-language: Haskell2010
+
+test-suite langchain-hs-ollama-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Test.Langchain.Provider.Ollama
+      Test.Langchain.Provider.OllamaConversionSpec
+      Paths_langchain_hs_ollama
+  hs-source-dirs:
+      test
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.17 && <5
+    , bytestring
+    , conduit ==1.3.*
+    , containers
+    , langchain-hs
+    , langchain-hs-core
+    , langchain-hs-ollama
+    , mtl >=2.2 && <2.4
+    , ollama-haskell
+    , stm ==2.5.*
+    , tasty
+    , tasty-hunit
+    , text
+    , transformers >=0.5 && <0.7
+  default-language: Haskell2010

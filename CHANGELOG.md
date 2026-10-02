@@ -1,5 +1,33 @@
 # Changelog for `langchain-hs`
 
+## 0.0.6.0 - 2026-10-02
+
+### Modular Provider Decoupling & Lightweight Core
+
+- **Modular Provider Split**:
+  - `langchain-hs` is now completely lightweight. All concrete AI provider integrations (`Ollama`, `OpenAI`, `Gemini`) and protocol clients (`MCP`) have been decoupled into standalone sub-packages.
+  - **`langchain-hs-ollama` (0.0.6.0)**: Dedicated Ollama chat model and embeddings integration via `ollama-haskell`.
+  - **`langchain-hs-openai` (0.0.6.0)**: Dedicated OpenAI & OpenAI-compatible provider (OpenRouter, Together, Fireworks), streaming, structured outputs, and embeddings integration via `openai`.
+  - **`langchain-hs-gemini` (0.0.6.0)**: Dedicated Google Gemini provider with function calling and SSE streaming.
+  - **`langchain-hs-mcp` (0.0.6.0)**: Standalone Model Context Protocol client over stdio and HTTP JSON-RPC 2.0.
+  - **`langchain-hs` (0.0.6.0)**: Core framework containing agents (`ReAct`, `PlanAndExecute`), output parsers, vector stores (`InMemory`, `SqliteVec`), chains (`RetrievalQA`, `MapReduce`), memory, resilience (`CircuitBreaker`, `Retry`), and observability (`OpenTelemetry`, `InMemoryLogger`).
+- **Cleaned Dependencies & Build Plans**:
+  - Completely removed direct dependencies on `ollama-haskell`, `openai`, `servant`, `req` from `langchain-hs`.
+  - Decoupled `withStructuredOutput` in `langchain-hs-openai` using `Langchain.OutputParser.Structured` directly, eliminating any transitive dependency on `ollama-haskell`.
+  - Purged obsolete extra-deps across all Stack and LTS configurations (`pdf-toolbox-document`, `pdf-toolbox-core`, `pdf-toolbox-content`, `cryptohash`, `cryptonite`, `ginger`).
+- **Independent Package Testing**:
+  - Every sub-package now has its own isolated `stack.yaml` and test suite that builds and executes independently.
+  - Verified across GHC 9.4 through GHC 9.12 (LTS 21.25, 22.44, 23.28, 24.12, 24.56, Nightly).
+
+### ⚠️ Breaking Changes from 0.0.5.0
+
+- Provider modules are no longer re-exported from `langchain-hs`:
+  - For Ollama: Add `langchain-hs-ollama` to dependencies and `import Langchain.Provider.Ollama` / `import Langchain.Embeddings.Ollama`.
+  - For OpenAI: Add `langchain-hs-openai` to dependencies and `import Langchain.Provider.OpenAI` / `import Langchain.Embeddings.OpenAI`.
+  - For Gemini: Add `langchain-hs-gemini` to dependencies and `import Langchain.Provider.Gemini`.
+  - For MCP: Add `langchain-hs-mcp` to dependencies and `import Langchain.MCP.Client`.
+- `Langchain.Prelude` no longer re-exports provider-specific constructors (`newOllama`, `newOpenAI`, `newGemini`, `newStdioMcpClient`). Import the corresponding provider package.
+
 ## 0.0.5.0 - 2026-09-10
 
 ### Major Architecture & Ecosystem Evolution

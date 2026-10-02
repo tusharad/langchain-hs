@@ -17,7 +17,6 @@ import qualified Test.Langchain.DocumentLoader.DirectoryLoader as DirectoryLoade
 import qualified Test.Langchain.Error as ErrorTest
 import qualified Test.Langchain.Graph.CompilationSpec as GraphCompilationTest
 import qualified Test.Langchain.Guardrail.GuardrailSpec as GuardrailTest
-import qualified Test.Langchain.MCP.McpSpec as McpTest
 import qualified Test.Langchain.Memory.Core as MemoryTest
 import qualified Test.Langchain.Memory.EntitySpec as EntityMemoryTest
 import qualified Test.Langchain.Memory.SummarySpec as SummaryMemoryTest
@@ -29,10 +28,6 @@ import qualified Test.Langchain.PromptTemplate.Chat.ChatPromptTemplateSpec as Ch
 import qualified Test.Langchain.PromptTemplate.Chat.MessagesPlaceholderSpec as MessagesPlaceholderTest
 import qualified Test.Langchain.PromptTemplate.FewShotSpec as FewShotPromptTemplateTest
 import qualified Test.Langchain.PromptTemplate.PromptSpec as PromptTemplateTest
-import qualified Test.Langchain.Provider.FixturesSpec as FixturesTest
-import qualified Test.Langchain.Provider.Ollama as OllamaProviderTest
-import qualified Test.Langchain.Provider.OllamaConversionSpec as OllamaConversionTest
-import qualified Test.Langchain.Provider.OpenAI as OpenAIProviderTest
 import qualified Test.Langchain.Resilience.CircuitBreakerSpec as CircuitBreakerTest
 import qualified Test.Langchain.Resilience.RetrySpec as RetryTest
 import qualified Test.Langchain.Retriever.BM25Spec as BM25Test
@@ -60,16 +55,6 @@ import qualified Test.Langchain.Property.TextSplitterSpec as TextSplitterPropTes
 
 -- Regression Test Module
 import qualified Test.Langchain.RegressionSpec as RegressionTest
-
--- Live Ollama E2E Integration Test Modules
-import qualified Test.Langchain.Integration.FullRagE2ESpec as FullRagE2ETest
-import qualified Test.Langchain.Integration.OllamaChatSpec as OllamaChatE2ETest
-import qualified Test.Langchain.Integration.OllamaEmbeddingSpec as OllamaEmbedE2ETest
-import qualified Test.Langchain.Integration.OllamaStreamSpec as OllamaStreamE2ETest
-import qualified Test.Langchain.Integration.OllamaToolSpec as OllamaToolE2ETest
-import qualified Test.Langchain.Integration.ReActAgentE2ESpec as ReActE2ETest
-import qualified Test.Langchain.Integration.StateGraphE2ESpec as StateGraphE2ETest
-import qualified Test.Langchain.Integration.StreamingCachingRetryE2ESpec as StreamingCachingRetryE2ETest
 
 main :: IO ()
 main =
@@ -110,14 +95,9 @@ main =
           , ReActTest.tests
           , AdvancedAgentsTest.tests
           , GuardrailTest.tests
-          , McpTest.tests
           , ObservabilityTest.tests
           , CallbackTest.tests
           , TokenBufferMemoryTest.tests
-          , OllamaProviderTest.tests
-          , OllamaConversionTest.tests
-          , OpenAIProviderTest.tests
-          , FixturesTest.tests
           , CalculatorToolTest.tests
           , FileSystemToolTest.tests
           , ShellToolTest.tests
@@ -135,16 +115,5 @@ main =
       , testGroup
           "Regression Tests"
           [ RegressionTest.tests
-          ]
-      , testGroup
-          "Live E2E Integration Tests (Ollama)"
-          [ OllamaChatE2ETest.tests
-          , OllamaStreamE2ETest.tests
-          , OllamaToolE2ETest.tests
-          , OllamaEmbedE2ETest.tests
-          , FullRagE2ETest.tests
-          , ReActE2ETest.tests
-          , StateGraphE2ETest.tests
-          , StreamingCachingRetryE2ETest.tests
           ]
       ]

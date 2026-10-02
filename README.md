@@ -6,7 +6,7 @@
 
 ---
 
-[![Hackage](https://img.shields.io/badge/hackage-0.0.5.0-blue.svg)](https://hackage.haskell.org/package/langchain-hs)
+[![Hackage](https://img.shields.io/badge/hackage-0.0.6.0-blue.svg)](https://hackage.haskell.org/package/langchain-hs)
 [![GHC](https://img.shields.io/badge/GHC-9.8%2B-purple.svg)](https://www.haskell.org/ghc/)
 [![Components](https://img.shields.io/badge/components-20%20verified-brightgreen.svg)](#-20-core-components--verified-targets)
 [![Providers](https://img.shields.io/badge/providers-Ollama%20%7C%20OpenAI%20%7C%20Gemini-orange.svg)](#-dual-provider-parity-ollama--openai)
@@ -24,18 +24,22 @@ Modern AI orchestration frameworks often struggle with race conditions, hidden s
    - `&>&` : Parallel fan-out (concurrent evaluation of independent branches).
    - `>>>#` : Fallback chains (automatic failover if the primary branch errors).
 2. **LangGraph in Haskell (`StateGraph`)**: Full cyclic state machine engine with pure monoidal state reducers (`StateReducer s`), thread-safe STM memory checkpointers (`TVar`), persistent SQLite checkpointers, Human-in-the-Loop (`HITL`) interrupts, and Time-Travel state replay.
+3. **Decoupled Modular Architecture**: The core framework is completely lightweight. AI providers (`Ollama`, `OpenAI`, `Gemini`) and protocol clients (`MCP`) live in dedicated, standalone sub-packages so you only pull in the dependencies you actually need.
 
 ---
-
 
 ### Monorepo Packages
 
 | Package | Directory | Version | Description |
 |---|---|---|---|
-| `langchain-hs-core` | [`langchain-hs-core/`](./langchain-hs-core) | `0.0.5.0` | Zero-dependency pure core: `RunnableTree`, `ChatModel`, `ContentBlock`, `Tool`, and `LangchainT`. |
-| `langchain-hs-graph` | [`langchain-hs-graph/`](./langchain-hs-graph) | `0.0.5.0` | Stateful graph engine: `StateGraph s m`, checkpointers, HITL, time-travel, and parallel nodes. |
-| `langchain-hs` | [`./`](./) | `0.0.5.0` | Production ecosystem: Ollama/OpenAI providers, Agents, MCP, Vector Stores, Chains, Observability. |
-| `examples` | [`examples/`](./examples) | - | 41 runnable executables covering all 20 components for Ollama and OpenAI. |
+| `langchain-hs-core` | [`langchain-hs-core/`](./langchain-hs-core) | `0.0.6.0` | Zero-dependency pure core: `RunnableTree`, `ChatModel`, `ContentBlock`, `Tool`, and `LangchainT`. |
+| `langchain-hs-graph` | [`langchain-hs-graph/`](./langchain-hs-graph) | `0.0.6.0` | Stateful graph engine: `StateGraph s m`, checkpointers, HITL, time-travel, and parallel nodes. |
+| `langchain-hs` | [`./`](./) | `0.0.6.0` | Core framework: Agents, Output Parsers, Vector Stores, Chains, Memory, Resilience, Observability. |
+| `langchain-hs-ollama` | [`langchain-hs-ollama/`](./langchain-hs-ollama) | `0.0.6.0` | Dedicated Ollama provider and embeddings integration via `ollama-haskell`. |
+| `langchain-hs-openai` | [`langchain-hs-openai/`](./langchain-hs-openai) | `0.0.6.0` | Dedicated OpenAI & OpenAI-compatible provider, streaming, and embeddings via `openai`. |
+| `langchain-hs-gemini` | [`langchain-hs-gemini/`](./langchain-hs-gemini) | `0.0.6.0` | Dedicated Google Gemini provider with function calling and SSE streaming. |
+| `langchain-hs-mcp` | [`langchain-hs-mcp/`](./langchain-hs-mcp) | `0.0.6.0` | Model Context Protocol client over stdio and HTTP JSON-RPC 2.0. |
+| `examples` | [`examples/`](./examples) | `0.1.0.0` | 34 runnable executables covering core components for Ollama and OpenAI. |
 | `site` | [`site/`](./site) | - | Hakyll documentation website with live provider toggle and component reference. |
 
 ---
@@ -104,11 +108,12 @@ main = do
 import Control.Monad.Except (runExceptT)
 import qualified Data.Text.IO as T
 import Langchain.Prelude
+import Langchain.Provider.Ollama
 
 main :: IO ()
 main = do
   -- Connect to local Ollama instance (DeepSeek, Llama 3, Gemma)
-  model <- newOllama "gemma3" defaultConfig
+  model <- newOllama "gemma3" defaultOllamaConfig
   
   let msg = [userMessage "Write a poem about functional programming"]
   res <- runExceptT $ invoke model msg Nothing
@@ -116,7 +121,7 @@ main = do
     Left err -> T.putStrLn $ errorMessage err
     Right m  -> T.putStrLn $ extractMessageText m
 ```
-*Run:* `stack run simpleollama`
+*Run:* `stack --stack-yaml examples/stack.yaml run simpleollama`
 
 #### OpenAI / OpenRouter (Cloud)
 ```haskell
@@ -124,12 +129,12 @@ main = do
 import Control.Monad.Except (runExceptT)
 import qualified Data.Text.IO as T
 import Langchain.Prelude
-import OpenAI.Common (defaultModelName, getOpenRouterModel)
+import Langchain.Provider.OpenAI
 
 main :: IO ()
 main = do
   -- Connect to OpenAI or OpenRouter using environment API key
-  model <- getOpenRouterModel defaultModelName
+  let model = newOpenAI "sk-..." "gpt-4o"
   
   let msg = [userMessage "Write a poem about functional programming"]
   res <- runExceptT $ invoke model msg Nothing
@@ -137,7 +142,7 @@ main = do
     Left err -> T.putStrLn $ errorMessage err
     Right m  -> T.putStrLn $ extractMessageText m
 ```
-*Run:* `stack run simpleopenai`
+*Run:* `stack --stack-yaml examples/stack.yaml run simpleopenai`
 
 ---
 
@@ -173,7 +178,7 @@ main = do
       result <- runGraph compiled initialState (Just checkpointer)
       print result
 ```
-*Run:* `stack run stategraphollama` or `stack run stategraphopenai`
+*Run:* `stack --stack-yaml examples/stack.yaml run stategraphollama` or `stack --stack-yaml examples/stack.yaml run stategraphopenai`
 
 ---
 
@@ -184,46 +189,59 @@ Connect Haskell agents to any external MCP server (e.g., Hackage doc search, SQL
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
 import Langchain.Prelude
+import Langchain.MCP.Client
 
 main :: IO ()
 main = do
   -- Connect to any MCP server via stdio JSON-RPC 2.0
-  client <- newStdioMcpClient "docker" ["run", "-i", "--rm", "mcp/hackage-doc"]
+  client <- newStdioMcpClient "hackage-doc" "docker" ["run", "-i", "--rm", "mcp/hackage-doc"]
   
   -- Discover available tools from server
   mcpTools <- listMcpTools client
-  let nativeTools = map mcpToolToLangchainTool mcpTools
+  let nativeTools = map (mcpToolToLangchainTool client) mcpTools
   
   -- Bind tools to your ReAct or Plan-and-Execute Agent
   let agent = createReActAgent model nativeTools defaultAgentConfig
   res <- runReActAgent agent "Search Hoogle for the signature of 'traverse'"
   print res
 ```
-*Run:* `stack run mcpollama` or `stack run mcpopenai`
+*Run:* `stack --stack-yaml examples/stack.yaml run mcpollama` or `stack --stack-yaml examples/stack.yaml run mcpopenai`
 
 ---
 
 ## Installation
 
+`langchain-hs` is modular. Install the core framework and only the provider packages you need:
+
 ### Stack
 Add to your `stack.yaml`:
 ```yaml
 extra-deps:
-  - langchain-hs-core-0.0.5.0
-  - langchain-hs-graph-0.0.5.0
-  - langchain-hs-0.0.5.0
+  - langchain-hs-core-0.0.6.0
+  - langchain-hs-graph-0.0.6.0
+  - langchain-hs-0.0.6.0
+  # Add providers as needed:
+  - langchain-hs-ollama-0.0.6.0
+  - langchain-hs-openai-0.0.6.0
+  - langchain-hs-gemini-0.0.6.0
+  - langchain-hs-mcp-0.0.6.0
 ```
 Then in your `.cabal` or `package.yaml`:
 ```yaml
 dependencies:
-  - langchain-hs        # full ecosystem (providers, agents, MCP, vector stores)
-  - langchain-hs-core   # pure core only (no HTTP dependencies)
-  - langchain-hs-graph  # graph engine only
+  - langchain-hs        # Core framework (agents, chains, vector stores, memory, parsers)
+  - langchain-hs-core   # Pure AST & types only (zero network dependencies)
+  - langchain-hs-graph  # StateGraph cyclic orchestration engine
+  # Add only the providers/clients you use:
+  - langchain-hs-ollama # Ollama provider
+  - langchain-hs-openai # OpenAI & OpenAI-compatible provider
+  - langchain-hs-gemini # Google Gemini provider
+  - langchain-hs-mcp    # Model Context Protocol client
 ```
 
 ### Cabal
 ```bash
-cabal install langchain-hs
+cabal install langchain-hs langchain-hs-ollama langchain-hs-openai
 ```
 
 ---

@@ -4,7 +4,7 @@ module Ollama.Monad (runApp) where
 
 import qualified Data.Text.IO as T
 import Langchain.Prelude
-import Langchain.Provider.Ollama (OllamaOptions (OllamaOptions))
+import Langchain.Provider.Ollama
 
 runApp :: IO ()
 runApp = do

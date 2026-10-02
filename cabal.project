@@ -2,6 +2,10 @@ packages:
     ./
     langchain-hs-core
     langchain-hs-graph
+    langchain-hs-mcp
+    langchain-hs-ollama
+    langchain-hs-openai
+    langchain-hs-gemini
     examples
 
 source-repository-package

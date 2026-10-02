@@ -6,8 +6,9 @@ import Control.Monad.IO.Class (liftIO)
 import Data.List (find)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
+import Langchain.MCP.Client
 import Langchain.Prelude
-import Langchain.Provider.Ollama (OllamaOptions (OllamaOptions))
+import Langchain.Provider.Ollama
 
 runApp :: IO ()
 runApp = do

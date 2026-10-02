@@ -47,7 +47,7 @@ import Langchain.Graph.StateGraph
   , runGraph
   )
 import Langchain.Prelude (invoke)
-import Langchain.Provider.Ollama (defaultConfig, newOllama)
+import Langchain.Provider.Ollama
 
 -- ---------------------------------------------------------------------------
 -- Shared blog post draft state

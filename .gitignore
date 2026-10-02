@@ -11,6 +11,7 @@ dist-newstyle/
 **/dist-newstyle/
 site/_site/
 site/_cache/
+_cache/
 site/dist-newstyle/
 
 # Misc

@@ -5,7 +5,9 @@ module Ollama.MapReduce (runApp) where
 import Control.Monad.Except (runExceptT)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text.IO as T
+import Langchain.Embeddings.Ollama (OllamaEmbeddings (..))
 import Langchain.Prelude
+import Langchain.Provider.Ollama
 
 runApp :: IO ()
 runApp = do

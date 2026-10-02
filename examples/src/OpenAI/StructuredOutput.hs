@@ -10,7 +10,7 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import GHC.Generics (Generic)
 import Langchain.Prelude
-import Langchain.Provider.OpenAI (OpenAIOptions (OpenAIOptions), ToSchema)
+import Langchain.Provider.OpenAI (OpenAIOptions (OpenAIOptions), ToSchema, withStructuredOutput)
 import OpenAI.Common (defaultModelName, getOpenRouterModel)
 
 data Person = Person

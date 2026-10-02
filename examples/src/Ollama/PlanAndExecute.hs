@@ -5,6 +5,7 @@ module Ollama.PlanAndExecute (runApp) where
 import Control.Monad.Except (runExceptT)
 import qualified Data.Text.IO as T
 import Langchain.Prelude
+import Langchain.Provider.Ollama
 
 runApp :: IO ()
 runApp = do
