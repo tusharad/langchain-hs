@@ -18,7 +18,7 @@ runApp = do
   writeFile "/tmp/budget.txt" "120 + 85"
   o <- getOpenRouterModel defaultModelName
   let tools = [readFileTool, calculatorTool]
-      agent = createReActAgent o tools
+      agent = defaultReActAgent o tools
       prompt =
         [ userMessage
             "Read the expression inside /tmp/budget.txt using read_file, then evaluate it using calculator."

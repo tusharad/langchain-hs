@@ -197,6 +197,7 @@ module Langchain.Prelude
 
     -- * Memory Systems
   , BaseMemory (..)
+  , SomeMemory (..)
   , WindowBufferMemory (..)
   , newWindowBufferMemory
   , TokenBufferMemory (..)
@@ -301,9 +302,20 @@ module Langchain.Prelude
     -- * Agents & Execution
   , ReActAgent (ReActAgent)
   , AgentStep (..)
-  , createReActAgent
+  , AgentTrace (..)
+  , ToolErrorStrategy (..)
+  , defaultReActAgent
+  , withMemory
+  , withoutMemory
+  , withSystemPrompt
+  , withMaxIterations
+  , withModelConfig
+  , withCallbackManager
+  , withStopCondition
+  , withToolErrorStrategy
   , reactStep
   , runReActAgent
+  , runReActAgentWithTrace
 
     -- * Standard Tools
   , shellTool

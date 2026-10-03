@@ -1,5 +1,6 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 {- |
@@ -14,6 +15,7 @@ Thread-safe, effect-polymorphic conversation memory interfaces using STM.
 -}
 module Langchain.Memory.Core
   ( BaseMemory (..)
+  , SomeMemory (..)
   , WindowBufferMemory (..)
   , newWindowBufferMemory
   , TokenBufferMemory (..)
@@ -44,37 +46,67 @@ class BaseMemory mem where
   -- | Retrieve current conversation messages
   messages ::
     (MonadIO m, MonadError LangchainError m) =>
+    -- | Memory instance
     mem ->
+    -- | Current conversation message history
     m [Message]
 
   -- | Add a user message to history
   addUserMessage ::
     (MonadIO m, MonadError LangchainError m) =>
+    -- | Memory instance
     mem ->
+    -- | User message text content
     Text ->
+    -- | Monadic action
     m ()
   addUserMessage mem txt = addMessage mem (userMessage txt)
 
   -- | Add an AI response message to history
   addAiMessage ::
     (MonadIO m, MonadError LangchainError m) =>
+    -- | Memory instance
     mem ->
+    -- | Assistant message text content
     Text ->
+    -- | Monadic action
     m ()
   addAiMessage mem txt = addMessage mem (assistantMessage txt)
 
   -- | Add a structured message to history
   addMessage ::
     (MonadIO m, MonadError LangchainError m) =>
+    -- | Memory instance
     mem ->
+    -- | Structured message to record
     Message ->
+    -- | Monadic action
     m ()
 
   -- | Reset memory to initial state
   clear ::
     (MonadIO m, MonadError LangchainError m) =>
+    -- | Memory instance
     mem ->
+    -- | Monadic action
     m ()
+
+-- | Existential wrapper for any 'BaseMemory' instance
+data SomeMemory where
+  SomeMemory :: (BaseMemory mem) => mem -> SomeMemory
+
+instance BaseMemory SomeMemory where
+  messages (SomeMemory m) = messages m
+  addMessage (SomeMemory m) = addMessage m
+  clear (SomeMemory m) = clear m
+  addUserMessage (SomeMemory m) = addUserMessage m
+  addAiMessage (SomeMemory m) = addAiMessage m
+
+-- | No-op BaseMemory instance for unit
+instance BaseMemory () where
+  messages () = pure []
+  addMessage () _ = pure ()
+  clear () = pure ()
 
 -- | Sliding window memory backed by thread-safe STM TVar
 data WindowBufferMemory = WindowBufferMemory
@@ -90,7 +122,14 @@ instance Eq WindowBufferMemory where
     sz1 == sz2 && tv1 == tv2
 
 -- | Construct a thread-safe WindowBufferMemory in MonadIO
-newWindowBufferMemory :: MonadIO m => Int -> [Message] -> m WindowBufferMemory
+newWindowBufferMemory ::
+  (MonadIO m) =>
+  -- | Maximum message window size
+  Int ->
+  -- | Initial messages to seed the window
+  [Message] ->
+  -- | Initialized thread-safe WindowBufferMemory
+  m WindowBufferMemory
 newWindowBufferMemory sz initMsgs = liftIO $ do
   tv <- newTVarIO initMsgs
   pure $ WindowBufferMemory sz tv
@@ -127,13 +166,24 @@ instance Eq TokenBufferMemory where
     t1 == t2 && tv1 == tv2
 
 -- | Construct a new TokenBufferMemory
-newTokenBufferMemory :: MonadIO m => Int -> [Message] -> m TokenBufferMemory
+newTokenBufferMemory ::
+  (MonadIO m) =>
+  -- | Maximum allowed tokens in history
+  Int ->
+  -- | Initial messages to seed the buffer
+  [Message] ->
+  -- | Initialized thread-safe TokenBufferMemory
+  m TokenBufferMemory
 newTokenBufferMemory maxT initMsgs = liftIO $ do
   tv <- newTVarIO initMsgs
   pure $ TokenBufferMemory maxT tv
 
 -- | Approximate token count: 4 characters ≈ 1 token
-countTokens :: [Message] -> Int
+countTokens ::
+  -- | Messages to count tokens for
+  [Message] ->
+  -- | Approximate total token count
+  Int
 countTokens = sum . map (\m -> ceiling (fromIntegral (T.length (extractMessageText m)) / (4.0 :: Double)))
 
 instance BaseMemory TokenBufferMemory where
@@ -165,9 +215,19 @@ instance BaseMemory TokenBufferMemory where
     atomically $ writeTVar tv [systemMessage "You are a helpful AI assistant"]
 
 -- | Pure helper to trim messages to last N
-trimMessages :: Int -> [Message] -> [Message]
+trimMessages ::
+  -- | Number of most recent messages to keep
+  Int ->
+  -- | Input message list
+  [Message] ->
+  -- | Trimmed message list
+  [Message]
 trimMessages n msgs = drop (max 0 (length msgs - n)) msgs
 
 -- | Pure helper to construct initial system message history
-initialMessages :: Text -> [Message]
+initialMessages ::
+  -- | System prompt text
+  Text ->
+  -- | Initial message history with system message
+  [Message]
 initialMessages sysPrompt = [systemMessage sysPrompt]

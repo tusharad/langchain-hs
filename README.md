@@ -201,9 +201,11 @@ main = do
   let nativeTools = map (mcpToolToLangchainTool client) mcpTools
   
   -- Bind tools to your ReAct or Plan-and-Execute Agent
-  let agent = createReActAgent model nativeTools defaultAgentConfig
-  res <- runReActAgent agent "Search Hoogle for the signature of 'traverse'"
-  print res
+  let agent = defaultReActAgent model nativeTools
+  res <- runExceptT $ runReActAgent agent [userMessage "Search Hoogle for the signature of 'traverse'"]
+  case res of
+    Left err  -> putStrLn ("Error: " ++ show err)
+    Right ans -> putStrLn ("Answer:\n" ++ T.unpack (extractMessageText ans))
 ```
 *Run:* `stack --stack-yaml examples/stack.yaml run mcpollama` or `stack --stack-yaml examples/stack.yaml run mcpopenai`
 

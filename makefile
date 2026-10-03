@@ -18,11 +18,11 @@ docs:
 
 ## Build Hakyll documentation website
 site-build:
-	cd site && cabal run site -- build
+	cd site && stack run site -- build
 
 ## Run Hakyll preview server with live reload
 site-watch:
-	cd site && cabal run site -- watch
+	cd site && stack run site -- watch
 
 ## Clean Hakyll build artifacts
 site-clean:

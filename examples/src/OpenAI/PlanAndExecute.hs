@@ -11,7 +11,7 @@ runApp :: IO ()
 runApp = do
   o <- getOpenRouterModel defaultModelName
   let tools = [shellTool]
-      executor = createReActAgent o tools
+      executor = defaultReActAgent o tools
       agent = newPlanAndExecuteAgent o executor Nothing
       goal =
         "Use shell commands to check the operating system name (uname -s) and architecture (uname -m), then summarize the host platform."

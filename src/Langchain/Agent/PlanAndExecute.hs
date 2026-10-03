@@ -42,7 +42,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import GHC.Generics (Generic)
 
-import Langchain.Agent.ReAct (ReActAgent, createReActAgent, runReActAgent)
+import Langchain.Agent.ReAct (ReActAgent, defaultReActAgent, runReActAgent)
 import Langchain.Core.Error (LangchainError, agentError)
 import Langchain.Core.Model
   ( ChatModel (..)
@@ -96,12 +96,18 @@ instance FromJSON Plan where
 
 -- | Abstraction for executing individual steps of a plan (agents, models with tools, or custom runners)
 class StepExecutor e m where
-  executeStep :: e -> Text -> m Text
+  executeStep ::
+    -- | Step executor instance (agent, model with tools, or custom runner)
+    e ->
+    -- | Step instruction prompt to execute
+    Text ->
+    -- | Textual result produced by executing the step
+    m Text
 
 instance
   {-# OVERLAPPING #-}
-  (m ~ n, ToolBinder model m, MonadIO n, MonadError LangchainError n) =>
-  StepExecutor (ReActAgent model m) n
+  (ToolBinder model n, MonadIO n, MonadError LangchainError n) =>
+  StepExecutor (ReActAgent model n) n
   where
   executeStep agent prompt = do
     msg <- runReActAgent agent [userMessage prompt]
@@ -109,12 +115,11 @@ instance
 
 instance
   {-# OVERLAPPING #-}
-  (m ~ n, ToolBinder model m, MonadIO n, MonadError LangchainError n) =>
-  StepExecutor (model, [Tool m]) n
+  (ToolBinder model n, MonadIO n, MonadError LangchainError n) =>
+  StepExecutor (model, [Tool n]) n
   where
-  executeStep (model, tools) prompt = do
-    let agent = createReActAgent model tools
-    executeStep agent prompt
+  executeStep (model, tools) =
+    executeStep (defaultReActAgent model tools)
 
 instance {-# OVERLAPPING #-} (m ~ n) => StepExecutor (Text -> m Text) n where
   executeStep = id
@@ -133,27 +138,39 @@ data PlanAndExecuteAgent planner executor = PlanAndExecuteAgent
 
 -- | Construct a new PlanAndExecuteAgent with any StepExecutor (agent, function, or model)
 newPlanAndExecuteAgent ::
+  -- | LLM model responsible for creating the execution plan
   planner ->
+  -- | StepExecutor instance used to carry out each plan step
   executor ->
+  -- | Optional custom prompt template for the planner
   Maybe Text ->
+  -- | Configured PlanAndExecuteAgent instance
   PlanAndExecuteAgent planner executor
 newPlanAndExecuteAgent = PlanAndExecuteAgent
 
 -- | Construct a PlanAndExecuteAgent with tools using a ReActAgent as the step executor
 newPlanAndExecuteAgentWithTools ::
+  -- | LLM model responsible for creating the execution plan
   planner ->
+  -- | LLM model for the ReAct step executor
   model ->
+  -- | Available tools for the ReAct step executor
   [Tool m] ->
+  -- | Optional custom prompt template for the planner
   Maybe Text ->
+  -- | Configured PlanAndExecuteAgent with tool-enabled ReAct executor
   PlanAndExecuteAgent planner (ReActAgent model m)
 newPlanAndExecuteAgentWithTools planner model tools =
-  PlanAndExecuteAgent planner (createReActAgent model tools)
+  PlanAndExecuteAgent planner (defaultReActAgent model tools)
 
 -- | Execute a goal using the Plan-and-Execute workflow with structured JSON planning
 runPlanAndExecute ::
   (ChatModel planner, StepExecutor executor m, MonadIO m, MonadError LangchainError m) =>
+  -- | Configured PlanAndExecuteAgent instance
   PlanAndExecuteAgent planner executor ->
+  -- | High-level user goal to plan and solve
   Text ->
+  -- | Final synthesized answer solving the user goal
   m Text
 runPlanAndExecute PlanAndExecuteAgent {..} userGoal = do
   let planPrompt = case planPromptTemplate of
