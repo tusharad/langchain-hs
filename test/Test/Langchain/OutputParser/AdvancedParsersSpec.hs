@@ -77,4 +77,5 @@ tests =
                 Just (Object eObj) -> KM.lookup "type" eObj @?= Just (String "array")
                 _ -> assertFailure "Expected companyEmployees to be array"
             _ -> assertFailure "Expected properties in schema"
+          _ -> assertFailure "Expected Object type"
     ]
