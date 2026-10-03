@@ -4,7 +4,9 @@ module Ollama.RetrievalQA (runApp) where
 
 import Control.Monad.Except (runExceptT)
 import qualified Data.Text.IO as T
+import Langchain.Embeddings.Ollama (OllamaEmbeddings (..))
 import Langchain.Prelude
+import Langchain.Provider.Ollama
 
 runApp :: IO ()
 runApp = do

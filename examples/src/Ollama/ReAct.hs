@@ -9,6 +9,7 @@ module Ollama.ReAct (runApp) where
 import Control.Monad.Except (runExceptT)
 import qualified Data.Text.IO as T
 import Langchain.Prelude
+import Langchain.Provider.Ollama
 import Langchain.Tool.Calculator (calculatorTool)
 import Langchain.Tool.FileSystem (readFileTool)
 

@@ -8,7 +8,13 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 
 import Langchain.Prelude
-import Langchain.Provider.Ollama (OllamaOptions (OllamaOptions))
+import Langchain.Provider.Ollama
+  ( OllamaOptions (OllamaOptions)
+  , chatRequestFor
+  , defaultConfig
+  , newOllama
+  , withTools
+  )
 import Langchain.Tool.Calculator (calculatorTool)
 
 inputPrompt :: T.Text

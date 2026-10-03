@@ -1,7 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Test.Langchain.Agent.ReAct (tests) where
@@ -9,7 +8,6 @@ module Test.Langchain.Agent.ReAct (tests) where
 import Control.Monad.Except (ExceptT, runExceptT)
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson (Value (..), object, (.=))
-import qualified Data.Aeson.KeyMap as KeyMap
 import Data.IORef
 import qualified Data.Text as T
 import Test.Tasty
@@ -19,9 +17,6 @@ import Langchain.Agent.ReAct
 import Langchain.Core.Error (LangchainError)
 import Langchain.Core.Model
 import Langchain.Core.Tool (Tool)
-import Langchain.Provider.Gemini (Gemini)
-import Langchain.Provider.Ollama (ChatRequest (..), Ollama, OllamaOptions (..), chatTools)
-import Langchain.Provider.OpenAI (OpenAI, OpenAIOptions (..))
 import Langchain.Tool.Binding (ToolBinder (..))
 import Langchain.Tool.Calculator (calculatorTool)
 import Test.Langchain.Provider.Mock (newMockModel)
@@ -147,24 +142,4 @@ tests =
           Right _ -> do
             captured <- readIORef ref
             captured @?= Just (object ["tool_count" .= (1 :: Int)])
-    , testCase "ToolBinder Ollama attaches tools to ChatRequest config" $ do
-        let tools = [calculatorTool :: Tool IO]
-            mbCfg = bindToolsConfig @Ollama tools Nothing
-        case mbCfg of
-          Nothing -> assertFailure "Expected Just ChatRequest"
-          Just (OllamaOptions req) -> case chatTools req of
-            Nothing -> assertFailure "Expected Just tools in ChatRequest"
-            Just ts -> length ts @?= 1
-    , testCase "ToolBinder OpenAI attaches tools to JSON config" $ do
-        let tools = [calculatorTool :: Tool IO]
-            mbCfg = bindToolsConfig @OpenAI tools Nothing
-        case mbCfg of
-          Just (OpenAIOptions (Object obj)) -> assertBool "Has 'tools' key" (KeyMap.member "tools" obj)
-          _ -> assertFailure "Expected Just Object with tools"
-    , testCase "ToolBinder Gemini attaches tools to JSON config" $ do
-        let tools = [calculatorTool :: Tool IO]
-            mbCfg = bindToolsConfig @Gemini tools Nothing
-        case mbCfg of
-          Just (Object obj) -> assertBool "Has 'tools' key" (KeyMap.member "tools" obj)
-          _ -> assertFailure "Expected Just Object with tools"
     ]

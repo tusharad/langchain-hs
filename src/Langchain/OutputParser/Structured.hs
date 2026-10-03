@@ -6,7 +6,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 
 {- |
@@ -26,20 +25,15 @@ module Langchain.OutputParser.Structured
   , TypeSchema (..)
   , GRecordSchema (..)
   , genericJsonSchema
-  , toOllamaSchema
-  , fromOllamaSchema
   , structuredInvoke
   , structuredInvokeWithRetries
   , extractJsonFromMarkdown
-  , withStructuredOutput
-  , SupportsStructuredOutput (..)
   ) where
 
 import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.IO.Class (MonadIO)
 import Data.Aeson (FromJSON, Value (..), decode, encode, object, (.=))
 import qualified Data.Aeson.Key as Key
-import qualified Data.Aeson.KeyMap as KM
 import qualified Data.ByteString.Lazy.Char8 as LBSC
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Kind (Type)
@@ -50,7 +44,6 @@ import Data.Text (Text)
 import qualified Data.Text as TS
 import qualified Data.Text.Encoding as TE
 import Data.Time (Day, UTCTime)
-import qualified Data.Vector as V
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.Generics
 
@@ -62,23 +55,6 @@ import Langchain.Core.Model
   , systemMessage
   , userMessage
   )
-import qualified Ollama.Types.Format.SchemaBuilder as OSB
-import qualified Ollama.Types.Format.SchemaBuilder as SB
-import qualified Ollama.Types.Format.SchemaDerive as OSD
-
-class SupportsStructuredOutput config where
-  setSchemaFormat ::
-    OSB.Schema ->
-    config ->
-    config
-
-withStructuredOutput ::
-  forall a config.
-  (OSD.ToSchema a, SupportsStructuredOutput config) =>
-  config ->
-  config
-withStructuredOutput =
-  setSchemaFormat (OSD.toSchema @a)
 
 -- | Typeclass for types that declare a JSON Schema and structured parser
 class (FromJSON a) => StructuredOutput a where
@@ -217,65 +193,6 @@ instance {-# OVERLAPPABLE #-} (TypeSchema a) => TypeSchema [a] where
       , "items" .= typeJsonSchema (Proxy :: Proxy a)
       ]
 
--- | Convert a Langchain JSON Schema Value into an ollama-haskell Schema
-toOllamaSchema :: Value -> Maybe SB.Schema
-toOllamaSchema (Object obj) = do
-  propsVal <- KM.lookup "properties" obj
-  propsMap <- case propsVal of
-    Object pObj ->
-      Just $
-        Map.fromList
-          [ (Key.toText k, SB.Property jt)
-          | (k, v) <- KM.toList pObj
-          , Just jt <- [valueToJsonType v]
-          ]
-    _ -> Nothing
-  let reqs = case KM.lookup "required" obj of
-        Just (Array arr) -> [t | String t <- V.toList arr]
-        _ -> []
-  pure $ SB.Schema propsMap reqs
-  where
-    valueToJsonType :: Value -> Maybe SB.JsonType
-    valueToJsonType (Object vObj) = case KM.lookup "type" vObj of
-      Just (String "string") -> Just SB.JString
-      Just (String "integer") -> Just SB.JInteger
-      Just (String "number") -> Just SB.JNumber
-      Just (String "boolean") -> Just SB.JBoolean
-      Just (String "null") -> Just SB.JNull
-      Just (String "array") -> do
-        itemVal <- KM.lookup "items" vObj
-        itemType <- valueToJsonType itemVal
-        pure $ SB.JArray itemType
-      Just (String "object") -> do
-        subSchema <- toOllamaSchema (Object vObj)
-        pure $ SB.JObject subSchema
-      _ -> Nothing
-    valueToJsonType _ = Nothing
-toOllamaSchema _ = Nothing
-
--- | Convert an ollama-haskell Schema into a Langchain JSON Schema Value
-fromOllamaSchema :: SB.Schema -> Value
-fromOllamaSchema (SB.Schema props reqs) =
-  object
-    [ "type" .= ("object" :: Text)
-    , "properties"
-        .= object [Key.fromText k .= jsonTypeToValue jt | (k, SB.Property jt) <- Map.toList props]
-    , "required" .= reqs
-    ]
-  where
-    jsonTypeToValue :: SB.JsonType -> Value
-    jsonTypeToValue SB.JString = object ["type" .= ("string" :: Text)]
-    jsonTypeToValue SB.JInteger = object ["type" .= ("integer" :: Text)]
-    jsonTypeToValue SB.JNumber = object ["type" .= ("number" :: Text)]
-    jsonTypeToValue SB.JBoolean = object ["type" .= ("boolean" :: Text)]
-    jsonTypeToValue SB.JNull = object ["type" .= ("null" :: Text)]
-    jsonTypeToValue (SB.JArray jt) =
-      object
-        [ "type" .= ("array" :: Text)
-        , "items" .= jsonTypeToValue jt
-        ]
-    jsonTypeToValue (SB.JObject subSchema) = fromOllamaSchema subSchema
-
 {- | Invoke a 'ChatModel' and extract a typed 'StructuredOutput' value.
 
 This function injects the JSON Schema into a system prompt and parses the LLM's response,
@@ -283,14 +200,8 @@ retrying up to 3 times with error feedback if parsing fails.
 
 __Provider-Specific Grammar Enforcement:__
 Note that 'structuredInvoke' relies on prompt-based instructions and schema validation across
-generic 'ChatModel' instances. If you are using Ollama and want strict token-level schema
-enforcement (where Ollama guarantees valid JSON conforming to the schema at generation time),
-use 'withStructuredOutput' or set 'chatFormat' on 'ChatRequest' directly:
-
-@
-import Langchain.Provider.Ollama (ChatRequest(..), SchemaFormat(..))
-let req = def { chatFormat = Just (SchemaFormat (toOllamaSchema (outputSchema (Proxy :: Proxy MyType)))) }
-@
+generic 'ChatModel' instances. For strict token-level schema enforcement with Ollama, use
+'withStructuredOutput' from @langchain-hs-ollama@.
 -}
 structuredInvoke ::
   forall a model m.

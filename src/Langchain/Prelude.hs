@@ -9,9 +9,16 @@ License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
 
-Exports all core data types, typeclasses, models, vector stores, memory stores,
-graph orchestration primitives, advanced multi-agent patterns, guardrails, MCP client,
-observability, structured logging, circuit breakers, pipeline DSLs, and runtime execution monads.
+Exports all core data types, typeclasses, vector stores, memory stores,
+graph orchestration primitives, advanced multi-agent patterns, guardrails,
+observability, structured logging, circuit breakers, and pipeline DSLs.
+
+Provider-specific modules live in separate packages:
+
+  * @langchain-hs-ollama@ — 'Langchain.Provider.Ollama', 'Langchain.Embeddings.Ollama'
+  * @langchain-hs-openai@ — 'Langchain.Provider.OpenAI', 'Langchain.Embeddings.OpenAI'
+  * @langchain-hs-gemini@ — 'Langchain.Provider.Gemini'
+  * @langchain-hs-mcp@    — 'Langchain.MCP.Client'
 -}
 module Langchain.Prelude
   ( -- * Core Monad & Errors
@@ -143,17 +150,6 @@ module Langchain.Prelude
   , composeGuardrails
   , withGuardrails
 
-    -- * Model Context Protocol (MCP) Client
-  , McpTransport (..)
-  , McpToolInfo (..)
-  , McpResource (..)
-  , McpClient (..)
-  , newStdioMcpClient
-  , newHttpMcpClient
-  , listMcpTools
-  , callMcpTool
-  , mcpToolToLangchainTool
-
     -- * Telemetry, Logging & OpenTelemetry
   , LogLevel (..)
   , LogEvent (..)
@@ -224,14 +220,8 @@ module Langchain.Prelude
   , VectorStoreRetriever (..)
   , retrieveWithCallbacks
 
-    -- * Embeddings
+    -- * Embeddings (provider-agnostic typeclass)
   , Embeddings (..)
-  , OllamaEmbeddings (..)
-  , OpenAIEmbeddings (OpenAIEmbeddings)
-  , defaultOpenAIEmbeddings
-  , textEmbedding3Small
-  , textEmbedding3Large
-  , textEmbeddingAda
 
     -- * Document Loaders
   , Document (..)
@@ -281,6 +271,7 @@ module Langchain.Prelude
   , SQLiteCache (..)
   , newSQLiteCache
   , CachedModel (..)
+  , CacheableChatModel (..)
   , withCaching
   , RetryPolicy (RetryPolicy)
   , defaultRetryPolicy
@@ -304,13 +295,8 @@ module Langchain.Prelude
   , NumberSeparatedList (..)
   , StructuredOutput (..)
   , TypeSchema (..)
-  , toOllamaSchema
-  , fromOllamaSchema
   , structuredInvoke
   , structuredInvokeWithRetries
-  , withJsonFormat
-  , withSchemaFormat
-  , withStructuredOutput
 
     -- * Agents & Execution
   , ReActAgent (ReActAgent)
@@ -335,27 +321,6 @@ module Langchain.Prelude
   , searchHybrid
   , searchHybridWithScores
   , reciprocalRankFusion
-
-    -- * Providers
-  , Ollama (..)
-  , OllamaClientConfig (..)
-  , defaultConfig
-  , newOllama
-  , newOllamaWithClient
-  , ModelOptions (..)
-  , defaultOptions
-  , withOptions
-  , chatRequestFor
-  , resolveChatRequest
-  , withTools
-  , toOllamaTool
-  , toOllamaTools
-  , OllamaWithTools (..)
-  , bindTools
-  , OpenAI
-  , newOpenAI
-  , Gemini
-  , newGemini
   ) where
 
 import Langchain.Agent.PlanAndExecute
@@ -375,21 +340,12 @@ import Langchain.DocumentLoader.Csv
 import Langchain.DocumentLoader.DirectoryLoader
 import Langchain.DocumentLoader.FileLoader
 import Langchain.Embeddings.Core
-import Langchain.Embeddings.Ollama (OllamaEmbeddings (..))
-import Langchain.Embeddings.OpenAI
-  ( OpenAIEmbeddings (OpenAIEmbeddings)
-  , defaultOpenAIEmbeddings
-  , textEmbedding3Large
-  , textEmbedding3Small
-  , textEmbeddingAda
-  )
 import Langchain.Graph.Checkpointer
 import Langchain.Graph.HITL
 import Langchain.Graph.MultiAgent
 import Langchain.Graph.Parallel
 import Langchain.Graph.StateGraph
 import Langchain.Guardrail.Core
-import Langchain.MCP.Client
 import Langchain.Memory.Core
 import Langchain.Memory.Entity
 import Langchain.Memory.Summary
@@ -398,27 +354,6 @@ import Langchain.OutputParser.Core
 import Langchain.OutputParser.Structured
 import Langchain.PromptTemplate.FewShot
 import Langchain.PromptTemplate.Prompt
-import Langchain.Provider.Gemini (Gemini, newGemini)
-import Langchain.Provider.Ollama
-  ( ModelOptions (..)
-  , Ollama (..)
-  , OllamaClientConfig (..)
-  , OllamaWithTools (..)
-  , bindTools
-  , chatRequestFor
-  , defaultConfig
-  , defaultOptions
-  , newOllama
-  , newOllamaWithClient
-  , resolveChatRequest
-  , toOllamaTool
-  , toOllamaTools
-  , withJsonFormat
-  , withOptions
-  , withSchemaFormat
-  , withTools
-  )
-import Langchain.Provider.OpenAI (OpenAI, newOpenAI)
 import Langchain.Resilience.CircuitBreaker
 import Langchain.Resilience.Retry
 import Langchain.Retriever.BM25

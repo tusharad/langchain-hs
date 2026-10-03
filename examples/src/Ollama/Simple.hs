@@ -8,7 +8,7 @@ import qualified Data.Text.IO as T
 import qualified Data.Text.Lazy as T
 import Langchain.Prelude
 import Langchain.PromptTemplate.Prompt
-import Langchain.Provider.Ollama (OllamaOptions (OllamaOptions))
+import Langchain.Provider.Ollama
 
 runPromptTemplateExample :: IO ()
 runPromptTemplateExample = do

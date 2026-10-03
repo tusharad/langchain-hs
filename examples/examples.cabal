@@ -83,6 +83,9 @@ library
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text
@@ -106,6 +109,9 @@ executable guardrailollama
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text
@@ -129,6 +135,9 @@ executable guardrailopenai
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text
@@ -152,6 +161,9 @@ executable hitlollama
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text
@@ -175,6 +187,9 @@ executable hitlopenai
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text
@@ -198,6 +213,9 @@ executable jsonollama
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text
@@ -221,6 +239,9 @@ executable jsonopenai
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text
@@ -244,6 +265,9 @@ executable mapreduceollama
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text
@@ -267,6 +291,9 @@ executable mapreduceopenai
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text
@@ -290,6 +317,9 @@ executable mcpollama
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text
@@ -313,6 +343,9 @@ executable mcpopenai
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text
@@ -336,6 +369,9 @@ executable memoryollama
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text
@@ -359,6 +395,9 @@ executable memoryopenai
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text
@@ -382,6 +421,9 @@ executable monadollama
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text
@@ -405,6 +447,9 @@ executable monadopenai
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text
@@ -428,6 +473,9 @@ executable multiagentollama
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text
@@ -451,6 +499,9 @@ executable multiagentopenai
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text
@@ -474,6 +525,9 @@ executable observabilityollama
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text
@@ -497,6 +551,9 @@ executable observabilityopenai
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text
@@ -520,6 +577,9 @@ executable planandexecuteollama
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text
@@ -543,6 +603,9 @@ executable planandexecuteopenai
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text
@@ -566,6 +629,9 @@ executable prompttemplate
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text
@@ -589,6 +655,9 @@ executable ragollama
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text
@@ -612,6 +681,9 @@ executable ragopenai
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text
@@ -635,6 +707,9 @@ executable reactollama
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text
@@ -658,6 +733,9 @@ executable reactopenai
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text
@@ -681,6 +759,9 @@ executable resilienceollama
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text
@@ -704,6 +785,9 @@ executable resilienceopenai
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text
@@ -727,6 +811,9 @@ executable retrievalqaollama
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text
@@ -750,6 +837,9 @@ executable retrievalqaopenai
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text
@@ -773,6 +863,9 @@ executable retrieverollama
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text
@@ -796,6 +889,9 @@ executable retrieveropenai
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text
@@ -819,6 +915,9 @@ executable runnableollama
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text
@@ -842,6 +941,9 @@ executable runnableopenai
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text
@@ -865,6 +967,9 @@ executable simpleollama
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text
@@ -888,6 +993,9 @@ executable simpleopenai
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text
@@ -911,6 +1019,9 @@ executable stategraphollama
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text
@@ -934,6 +1045,9 @@ executable stategraphopenai
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text
@@ -957,6 +1071,9 @@ executable streamollama
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text
@@ -980,6 +1097,9 @@ executable streamopenai
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text
@@ -1003,6 +1123,9 @@ executable toolollama
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text
@@ -1026,6 +1149,9 @@ executable toolopenai
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text
@@ -1050,6 +1176,9 @@ test-suite examples-test
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
     , mtl
     , resourcet
     , text

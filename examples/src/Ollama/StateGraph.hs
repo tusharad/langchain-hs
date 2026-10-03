@@ -41,7 +41,7 @@ import Langchain.Core.Model
 import Langchain.DocumentLoader.Core (BaseLoader (..), Document (..))
 import Langchain.DocumentLoader.FileLoader (FileLoader (..))
 import Langchain.Graph.StateGraph
-import Langchain.Provider.Ollama (defaultConfig, newOllama)
+import Langchain.Provider.Ollama
 import Langchain.Retriever.BM25 (bm25Search, newBM25Index)
 import Langchain.TextSplitter.Character
   ( CharacterSplitterOps (..)

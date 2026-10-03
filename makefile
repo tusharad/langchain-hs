@@ -2,15 +2,15 @@
 
 ## Run HLint linter
 lint:
-	hlint src/ test/ langchain-hs-core/ langchain-hs-graph examples/
+	hlint src/ test/ langchain-hs-core/ langchain-hs-graph/ langchain-hs-mcp/ langchain-hs-ollama/ langchain-hs-openai/ langchain-hs-gemini/ examples/
 
 ## Format source code with Fourmolu
 format:
-	fourmolu -i src/ test/ langchain-hs-core/ langchain-hs-graph examples/
+	fourmolu -i src/ test/ langchain-hs-core/ langchain-hs-graph/ langchain-hs-mcp/ langchain-hs-ollama/ langchain-hs-openai/ langchain-hs-gemini/ examples/
 
 ## Check code formatting with Fourmolu
 format-check:
-	fourmolu -m check src/ test/ langchain-hs-core/ langchain-hs-graph examples/
+	fourmolu -m check src/ test/ langchain-hs-core/ langchain-hs-graph/ langchain-hs-mcp/ langchain-hs-ollama/ langchain-hs-openai/ langchain-hs-gemini/ examples/
 
 ## Build Haddock documentation
 docs:

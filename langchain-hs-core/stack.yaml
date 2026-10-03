@@ -1,0 +1,4 @@
+resolver: nightly-2026-09-12
+packages:
+  - .
+# No extra-deps needed — langchain-hs-core has only Hackage dependencies.

@@ -50,6 +50,7 @@ import qualified Data.Text.IO as T
 import qualified Data.Text.Lazy as TL
 
 import Langchain.Prelude
+import Langchain.Provider.Ollama
 import Langchain.Tool.Calculator (calculatorTool)
 
 -- ---------------------------------------------------------------------------

@@ -6,13 +6,20 @@ category: Core Concepts
 
 ## Monorepo Architecture
 
-`langchain-hs` is split into three independent layers to guarantee modularity and zero unnecessary runtime dependencies:
+`langchain-hs` is split into decoupled, modular packages so applications remain lightweight and only depend on the providers and protocols they actually invoke:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
+│  Provider & Protocol Satellite Packages                     │
+│  langchain-hs-ollama · langchain-hs-openai                  │
+│  langchain-hs-gemini · langchain-hs-mcp                     │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ depends on
+┌──────────────────────────────▼──────────────────────────────┐
 │                       langchain-hs                          │
-│  Providers (Ollama, OpenAI, Gemini) · MCP Client · RAG     │
-│  Chains · Vector Stores · Agents · OpenTelemetry Observability│
+│  Core Framework: Agents (ReAct, Plan&Execute) · Chains      │
+│  Vector Stores (InMemory, SQLiteVec) · Output Parsers       │
+│  Resilience (CircuitBreaker, Retry) · Observability (OTel)  │
 └──────────────────────────────┬──────────────────────────────┘
                                │ depends on
 ┌──────────────────────────────▼──────────────────────────────┐

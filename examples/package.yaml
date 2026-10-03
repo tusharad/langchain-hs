@@ -24,6 +24,9 @@ dependencies:
 - langchain-hs
 - langchain-hs-core
 - langchain-hs-graph
+- langchain-hs-ollama
+- langchain-hs-openai
+- langchain-hs-mcp
 - text
 - aeson
 - bytestring

@@ -38,7 +38,7 @@ import Data.Aeson (ToJSON, Value, decode, encode, object, (.=))
 import qualified Data.ByteString.Lazy as LBS
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
-import Data.Maybe (fromMaybe)
+
 import Data.Text (Text)
 import qualified Data.Text as TS
 import qualified Data.Text.Encoding as TE
@@ -47,13 +47,7 @@ import Langchain.Core.Model
   ( ChatModel (..)
   , Message (..)
   )
-import Langchain.Provider.Gemini (Gemini (..))
-import Langchain.Provider.Ollama (ModelName (..), Ollama (..), OllamaOptions (..))
-import Langchain.Provider.OpenAI (OpenAI (..))
 import Langchain.Tool.Binding (ToolBinder (..))
-import qualified Ollama.API.Chat as OllamaChat
-import Ollama.Client (OllamaClient (..))
-import Ollama.Client.Config (OllamaClientConfig (..))
 
 -- | Effect-polymorphic cache backend typeclass
 class CacheBackend cb where
@@ -160,63 +154,16 @@ toJsonText = TE.decodeUtf8 . LBS.toStrict . encode
 
 Implementations should include every model property and effective invocation
 parameter that can affect a response, but must not include credentials.
+
+Instances for the built-in providers live in their respective sub-packages:
+
+  * @langchain-hs-openai@: @CacheableChatModel OpenAI@
+  * @langchain-hs-ollama@: @CacheableChatModel Ollama@
+  * @langchain-hs-gemini@: @CacheableChatModel Gemini@
 -}
 class (ChatModel model) => CacheableChatModel model where
   -- | Return the JSON identity used to distinguish this model's cache entries.
   cacheModelIdentity :: model -> Maybe (ModelConfig model) -> Value
-
-instance CacheableChatModel OpenAI where
-  cacheModelIdentity OpenAI {..} _ =
-    object
-      [ "provider" .= ("openai" :: Text)
-      , "model" .= model
-      , "baseUrl" .= baseUrl
-      , "temperature" .= temperature
-      ]
-
-instance CacheableChatModel Ollama where
-  cacheModelIdentity o config =
-    let cfg = unOptions <$> config
-        effectiveOptions = cfg >>= OllamaChat.chatOptions
-        effectiveKeepAlive = cfg >>= OllamaChat.chatKeepAlive
-        effectiveModel = case cfg of
-          Just r ->
-            let m = unModelName (OllamaChat.chatModel r)
-             in if TS.null m then ollamaModelName o else m
-          Nothing -> ollamaModelName o
-     in object
-          [ "provider" .= ("ollama" :: Text)
-          , "baseUrl" .= configBaseUrl (clientConfig (client o))
-          , "model" .= effectiveModel
-          , "config"
-              .= object
-                [ "tools" .= (OllamaChat.chatTools <$> cfg)
-                , "format" .= (OllamaChat.chatFormat <$> cfg)
-                , "options" .= effectiveOptions
-                , "keep_alive" .= effectiveKeepAlive
-                , "think" .= (OllamaChat.chatThink <$> cfg)
-                ]
-          ]
-
-instance CacheableChatModel Gemini where
-  cacheModelIdentity (Gemini _ modelName baseUrl) config
-    | effectiveBaseUrl == defaultGeminiBaseUrl = defaultIdentity
-    | otherwise =
-        object $
-          [ "provider" .= ("gemini" :: Text)
-          , "model" .= modelName
-          , "baseUrl" .= effectiveBaseUrl
-          ]
-            <> maybe [] (pure . ("config" .=)) config
-    where
-      effectiveBaseUrl = TS.dropWhileEnd (== '/') $ fromMaybe "" baseUrl
-      defaultGeminiBaseUrl = "https://generativelanguage.googleapis.com"
-      defaultIdentity =
-        object $
-          [ "provider" .= ("gemini" :: Text)
-          , "model" .= modelName
-          ]
-            <> maybe [] (pure . ("config" .=)) config
 
 {- | Compute a canonical cache key from a model identity and complete input messages.
 

@@ -5,7 +5,7 @@ module Test.Langchain.Cache.CacheSpec (tests) where
 
 import Control.Concurrent.STM (newTVarIO)
 import Control.Monad.Except (runExceptT)
-import Data.Aeson (Value, object, (.=))
+import Data.Aeson (object)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)
@@ -27,41 +27,10 @@ import Langchain.Core.Model
   , extractMessageText
   , userMessage
   )
-import Langchain.Provider.Gemini (Gemini (..))
-import Langchain.Provider.Ollama
-  ( Ollama
-  , OllamaOptions (..)
-  , newOllamaWithClient
-  )
-import Langchain.Provider.OpenAI (OpenAI (OpenAI), OpenAIOptions (..))
-import qualified Ollama.API.Chat as OllamaChat
-import Ollama.Client (newClient)
-import qualified Ollama.Client.Config as OllamaClientConfig
-import Ollama.Types.Common (ModelName (..), Think (..))
-import Ollama.Types.Format (Format (..))
-import qualified Ollama.Types.Message as OllamaMessage
-import Ollama.Types.Options (ModelOptions (..), defaultOptions)
-import Ollama.Types.Tool (FunctionDef (..))
-import qualified Ollama.Types.Tool as OllamaTool
 import Test.Langchain.Provider.Mock (MockModel (..), newMockModel)
 
 testMessages :: [Message]
 testMessages = [userMessage "Describe the image"]
-
-baseOllamaRequest :: OllamaChat.ChatRequest
-baseOllamaRequest =
-  OllamaChat.chatRequest
-    (ModelName "llama3.2")
-    (OllamaMessage.userMessage "ignored-message" :| [])
-
-newOllamaForEndpoint :: Text -> IO Ollama
-newOllamaForEndpoint endpoint = do
-  ollamaClient <-
-    newClient $
-      OllamaClientConfig.defaultConfig
-        { OllamaClientConfig.configBaseUrl = endpoint
-        }
-  pure $ newOllamaWithClient "llama3.2" ollamaClient
 
 assertKeysDiffer :: Text -> Text -> Assertion
 assertKeysDiffer first second =
@@ -130,68 +99,8 @@ tests =
         assertKeysDiffer
           (computeCacheKey first Nothing testMessages)
           (computeCacheKey second Nothing testMessages)
-    , testCase "cache key distinguishes OpenAI identity and ignores its config" $ do
-        let base = OpenAI "key" "gpt-4o" "https://api.openai.com/v1/chat/completions" (Just 0.7)
-            otherModel = OpenAI "key" "gpt-4.1" "https://api.openai.com/v1/chat/completions" (Just 0.7)
-            otherEndpoint = OpenAI "key" "gpt-4o" "https://example.com/v1/chat/completions" (Just 0.7)
-            otherTemperature = OpenAI "key" "gpt-4o" "https://api.openai.com/v1/chat/completions" (Just 0.2)
-            baseKey = computeCacheKey base Nothing testMessages
-        assertKeysDiffer baseKey $ computeCacheKey otherModel Nothing testMessages
-        assertKeysDiffer baseKey $ computeCacheKey otherEndpoint Nothing testMessages
-        assertKeysDiffer baseKey $ computeCacheKey otherTemperature Nothing testMessages
-        baseKey @?= computeCacheKey base (Just $ OpenAIOptions $ object ["unused" .= True]) testMessages
-    , testCase "cache key distinguishes Gemini identity and request config" $ do
-        let base = Gemini "key" "gemini-2.0-flash" Nothing
-            otherModel = Gemini "key" "gemini-2.5-pro" Nothing
-            baseKey = computeCacheKey base Nothing testMessages
-        assertKeysDiffer baseKey $ computeCacheKey otherModel Nothing testMessages
-        assertKeysDiffer baseKey $
-          computeCacheKey base (Just $ object ["tools" .= ([] :: [Value])]) testMessages
-    , testCase "cache key distinguishes Gemini custom endpoints" $ do
-        let defaultEndpoint = Gemini "key" "gemini-2.0-flash" Nothing
-            url1 = Just "http://gemini-one.example.com"
-            url2 = Just "http://gemini-two.example.com"
-            firstEndpoint = Gemini "key" "gemini-2.0-flash" url1
-            sameEndpoint = Gemini "key" "gemini-2.0-flash" url1
-            secondEndpoint = Gemini "key" "gemini-2.0-flash" url2
-            defaultKey = computeCacheKey defaultEndpoint Nothing testMessages
-            firstKey = computeCacheKey firstEndpoint Nothing testMessages
-        assertKeysDiffer defaultKey firstKey
-        firstKey @?= computeCacheKey sameEndpoint Nothing testMessages
-        assertKeysDiffer firstKey $ computeCacheKey secondEndpoint Nothing testMessages
     , testCase "cache key ignores MockModel config" $ do
         let mockModel = newMockModel "Dynamic Output"
         computeCacheKey mockModel Nothing testMessages
           @?= computeCacheKey mockModel (Just ()) testMessages
-    , testCase "cache key distinguishes Ollama endpoints and effective config" $ do
-        firstEndpoint <- newOllamaForEndpoint "http://ollama-one.example.com:11434"
-        secondEndpoint <- newOllamaForEndpoint "http://ollama-two.example.com:11434"
-        let baseKey =
-              computeCacheKey firstEndpoint (Just $ OllamaOptions baseOllamaRequest) testMessages
-            ignoredFieldsRequest =
-              baseOllamaRequest
-                { OllamaChat.chatMessages = OllamaMessage.userMessage "another-ignored-message" :| []
-                , OllamaChat.chStream = Just True
-                }
-            requestsThatChangeOutput =
-              [ baseOllamaRequest {OllamaChat.chatModel = ModelName "different-model"}
-              , baseOllamaRequest
-                  { OllamaChat.chatTools =
-                      Just [OllamaTool.Tool "function" (FunctionDef "get_weather" Nothing Nothing Nothing)]
-                  }
-              , baseOllamaRequest {OllamaChat.chatFormat = Just JsonFormat}
-              , baseOllamaRequest {OllamaChat.chatOptions = Just defaultOptions {optTemperature = Just 0.2}}
-              , baseOllamaRequest {OllamaChat.chatKeepAlive = Just "10m"}
-              , baseOllamaRequest {OllamaChat.chatThink = Just ThinkEnabled}
-              ]
-        assertKeysDiffer baseKey $
-          computeCacheKey secondEndpoint (Just $ OllamaOptions baseOllamaRequest) testMessages
-        baseKey @?= computeCacheKey firstEndpoint Nothing testMessages
-        baseKey @?= computeCacheKey firstEndpoint (Just $ OllamaOptions ignoredFieldsRequest) testMessages
-        mapM_
-          ( \request ->
-              assertKeysDiffer baseKey $
-                computeCacheKey firstEndpoint (Just $ OllamaOptions request) testMessages
-          )
-          requestsThatChangeOutput
     ]
