@@ -9,6 +9,7 @@ import Control.Monad.Except (ExceptT, runExceptT)
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson (Value (..), object, (.=))
 import Data.IORef
+import Data.Maybe (listToMaybe)
 import qualified Data.Text as T
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -198,7 +199,9 @@ tests =
               Right savedMsgs -> do
                 -- Should have user message + assistant response
                 length savedMsgs @?= 2
-                messageRole (head savedMsgs) @?= User
+                case listToMaybe savedMsgs of
+                  Nothing -> assertFailure "Message list is empty"
+                  Just firstMessage -> messageRole firstMessage @?= User
                 messageRole (savedMsgs !! 1) @?= Assistant
     , testCase "withModelConfig passes config to provider" $ do
         ref <- newIORef Nothing

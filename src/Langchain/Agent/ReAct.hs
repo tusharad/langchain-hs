@@ -263,10 +263,6 @@ withToolErrorStrategy ::
   ReActAgent model m
 withToolErrorStrategy strategy agent = agent {agentToolErrorStrategy = strategy}
 
--- ---------------------------------------------------------------------------
--- Single Step
--- ---------------------------------------------------------------------------
-
 {- | Run a single step of ReAct reasoning.
 
 Sends the current message history (with tools bound) to the LLM and
@@ -293,10 +289,6 @@ reactStep model tools history userCfg = do
     Just tcs@(_ : _) -> pure $ AgentAction responseMsg tcs
     _ -> pure $ AgentFinish responseMsg
 
--- ---------------------------------------------------------------------------
--- Full Loop (simple)
--- ---------------------------------------------------------------------------
-
 {- | Execute the full ReAct reasoning loop, returning only the final answer.
 
 For the full reasoning trace, use 'runReActAgentWithTrace'.
@@ -317,10 +309,6 @@ runReActAgent ::
   -- | The final assistant answer message
   m Message
 runReActAgent agent userMsgs = traceFinalAnswer <$> runReActAgentWithTrace agent userMsgs
-
--- ---------------------------------------------------------------------------
--- Full Loop (with trace)
--- ---------------------------------------------------------------------------
 
 {- | Execute the full ReAct reasoning loop, returning both the final answer
 and the complete intermediate reasoning trace.
