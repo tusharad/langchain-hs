@@ -35,12 +35,14 @@ main = do
   let nativeTools = map mcpToolToLangchainTool fsTools
 
   -- 4. Equip ReAct Agent with MCP tools
-  let agent = createReActAgent model nativeTools defaultAgentConfig
+  let agent = defaultReActAgent model nativeTools
 
   -- 5. Run agent query
   putStrLn "Asking agent to inspect files..."
-  response <- runReActAgent agent "List all files in the project root and read package.yaml."
-  print response
+  response <- runExceptT $ runReActAgent agent [userMessage "List all files in the project root and read package.yaml."]
+  case response of
+    Left err  -> putStrLn ("Agent Error: " ++ show err)
+    Right ans -> putStrLn ("Final Answer:\n" ++ T.unpack (extractMessageText ans))
 ```
 
 ---

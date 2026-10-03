@@ -32,7 +32,7 @@ tests =
               _ -> assertFailure "Expected LLMEnd as last event in stream"
     , testCase "regression_react_agent_plain_response: Completes immediately when no tool calls" $ do
         let mockModel = newMockModel "Direct Answer without tool calls"
-            agent = createReActAgent mockModel [calculatorTool]
+            agent = defaultReActAgent mockModel [calculatorTool]
         res <- runExceptT $ runReActAgent agent [userMessage "What is the capital of France?"]
         case res of
           Left err -> assertFailure ("ReAct agent failed: " ++ show err)

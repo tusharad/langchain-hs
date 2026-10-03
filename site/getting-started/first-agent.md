@@ -68,7 +68,7 @@ calculatorTool = Tool
 
 ## 2. Running a ReAct Agent
 
-Construct a `ReActAgent` with your LLM, toolset, and iteration limits:
+Construct a `ReActAgent` with your LLM and toolset using `defaultReActAgent` and optional builder combinators (`withMemory`, `withMaxIterations`, `withSystemPrompt`):
 
 ```haskell
 main :: IO ()
@@ -77,13 +77,13 @@ main = do
   let tools = [calculatorTool]
   
   -- Create ReAct Agent with default limits (max 15 iterations)
-  let agent = createReActAgent model tools defaultAgentConfig
+  let agent = defaultReActAgent model tools
 
   putStrLn "Running agent..."
-  res <- runReActAgent agent "What is 12 * 45 plus 10?"
+  res <- runExceptT $ runReActAgent agent [userMessage "What is 12 * 45 plus 10?"]
   case res of
     Left err  -> putStrLn ("Agent Error: " ++ show err)
-    Right ans -> putStrLn ("Final Answer:\n" ++ T.unpack ans)
+    Right ans -> putStrLn ("Final Answer:\n" ++ T.unpack (extractMessageText ans))
 ```
 
 ---
@@ -98,7 +98,7 @@ For complex multi-step problems, a `PlanAndExecuteAgent` uses two specialized mo
 planAndExecuteExample :: IO ()
 planAndExecuteExample = do
   model <- newOllama "qwen2.5:7b" defaultConfig
-  let agent = newPlanAndExecuteAgent model model (Just [calculatorTool])
+  let agent = newPlanAndExecuteAgentWithTools model model [calculatorTool] Nothing
 
   res <- runExceptT $ runPlanAndExecute agent "Calculate (12 * 45) + 10 and format the explanation."
   case res of

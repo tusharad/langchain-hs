@@ -18,7 +18,7 @@ runApp = do
   writeFile "/tmp/budget.txt" "120 + 85"
   o <- newOllama "qwen3.5:2b" defaultConfig
   let tools = [readFileTool, calculatorTool]
-      agent = createReActAgent o tools
+      agent = defaultReActAgent o tools
       prompt =
         [ userMessage
             "Read the expression inside /tmp/budget.txt using read_file, then evaluate it using calculator."

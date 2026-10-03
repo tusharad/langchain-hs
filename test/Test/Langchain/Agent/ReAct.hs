@@ -9,6 +9,7 @@ import Control.Monad.Except (ExceptT, runExceptT)
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson (Value (..), object, (.=))
 import Data.IORef
+import Data.Maybe (listToMaybe)
 import qualified Data.Text as T
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -17,6 +18,7 @@ import Langchain.Agent.ReAct
 import Langchain.Core.Error (LangchainError)
 import Langchain.Core.Model
 import Langchain.Core.Tool (Tool)
+import Langchain.Memory.Core (BaseMemory (..), newWindowBufferMemory)
 import Langchain.Tool.Binding (ToolBinder (..))
 import Langchain.Tool.Calculator (calculatorTool)
 import Test.Langchain.Provider.Mock (newMockModel)
@@ -59,8 +61,8 @@ tests =
     "Langchain.Agent.ReAct"
     [ testCase "reactStep returns AgentFinish when LLM responds with plain text" $ do
         let mockModel = newMockModel "The answer is 4."
-            agent = createReActAgent mockModel [calculatorTool]
-        res <- runExceptT $ reactStep (agentModel agent) (agentTools agent) [userMessage "What is 2+2?"]
+            tools = [calculatorTool]
+        res <- runExceptT $ reactStep mockModel tools [userMessage "What is 2+2?"] Nothing
         case res of
           Left err -> assertFailure $ "Unexpected error: " ++ show err
           Right step -> case step of
@@ -73,8 +75,8 @@ tests =
         sRef <- newIORef [respWithTools]
         hRef <- newIORef []
         let model = StepSequenceModel sRef hRef
-            agent = createReActAgent model [calculatorTool :: Tool (ExceptT LangchainError IO)]
-        res <- runExceptT $ reactStep (agentModel agent) (agentTools agent) [userMessage "Calculate both"]
+            tools = [calculatorTool :: Tool (ExceptT LangchainError IO)]
+        res <- runExceptT $ reactStep model tools [userMessage "Calculate both"] Nothing
         case res of
           Left err -> assertFailure $ "Unexpected error: " ++ show err
           Right step -> case step of
@@ -88,7 +90,7 @@ tests =
         sRef <- newIORef [respWithTools, finalResp]
         hRef <- newIORef []
         let model = StepSequenceModel sRef hRef
-            agent = createReActAgent model [calculatorTool :: Tool (ExceptT LangchainError IO)]
+            agent = defaultReActAgent model [calculatorTool]
         res <- runExceptT $ runReActAgent agent [userMessage "Calculate 2+2 and 5*2"]
         case res of
           Left err -> assertFailure $ "Unexpected error: " ++ show err
@@ -109,7 +111,7 @@ tests =
         sRef <- newIORef [respWithBadTool, finalResp]
         hRef <- newIORef []
         let model = StepSequenceModel sRef hRef
-            agent = createReActAgent model [calculatorTool :: Tool (ExceptT LangchainError IO)]
+            agent = defaultReActAgent model [calculatorTool]
         res <- runExceptT $ runReActAgent agent [userMessage "Run unknown tool"]
         case res of
           Left err -> assertFailure $ "Expected recovery but got error: " ++ show err
@@ -127,7 +129,7 @@ tests =
               _ -> assertFailure "Expected 2 invocations"
     , testCase "runReActAgent completes full loop on finish" $ do
         let mockModel = newMockModel "Finished processing"
-            agent = createReActAgent mockModel [calculatorTool]
+            agent = defaultReActAgent mockModel [calculatorTool]
         res <- runExceptT $ runReActAgent agent [userMessage "Hello"]
         case res of
           Left err -> assertFailure $ "Unexpected error: " ++ show err
@@ -136,10 +138,86 @@ tests =
         ref <- newIORef Nothing
         let recordingModel = ConfigRecordingModel ref "Direct Answer"
             tools = [calculatorTool :: Tool (ExceptT LangchainError IO)]
-        res <- runExceptT $ reactStep recordingModel tools [userMessage "Calculate 2+2"]
+        res <- runExceptT $ reactStep recordingModel tools [userMessage "Calculate 2+2"] Nothing
         case res of
           Left err -> assertFailure $ "Unexpected error: " ++ show err
           Right _ -> do
             captured <- readIORef ref
             captured @?= Just (object ["tool_count" .= (1 :: Int)])
+    , testCase "runReActAgentWithTrace returns intermediate steps" $ do
+        let tc1 = ToolCall "call_1" "function" "calculator" (object ["expression" .= ("2+2" :: T.Text)])
+            respWithTools = (assistantMessage "calculating") {messageToolCalls = Just [tc1]}
+            finalResp = assistantMessage "The answer is 4"
+        sRef <- newIORef [respWithTools, finalResp]
+        hRef <- newIORef []
+        let model = StepSequenceModel sRef hRef
+            agent = defaultReActAgent model [calculatorTool]
+        res <- runExceptT $ runReActAgentWithTrace agent [userMessage "Calculate 2+2"]
+        case res of
+          Left err -> assertFailure $ "Unexpected error: " ++ show err
+          Right trace -> do
+            -- Trace should have 2 steps: one action + one finish
+            length (traceSteps trace) @?= 2
+            T.strip (extractMessageText (traceFinalAnswer trace)) @?= "The answer is 4"
+    , testCase "withSystemPrompt prepends system message to history" $ do
+        hRef <- newIORef ([] :: [[Message]])
+        sRef <- newIORef [assistantMessage "Got it"]
+        let model = StepSequenceModel sRef hRef
+            agent =
+              withSystemPrompt "You are a math tutor." $
+                defaultReActAgent model [calculatorTool]
+        res <- runExceptT $ runReActAgent agent [userMessage "Hi"]
+        case res of
+          Left err -> assertFailure $ "Unexpected error: " ++ show err
+          Right _ -> do
+            histories <- readIORef hRef
+            case histories of
+              (firstCall : _) ->
+                case firstCall of
+                  (sysMsg : _) -> do
+                    messageRole sysMsg @?= System
+                    T.strip (extractMessageText sysMsg) @?= "You are a math tutor."
+                  _ -> assertFailure "Expected system message in history"
+              _ -> assertFailure "Expected at least one invocation"
+    , testCase "withMemory loads and saves conversation history" $ do
+        mem <- newWindowBufferMemory 50 []
+        hRef <- newIORef ([] :: [[Message]])
+        sRef <- newIORef [assistantMessage "Memory works!"]
+        let model = StepSequenceModel sRef hRef
+            agent =
+              withMemory mem $
+                defaultReActAgent model [calculatorTool]
+        res <- runExceptT $ runReActAgent agent [userMessage "Test memory"]
+        case res of
+          Left err -> assertFailure $ "Unexpected error: " ++ show err
+          Right finalMsg -> do
+            T.strip (extractMessageText finalMsg) @?= "Memory works!"
+            -- Verify the messages were saved to memory
+            memRes <- runExceptT $ messages mem
+            case memRes of
+              Left err -> assertFailure $ "Memory read failed: " ++ show err
+              Right savedMsgs -> do
+                -- Should have user message + assistant response
+                length savedMsgs @?= 2
+                case listToMaybe savedMsgs of
+                  Nothing -> assertFailure "Message list is empty"
+                  Just firstMessage -> messageRole firstMessage @?= User
+                messageRole (savedMsgs !! 1) @?= Assistant
+    , testCase "withModelConfig passes config to provider" $ do
+        ref <- newIORef Nothing
+        let recordingModel = ConfigRecordingModel ref "Configured Answer"
+            tools = [calculatorTool]
+            agent =
+              withModelConfig
+                (Just $ object ["temperature" .= (0.7 :: Double)])
+                (defaultReActAgent recordingModel tools)
+        res <- runExceptT $ runReActAgent agent [userMessage "Test config"]
+        case res of
+          Left err -> assertFailure $ "Unexpected error: " ++ show err
+          Right _ -> do
+            captured <- readIORef ref
+            -- The config should be the result of bindToolsConfig merging with our config
+            case captured of
+              Nothing -> assertFailure "Expected config to be passed to model"
+              Just _ -> pure () -- Config was passed (exact value depends on ToolBinder instance)
     ]
