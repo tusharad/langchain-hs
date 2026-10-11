@@ -31,7 +31,12 @@ source-repository head
 
 library
   exposed-modules:
+      Gemini.Client
+      Gemini.Client.API
+      Gemini.Client.Env
+      Gemini.Client.Types
       Langchain.Provider.Gemini
+      Langchain.Embeddings.Gemini
   other-modules:
       Paths_langchain_hs_gemini
   hs-source-dirs:
@@ -49,6 +54,7 @@ library
     , http-conduit ==2.*
     , langchain-hs-core ==0.0.6.*
     , mtl >=2.2 && <2.4
+    , resourcet >=1.2 && <1.4
     , servant >=0.19 && <0.21
     , servant-client >=0.19 && <0.21
     , servant-client-core >=0.19 && <0.21
@@ -62,9 +68,9 @@ test-suite langchain-hs-gemini-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Test.Langchain.Provider.FixturesSpec
-      Test.Langchain.Provider.Gemini
-      Test.Langchain.Provider.TestSseServer
+      Test.Gemini.Client.TypesSpec
+      Test.Gemini.Client.InteractionsSpec
+      Test.Langchain.Provider.GeminiSpec
       Paths_langchain_hs_gemini
   hs-source-dirs:
       test
@@ -96,4 +102,6 @@ test-suite langchain-hs-gemini-test
     , text
     , wai
     , warp
+    , directory
+    , filepath
   default-language: Haskell2010
