@@ -9,7 +9,6 @@ import Test.QuickCheck
 import Test.Tasty
 import Test.Tasty.QuickCheck
 
-import Langchain.PromptTemplate.FewShot
 import Langchain.PromptTemplate.Prompt
 
 -- QuickCheck helper to generate safe variable names [a-z]+
@@ -53,22 +52,4 @@ tests =
                 vars = Map.fromList [(v1, val1), (v2, val2)]
                 expected = val1 <> " and " <> val2
              in renderPrompt (fromTemplate tmpl) vars === Right expected
-    , testProperty "FewShotPromptTemplate renders all examples" $
-        \(PlainText prefix) (PlainText suffix) (PlainText ex1) (PlainText ex2) ->
-          let examples =
-                [ Map.singleton "content" ex1
-                , Map.singleton "content" ex2
-                ]
-              fewShot =
-                FewShotPromptTemplate
-                  { fsPrefix = prefix
-                  , fsExamples = examples
-                  , fsExampleTemplate = "Ex: {content}"
-                  , fsExampleSeparator = "\n"
-                  , fsSuffix = suffix
-                  }
-           in case renderFewShotPrompt fewShot of
-                Right rendered ->
-                  property (prefix `T.isInfixOf` rendered && suffix `T.isInfixOf` rendered)
-                Left _ -> property False
     ]

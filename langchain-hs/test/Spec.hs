@@ -23,9 +23,6 @@ import qualified Test.Langchain.Memory.TokenBufferMemory as TokenBufferMemoryTes
 import qualified Test.Langchain.ObservabilitySpec as ObservabilityTest
 import qualified Test.Langchain.OutputParser.AdvancedParsersSpec as AdvancedParsersTest
 import qualified Test.Langchain.OutputParser.Core as OutputParserTest
-import qualified Test.Langchain.PromptTemplate.Chat.ChatPromptTemplateSpec as ChatPromptTemplateTest
-import qualified Test.Langchain.PromptTemplate.Chat.MessagesPlaceholderSpec as MessagesPlaceholderTest
-import qualified Test.Langchain.PromptTemplate.FewShotSpec as FewShotPromptTemplateTest
 import qualified Test.Langchain.PromptTemplate.PromptSpec as PromptTemplateTest
 import qualified Test.Langchain.Resilience.CircuitBreakerSpec as CircuitBreakerTest
 import qualified Test.Langchain.Resilience.RetrySpec as RetryTest
@@ -62,9 +59,6 @@ main =
       [ testGroup
           "Unit Tests"
           [ PromptTemplateTest.tests
-          , FewShotPromptTemplateTest.tests
-          , ChatPromptTemplateTest.tests
-          , MessagesPlaceholderTest.tests
           , OutputParserTest.tests
           , AdvancedParsersTest.tests
           , TextSplitterTest.tests

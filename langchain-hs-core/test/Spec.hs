@@ -4,6 +4,7 @@ import Test.Tasty
 
 import qualified Test.Langchain.Model as ModelTest
 import qualified Test.Langchain.Monad as MonadTest
+import qualified Test.Langchain.PromptTemplate as PromptTemplateTest
 import qualified Test.Langchain.Runnable as RunnableTest
 import qualified Test.Langchain.Stream as StreamTest
 import qualified Test.Langchain.Tool as ToolTest
@@ -20,4 +21,5 @@ tests =
     , StreamTest.tests
     , ToolTest.tests
     , MonadTest.tests
+    , PromptTemplateTest.tests
     ]

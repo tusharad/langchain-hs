@@ -236,9 +236,7 @@ module Langchain.Prelude
   , fromTemplateWithOptions
   , fromTemplateWithFormat
   , partialPromptTemplate
-  , FewShotPromptTemplate (..)
   , renderPrompt
-  , renderFewShotPrompt
 
     -- * Text Splitters
   , CharacterSplitterOps (CharacterSplitterOps)
@@ -353,7 +351,6 @@ import Langchain.Monad
 import Langchain.Observability
 import Langchain.OutputParser.Core
 import Langchain.OutputParser.Structured
-import Langchain.PromptTemplate.FewShot
 import Langchain.PromptTemplate.Prompt
 import Langchain.Resilience.CircuitBreaker
 import Langchain.Resilience.Retry

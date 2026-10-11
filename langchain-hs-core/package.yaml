@@ -37,6 +37,7 @@ dependencies:
 - filepath >= 1.4 && < 2
 - process >= 1.6 && < 1.7
 - scientific >= 0.3 && < 0.4
+- format-heavy >= 0.1 && < 0.2
 
 default-extensions:
   - MultiParamTypeClasses
@@ -81,6 +82,9 @@ library:
     - Langchain.VectorStore
     - Langchain.VectorStore.Core
     - Langchain.VectorStore.InMemory
+    - Langchain.PromptTemplate
+    - Langchain.PromptTemplate.Prompt
+    - Langchain.PromptTemplate.String
 
 tests:
   langchain-hs-core-test:

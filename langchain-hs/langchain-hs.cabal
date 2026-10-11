@@ -50,12 +50,6 @@ library
       Langchain.OutputParser.Core
       Langchain.OutputParser.Structured
       Langchain.Prelude
-      Langchain.PromptTemplate.Chat
-      Langchain.PromptTemplate.Chat.ChatPromptTemplate
-      Langchain.PromptTemplate.Chat.MessagesPlaceholder
-      Langchain.PromptTemplate.FewShot
-      Langchain.PromptTemplate.Prompt
-      Langchain.PromptTemplate.String
       Langchain.Resilience.CircuitBreaker
       Langchain.Resilience.Retry
       Langchain.Retriever.BM25
@@ -112,9 +106,6 @@ test-suite langchain-hs-test
       Test.Langchain.ObservabilitySpec
       Test.Langchain.OutputParser.AdvancedParsersSpec
       Test.Langchain.OutputParser.Core
-      Test.Langchain.PromptTemplate.Chat.ChatPromptTemplateSpec
-      Test.Langchain.PromptTemplate.Chat.MessagesPlaceholderSpec
-      Test.Langchain.PromptTemplate.FewShotSpec
       Test.Langchain.PromptTemplate.PromptSpec
       Test.Langchain.Property.CheckpointerSpec
       Test.Langchain.Property.ErrorSpec

@@ -58,6 +58,9 @@ library
       Langchain.VectorStore
       Langchain.VectorStore.Core
       Langchain.VectorStore.InMemory
+      Langchain.PromptTemplate
+      Langchain.PromptTemplate.Prompt
+      Langchain.PromptTemplate.String
   other-modules:
       Paths_langchain_hs_core
   hs-source-dirs:
@@ -85,6 +88,7 @@ library
     , deepseq >=1.4 && <1.6
     , directory ==1.3.*
     , filepath >=1.4 && <2
+    , format-heavy ==0.1.*
     , mtl >=2.2 && <2.4
     , process ==1.6.*
     , resourcet >=1.2 && <1.4
@@ -100,6 +104,7 @@ test-suite langchain-hs-core-test
   other-modules:
       Test.Langchain.Model
       Test.Langchain.Monad
+      Test.Langchain.PromptTemplate
       Test.Langchain.Runnable
       Test.Langchain.Stream
       Test.Langchain.TestModel
@@ -132,6 +137,7 @@ test-suite langchain-hs-core-test
     , deepseq >=1.4 && <1.6
     , directory ==1.3.*
     , filepath >=1.4 && <2
+    , format-heavy ==0.1.*
     , langchain-hs-core
     , mtl >=2.2 && <2.4
     , process ==1.6.*
