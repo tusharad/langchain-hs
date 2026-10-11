@@ -17,7 +17,7 @@ jobs:
       - uses: haskell-actions/run-fourmolu@v11
         with:
           version: "0.17.0.0"
-          working-directory: "./src"
+          working-directory: "./langchain-hs-core"
 
   hlint:
     runs-on: ubuntu-latest
@@ -32,7 +32,7 @@ jobs:
     - name: 'Run HLint'
       uses: haskell-actions/hlint-run@v2
       with:
-        path: src/
+        path: "langchain-hs-core"
         fail-on: warning
 
   generate:
