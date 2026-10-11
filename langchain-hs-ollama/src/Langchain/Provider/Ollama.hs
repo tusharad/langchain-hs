@@ -1,6 +1,4 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -39,6 +37,9 @@ module Langchain.Provider.Ollama
   , withKeepAlive
   , withThink
 
+    -- * Proxy
+  , Proxy (..)
+
     -- * Tool Binding
   , OllamaWithTools (..)
   , bindTools
@@ -73,6 +74,7 @@ import qualified Data.ByteString.Lazy.Char8 as LBSC
 import Data.Conduit (await, transPipe, yield, (.|))
 import qualified Data.List.NonEmpty as NonEmpty
 import Data.Maybe (fromMaybe, isJust, mapMaybe)
+import Data.Proxy (Proxy (..))
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
@@ -187,9 +189,10 @@ withSchemaFormat schema cfg = cfg {ollamaFormat = Just (OFormat.SchemaFormat sch
 withStructuredOutput ::
   forall a.
   (OSD.ToSchema a) =>
+  Proxy a ->
   OllamaConfig ->
   OllamaConfig
-withStructuredOutput cfg =
+withStructuredOutput _ cfg =
   cfg {ollamaFormat = Just (OFormat.SchemaFormat (OSD.toSchema @a))}
 
 -- | Set keep-alive duration (e.g. @"5m"@) on an 'OllamaConfig'.

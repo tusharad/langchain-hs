@@ -55,7 +55,7 @@ runApp :: IO ()
 runApp = do
   o <- newOllama "gemma3" defaultConfig
   let msg = [userMessage inputPrompt]
-  let cfg = withStructuredOutput @Person defaultOllamaConfig
+  let cfg = withStructuredOutput (Proxy @Person) defaultOllamaConfig
   res <- runLangchainT () $ do
     invoke o msg (Just cfg)
   case res of

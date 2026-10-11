@@ -88,7 +88,7 @@ tests =
         let cfg = withJsonFormat defaultOllamaConfig
         ollamaFormat cfg @?= Just OFormat.JsonFormat
     , testCase "withStructuredOutput sets SchemaFormat" $ do
-        let cfg = withStructuredOutput @TestPerson defaultOllamaConfig
+        let cfg = withStructuredOutput (Proxy @TestPerson) defaultOllamaConfig
         case ollamaFormat cfg of
           Just (OFormat.SchemaFormat _) -> pure ()
           _ -> assertFailure "Expected SchemaFormat in OllamaConfig"
