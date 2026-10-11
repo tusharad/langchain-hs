@@ -38,6 +38,7 @@ dependencies:
 - process >= 1.6 && < 1.7
 - scientific >= 0.3 && < 0.4
 - format-heavy >= 0.1 && < 0.2
+- random >= 1.2 && < 1.4
 
 default-extensions:
   - MultiParamTypeClasses
@@ -85,6 +86,16 @@ library:
     - Langchain.PromptTemplate
     - Langchain.PromptTemplate.Prompt
     - Langchain.PromptTemplate.String
+    - Langchain.Observability
+    - Langchain.Callback
+    - Langchain.Callback.Manager
+    - Langchain.Retriever
+    - Langchain.Retriever.Core
+    - Langchain.Retriever.BM25
+    - Langchain.Retriever.Hybrid
+    - Langchain.Resilience
+    - Langchain.Resilience.CircuitBreaker
+    - Langchain.Resilience.Retry
 
 tests:
   langchain-hs-core-test:

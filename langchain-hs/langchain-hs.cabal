@@ -39,22 +39,15 @@ library
       Langchain.Agent.PlanAndExecute
       Langchain.Agent.ReAct
       Langchain.Cache.Core
-      Langchain.Callback.Manager
       Langchain.Chain.MapReduce
       Langchain.Chain.RetrievalQA
       Langchain.Guardrail.Core
       Langchain.Memory.Core
       Langchain.Memory.Entity
       Langchain.Memory.Summary
-      Langchain.Observability
       Langchain.OutputParser.Core
       Langchain.OutputParser.Structured
       Langchain.Prelude
-      Langchain.Resilience.CircuitBreaker
-      Langchain.Resilience.Retry
-      Langchain.Retriever.BM25
-      Langchain.Retriever.Core
-      Langchain.Retriever.Hybrid
   other-modules:
       Paths_langchain_hs
   hs-source-dirs:

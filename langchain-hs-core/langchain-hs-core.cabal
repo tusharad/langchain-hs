@@ -61,6 +61,16 @@ library
       Langchain.PromptTemplate
       Langchain.PromptTemplate.Prompt
       Langchain.PromptTemplate.String
+      Langchain.Observability
+      Langchain.Callback
+      Langchain.Callback.Manager
+      Langchain.Retriever
+      Langchain.Retriever.Core
+      Langchain.Retriever.BM25
+      Langchain.Retriever.Hybrid
+      Langchain.Resilience
+      Langchain.Resilience.CircuitBreaker
+      Langchain.Resilience.Retry
   other-modules:
       Paths_langchain_hs_core
   hs-source-dirs:
@@ -91,6 +101,7 @@ library
     , format-heavy ==0.1.*
     , mtl >=2.2 && <2.4
     , process ==1.6.*
+    , random >=1.2 && <1.4
     , resourcet >=1.2 && <1.4
     , scientific ==0.3.*
     , stm ==2.5.*
@@ -102,9 +113,13 @@ test-suite langchain-hs-core-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      Test.Langchain.Callback
       Test.Langchain.Model
       Test.Langchain.Monad
+      Test.Langchain.Observability
       Test.Langchain.PromptTemplate
+      Test.Langchain.Resilience
+      Test.Langchain.Retriever
       Test.Langchain.Runnable
       Test.Langchain.Stream
       Test.Langchain.TestModel
@@ -141,6 +156,7 @@ test-suite langchain-hs-core-test
     , langchain-hs-core
     , mtl >=2.2 && <2.4
     , process ==1.6.*
+    , random >=1.2 && <1.4
     , resourcet
     , scientific ==0.3.*
     , stm ==2.5.*
