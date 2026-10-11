@@ -30,7 +30,6 @@ dependencies:
 - sqlite-simple >= 0.4.18 && < 0.5
 - stm >= 2.5 && < 2.6
 - text >= 1.2 && < 3
-- time >= 1.9 && < 1.15
 
 default-extensions:
   - MultiParamTypeClasses

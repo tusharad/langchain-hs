@@ -157,7 +157,6 @@ test-suite langchain-hs-test
   build-depends:
       QuickCheck
     , aeson
-    , aeson-qq
     , async
     , base >=4.17 && <5
     , bytestring
@@ -166,12 +165,10 @@ test-suite langchain-hs-test
     , directory
     , filepath
     , langchain-hs
-    , langchain-hs-core
-    , langchain-hs-graph
+    , langchain-hs-core ==0.0.6.*
+    , langchain-hs-graph ==0.0.6.*
     , mtl
-    , random
     , resourcet
-    , sqlite-simple
     , stm
     , tasty
     , tasty-hunit
@@ -179,6 +176,5 @@ test-suite langchain-hs-test
     , temporary
     , text
     , time
-    , transformers
     , vector
   default-language: Haskell2010

@@ -75,12 +75,9 @@ library
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , conduit
     , containers
     , langchain-hs
-    , langchain-hs-core
-    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -100,13 +97,10 @@ executable guardrailollama
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , conduit
     , containers
     , examples
     , langchain-hs
-    , langchain-hs-core
-    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -126,13 +120,10 @@ executable guardrailopenai
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , conduit
     , containers
     , examples
     , langchain-hs
-    , langchain-hs-core
-    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -152,12 +143,10 @@ executable hitlollama
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , conduit
     , containers
     , examples
     , langchain-hs
-    , langchain-hs-core
     , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
@@ -178,12 +167,10 @@ executable hitlopenai
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , conduit
     , containers
     , examples
     , langchain-hs
-    , langchain-hs-core
     , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
@@ -204,13 +191,10 @@ executable jsonollama
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , conduit
     , containers
     , examples
     , langchain-hs
-    , langchain-hs-core
-    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -230,13 +214,10 @@ executable jsonopenai
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , conduit
     , containers
     , examples
     , langchain-hs
-    , langchain-hs-core
-    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -256,13 +237,10 @@ executable mcpollama
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , conduit
     , containers
     , examples
     , langchain-hs
-    , langchain-hs-core
-    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -282,13 +260,10 @@ executable mcpopenai
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , conduit
     , containers
     , examples
     , langchain-hs
-    , langchain-hs-core
-    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -308,13 +283,10 @@ executable memoryollama
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , conduit
     , containers
     , examples
     , langchain-hs
-    , langchain-hs-core
-    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -334,13 +306,10 @@ executable memoryopenai
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , conduit
     , containers
     , examples
     , langchain-hs
-    , langchain-hs-core
-    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -360,13 +329,10 @@ executable monadollama
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , conduit
     , containers
     , examples
     , langchain-hs
-    , langchain-hs-core
-    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -386,13 +352,10 @@ executable monadopenai
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , conduit
     , containers
     , examples
     , langchain-hs
-    , langchain-hs-core
-    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -412,12 +375,10 @@ executable multiagentollama
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , conduit
     , containers
     , examples
     , langchain-hs
-    , langchain-hs-core
     , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
@@ -438,12 +399,10 @@ executable multiagentopenai
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , conduit
     , containers
     , examples
     , langchain-hs
-    , langchain-hs-core
     , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
@@ -464,13 +423,10 @@ executable observabilityollama
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , conduit
     , containers
     , examples
     , langchain-hs
-    , langchain-hs-core
-    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -490,13 +446,10 @@ executable observabilityopenai
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , conduit
     , containers
     , examples
     , langchain-hs
-    , langchain-hs-core
-    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -516,13 +469,10 @@ executable planandexecuteollama
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , conduit
     , containers
     , examples
     , langchain-hs
-    , langchain-hs-core
-    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -542,13 +492,10 @@ executable planandexecuteopenai
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , conduit
     , containers
     , examples
     , langchain-hs
-    , langchain-hs-core
-    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -568,13 +515,10 @@ executable prompttemplate
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , conduit
     , containers
     , examples
     , langchain-hs
-    , langchain-hs-core
-    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -594,13 +538,10 @@ executable ragollama
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , conduit
     , containers
     , examples
     , langchain-hs
-    , langchain-hs-core
-    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -620,13 +561,10 @@ executable ragopenai
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , conduit
     , containers
     , examples
     , langchain-hs
-    , langchain-hs-core
-    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -646,13 +584,10 @@ executable reactollama
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , conduit
     , containers
     , examples
     , langchain-hs
-    , langchain-hs-core
-    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -672,13 +607,10 @@ executable reactopenai
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , conduit
     , containers
     , examples
     , langchain-hs
-    , langchain-hs-core
-    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -698,13 +630,10 @@ executable resilienceollama
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , conduit
     , containers
     , examples
     , langchain-hs
-    , langchain-hs-core
-    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -724,13 +653,10 @@ executable resilienceopenai
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , conduit
     , containers
     , examples
     , langchain-hs
-    , langchain-hs-core
-    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -750,13 +676,10 @@ executable retrievalqaollama
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , conduit
     , containers
     , examples
     , langchain-hs
-    , langchain-hs-core
-    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -776,13 +699,10 @@ executable retrievalqaopenai
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , conduit
     , containers
     , examples
     , langchain-hs
-    , langchain-hs-core
-    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -802,13 +722,10 @@ executable retrieverollama
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , conduit
     , containers
     , examples
     , langchain-hs
-    , langchain-hs-core
-    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -828,13 +745,10 @@ executable retrieveropenai
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , conduit
     , containers
     , examples
     , langchain-hs
-    , langchain-hs-core
-    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -854,13 +768,10 @@ executable runnableollama
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , conduit
     , containers
     , examples
     , langchain-hs
-    , langchain-hs-core
-    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -880,13 +791,10 @@ executable runnableopenai
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , conduit
     , containers
     , examples
     , langchain-hs
-    , langchain-hs-core
-    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -906,13 +814,10 @@ executable simpleollama
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , conduit
     , containers
     , examples
     , langchain-hs
-    , langchain-hs-core
-    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -932,13 +837,10 @@ executable simpleopenai
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , conduit
     , containers
     , examples
     , langchain-hs
-    , langchain-hs-core
-    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -958,12 +860,10 @@ executable stategraphollama
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , conduit
     , containers
     , examples
     , langchain-hs
-    , langchain-hs-core
     , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
@@ -984,12 +884,10 @@ executable stategraphopenai
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , conduit
     , containers
     , examples
     , langchain-hs
-    , langchain-hs-core
     , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
@@ -1010,13 +908,10 @@ executable streamollama
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , conduit
     , containers
     , examples
     , langchain-hs
-    , langchain-hs-core
-    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -1036,13 +931,10 @@ executable streamopenai
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , conduit
     , containers
     , examples
     , langchain-hs
-    , langchain-hs-core
-    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -1062,13 +954,10 @@ executable toolollama
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , conduit
     , containers
     , examples
     , langchain-hs
-    , langchain-hs-core
-    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -1088,13 +977,10 @@ executable toolopenai
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , conduit
     , containers
     , examples
     , langchain-hs
-    , langchain-hs-core
-    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -1115,13 +1001,10 @@ test-suite examples-test
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , conduit
     , containers
     , examples
     , langchain-hs
-    , langchain-hs-core
-    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai

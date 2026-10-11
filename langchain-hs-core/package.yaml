@@ -123,10 +123,7 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - async >= 2.2 && < 2.3
     - langchain-hs-core
-    - resourcet
-    - stm >= 2.5 && < 2.6
     - QuickCheck >= 2.14
     - tasty >= 1.4
     - tasty-hunit >= 0.10

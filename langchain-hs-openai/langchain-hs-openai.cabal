@@ -49,11 +49,9 @@ library
     , http-client-tls >=0.3 && <0.5
     , http-conduit ==2.*
     , http-types >=0.11 && <0.13
-    , langchain-hs ==0.0.6.*
     , langchain-hs-core ==0.0.6.*
     , mtl >=2.2 && <2.4
     , openai >=2.2.1 && <3
-    , scientific ==0.3.*
     , servant >=0.19 && <0.21
     , servant-client >=0.19 && <0.21
     , servant-client-core >=0.19 && <0.21
@@ -86,13 +84,11 @@ test-suite langchain-hs-openai-test
     , http-client-tls >=0.3 && <0.5
     , http-conduit ==2.*
     , http-types >=0.11 && <0.13
-    , langchain-hs
     , langchain-hs-core
     , langchain-hs-openai
     , mtl >=2.2 && <2.4
     , openai
     , resourcet
-    , scientific ==0.3.*
     , servant >=0.19 && <0.21
     , servant-client >=0.19 && <0.21
     , servant-client-core >=0.19 && <0.21

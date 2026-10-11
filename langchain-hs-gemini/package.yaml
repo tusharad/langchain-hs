@@ -32,7 +32,6 @@ dependencies:
   - http-client >= 0.7 && < 0.8
   - http-client-tls >= 0.3 && < 0.5
   - http-conduit >= 2 && < 3
-  - langchain-hs >= 0.0.6 && < 0.0.7
   - langchain-hs-core >= 0.0.6 && < 0.0.7
   - mtl >= 2.2 && < 2.4
   - servant >= 0.19 && < 0.21
@@ -42,7 +41,6 @@ dependencies:
   - servant-event-stream >= 0.4 && < 0.5
   - stm >= 2.5 && < 2.6
   - text >= 1.2 && < 3
-  - transformers >= 0.5 && < 0.7
 
 ghc-options:
   - -Wall
@@ -70,7 +68,6 @@ tests:
       - -with-rtsopts=-N
     dependencies:
       - langchain-hs-gemini
-      - langchain-hs
       - langchain-hs-core
       - text
       - bytestring

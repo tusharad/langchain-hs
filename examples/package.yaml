@@ -22,14 +22,11 @@ description:         Please see the README on GitHub at <https://github.com/tush
 dependencies:
 - base >= 4.7 && < 5
 - langchain-hs
-- langchain-hs-core
-- langchain-hs-graph
 - langchain-hs-ollama
 - langchain-hs-openai
 - langchain-hs-mcp
 - text
 - aeson
-- bytestring
 - mtl
 - conduit
 - resourcet

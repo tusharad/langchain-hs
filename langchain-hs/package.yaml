@@ -115,12 +115,9 @@ tests:
       - -with-rtsopts=-N
     dependencies:
       - langchain-hs
-      - langchain-hs-core
-      - langchain-hs-graph
       - text
       - bytestring
       - aeson
-      - aeson-qq
       - containers
       - directory
       - filepath
@@ -136,6 +133,3 @@ tests:
       - time
       - conduit
       - vector
-      - transformers
-      - random
-      - sqlite-simple

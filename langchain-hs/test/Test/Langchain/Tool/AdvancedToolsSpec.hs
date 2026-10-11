@@ -4,16 +4,13 @@
 
 module Test.Langchain.Tool.AdvancedToolsSpec (tests) where
 
-import Control.Concurrent.Async (wait)
-import Control.Monad.Except (runExceptT)
-import Data.Aeson (FromJSON, ToJSON, Value (..), object)
+import Data.Aeson (FromJSON, ToJSON, Value (..))
 import Data.Proxy (Proxy (..))
 import Data.Text (Text)
 import GHC.Generics (Generic)
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import Langchain.Tool.Core (createTool)
 import Langchain.Tool.GenericSchema
 
 data SearchArgs = SearchArgs

@@ -174,7 +174,7 @@ test-suite langchain-hs-core-test
     , mtl >=2.2 && <2.4
     , process ==1.6.*
     , random >=1.2 && <1.4
-    , resourcet
+    , resourcet >=1.2 && <1.4
     , scientific ==0.3.*
     , sqlite-simple >=0.4.18 && <0.5
     , stm ==2.5.*
