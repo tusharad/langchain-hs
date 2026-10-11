@@ -71,6 +71,22 @@ library
       Langchain.Resilience
       Langchain.Resilience.CircuitBreaker
       Langchain.Resilience.Retry
+      Langchain.Memory
+      Langchain.Memory.Core
+      Langchain.Memory.Summary
+      Langchain.Cache
+      Langchain.Cache.Core
+      Langchain.OutputParser
+      Langchain.OutputParser.Core
+      Langchain.OutputParser.Structured
+      Langchain.Chain
+      Langchain.Chain.RetrievalQA
+      Langchain.Agent
+      Langchain.Agent.ReAct
+      Langchain.Agent.PlanAndExecute
+      Langchain.Guardrail
+      Langchain.Guardrail.Core
+      Langchain.Prelude
   other-modules:
       Paths_langchain_hs_core
   hs-source-dirs:
@@ -104,6 +120,7 @@ library
     , random >=1.2 && <1.4
     , resourcet >=1.2 && <1.4
     , scientific ==0.3.*
+    , sqlite-simple >=0.4.18 && <0.5
     , stm ==2.5.*
     , text >=1.2 && <3
     , time >=1.9 && <1.15
@@ -159,6 +176,7 @@ test-suite langchain-hs-core-test
     , random >=1.2 && <1.4
     , resourcet
     , scientific ==0.3.*
+    , sqlite-simple >=0.4.18 && <0.5
     , stm ==2.5.*
     , tasty >=1.4
     , tasty-hunit >=0.10

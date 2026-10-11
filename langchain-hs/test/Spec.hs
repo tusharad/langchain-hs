@@ -9,7 +9,6 @@ import qualified Test.Langchain.Agent.AdvancedAgentsSpec as AdvancedAgentsTest
 import qualified Test.Langchain.Agent.ReAct as ReActTest
 import qualified Test.Langchain.Cache.CacheSpec as CacheTest
 import qualified Test.Langchain.Callback.CallbackManagerSpec as CallbackTest
-import qualified Test.Langchain.Chain.ChainsSpec as ChainsTest
 import qualified Test.Langchain.Chain.RetrievalQASpec as RetrievalQATest
 import qualified Test.Langchain.DocumentLoader.Core as DocumentLoaderTest
 import qualified Test.Langchain.DocumentLoader.DirectoryLoader as DirectoryLoaderTest
@@ -17,7 +16,6 @@ import qualified Test.Langchain.Error as ErrorTest
 import qualified Test.Langchain.Graph.CompilationSpec as GraphCompilationTest
 import qualified Test.Langchain.Guardrail.GuardrailSpec as GuardrailTest
 import qualified Test.Langchain.Memory.Core as MemoryTest
-import qualified Test.Langchain.Memory.EntitySpec as EntityMemoryTest
 import qualified Test.Langchain.Memory.SummarySpec as SummaryMemoryTest
 import qualified Test.Langchain.Memory.TokenBufferMemory as TokenBufferMemoryTest
 import qualified Test.Langchain.ObservabilitySpec as ObservabilityTest
@@ -70,14 +68,12 @@ main =
           , DirectoryLoaderTest.tests
           , MemoryTest.tests
           , SummaryMemoryTest.tests
-          , EntityMemoryTest.tests
           , VectorStoreTest.tests
           , ErrorTest.tests
           , RetrieverTest.tests
           , BM25Test.tests
           , HybridRetrieverTest.tests
           , RetrievalQATest.tests
-          , ChainsTest.tests
           , CacheTest.tests
           , RetryTest.tests
           , CircuitBreakerTest.tests

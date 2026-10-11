@@ -39,6 +39,7 @@ dependencies:
 - scientific >= 0.3 && < 0.4
 - format-heavy >= 0.1 && < 0.2
 - random >= 1.2 && < 1.4
+- sqlite-simple >= 0.4.18 && < 0.5
 
 default-extensions:
   - MultiParamTypeClasses
@@ -96,6 +97,22 @@ library:
     - Langchain.Resilience
     - Langchain.Resilience.CircuitBreaker
     - Langchain.Resilience.Retry
+    - Langchain.Memory
+    - Langchain.Memory.Core
+    - Langchain.Memory.Summary
+    - Langchain.Cache
+    - Langchain.Cache.Core
+    - Langchain.OutputParser
+    - Langchain.OutputParser.Core
+    - Langchain.OutputParser.Structured
+    - Langchain.Chain
+    - Langchain.Chain.RetrievalQA
+    - Langchain.Agent
+    - Langchain.Agent.ReAct
+    - Langchain.Agent.PlanAndExecute
+    - Langchain.Guardrail
+    - Langchain.Guardrail.Core
+    - Langchain.Prelude
 
 tests:
   langchain-hs-core-test:

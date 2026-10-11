@@ -192,15 +192,6 @@ executables:
     dependencies:
     - examples
 
-  mapreduceollama:
-    main:                Main.hs
-    source-dirs:         app/mapreduceollama
-    ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
-    dependencies:
-    - examples
 
   resilienceollama:
     main:                Main.hs
@@ -395,15 +386,6 @@ executables:
     dependencies:
     - examples
 
-  mapreduceopenai:
-    main:                Main.hs
-    source-dirs:         app/mapreduceopenai
-    ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
-    dependencies:
-    - examples
 
   resilienceopenai:
     main:                Main.hs

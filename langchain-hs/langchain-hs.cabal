@@ -1,4 +1,4 @@
-cabal-version: 1.12
+cabal-version: 1.22
 
 -- This file has been generated from package.yaml by hpack version 0.39.6.
 --
@@ -35,46 +35,75 @@ source-repository head
   location: https://github.com/tusharad/langchain-hs
 
 library
-  exposed-modules:
-      Langchain.Agent.PlanAndExecute
-      Langchain.Agent.ReAct
-      Langchain.Cache.Core
-      Langchain.Chain.MapReduce
-      Langchain.Chain.RetrievalQA
-      Langchain.Guardrail.Core
-      Langchain.Memory.Core
-      Langchain.Memory.Entity
-      Langchain.Memory.Summary
-      Langchain.OutputParser.Core
-      Langchain.OutputParser.Structured
-      Langchain.Prelude
   other-modules:
       Paths_langchain_hs
-  hs-source-dirs:
-      src
+  reexported-modules:
+      Langchain.Error
+    , Langchain.Model
+    , Langchain.Model.Types
+    , Langchain.Monad
+    , Langchain.Stream
+    , Langchain.Runnable
+    , Langchain.Tool
+    , Langchain.Tool.Binding
+    , Langchain.Tool.Calculator
+    , Langchain.Tool.Core
+    , Langchain.Tool.FileSystem
+    , Langchain.Tool.GenericSchema
+    , Langchain.Tool.Shell
+    , Langchain.Embeddings
+    , Langchain.Embeddings.Core
+    , Langchain.DocumentLoader
+    , Langchain.DocumentLoader.Core
+    , Langchain.DocumentLoader.DirectoryLoader
+    , Langchain.DocumentLoader.FileLoader
+    , Langchain.TextSplitter.Character
+    , Langchain.TextSplitter.Code
+    , Langchain.TextSplitter.Markdown
+    , Langchain.TextSplitter.RecursiveCharacter
+    , Langchain.TextSplitter.Token
+    , Langchain.VectorStore
+    , Langchain.VectorStore.Core
+    , Langchain.VectorStore.InMemory
+    , Langchain.PromptTemplate
+    , Langchain.PromptTemplate.Prompt
+    , Langchain.PromptTemplate.String
+    , Langchain.Observability
+    , Langchain.Callback
+    , Langchain.Callback.Manager
+    , Langchain.Retriever
+    , Langchain.Retriever.Core
+    , Langchain.Retriever.BM25
+    , Langchain.Retriever.Hybrid
+    , Langchain.Resilience
+    , Langchain.Resilience.CircuitBreaker
+    , Langchain.Resilience.Retry
+    , Langchain.Memory
+    , Langchain.Memory.Core
+    , Langchain.Memory.Summary
+    , Langchain.Cache
+    , Langchain.Cache.Core
+    , Langchain.OutputParser
+    , Langchain.OutputParser.Core
+    , Langchain.OutputParser.Structured
+    , Langchain.Chain
+    , Langchain.Chain.RetrievalQA
+    , Langchain.Agent
+    , Langchain.Agent.ReAct
+    , Langchain.Agent.PlanAndExecute
+    , Langchain.Guardrail
+    , Langchain.Guardrail.Core
+    , Langchain.Prelude
+    , Langchain.Graph.StateGraph
+    , Langchain.Graph.Checkpointer
+    , Langchain.Graph.HITL
+    , Langchain.Graph.MultiAgent
+    , Langchain.Graph.Parallel
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
-      aeson ==2.*
-    , async ==2.2.*
-    , base >=4.17 && <5
-    , bytestring >=0.10 && <0.13
-    , conduit >=1.2 && <1.4
-    , containers >=0.6 && <0.9
-    , directory >=1.3.6 && <1.4
-    , filepath >=1.4 && <2
-    , format-heavy ==0.1.*
+      base >=4.17 && <5
     , langchain-hs-core ==0.0.6.*
     , langchain-hs-graph ==0.0.6.*
-    , mtl >=2.2 && <2.4
-    , process ==1.6.*
-    , random >=1.2 && <1.4
-    , scientific ==0.3.*
-    , sqlite-simple >=0.4.18 && <0.5
-    , stm ==2.5.*
-    , text >=1.2 && <3
-    , time >=1.9 && <1.15
-    , transformers >=0.5 && <0.7
-    , vector >=0.12 && <0.14
   default-language: Haskell2010
 
 test-suite langchain-hs-test
@@ -85,7 +114,6 @@ test-suite langchain-hs-test
       Test.Langchain.Agent.ReAct
       Test.Langchain.Cache.CacheSpec
       Test.Langchain.Callback.CallbackManagerSpec
-      Test.Langchain.Chain.ChainsSpec
       Test.Langchain.Chain.RetrievalQASpec
       Test.Langchain.DocumentLoader.Core
       Test.Langchain.DocumentLoader.DirectoryLoader
@@ -93,7 +121,6 @@ test-suite langchain-hs-test
       Test.Langchain.Graph.CompilationSpec
       Test.Langchain.Guardrail.GuardrailSpec
       Test.Langchain.Memory.Core
-      Test.Langchain.Memory.EntitySpec
       Test.Langchain.Memory.SummarySpec
       Test.Langchain.Memory.TokenBufferMemory
       Test.Langchain.ObservabilitySpec
@@ -134,27 +161,24 @@ test-suite langchain-hs-test
     , async
     , base >=4.17 && <5
     , bytestring
-    , conduit >=1.2 && <1.4
+    , conduit
     , containers
     , directory
     , filepath
-    , format-heavy ==0.1.*
     , langchain-hs
     , langchain-hs-core
     , langchain-hs-graph
-    , mtl >=2.2 && <2.4
-    , process ==1.6.*
-    , random >=1.2 && <1.4
+    , mtl
+    , random
     , resourcet
-    , scientific ==0.3.*
-    , sqlite-simple >=0.4.18 && <0.5
-    , stm ==2.5.*
+    , sqlite-simple
+    , stm
     , tasty
     , tasty-hunit
     , tasty-quickcheck
     , temporary
     , text
-    , time >=1.9 && <1.15
-    , transformers >=0.5 && <0.7
-    , vector >=0.12 && <0.14
+    , time
+    , transformers
+    , vector
   default-language: Haskell2010

@@ -3,22 +3,15 @@
 
 {- |
 Module      : Langchain.Prelude
-Description : Canonical umbrella re-export module for langchain-hs
+Description : Canonical umbrella re-export module for langchain-hs-core
 Copyright   : (c) 2025-2026 Tushar Adhatrao
 License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
 
 Exports all core data types, typeclasses, vector stores, memory stores,
-graph orchestration primitives, advanced multi-agent patterns, guardrails,
-observability, structured logging, circuit breakers, and pipeline DSLs.
-
-Provider-specific modules live in separate packages:
-
-  * @langchain-hs-ollama@ — 'Langchain.Provider.Ollama', 'Langchain.Embeddings.Ollama'
-  * @langchain-hs-openai@ — 'Langchain.Provider.OpenAI', 'Langchain.Embeddings.OpenAI'
-  * @langchain-hs-gemini@ — 'Langchain.Provider.Gemini'
-  * @langchain-hs-mcp@    — 'Langchain.MCP.Client'
+advanced agents, guardrails, observability, structured logging,
+circuit breakers, callbacks, output parsers, and pipeline DSLs.
 -}
 module Langchain.Prelude
   ( -- * Core Monad & Errors
@@ -101,34 +94,6 @@ module Langchain.Prelude
   , DeriveToolSchema (..)
   , deriveToolParametersSchema
 
-    -- * State Graphs & Multi-Agent
-  , StateGraph (..)
-  , Node (Node)
-  , Edge (..)
-  , NodeId
-  , startNodeId
-  , endNodeId
-  , StateReducer
-  , emptyStateGraph
-  , addNode
-  , addEdge
-  , addConditionalEdge
-  , compileGraph
-  , runGraph
-  , appendMessagesReducer
-  , replaceFieldReducer
-  , Checkpointer (..)
-  , MemoryCheckpointer (..)
-  , newMemoryCheckpointer
-  , SQLiteCheckpointer (..)
-  , newSQLiteCheckpointer
-  , hitlNode
-  , resumeGraph
-  , supervisorNode
-  , embedSubGraphNode
-  , parallelNode
-  , addParallelNodes
-
     -- * Advanced Agent Patterns
   , PlanStep (..)
   , Plan (..)
@@ -202,8 +167,6 @@ module Langchain.Prelude
   , countTokens
   , SummaryMemory (..)
   , newSummaryMemory
-  , EntityMemory (..)
-  , newEntityMemory
   , initialMessages
   , trimMessages
 
@@ -276,9 +239,6 @@ module Langchain.Prelude
   , RetrievalQA (RetrievalQA)
   , newRetrievalQA
   , runRetrievalQA
-  , MapReduceChain (..)
-  , newMapReduceChain
-  , runMapReduceChain
 
     -- * Structured Output & Parsers
   , OutputParser (..)
@@ -330,21 +290,14 @@ import Langchain.Agent.PlanAndExecute
 import Langchain.Agent.ReAct
 import Langchain.Cache.Core
 import Langchain.Callback.Manager
-import Langchain.Chain.MapReduce
 import Langchain.Chain.RetrievalQA
 import Langchain.DocumentLoader.Core
 import Langchain.DocumentLoader.DirectoryLoader
 import Langchain.DocumentLoader.FileLoader
 import Langchain.Embeddings.Core
 import Langchain.Error
-import Langchain.Graph.Checkpointer
-import Langchain.Graph.HITL
-import Langchain.Graph.MultiAgent
-import Langchain.Graph.Parallel
-import Langchain.Graph.StateGraph
 import Langchain.Guardrail.Core
 import Langchain.Memory.Core
-import Langchain.Memory.Entity
 import Langchain.Memory.Summary
 import Langchain.Model
 import Langchain.Monad
