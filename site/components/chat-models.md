@@ -55,11 +55,11 @@ runApp = do
     Left err -> T.putStrLn $ errorMessage err
     Right m -> T.putStrLn $ extractMessageText m
 
-  let reqWithOptions =
+  let cfgWithOptions =
         withOptions
           (defaultOptions {optTemperature = Just 0.7, optNumCtx = Just 4096})
-          (chatRequestFor o msg)
-  resWithOptions <- runExceptT $ invoke o msg (Just reqWithOptions)
+          defaultOllamaConfig
+  resWithOptions <- runExceptT $ invoke o msg (Just cfgWithOptions)
   case resWithOptions of
     Left err -> T.putStrLn $ errorMessage err
     Right m -> T.putStrLn $ extractMessageText m

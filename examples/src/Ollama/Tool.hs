@@ -9,9 +9,8 @@ import qualified Data.Text.IO as T
 
 import Langchain.Prelude
 import Langchain.Provider.Ollama
-  ( OllamaOptions (OllamaOptions)
-  , chatRequestFor
-  , defaultConfig
+  ( defaultConfig
+  , defaultOllamaConfig
   , newOllama
   , withTools
   )
@@ -24,10 +23,10 @@ runApp :: IO ()
 runApp = do
   o <- newOllama "qwen3.5:2b" defaultConfig
   let promptMsgs = [userMessage inputPrompt]
-      chatReq = withTools [calculatorTool @IO] (chatRequestFor o promptMsgs)
+      toolCfg = withTools [calculatorTool @IO] defaultOllamaConfig
 
   res <- runLangchainT () $ do
-    respMsg <- invoke o promptMsgs (Just (OllamaOptions chatReq))
+    respMsg <- invoke o promptMsgs (Just toolCfg)
     case messageToolCalls respMsg of
       Nothing -> do
         liftIO $ T.putStrLn "No tool called, direct answer:"
@@ -51,9 +50,8 @@ runApp = do
                 { messageName = Just (toolCallName tCall)
                 }
             conversation = promptMsgs ++ [respMsg, toolMsg]
-            followUpReq = withTools [calculatorTool @IO] (chatRequestFor o conversation)
 
-        finalMsg <- invoke o conversation (Just (OllamaOptions followUpReq))
+        finalMsg <- invoke o conversation (Just toolCfg)
         liftIO $ T.putStrLn "\nFinal Assistant Answer:"
         liftIO $ T.putStrLn $ extractMessageText finalMsg
 

@@ -1,4 +1,7 @@
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Test.Langchain.Provider.Ollama (tests) where
 
@@ -8,11 +11,12 @@ import Test.Tasty.HUnit
 import Control.Monad.Except (runExceptT)
 import Data.Text (Text)
 import qualified Data.Text as T
+import GHC.Generics (Generic)
 
-import qualified Data.List.NonEmpty as NonEmpty
 import Langchain.Model
 import Langchain.Provider.Ollama
 import Langchain.Tool (Tool)
+import Langchain.Tool.Binding (bindToolsConfig)
 import Langchain.Tool.Calculator (calculatorTool)
 import qualified Ollama.Client as OC
 import qualified Ollama.Types.Format as OFormat
@@ -26,16 +30,22 @@ testModelName = "gemma3:latest"
 withOllamaModel :: Text -> (Text -> IO ()) -> IO ()
 withOllamaModel _ _ = pure ()
 
+data TestPerson = TestPerson
+  { personName :: !Text
+  , personAge :: !Int
+  }
+  deriving (Show, Eq, Generic, ToSchema)
+
 tests :: TestTree
 tests =
   testGroup
     "Langchain.Provider.Ollama"
     [ testCase "newOllama initializes provider with defaultConfig" $ do
-        p <- newOllama testModelName defaultConfig
+        p <- newOllama testModelName defaultClientConfig
         ollamaModelName p @?= testModelName
     , testCase "newOllama accepts custom OllamaClientConfig" $ do
         let cfg =
-              defaultConfig
+              defaultClientConfig
                 { configBaseUrl = "http://custom-host:11434"
                 , configTimeout = 120
                 }
@@ -47,31 +57,18 @@ tests =
         c <- OC.defaultClient
         let p = newOllamaWithClient testModelName c
         ollamaModelName p @?= testModelName
-    , testCase "invoke returns Assistant message" $ do
-        withOllamaModel testModelName $ \modelName -> do
-          p <- newOllama modelName defaultConfig
-          let input = [userMessage "What is 2 + 2? Answer with just the number."]
-          res <- runExceptT $ invoke p input Nothing
-          case res of
-            Left err -> assertFailure $ "Expected success, got error: " ++ show err
-            Right msg -> do
-              messageRole msg @?= Assistant
-              assertBool "Should contain 4" ("4" `T.isInfixOf` extractMessageText msg)
-    , testCase "batch processes multiple inputs" $ do
-        withOllamaModel testModelName $ \modelName -> do
-          p <- newOllama modelName defaultConfig
-          let inputs = [[userMessage "What is 1 + 1?"], [userMessage "What is 2 + 2?"]]
-          res <- runExceptT $ batch p inputs Nothing
-          case res of
-            Left err -> assertFailure $ "Expected success, got error: " ++ show err
-            Right msgs -> do
-              length msgs @?= 2
-    , testCase "withOptions sets ModelOptions on ChatRequest" $ do
-        p <- newOllama testModelName defaultConfig
+    , testCase "defaultOllamaConfig is empty" $ do
+        let cfg = defaultOllamaConfig
+        ollamaTools cfg @?= Nothing
+        ollamaFormat cfg @?= Nothing
+        ollamaOptions cfg @?= Nothing
+        ollamaKeepAlive cfg @?= Nothing
+        ollamaThink cfg @?= Nothing
+    , testCase "withOptions sets ModelOptions on OllamaConfig" $ do
         let opts = defaultOptions {optTemperature = Just 0.3, optNumCtx = Just 4096}
-            req = withOptions opts (chatRequestFor p [userMessage "Hello"])
-        case chatOptions req of
-          Nothing -> assertFailure "Expected chatOptions in ChatRequest"
+            cfg = withOptions opts defaultOllamaConfig
+        case ollamaOptions cfg of
+          Nothing -> assertFailure "Expected ollamaOptions in OllamaConfig"
           Just o -> do
             optTemperature o @?= Just 0.3
             optNumCtx o @?= Just 4096
@@ -82,86 +79,82 @@ tests =
           Just ot -> do
             OTool.toolType ot @?= "function"
             OTool.fnName (OTool.toolFunction ot) @?= "calculator"
-    , testCase "withTools on ChatRequest sets chatTools" $ do
-        p <- newOllama testModelName defaultConfig
-        let req = withTools [calculatorTool :: Tool IO] (chatRequestFor p [userMessage "Hello"])
-        case chatTools req of
-          Nothing -> assertFailure "Expected chatTools in ChatRequest"
+    , testCase "withTools sets tools on OllamaConfig" $ do
+        let cfg = withTools [calculatorTool :: Tool IO] defaultOllamaConfig
+        case ollamaTools cfg of
+          Nothing -> assertFailure "Expected ollamaTools in OllamaConfig"
           Just ts -> length ts @?= 1
-    , testCase "chatRequestFor creates base request" $ do
-        p <- newOllama testModelName defaultConfig
-        let req = chatRequestFor p [userMessage "Hello"]
-        chatModel req @?= ModelName testModelName
-    , testCase "invoke propagates chatFormat from mbReq" $ do
+    , testCase "withJsonFormat sets JsonFormat" $ do
+        let cfg = withJsonFormat defaultOllamaConfig
+        ollamaFormat cfg @?= Just OFormat.JsonFormat
+    , testCase "withStructuredOutput sets SchemaFormat" $ do
+        let cfg = withStructuredOutput (Proxy @TestPerson) defaultOllamaConfig
+        case ollamaFormat cfg of
+          Just (OFormat.SchemaFormat _) -> pure ()
+          _ -> assertFailure "Expected SchemaFormat in OllamaConfig"
+    , testCase "withKeepAlive sets keep-alive duration" $ do
+        let cfg = withKeepAlive "10m" defaultOllamaConfig
+        ollamaKeepAlive cfg @?= Just "10m"
+    , testCase "Semigroup (<>) merges tools and right-biases options" $ do
+        let cTool = calculatorTool :: Tool IO
+            cfg1 = withKeepAlive "5m" (withTools [cTool] defaultOllamaConfig)
+            cfg2 = withKeepAlive "15m" (withTools [cTool] (withJsonFormat defaultOllamaConfig))
+            merged = cfg1 <> cfg2
+        case ollamaTools merged of
+          Nothing -> assertFailure "Expected merged tools"
+          Just ts -> length ts @?= 2
+        ollamaKeepAlive merged @?= Just "15m"
+        ollamaFormat merged @?= Just OFormat.JsonFormat
+    , testCase "toOllamaRole and fromOllamaRole map correctly" $ do
+        toOllamaRole User @?= O.User
+        toOllamaRole Assistant @?= O.Assistant
+        toOllamaRole System @?= O.System
+        toOllamaRole Tool @?= O.Tool
+        toOllamaRole Developer @?= O.System
+        toOllamaRole Function @?= O.Tool
+        fromOllamaRole O.User @?= User
+        fromOllamaRole O.Assistant @?= Assistant
+        fromOllamaRole O.System @?= System
+        fromOllamaRole O.Tool @?= Tool
+    , testCase "toOllamaMessage and fromOllamaMessage roundtrip text" $ do
+        let msg = userMessage "Hello Ollama"
+            oMsg = toOllamaMessage msg
+            backMsg = fromOllamaMessage oMsg
+        messageRole backMsg @?= User
+        extractMessageText backMsg @?= "Hello Ollama"
+    , testCase "ToolBinder binds tools to Ollama" $ do
+        let mbCfg = bindToolsConfig @Ollama [calculatorTool :: Tool IO] Nothing
+        case mbCfg of
+          Nothing -> assertFailure "Expected Just OllamaConfig"
+          Just cfg -> case ollamaTools cfg of
+            Nothing -> assertFailure "Expected tools"
+            Just ts -> length ts @?= 1
+    , testCase "ToolBinder for OllamaWithTools combines tools" $ do
+        p <- newOllama testModelName defaultClientConfig
+        let _ = bindTools [calculatorTool :: Tool IO] p
+            mbCfg = bindToolsConfig @(OllamaWithTools IO) [calculatorTool :: Tool IO] Nothing
+        case mbCfg of
+          Nothing -> assertFailure "Expected Just OllamaConfig"
+          Just cfg -> case ollamaTools cfg of
+            Nothing -> assertFailure "Expected tools"
+            Just ts -> length ts @?= 1
+    , testCase "invoke returns Assistant message" $ do
         withOllamaModel testModelName $ \modelName -> do
-          p <- newOllama modelName defaultConfig
-          let input = [userMessage "Return JSON: {\"answer\": 42}"]
-              req = withJsonFormat (chatRequestFor p input)
-          chatFormat req @?= Just OFormat.JsonFormat
-          res <- runExceptT $ invoke p input (Just $ OllamaOptions req)
+          p <- newOllama modelName defaultClientConfig
+          let input = [userMessage "What is 2 + 2? Answer with just the number."]
+          res <- runExceptT $ invoke p input Nothing
           case res of
             Left err -> assertFailure $ "Expected success, got error: " ++ show err
-            Right msg -> messageRole msg @?= Assistant
-    , testGroup
-        "Precedence Rules (resolveChatRequest)"
-        [ testCase "inputMsgs takes priority over ChatRequest chatMessages when non-empty" $ do
-            p <- newOllama "base-model" defaultConfig
-            let invokeMsgs = [userMessage "From invoke argument"]
-                reqMsgs = [userMessage "From ChatRequest"]
-                customReq = chatRequestFor p reqMsgs
-                (resolvedReq, resolvedModel, resolvedMsgs) =
-                  resolveChatRequest p invokeMsgs (Just $ OllamaOptions customReq)
-            resolvedModel @?= "base-model"
-            resolvedMsgs @?= invokeMsgs
-            NonEmpty.toList (chatMessages resolvedReq) @?= map toOllamaMessage invokeMsgs
-        , testCase "fallback to ChatRequest chatMessages when inputMsgs is empty" $ do
-            p <- newOllama "base-model" defaultConfig
-            let reqMsgs = [userMessage "From ChatRequest only"]
-                customReq = chatRequestFor p reqMsgs
-                (resolvedReq, resolvedModel, resolvedMsgs) =
-                  resolveChatRequest p [] (Just $ OllamaOptions customReq)
-            resolvedModel @?= "base-model"
-            resolvedMsgs @?= reqMsgs
-            NonEmpty.toList (chatMessages resolvedReq) @?= map toOllamaMessage reqMsgs
-        , testCase "defaults to single empty message when both inputMsgs and mbReq are empty" $ do
-            p <- newOllama "base-model" defaultConfig
-            let (resolvedReq, resolvedModel, resolvedMsgs) =
-                  resolveChatRequest p [] Nothing
-            resolvedModel @?= "base-model"
-            resolvedMsgs @?= []
-            NonEmpty.toList (chatMessages resolvedReq) @?= [O.userMessage ""]
-        , testCase "ChatRequest chatModel overrides provider ollamaModelName when non-empty" $ do
-            p <- newOllama "base-model" defaultConfig
-            let customReq = (chatRequestFor p [userMessage "hi"]) {chatModel = ModelName "custom-model"}
-                (resolvedReq, resolvedModel, _) =
-                  resolveChatRequest p [userMessage "hi"] (Just $ OllamaOptions customReq)
-            resolvedModel @?= "custom-model"
-            chatModel resolvedReq @?= ModelName "custom-model"
-        , testCase "falls back to ollamaModelName when ChatRequest chatModel is empty" $ do
-            p <- newOllama "base-model" defaultConfig
-            let customReq = (chatRequestFor p [userMessage "hi"]) {chatModel = ModelName ""}
-                (resolvedReq, resolvedModel, _) =
-                  resolveChatRequest p [userMessage "hi"] (Just $ OllamaOptions customReq)
-            resolvedModel @?= "base-model"
-            chatModel resolvedReq @?= ModelName "base-model"
-        , testCase "falls back to ollamaModelName when mbReq is Nothing" $ do
-            p <- newOllama "base-model" defaultConfig
-            let (resolvedReq, resolvedModel, _) =
-                  resolveChatRequest p [userMessage "hi"] Nothing
-            resolvedModel @?= "base-model"
-            chatModel resolvedReq @?= ModelName "base-model"
-        , testCase "preserves options, tools, format, and keep-alive from ChatRequest" $ do
-            p <- newOllama "base-model" defaultConfig
-            let opts = defaultOptions {optTemperature = Just 0.5}
-                customReq =
-                  (withOptions opts (chatRequestFor p [userMessage "dummy"]))
-                    { chatKeepAlive = Just "5m"
-                    , chatFormat = Just OFormat.JsonFormat
-                    }
-                (resolvedReq, _, _) =
-                  resolveChatRequest p [userMessage "override message"] (Just $ OllamaOptions customReq)
-            chatOptions resolvedReq @?= Just opts
-            chatKeepAlive resolvedReq @?= Just "5m"
-            chatFormat resolvedReq @?= Just OFormat.JsonFormat
-        ]
+            Right msg -> do
+              messageRole msg @?= Assistant
+              assertBool "Should contain 4" ("4" `T.isInfixOf` extractMessageText msg)
+    , testCase "batch processes multiple inputs" $ do
+        withOllamaModel testModelName $ \modelName -> do
+          p <- newOllama modelName defaultClientConfig
+          let inputs = [[userMessage "What is 1 + 1?"], [userMessage "What is 2 + 2?"]]
+          res <- runExceptT $ batch p inputs Nothing
+          case res of
+            Left err -> assertFailure $ "Expected success, got error: " ++ show err
+            Right msgs -> do
+              length msgs @?= 2
     ]

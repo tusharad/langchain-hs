@@ -43,7 +43,7 @@ main = do
 
   let prompt = [ userMessage "Write a pure Haskell function that computes Fibonacci numbers using zipWith." ]
 
-  res <- runExceptT $ invoke model prompt
+  res <- runExceptT $ invoke model prompt Nothing
   case res of
     Left err -> putStrLn ("Error: " ++ show err)
     Right msg -> TIO.putStrLn (extractMessageText msg)

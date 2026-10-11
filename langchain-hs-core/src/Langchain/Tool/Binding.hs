@@ -37,7 +37,7 @@ let cfg = bindToolsConfig tools Nothing
 responseMsg <- invoke model history cfg
 
 -- The right thing happens automatically:
--- For Ollama: builds a ChatRequest with chatTools set
+-- For Ollama: builds an OllamaConfig with ollamaTools set
 -- For OpenAI: builds a Value with "tools" key
 -- For OllamaWithTools: merges into existing config
 @

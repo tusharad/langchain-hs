@@ -26,7 +26,8 @@ import Control.Monad.Except (runExceptT)
 
 main :: IO ()
 main = do
-  model <- newOllama "llama3" defaultOllamaConfig
-  res   <- runExceptT $ invoke model [userMessage "Hello"] Nothing
+  model <- newOllama "llama3" defaultClientConfig
+  let cfg = withOptions (defaultOptions {optTemperature = Just 0.7}) defaultOllamaConfig
+  res   <- runExceptT $ invoke model [userMessage "Hello"] (Just cfg)
   print res
 ```

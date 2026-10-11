@@ -1,5 +1,4 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -16,50 +15,44 @@ License     : MIT
 Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
 Stability   : experimental
 
-Ollama provider using 'ollama-haskell' 0.4.0.0. Supports native structured outputs
-via JSON Schema grammar sampling, streaming, tool calling, and embeddings.
-
-== Request & Precedence Semantics
-Because Ollama's 'ModelConfig' is 'OllamaChat.ChatRequest', which contains both
-'chatModel' and 'chatMessages', callers may supply messages and model names either
-via the 'ChatModel' interface ('invoke' / 'stream' arguments) or within the 'ChatRequest'.
-
-The provider resolves these with well-defined precedence rules:
-
-1. __Messages Precedence__:
-   * When @inputMsgs@ is non-empty (@not (null inputMsgs)@), it takes precedence over
-     'ChatRequest.chatMessages'. This enables reusing request templates across multiple calls
-     and ensures 'batch' processes each item's messages properly.
-   * When @inputMsgs@ is empty (@null inputMsgs@), the provider falls back to
-     'ChatRequest.chatMessages' if a 'ChatRequest' is provided.
-   * If both are empty, defaults to an empty user message.
-
-2. __Model Name Precedence__:
-   * When a 'ChatRequest' is provided with a non-empty 'chatModel', it overrides
-     the provider's default 'ollamaModelName'.
-   * Otherwise, the provider's 'ollamaModelName' is used as the default.
+Ollama provider using 'ollama-haskell'. Supports native structured outputs
+via JSON Schema grammar sampling, token streaming, tool calling, and model options.
 -}
 module Langchain.Provider.Ollama
-  ( Ollama (..)
+  ( -- * Provider
+    Ollama (..)
   , newOllama
   , newOllamaWithClient
+
+    -- * Configuration
+  , OllamaConfig (..)
+  , OllamaOptions
+  , defaultOllamaConfig
+  , defaultClientConfig
+  , withOptions
+  , withTools
+  , withJsonFormat
+  , withSchemaFormat
+  , withStructuredOutput
+  , withKeepAlive
+  , withThink
+
+    -- * Proxy
+  , Proxy (..)
+
+    -- * Tool Binding
+  , OllamaWithTools (..)
+  , bindTools
+  , toOllamaTool
+  , toOllamaTools
+
+    -- * Conversions
   , toOllamaRole
   , fromOllamaRole
   , toOllamaMessage
   , fromOllamaMessage
-  , withJsonFormat
-  , withSchemaFormat
-  , withOptions
-  , chatRequestFor
-  , resolveChatRequest
-  , withTools
-  , toOllamaTool
-  , toOllamaTools
-  , OllamaWithTools (..)
-  , bindTools
 
-    -- * Re-exports from ollama-haskell format, schema, options & client config
-  , module Ollama.API.Chat
+    -- * Re-exports from ollama-haskell
   , module Ollama.Client.Config
   , module Ollama.Types.Common
   , module Ollama.Types.Options
@@ -69,12 +62,9 @@ module Langchain.Provider.Ollama
   , OSB.JsonType (..)
   , OSD.ToSchema (..)
   , OSD.ToJsonType (..)
-  , OllamaOptions (..)
-  , SupportsStructuredOutput (..)
-  , withStructuredOutput
-  , defaultOllamaConfig
   ) where
 
+import Control.Applicative ((<|>))
 import Control.Monad (when)
 import Control.Monad.Except (throwError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -84,9 +74,11 @@ import qualified Data.ByteString.Lazy.Char8 as LBSC
 import Data.Conduit (await, transPipe, yield, (.|))
 import qualified Data.List.NonEmpty as NonEmpty
 import Data.Maybe (fromMaybe, isJust, mapMaybe)
+import Data.Proxy (Proxy (..))
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
+import GHC.Generics (Generic)
 
 import Langchain.Cache.Core (CacheableChatModel (..))
 import Langchain.Error (llmError)
@@ -95,11 +87,10 @@ import Langchain.Stream (StreamEvent (..), TokenUsage (..))
 import Langchain.Tool (Tool, toolToValue)
 import Langchain.Tool.Binding (ToolBinder (..))
 
-import Ollama.API.Chat
 import qualified Ollama.API.Chat as OllamaChat
 import Ollama.Client (OllamaClient (..), newClient)
 import Ollama.Client.Config (OllamaClientConfig (..), defaultConfig)
-import Ollama.Types.Common (Base64Image (..), ModelName (..))
+import Ollama.Types.Common (Base64Image (..), ModelName (..), Think)
 import qualified Ollama.Types.Format as OFormat
 import qualified Ollama.Types.Format.SchemaBuilder as OSB
 import qualified Ollama.Types.Format.SchemaDerive as OSD
@@ -107,26 +98,112 @@ import qualified Ollama.Types.Message as O
 import Ollama.Types.Options (ModelOptions (..), defaultOptions)
 import qualified Ollama.Types.Tool as OTool
 
--- | Ollama provider data type wrapping OllamaClient and model name
+-- | Ollama provider wrapping an 'OllamaClient' and model name.
 data Ollama = Ollama
-  { client :: OllamaClient
-  , ollamaModelName :: Text
+  { client :: !OllamaClient
+  -- ^ The underlying HTTP client connection to Ollama
+  , ollamaModelName :: !Text
+  -- ^ The model name (e.g. @"llama3"@, @"gemma3"@)
   }
 
 instance Show Ollama where
   show (Ollama _ m) = "Ollama provider (" ++ show m ++ ")"
 
--- | Create a new Ollama provider with model name and client config
+-- | Create a new Ollama provider with a model name and client configuration.
 newOllama :: MonadIO m => Text -> OllamaClientConfig -> m Ollama
 newOllama model cfg = do
   c <- liftIO $ newClient cfg
   pure $ Ollama c model
 
--- | Create an Ollama provider using an existing OllamaClient handle
+-- | Create an Ollama provider using an existing 'OllamaClient' handle.
 newOllamaWithClient :: Text -> OllamaClient -> Ollama
 newOllamaWithClient model c = Ollama c model
 
--- | Helper to convert core Role to Ollama Role
+{- | Configuration options for an Ollama invocation.
+
+Contains request-level settings (tools, format constraints, model options,
+keep-alive duration, thinking parameter) without redundant model names or message history.
+-}
+data OllamaConfig = OllamaConfig
+  { ollamaTools :: !(Maybe [OTool.Tool])
+  -- ^ Tool definitions available for the model to invoke
+  , ollamaFormat :: !(Maybe OFormat.Format)
+  -- ^ Output format constraint (e.g. JSON format or JSON schema)
+  , ollamaOptions :: !(Maybe ModelOptions)
+  -- ^ Runtime model parameters (temperature, num_ctx, top_k, top_p, etc.)
+  , ollamaKeepAlive :: !(Maybe Text)
+  -- ^ Time to keep model in memory (e.g. @"5m"@)
+  , ollamaThink :: !(Maybe Think)
+  -- ^ Thinking parameter for reasoning models
+  }
+  deriving (Eq, Show, Generic)
+
+-- | Backward-compatible alias for 'OllamaConfig'.
+type OllamaOptions = OllamaConfig
+
+-- | Default empty 'OllamaConfig' with all options unset.
+defaultOllamaConfig :: OllamaConfig
+defaultOllamaConfig = OllamaConfig Nothing Nothing Nothing Nothing Nothing
+
+-- | Default Ollama client configuration targeting local @http://localhost:11434@.
+defaultClientConfig :: OllamaClientConfig
+defaultClientConfig = defaultConfig
+
+instance Semigroup OllamaConfig where
+  a <> b =
+    OllamaConfig
+      { ollamaTools = case (ollamaTools a, ollamaTools b) of
+          (Just ts1, Just ts2) -> Just (ts1 ++ ts2)
+          (t1, t2) -> t2 <|> t1
+      , ollamaFormat = ollamaFormat b <|> ollamaFormat a
+      , ollamaOptions = ollamaOptions b <|> ollamaOptions a
+      , ollamaKeepAlive = ollamaKeepAlive b <|> ollamaKeepAlive a
+      , ollamaThink = ollamaThink b <|> ollamaThink a
+      }
+
+instance Monoid OllamaConfig where
+  mempty = defaultOllamaConfig
+
+-- | Attach runtime 'ModelOptions' (temperature, context size, etc.) to an 'OllamaConfig'.
+withOptions :: ModelOptions -> OllamaConfig -> OllamaConfig
+withOptions opts cfg = cfg {ollamaOptions = Just opts}
+
+-- | Attach Langchain tools to an 'OllamaConfig'.
+withTools :: [Tool m] -> OllamaConfig -> OllamaConfig
+withTools ts cfg =
+  let newTs = toOllamaTools ts
+      combined = case ollamaTools cfg of
+        Nothing -> newTs
+        Just existing -> existing ++ newTs
+   in cfg {ollamaTools = Just combined}
+
+-- | Attach generic JSON format constraint to an 'OllamaConfig'.
+withJsonFormat :: OllamaConfig -> OllamaConfig
+withJsonFormat cfg = cfg {ollamaFormat = Just OFormat.JsonFormat}
+
+-- | Attach specific Schema format constraint to an 'OllamaConfig'.
+withSchemaFormat :: OSB.Schema -> OllamaConfig -> OllamaConfig
+withSchemaFormat schema cfg = cfg {ollamaFormat = Just (OFormat.SchemaFormat schema)}
+
+-- | Attach automatic 'OSD.ToSchema' derived format constraint to an 'OllamaConfig'.
+withStructuredOutput ::
+  forall a.
+  (OSD.ToSchema a) =>
+  Proxy a ->
+  OllamaConfig ->
+  OllamaConfig
+withStructuredOutput _ cfg =
+  cfg {ollamaFormat = Just (OFormat.SchemaFormat (OSD.toSchema @a))}
+
+-- | Set keep-alive duration (e.g. @"5m"@) on an 'OllamaConfig'.
+withKeepAlive :: Text -> OllamaConfig -> OllamaConfig
+withKeepAlive duration cfg = cfg {ollamaKeepAlive = Just duration}
+
+-- | Set thinking parameter on an 'OllamaConfig'.
+withThink :: Think -> OllamaConfig -> OllamaConfig
+withThink th cfg = cfg {ollamaThink = Just th}
+
+-- | Convert core 'Role' to Ollama 'O.Role'.
 toOllamaRole :: Role -> O.Role
 toOllamaRole System = O.System
 toOllamaRole User = O.User
@@ -135,14 +212,14 @@ toOllamaRole Tool = O.Tool
 toOllamaRole Developer = O.System
 toOllamaRole Function = O.Tool
 
--- | Helper to convert Ollama Role to core Role
+-- | Convert Ollama 'O.Role' to core 'Role'.
 fromOllamaRole :: O.Role -> Role
 fromOllamaRole O.System = System
 fromOllamaRole O.User = User
 fromOllamaRole O.Assistant = Assistant
 fromOllamaRole O.Tool = Tool
 
--- | Convert core Message to Ollama Message
+-- | Convert core 'Message' to Ollama 'O.Message'.
 toOllamaMessage :: Message -> O.Message
 toOllamaMessage msg =
   let r = toOllamaRole (messageRole msg)
@@ -175,7 +252,7 @@ toOllamaMessage msg =
           _ -> mempty
    in O.Message r txt imgs tools (messageName msg) Nothing
 
--- | Convert Ollama Message to core Message
+-- | Convert Ollama 'O.Message' to core 'Message'.
 fromOllamaMessage :: O.Message -> Message
 fromOllamaMessage (O.Message r txt _imgs tools name _think) =
   let cRole = fromOllamaRole r
@@ -194,113 +271,52 @@ fromOllamaMessage (O.Message r txt _imgs tools name _think) =
             ]
    in cMsg {messageToolCalls = cTools}
 
-{- | Construct a 'ChatRequest' for an 'Ollama' instance with the given messages.
+-- | Convert a Langchain 'Tool' definition to an Ollama 'OTool.Tool'.
+toOllamaTool :: Tool m -> Maybe OTool.Tool
+toOllamaTool t = case fromJSON (toolToValue t) of
+  Success ot -> Just ot
+  Aeson.Error _ -> Nothing
 
-Sets 'chatModel' to the provider's 'ollamaModelName'. When passed to 'invoke'
-or 'stream', any non-empty message argument passed directly to 'invoke' or
-'stream' will take priority over the messages in this 'ChatRequest'.
--}
-chatRequestFor :: Ollama -> [Message] -> OllamaChat.ChatRequest
-chatRequestFor model inputMsgs =
+-- | Convert a list of Langchain 'Tool' definitions to Ollama 'OTool.Tool's.
+toOllamaTools :: [Tool m] -> [OTool.Tool]
+toOllamaTools = mapMaybe toOllamaTool
+
+-- | Build an 'OllamaChat.ChatRequest' from an 'Ollama' model, messages, and optional 'OllamaConfig'.
+toChatRequest :: Ollama -> [Message] -> Maybe OllamaConfig -> OllamaChat.ChatRequest
+toChatRequest (Ollama _ mName) inputMsgs mbConfig =
   let oMsgs = case inputMsgs of
-        [] -> O.userMessage "" NonEmpty.:| []
         (m : ms) -> NonEmpty.map toOllamaMessage (m NonEmpty.:| ms)
-   in OllamaChat.chatRequest (ModelName (ollamaModelName model)) oMsgs
-
-{- | Resolve the effective 'ChatRequest', effective model name, and effective messages
-given the provider instance, explicit message arguments, and optional 'ChatRequest'.
-
-= Precedence Rules
-
-* __Messages Precedence__:
-  1. If @inputMsgs@ is non-empty (@not (null inputMsgs)@), it takes priority and
-     is used as the request conversation. This enables reusing a configured
-     'ChatRequest' (tools, formats, options) across invocations and guarantees
-     that 'batch' processes each item's messages properly.
-  2. If @inputMsgs@ is empty (@null inputMsgs@) and a 'ChatRequest' is provided,
-     its 'chatMessages' field is preserved and used.
-  3. If both are empty (or @inputMsgs@ is empty and 'mbReq' is 'Nothing'),
-     it defaults to a single empty user message.
-
-* __Model Name Precedence__:
-  1. If a 'ChatRequest' is provided and its 'chatModel' is non-empty,
-     it overrides the provider's default 'ollamaModelName'.
-  2. Otherwise, the provider's 'ollamaModelName' is used as the default.
--}
-resolveChatRequest ::
-  Ollama ->
-  [Message] ->
-  Maybe OllamaOptions ->
-  (OllamaChat.ChatRequest, Text, [Message])
-resolveChatRequest model inputMsgs mbReq =
-  let providerModel = ollamaModelName model
-      resolvedModelText = case mbReq of
-        Just (OllamaOptions r) ->
-          let m = unModelName (OllamaChat.chatModel r)
-           in if T.null m then providerModel else m
-        Nothing -> providerModel
-      resolvedModelName = ModelName resolvedModelText
-
-      (resolvedOMsgs, resolvedCoreMsgs) = case inputMsgs of
-        (m : ms) ->
-          let oList = NonEmpty.map toOllamaMessage (m NonEmpty.:| ms)
-           in (oList, inputMsgs)
-        [] -> case mbReq of
-          Just (OllamaOptions r) ->
-            let oList = OllamaChat.chatMessages r
-                coreList = map fromOllamaMessage (NonEmpty.toList oList)
-             in (oList, coreList)
-          Nothing ->
-            (O.userMessage "" NonEmpty.:| [], [])
-
-      resolvedReq = case mbReq of
-        Nothing ->
-          OllamaChat.chatRequest resolvedModelName resolvedOMsgs
-        Just (OllamaOptions r) ->
-          r
-            { OllamaChat.chatModel = resolvedModelName
-            , OllamaChat.chatMessages = resolvedOMsgs
-            }
-   in (resolvedReq, resolvedModelText, resolvedCoreMsgs)
-
-newtype OllamaOptions = OllamaOptions {unOptions :: OllamaChat.ChatRequest}
-
-{- | Typeclass for model configs that support Ollama's grammar-enforced JSON schema output.
-Separate from the generic 'StructuredOutput' mechanism in langchain-hs.
--}
-class SupportsStructuredOutput config where
-  setSchemaFormat :: OSB.Schema -> config -> config
-
-instance SupportsStructuredOutput OllamaOptions where
-  setSchemaFormat schema (OllamaOptions req) =
-    OllamaOptions $ req {OllamaChat.chatFormat = Just (OFormat.SchemaFormat schema)}
-
--- | Attach automatic ToSchema derived format constraint to Ollama config
-withStructuredOutput ::
-  forall a config.
-  (OSD.ToSchema a, SupportsStructuredOutput config) =>
-  config ->
-  config
-withStructuredOutput =
-  setSchemaFormat (OSD.toSchema @a)
+        [] -> O.userMessage "" NonEmpty.:| []
+      cfg = fromMaybe defaultOllamaConfig mbConfig
+   in OllamaChat.ChatRequest
+        { OllamaChat.chatModel = ModelName mName
+        , OllamaChat.chatMessages = oMsgs
+        , OllamaChat.chatTools = ollamaTools cfg
+        , OllamaChat.chatFormat = ollamaFormat cfg
+        , OllamaChat.chatOptions = ollamaOptions cfg
+        , OllamaChat.chStream = Just False
+        , OllamaChat.chatKeepAlive = ollamaKeepAlive cfg
+        , OllamaChat.chatThink = ollamaThink cfg
+        }
 
 instance ChatModel Ollama where
-  type ModelConfig Ollama = OllamaOptions
+  type ModelConfig Ollama = OllamaConfig
 
-  invoke model inputMsgs mbReq = do
-    let (req, _modelName, _msgs) = resolveChatRequest model inputMsgs mbReq
+  invoke model inputMsgs mbConfig = do
+    let req = toChatRequest model inputMsgs mbConfig
     eRes <- liftIO $ OllamaChat.chat (client model) req
     case eRes of
-      Left err -> throwError $ llmError (T.pack $ show err) Nothing Nothing
+      Left err -> throwError $ llmError (T.pack $ show err) (Just "Ollama") Nothing
       Right resp -> case OllamaChat.crMessage resp of
-        Nothing -> throwError $ llmError "No message in response" Nothing Nothing
+        Nothing -> throwError $ llmError "No message in response" (Just "Ollama") Nothing
         Just oMsg -> pure $ fromOllamaMessage oMsg
 
-  stream model inputMsgs mbReq = do
+  stream model inputMsgs mbConfig = do
     let runId_ = "ollama-run"
-        (req, resolvedModel, resolvedMsgs) = resolveChatRequest model inputMsgs mbReq
+        req = toChatRequest model inputMsgs mbConfig
+        resolvedModel = ollamaModelName model
 
-    yield $ LLMStart runId_ resolvedModel resolvedMsgs
+    yield $ LLMStart runId_ resolvedModel inputMsgs
     transPipe liftIO (OllamaChat.chatStream (client model) req) .| processChunks runId_
     where
       processChunks rId = loop [] Nothing Nothing
@@ -346,99 +362,54 @@ instance ChatModel Ollama where
                 loop newAccChunks newUsage newTools
 
 instance CacheableChatModel Ollama where
-  cacheModelIdentity (Ollama ollamaClient mName) mbOpts =
-    let mbReq = unOptions <$> mbOpts
-     in Aeson.object
-          [ "provider" .= ("ollama" :: Text)
-          , "baseUrl" .= configBaseUrl (clientConfig ollamaClient)
-          , "model" .= mName
-          , "config"
-              .= Aeson.object
-                [ "tools" .= (OllamaChat.chatTools <$> mbReq)
-                , "format" .= (OllamaChat.chatFormat <$> mbReq)
-                , "options" .= (OllamaChat.chatOptions <$> mbReq)
-                , "keep_alive" .= (OllamaChat.chatKeepAlive <$> mbReq)
-                , "think" .= (OllamaChat.chatThink <$> mbReq)
-                ]
-          ]
+  cacheModelIdentity (Ollama ollamaClient mName) mbCfg =
+    Aeson.object
+      [ "provider" .= ("ollama" :: Text)
+      , "baseUrl" .= configBaseUrl (clientConfig ollamaClient)
+      , "model" .= mName
+      , "config"
+          .= Aeson.object
+            [ "tools" .= (ollamaTools =<< mbCfg)
+            , "format" .= (ollamaFormat =<< mbCfg)
+            , "options" .= (ollamaOptions =<< mbCfg)
+            , "keep_alive" .= (ollamaKeepAlive =<< mbCfg)
+            , "think" .= (ollamaThink =<< mbCfg)
+            ]
+      ]
 
--- | Set model options on an Ollama ChatRequest
-withOptions :: ModelOptions -> OllamaChat.ChatRequest -> OllamaChat.ChatRequest
-withOptions opts req = req {OllamaChat.chatOptions = Just opts}
+-- | Attach tool definitions to an 'Ollama' invocation config.
+instance ToolBinder Ollama m where
+  bindToolsConfig tools mbConfig =
+    case tools of
+      [] -> mbConfig
+      _ ->
+        let cfg = fromMaybe defaultOllamaConfig mbConfig
+         in Just (withTools tools cfg)
 
--- | Attach Langchain tools to an Ollama ChatRequest
-withTools :: [Tool m] -> OllamaChat.ChatRequest -> OllamaChat.ChatRequest
-withTools ts req = req {OllamaChat.chatTools = Just (toOllamaTools ts)}
-
--- | Convert a Langchain 'Tool' definition to an Ollama 'OTool.Tool'
-toOllamaTool :: Tool m -> Maybe OTool.Tool
-toOllamaTool t = case fromJSON (toolToValue t) of
-  Success ot -> Just ot
-  Aeson.Error _ -> Nothing
-
--- | Convert a list of Langchain 'Tool' definitions to Ollama 'OTool.Tool's
-toOllamaTools :: [Tool m] -> [OTool.Tool]
-toOllamaTools = mapMaybe toOllamaTool
-
--- | Attach generic JSON format constraint to Ollama ChatRequest
-withJsonFormat :: OllamaChat.ChatRequest -> OllamaChat.ChatRequest
-withJsonFormat req = req {OllamaChat.chatFormat = Just OFormat.JsonFormat}
-
--- | Attach specific Schema format constraint to Ollama ChatRequest
-withSchemaFormat :: OSB.Schema -> OllamaChat.ChatRequest -> OllamaChat.ChatRequest
-withSchemaFormat schema req = req {OllamaChat.chatFormat = Just (OFormat.SchemaFormat schema)}
-
--- | Ollama model with pre-bound tools
+-- | Ollama model with pre-bound tools.
 data OllamaWithTools m = OllamaWithTools
   { ollamaBaseModel :: !Ollama
+  -- ^ The underlying Ollama model
   , ollamaBoundTools :: ![Tool m]
+  -- ^ Pre-bound tools attached to this model
   }
 
 instance Show (OllamaWithTools m) where
   show (OllamaWithTools m _) = "OllamaWithTools (" ++ show m ++ ")"
 
--- | Bind tools to an Ollama model so any invocation automatically includes tool definitions
+-- | Bind tools to an Ollama model so any invocation automatically includes tool definitions.
 bindTools :: [Tool m] -> Ollama -> OllamaWithTools m
 bindTools ts model = OllamaWithTools model ts
 
 instance ChatModel (OllamaWithTools m) where
-  type ModelConfig (OllamaWithTools m) = OllamaChat.ChatRequest
-  invoke (OllamaWithTools model ts) msgs mbReq =
-    let req = fromMaybe (chatRequestFor model msgs) mbReq
-     in invoke model msgs (Just . OllamaOptions $ withTools ts req)
-  stream (OllamaWithTools model ts) msgs mbReq =
-    let req = fromMaybe (chatRequestFor model msgs) mbReq
-     in stream model msgs (Just . OllamaOptions $ withTools ts req)
+  type ModelConfig (OllamaWithTools m) = OllamaConfig
+  invoke (OllamaWithTools model ts) msgs mbCfg =
+    invoke model msgs (bindToolsConfig @Ollama ts mbCfg)
+  stream (OllamaWithTools model ts) msgs mbCfg =
+    stream model msgs (bindToolsConfig @Ollama ts mbCfg)
 
--- | Bind tools to an Ollama model by creating/merging a ChatRequest with tool definitions
-instance ToolBinder Ollama m where
-  bindToolsConfig tools mbReq =
-    case tools of
-      [] -> mbReq
-      _ ->
-        let baseReq =
-              case mbReq of
-                Nothing ->
-                  OllamaChat.chatRequest
-                    (ModelName "")
-                    (O.userMessage "" NonEmpty.:| [])
-                Just (OllamaOptions req) -> req
-         in Just . OllamaOptions $ withTools tools baseReq
-
--- | OllamaWithTools already has tools bound, but merges additional tools if provided
 instance ToolBinder (OllamaWithTools m) n where
-  bindToolsConfig tools mbReq =
+  bindToolsConfig tools mbCfg =
     case tools of
-      [] -> mbReq
-      _ ->
-        let baseReq = fromMaybe (OllamaChat.chatRequest (ModelName "") (O.userMessage "" NonEmpty.:| [])) mbReq
-         in Just $ withTools tools baseReq
-
-{- | Default Ollama client config targeting a local Ollama instance at
-@http://localhost:11434@. Alias for 'Ollama.Client.Config.defaultConfig'
-that avoids name collisions with OpenAI and Gemini providers.
-
->>> newOllama "llama3" defaultOllamaConfig
--}
-defaultOllamaConfig :: OllamaClientConfig
-defaultOllamaConfig = defaultConfig
+      [] -> mbCfg
+      _ -> Just (withTools tools (fromMaybe defaultOllamaConfig mbCfg))
