@@ -51,13 +51,13 @@ data GeminiClientEnv = GeminiClientEnv
 defaultBaseUrl :: BaseUrl
 defaultBaseUrl = BaseUrl Https "generativelanguage.googleapis.com" 443 ""
 
--- | Initialize a new 'GeminiClientEnv' targeting the default Gemini endpoint.
+-- | Initialize a new t'GeminiClientEnv' targeting the default Gemini endpoint.
 newGeminiClientEnv :: Text -> IO GeminiClientEnv
 newGeminiClientEnv apiKey = do
   mgr <- newManager tlsManagerSettings
   pure $ GeminiClientEnv mgr defaultBaseUrl apiKey
 
--- | Initialize a new 'GeminiClientEnv' targeting a custom base URL.
+-- | Initialize a new t'GeminiClientEnv' targeting a custom base URL.
 newGeminiClientEnvWithBaseUrl :: Text -> Text -> IO GeminiClientEnv
 newGeminiClientEnvWithBaseUrl rawUrl apiKey = do
   mgr <- newManager tlsManagerSettings
@@ -70,7 +70,7 @@ runGeminiClient GeminiClientEnv {..} action = do
   let env = mkClientEnv clientManager clientBaseUrl
   runClientM action env
 
--- | Stream events from @POST \/v1\/interactions@ with SSE.
+-- | Stream events from @POST /v1/interactions@ with SSE.
 streamGeminiInteraction ::
   (MonadResource m) =>
   GeminiClientEnv ->

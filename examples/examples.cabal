@@ -28,6 +28,11 @@ source-repository head
 library
   exposed-modules:
       Common.PromptTemplate
+      Gemini.Common
+      Gemini.RAG
+      Gemini.Simple
+      Gemini.Stream
+      Gemini.Tool
       Ollama.Guardrail
       Ollama.HITL
       Ollama.MCP
@@ -77,7 +82,10 @@ library
     , base >=4.7 && <5
     , conduit
     , containers
+    , directory
+    , filepath
     , langchain-hs
+    , langchain-hs-gemini
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -99,8 +107,11 @@ executable guardrailollama
     , base >=4.7 && <5
     , conduit
     , containers
+    , directory
     , examples
+    , filepath
     , langchain-hs
+    , langchain-hs-gemini
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -122,8 +133,11 @@ executable guardrailopenai
     , base >=4.7 && <5
     , conduit
     , containers
+    , directory
     , examples
+    , filepath
     , langchain-hs
+    , langchain-hs-gemini
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -145,8 +159,11 @@ executable hitlollama
     , base >=4.7 && <5
     , conduit
     , containers
+    , directory
     , examples
+    , filepath
     , langchain-hs
+    , langchain-hs-gemini
     , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
@@ -169,8 +186,11 @@ executable hitlopenai
     , base >=4.7 && <5
     , conduit
     , containers
+    , directory
     , examples
+    , filepath
     , langchain-hs
+    , langchain-hs-gemini
     , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
@@ -193,8 +213,11 @@ executable jsonollama
     , base >=4.7 && <5
     , conduit
     , containers
+    , directory
     , examples
+    , filepath
     , langchain-hs
+    , langchain-hs-gemini
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -216,8 +239,11 @@ executable jsonopenai
     , base >=4.7 && <5
     , conduit
     , containers
+    , directory
     , examples
+    , filepath
     , langchain-hs
+    , langchain-hs-gemini
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -239,8 +265,11 @@ executable mcpollama
     , base >=4.7 && <5
     , conduit
     , containers
+    , directory
     , examples
+    , filepath
     , langchain-hs
+    , langchain-hs-gemini
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -262,8 +291,11 @@ executable mcpopenai
     , base >=4.7 && <5
     , conduit
     , containers
+    , directory
     , examples
+    , filepath
     , langchain-hs
+    , langchain-hs-gemini
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -285,8 +317,11 @@ executable memoryollama
     , base >=4.7 && <5
     , conduit
     , containers
+    , directory
     , examples
+    , filepath
     , langchain-hs
+    , langchain-hs-gemini
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -308,8 +343,11 @@ executable memoryopenai
     , base >=4.7 && <5
     , conduit
     , containers
+    , directory
     , examples
+    , filepath
     , langchain-hs
+    , langchain-hs-gemini
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -331,8 +369,11 @@ executable monadollama
     , base >=4.7 && <5
     , conduit
     , containers
+    , directory
     , examples
+    , filepath
     , langchain-hs
+    , langchain-hs-gemini
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -354,8 +395,11 @@ executable monadopenai
     , base >=4.7 && <5
     , conduit
     , containers
+    , directory
     , examples
+    , filepath
     , langchain-hs
+    , langchain-hs-gemini
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -377,8 +421,11 @@ executable multiagentollama
     , base >=4.7 && <5
     , conduit
     , containers
+    , directory
     , examples
+    , filepath
     , langchain-hs
+    , langchain-hs-gemini
     , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
@@ -401,8 +448,11 @@ executable multiagentopenai
     , base >=4.7 && <5
     , conduit
     , containers
+    , directory
     , examples
+    , filepath
     , langchain-hs
+    , langchain-hs-gemini
     , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
@@ -425,8 +475,11 @@ executable observabilityollama
     , base >=4.7 && <5
     , conduit
     , containers
+    , directory
     , examples
+    , filepath
     , langchain-hs
+    , langchain-hs-gemini
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -448,8 +501,11 @@ executable observabilityopenai
     , base >=4.7 && <5
     , conduit
     , containers
+    , directory
     , examples
+    , filepath
     , langchain-hs
+    , langchain-hs-gemini
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -471,8 +527,11 @@ executable planandexecuteollama
     , base >=4.7 && <5
     , conduit
     , containers
+    , directory
     , examples
+    , filepath
     , langchain-hs
+    , langchain-hs-gemini
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -494,8 +553,11 @@ executable planandexecuteopenai
     , base >=4.7 && <5
     , conduit
     , containers
+    , directory
     , examples
+    , filepath
     , langchain-hs
+    , langchain-hs-gemini
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -517,8 +579,37 @@ executable prompttemplate
     , base >=4.7 && <5
     , conduit
     , containers
+    , directory
     , examples
+    , filepath
     , langchain-hs
+    , langchain-hs-gemini
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
+    , mtl
+    , resourcet
+    , text
+    , time
+  default-language: Haskell2010
+
+executable raggemini
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/raggemini
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , conduit
+    , containers
+    , directory
+    , examples
+    , filepath
+    , langchain-hs
+    , langchain-hs-gemini
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -540,8 +631,11 @@ executable ragollama
     , base >=4.7 && <5
     , conduit
     , containers
+    , directory
     , examples
+    , filepath
     , langchain-hs
+    , langchain-hs-gemini
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -563,8 +657,11 @@ executable ragopenai
     , base >=4.7 && <5
     , conduit
     , containers
+    , directory
     , examples
+    , filepath
     , langchain-hs
+    , langchain-hs-gemini
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -586,8 +683,11 @@ executable reactollama
     , base >=4.7 && <5
     , conduit
     , containers
+    , directory
     , examples
+    , filepath
     , langchain-hs
+    , langchain-hs-gemini
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -609,8 +709,11 @@ executable reactopenai
     , base >=4.7 && <5
     , conduit
     , containers
+    , directory
     , examples
+    , filepath
     , langchain-hs
+    , langchain-hs-gemini
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -632,8 +735,11 @@ executable resilienceollama
     , base >=4.7 && <5
     , conduit
     , containers
+    , directory
     , examples
+    , filepath
     , langchain-hs
+    , langchain-hs-gemini
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -655,8 +761,11 @@ executable resilienceopenai
     , base >=4.7 && <5
     , conduit
     , containers
+    , directory
     , examples
+    , filepath
     , langchain-hs
+    , langchain-hs-gemini
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -678,8 +787,11 @@ executable retrievalqaollama
     , base >=4.7 && <5
     , conduit
     , containers
+    , directory
     , examples
+    , filepath
     , langchain-hs
+    , langchain-hs-gemini
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -701,8 +813,11 @@ executable retrievalqaopenai
     , base >=4.7 && <5
     , conduit
     , containers
+    , directory
     , examples
+    , filepath
     , langchain-hs
+    , langchain-hs-gemini
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -724,8 +839,11 @@ executable retrieverollama
     , base >=4.7 && <5
     , conduit
     , containers
+    , directory
     , examples
+    , filepath
     , langchain-hs
+    , langchain-hs-gemini
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -747,8 +865,11 @@ executable retrieveropenai
     , base >=4.7 && <5
     , conduit
     , containers
+    , directory
     , examples
+    , filepath
     , langchain-hs
+    , langchain-hs-gemini
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -770,8 +891,11 @@ executable runnableollama
     , base >=4.7 && <5
     , conduit
     , containers
+    , directory
     , examples
+    , filepath
     , langchain-hs
+    , langchain-hs-gemini
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -793,8 +917,37 @@ executable runnableopenai
     , base >=4.7 && <5
     , conduit
     , containers
+    , directory
     , examples
+    , filepath
     , langchain-hs
+    , langchain-hs-gemini
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
+    , mtl
+    , resourcet
+    , text
+    , time
+  default-language: Haskell2010
+
+executable simplegemini
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/simplegemini
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , conduit
+    , containers
+    , directory
+    , examples
+    , filepath
+    , langchain-hs
+    , langchain-hs-gemini
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -816,8 +969,11 @@ executable simpleollama
     , base >=4.7 && <5
     , conduit
     , containers
+    , directory
     , examples
+    , filepath
     , langchain-hs
+    , langchain-hs-gemini
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -839,8 +995,11 @@ executable simpleopenai
     , base >=4.7 && <5
     , conduit
     , containers
+    , directory
     , examples
+    , filepath
     , langchain-hs
+    , langchain-hs-gemini
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -862,8 +1021,11 @@ executable stategraphollama
     , base >=4.7 && <5
     , conduit
     , containers
+    , directory
     , examples
+    , filepath
     , langchain-hs
+    , langchain-hs-gemini
     , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
@@ -886,9 +1048,38 @@ executable stategraphopenai
     , base >=4.7 && <5
     , conduit
     , containers
+    , directory
     , examples
+    , filepath
     , langchain-hs
+    , langchain-hs-gemini
     , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
+    , mtl
+    , resourcet
+    , text
+    , time
+  default-language: Haskell2010
+
+executable streamgemini
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/streamgemini
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , conduit
+    , containers
+    , directory
+    , examples
+    , filepath
+    , langchain-hs
+    , langchain-hs-gemini
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -910,8 +1101,11 @@ executable streamollama
     , base >=4.7 && <5
     , conduit
     , containers
+    , directory
     , examples
+    , filepath
     , langchain-hs
+    , langchain-hs-gemini
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -933,8 +1127,37 @@ executable streamopenai
     , base >=4.7 && <5
     , conduit
     , containers
+    , directory
     , examples
+    , filepath
     , langchain-hs
+    , langchain-hs-gemini
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
+    , mtl
+    , resourcet
+    , text
+    , time
+  default-language: Haskell2010
+
+executable toolgemini
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/toolgemini
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , conduit
+    , containers
+    , directory
+    , examples
+    , filepath
+    , langchain-hs
+    , langchain-hs-gemini
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -956,8 +1179,11 @@ executable toolollama
     , base >=4.7 && <5
     , conduit
     , containers
+    , directory
     , examples
+    , filepath
     , langchain-hs
+    , langchain-hs-gemini
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -979,8 +1205,11 @@ executable toolopenai
     , base >=4.7 && <5
     , conduit
     , containers
+    , directory
     , examples
+    , filepath
     , langchain-hs
+    , langchain-hs-gemini
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -1003,8 +1232,11 @@ test-suite examples-test
     , base >=4.7 && <5
     , conduit
     , containers
+    , directory
     , examples
+    , filepath
     , langchain-hs
+    , langchain-hs-gemini
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai

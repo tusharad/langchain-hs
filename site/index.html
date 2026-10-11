@@ -33,8 +33,8 @@ description: Purely functional, effect-polymorphic, zero-unsafePerformIO AI agen
 <!-- Interactive Dual-Provider Code Showcase -->
 <section class="showcase-section">
   <div class="showcase-header">
-    <h2>Real Working Code: Ollama vs OpenAI</h2>
-    <p style="color: var(--text-muted);">Switch between local inference (Ollama) and cloud APIs (OpenAI / OpenRouter) across all 19 components.</p>
+    <h2>Real Working Code: Ollama, OpenAI & Gemini</h2>
+    <p style="color: var(--text-muted);">Switch between local inference (Ollama), cloud APIs (OpenAI / OpenRouter), and Google Gemini (Interactions v1 API).</p>
   </div>
 
   <div class="provider-group">
@@ -74,6 +74,26 @@ description: Purely functional, effect-polymorphic, zero-unsafePerformIO AI agen
   
   <span class="kw">let</span> msg <span class="ot">=</span> [userMessage <span class="st">&quot;Write a poem about functional programming in Haskell&quot;</span>]
   res <span class="ot">&lt;-</span> runExceptT <span class="op">$$</span> invoke o msg <span class="dt">Nothing</span>
+  <span class="kw">case</span> res <span class="kw">of</span>
+    <span class="dt">Left</span> err <span class="ot">-&gt;</span> T.putStrLn <span class="op">$$</span> errorMessage err
+    <span class="dt">Right</span> m  <span class="ot">-&gt;</span> T.putStrLn <span class="op">$$</span> extractMessageText m</code></pre></div>
+    </div>
+    <div class="provider-panel" data-provider="gemini" data-label="✨ Google Gemini" data-exe="cabal run simplegemini">
+      <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE OverloadedStrings #-}</span>
+<span class="kw">module</span> <span class="dt">Main</span> <span class="kw">where</span>
+
+<span class="kw">import</span> <span class="dt">Control.Monad.Except</span> (runExceptT)
+<span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Text.IO</span> <span class="kw">as</span> <span class="dt">T</span>
+<span class="kw">import</span> <span class="dt">Gemini.Common</span> (defaultGeminiModelName, getGeminiModel)
+<span class="kw">import</span> <span class="dt">Langchain.Prelude</span>
+
+<span class="ot">main ::</span> <span class="dt">IO</span> ()
+<span class="ot">main</span> <span class="ot">=</span> <span class="kw">do</span>
+  <span class="co">-- Connect to Google Gemini using Interactions v1 OpenAPI client</span>
+  g <span class="ot">&lt;-</span> getGeminiModel defaultGeminiModelName
+  
+  <span class="kw">let</span> msg <span class="ot">=</span> [userMessage <span class="st">&quot;Write a poem about functional programming in Haskell&quot;</span>]
+  res <span class="ot">&lt;-</span> runExceptT <span class="op">$$</span> invoke g msg <span class="dt">Nothing</span>
   <span class="kw">case</span> res <span class="kw">of</span>
     <span class="dt">Left</span> err <span class="ot">-&gt;</span> T.putStrLn <span class="op">$$</span> errorMessage err
     <span class="dt">Right</span> m  <span class="ot">-&gt;</span> T.putStrLn <span class="op">$$</span> extractMessageText m</code></pre></div>

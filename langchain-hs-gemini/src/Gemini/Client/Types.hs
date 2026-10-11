@@ -585,6 +585,7 @@ data GenerationConfig = GenerationConfig
   }
   deriving (Eq, Show, Generic)
 
+-- | Default generation configuration with all options unset.
 defaultGenerationConfig :: GenerationConfig
 defaultGenerationConfig = GenerationConfig Nothing Nothing Nothing Nothing Nothing Nothing
 

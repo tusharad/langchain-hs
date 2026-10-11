@@ -68,8 +68,8 @@ test-suite langchain-hs-gemini-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Test.Gemini.Client.TypesSpec
       Test.Gemini.Client.InteractionsSpec
+      Test.Gemini.Client.TypesSpec
       Test.Langchain.Provider.GeminiSpec
       Paths_langchain_hs_gemini
   hs-source-dirs:
@@ -83,6 +83,8 @@ test-suite langchain-hs-gemini-test
     , bytestring
     , conduit ==1.3.*
     , containers
+    , directory
+    , filepath
     , http-client ==0.7.*
     , http-client-tls >=0.3 && <0.5
     , http-conduit ==2.*
@@ -102,6 +104,4 @@ test-suite langchain-hs-gemini-test
     , text
     , wai
     , warp
-    , directory
-    , filepath
   default-language: Haskell2010

@@ -49,10 +49,10 @@ import Langchain.Provider.OpenAI
 
 let model = newOpenAI "sk-..." "gpt-4o"
 
--- Google Gemini
+-- Google Gemini (Interactions v1 API)
 import Langchain.Provider.Gemini
 
-let model = newGemini "AIza..." "gemini-1.5-pro"
+let model = newGemini "AIzaSy..." "gemini-3.6-flash" Nothing
 ```
 
 ---

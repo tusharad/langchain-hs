@@ -9,7 +9,7 @@
 [![Hackage](https://img.shields.io/badge/hackage-0.0.6.0-blue.svg)](https://hackage.haskell.org/package/langchain-hs)
 [![GHC](https://img.shields.io/badge/GHC-9.8%2B-purple.svg)](https://www.haskell.org/ghc/)
 [![Components](https://img.shields.io/badge/components-19%20verified-brightgreen.svg)](#19-core-components--verified-targets)
-[![Providers](https://img.shields.io/badge/providers-Ollama%20%7C%20OpenAI%20%7C%20Gemini-orange.svg)](#2-dual-provider-chat-comparison-ollama-vs-openai)
+[![Providers](https://img.shields.io/badge/providers-Ollama%20%7C%20OpenAI%20%7C%20Gemini-orange.svg)](#2-multi-provider-chat-comparison-ollama-openai--gemini)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Whitepaper](https://img.shields.io/badge/whitepaper-read%20now-blueviolet.svg)](whitepaper.md)
 
@@ -37,36 +37,36 @@ Modern AI orchestration frameworks often struggle with race conditions, hidden s
 | `langchain-hs` | [`langchain-hs/`](./langchain-hs) | `0.0.6.0` | Umbrella package re-exporting `langchain-hs-core` and `langchain-hs-graph` via Cabal `reexported-modules`. |
 | `langchain-hs-ollama` | [`langchain-hs-ollama/`](./langchain-hs-ollama) | `0.0.6.0` | Dedicated Ollama provider and embeddings integration via `ollama-haskell`. |
 | `langchain-hs-openai` | [`langchain-hs-openai/`](./langchain-hs-openai) | `0.0.6.0` | Dedicated OpenAI & OpenAI-compatible provider, streaming, and embeddings via `openai`. |
-| `langchain-hs-gemini` | [`langchain-hs-gemini/`](./langchain-hs-gemini) | `0.0.6.0` | Dedicated Google Gemini provider with function calling and SSE streaming. |
+| `langchain-hs-gemini` | [`langchain-hs-gemini/`](./langchain-hs-gemini) | `0.0.6.0` | Dedicated Google Gemini client & provider: Servant bindings over Interactions v1 OpenAPI spec, `ChatModel`, `ToolBinder`, `gemini-embedding-001`, SSE streaming. |
 | `langchain-hs-mcp` | [`langchain-hs-mcp/`](./langchain-hs-mcp) | `0.0.6.0` | Model Context Protocol client over stdio and HTTP JSON-RPC 2.0. |
-| `examples` | [`examples/`](./examples) | `0.1.0.0` | 39 runnable executables covering core components for Ollama and OpenAI. |
+| `examples` | [`examples/`](./examples) | `0.1.0.0` | 43 runnable executables covering core components for Ollama, OpenAI, and Google Gemini. |
 | `site` | [`site/`](./site) | - | Hakyll documentation website with live provider toggle and component reference. |
 
 ---
 
 ## 19 Core Components & Verified Targets
 
-| # | Component | Package Layer | Ollama Executable | OpenAI Executable | Documentation |
-|:---:|---|---|---|---|:---:|
-| 1 | **Chat Models** | `Langchain.Model` | `stack run simpleollama` | `stack run simpleopenai` | [Docs](site/components/chat-models.md) |
-| 2 | **Conduit Streaming** | `Langchain.Stream` | `stack run streamollama` | `stack run streamopenai` | [Docs](site/components/streaming.md) |
-| 3 | **Langchain Monad** | `Langchain.Monad` | `stack run monadollama` | `stack run monadopenai` | [Docs](site/components/monad.md) |
-| 4 | **Tools & Function Calling** | `Langchain.Tool` | `stack run toolollama` | `stack run toolopenai` | [Docs](site/components/tools.md) |
-| 5 | **Structured Outputs** | `Langchain.OutputParser` | `stack run jsonollama` | `stack run jsonopenai` | [Docs](site/components/structured-output.md) |
-| 6 | **RAG & Embeddings** | `Langchain.Embedding` | `stack run ragollama` | `stack run ragopenai` | [Docs](site/components/rag.md) |
-| 7 | **Hybrid Retrievers** | `Langchain.Retriever` | `stack run retrieverollama` | `stack run retrieveropenai` | [Docs](site/components/retrievers.md) |
-| 8 | **Memory Systems** | `Langchain.Memory` | `stack run memoryollama` | `stack run memoryopenai` | [Docs](site/components/memory.md) |
-| 9 | **Retrieval QA Chains** | `Langchain.Chain.RetrievalQA` | `stack run retrievalqaollama` | `stack run retrievalqaopenai` | [Docs](site/components/retrieval-qa.md) |
-| 10 | **ReAct Agent** | `Langchain.Agent.ReAct` | `stack run reactollama` | `stack run reactopenai` | [Docs](site/components/react-agent.md) |
-| 11 | **Plan-and-Execute Agent** | `Langchain.Agent.PlanAndExecute` | `stack run planandexecuteollama` | `stack run planandexecuteopenai` | [Docs](site/components/plan-and-execute.md) |
-| 12 | **Guardrails & Safety** | `Langchain.Guardrails` | `stack run guardrailollama` | `stack run guardrailopenai` | [Docs](site/components/guardrails.md) |
-| 13 | **Resilience & Retries** | `Langchain.Resilience` | `stack run resilienceollama` | `stack run resilienceopenai` | [Docs](site/components/resilience.md) |
-| 14 | **Observability & Tracing** | `Langchain.Observability` | `stack run observabilityollama` | `stack run observabilityopenai` | [Docs](site/components/observability.md) |
-| 15 | **Model Context Protocol** | `Langchain.MCP.Client` | `stack run mcpollama` | `stack run mcpopenai` | [Docs](site/components/mcp.md) |
-| 16 | **StateGraph Workflows** | `Langchain.Graph` | `stack run stategraphollama` | `stack run stategraphopenai` | [Docs](site/components/state-graph.md) |
-| 17 | **Multi-Agent Systems** | `Langchain.Graph.MultiAgent` | `stack run multiagentollama` | `stack run multiagentopenai` | [Docs](site/components/multi-agent.md) |
-| 18 | **Human-in-the-Loop (HITL)** | `Langchain.Graph.Checkpointer` | `stack run hitlollama` | `stack run hitlopenai` | [Docs](site/components/hitl.md) |
-| 19 | **Runnables & AST Composition** | `Langchain.Runnable` | `stack run runnableollama` | `stack run runnableopenai` | [Docs](site/components/runnables.md) |
+| # | Component | Package Layer | Ollama Executable | OpenAI Executable | Gemini Executable | Documentation |
+|:---:|---|---|---|---|---|:---:|
+| 1 | **Chat Models** | `Langchain.Model` | `stack run simpleollama` | `stack run simpleopenai` | `cabal run simplegemini` | [Docs](site/components/chat-models.md) |
+| 2 | **Conduit Streaming** | `Langchain.Stream` | `stack run streamollama` | `stack run streamopenai` | `cabal run streamgemini` | [Docs](site/components/streaming.md) |
+| 3 | **Langchain Monad** | `Langchain.Monad` | `stack run monadollama` | `stack run monadopenai` | — | [Docs](site/components/monad.md) |
+| 4 | **Tools & Function Calling** | `Langchain.Tool` | `stack run toolollama` | `stack run toolopenai` | `cabal run toolgemini` | [Docs](site/components/tools.md) |
+| 5 | **Structured Outputs** | `Langchain.OutputParser` | `stack run jsonollama` | `stack run jsonopenai` | — | [Docs](site/components/structured-output.md) |
+| 6 | **RAG & Embeddings** | `Langchain.Embedding` | `stack run ragollama` | `stack run ragopenai` | `cabal run raggemini` | [Docs](site/components/rag.md) |
+| 7 | **Hybrid Retrievers** | `Langchain.Retriever` | `stack run retrieverollama` | `stack run retrieveropenai` | — | [Docs](site/components/retrievers.md) |
+| 8 | **Memory Systems** | `Langchain.Memory` | `stack run memoryollama` | `stack run memoryopenai` | — | [Docs](site/components/memory.md) |
+| 9 | **Retrieval QA Chains** | `Langchain.Chain.RetrievalQA` | `stack run retrievalqaollama` | `stack run retrievalqaopenai` | — | [Docs](site/components/retrieval-qa.md) |
+| 10 | **ReAct Agent** | `Langchain.Agent.ReAct` | `stack run reactollama` | `stack run reactopenai` | — | [Docs](site/components/react-agent.md) |
+| 11 | **Plan-and-Execute Agent** | `Langchain.Agent.PlanAndExecute` | `stack run planandexecuteollama` | `stack run planandexecuteopenai` | — | [Docs](site/components/plan-and-execute.md) |
+| 12 | **Guardrails & Safety** | `Langchain.Guardrails` | `stack run guardrailollama` | `stack run guardrailopenai` | — | [Docs](site/components/guardrails.md) |
+| 13 | **Resilience & Retries** | `Langchain.Resilience` | `stack run resilienceollama` | `stack run resilienceopenai` | — | [Docs](site/components/resilience.md) |
+| 14 | **Observability & Tracing** | `Langchain.Observability` | `stack run observabilityollama` | `stack run observabilityopenai` | — | [Docs](site/components/observability.md) |
+| 15 | **Model Context Protocol** | `Langchain.MCP.Client` | `stack run mcpollama` | `stack run mcpopenai` | — | [Docs](site/components/mcp.md) |
+| 16 | **StateGraph Workflows** | `Langchain.Graph` | `stack run stategraphollama` | `stack run stategraphopenai` | — | [Docs](site/components/state-graph.md) |
+| 17 | **Multi-Agent Systems** | `Langchain.Graph.MultiAgent` | `stack run multiagentollama` | `stack run multiagentopenai` | — | [Docs](site/components/multi-agent.md) |
+| 18 | **Human-in-the-Loop (HITL)** | `Langchain.Graph.Checkpointer` | `stack run hitlollama` | `stack run hitlopenai` | — | [Docs](site/components/hitl.md) |
+| 19 | **Runnables & AST Composition** | `Langchain.Runnable` | `stack run runnableollama` | `stack run runnableopenai` | — | [Docs](site/components/runnables.md) |
 
 ---
 
@@ -99,7 +99,7 @@ main = do
 
 ---
 
-### 2. Dual-Provider Chat Comparison: Ollama vs OpenAI
+### 2. Multi-Provider Chat Comparison: Ollama, OpenAI & Gemini
 
 #### Ollama (Local & Offline)
 ```haskell
@@ -142,6 +142,28 @@ main = do
     Right m  -> T.putStrLn $ extractMessageText m
 ```
 *Run:* `stack --stack-yaml examples/stack.yaml run simpleopenai`
+
+#### Google Gemini (Interactions v1 API)
+```haskell
+{-# LANGUAGE OverloadedStrings #-}
+import Control.Monad.Except (runExceptT)
+import qualified Data.Text.IO as T
+import Gemini.Common (defaultGeminiModelName, getGeminiModel)
+import Langchain.Prelude
+import Langchain.Provider.Gemini
+
+main :: IO ()
+main = do
+  -- Connect to Google Gemini using Interactions v1 OpenAPI Servant bindings
+  g <- getGeminiModel defaultGeminiModelName
+  
+  let msg = [userMessage "Write a poem about functional programming"]
+  res <- runExceptT $ invoke g msg Nothing
+  case res of
+    Left err -> T.putStrLn $ errorMessage err
+    Right m  -> T.putStrLn $ extractMessageText m
+```
+*Run:* `cabal run simplegemini`
 
 ---
 

@@ -190,7 +190,7 @@ messagesToInteractionsInput msgs =
   where
     isSystem m = messageRole m `elem` [System, Developer]
 
--- | Convert an 'Interaction' result to a Langchain 'Message'.
+-- | Convert an t'Interaction' result to a Langchain t'Message'.
 interactionToMessage :: Interaction -> Message
 interactionToMessage Interaction {..} =
   let outputTexts =
@@ -229,7 +229,7 @@ interactionToMessage Interaction {..} =
               }
    in withMeta
 
--- | Build a 'CreateInteractionRequest' from Gemini configuration and messages.
+-- | Build a t'CreateInteractionRequest' from Gemini configuration and messages.
 buildCreateRequest :: Gemini -> [Message] -> Maybe GeminiConfig -> CreateInteractionRequest
 buildCreateRequest Gemini {..} msgs mbConfig =
   let (mbExtractedSys, input) = messagesToInteractionsInput msgs
