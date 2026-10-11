@@ -14,16 +14,16 @@ import Langchain.Provider.Ollama
   , newOllama
   , withTools
   )
-import Langchain.Tool.Calculator (calculatorTool)
 
 inputPrompt :: T.Text
-inputPrompt = "What is 15 * 4? Please use the calculator tool to find the answer."
+inputPrompt = "Search for Haskell files using find_files with pattern '*.hs'."
 
 runApp :: IO ()
 runApp = do
   o <- newOllama "qwen3.5:2b" defaultConfig
   let promptMsgs = [userMessage inputPrompt]
-      toolCfg = withTools [calculatorTool @IO] defaultOllamaConfig
+      fsTool = findFilesTool @IO defaultSecurityPolicy
+      toolCfg = withTools [fsTool] defaultOllamaConfig
 
   res <- runLangchainT () $ do
     respMsg <- invoke o promptMsgs (Just toolCfg)
@@ -38,7 +38,7 @@ runApp = do
         liftIO $ T.putStrLn $ "Tool called: " <> toolCallName tCall
         liftIO $ T.putStrLn $ "Arguments: " <> T.pack (show (toolCallArguments tCall))
 
-        eExec <- liftIO $ toolExecute (calculatorTool @IO) (toolCallArguments tCall)
+        eExec <- liftIO $ toolExecute fsTool (toolCallArguments tCall)
         toolResult <- case eExec of
           Left err -> pure $ "Tool execution error: " <> errorMessage err
           Right out -> pure out

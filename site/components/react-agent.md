@@ -37,18 +37,17 @@ import Control.Monad.Except (runExceptT)
 import qualified Data.Text.IO as T
 import Langchain.Prelude
 import Langchain.Provider.Ollama
-import Langchain.Tool.Calculator (calculatorTool)
-import Langchain.Tool.FileSystem (readFileTool)
 
 runApp :: IO ()
 runApp = do
-  writeFile "/tmp/budget.txt" "120 + 85"
+  writeFile "/tmp/sample_task.txt" "Production note: Always use secure and tested tools."
   o <- newOllama "qwen3.5:2b" defaultConfig
-  let tools = [readFileTool, calculatorTool]
+  let policy = defaultSecurityPolicy
+      tools = [readFileTool Nothing policy, findFilesTool policy]
       agent = defaultReActAgent o tools
       prompt =
         [ userMessage
-            "Read the expression inside /tmp/budget.txt using read_file, then evaluate it using calculator."
+            "Read the contents of /tmp/sample_task.txt using read_file, then summarize its note."
         ]
 
   res <- runExceptT $ runReActAgent agent prompt
@@ -71,19 +70,18 @@ module OpenAI.ReAct (runApp) where
 import Control.Monad.Except (runExceptT)
 import qualified Data.Text.IO as T
 import Langchain.Prelude
-import Langchain.Tool.Calculator (calculatorTool)
-import Langchain.Tool.FileSystem (readFileTool)
 import OpenAI.Common (defaultModelName, getOpenRouterModel)
 
 runApp :: IO ()
 runApp = do
-  writeFile "/tmp/budget.txt" "120 + 85"
+  writeFile "/tmp/sample_task.txt" "Important production note: Keep tools safe and reliable."
   o <- getOpenRouterModel defaultModelName
-  let tools = [readFileTool, calculatorTool]
+  let policy = defaultSecurityPolicy
+      tools = [readFileTool Nothing policy, findFilesTool policy]
       agent = defaultReActAgent o tools
       prompt =
         [ userMessage
-            "Read the expression inside /tmp/budget.txt using read_file, then evaluate it using calculator."
+            "Read the contents of /tmp/sample_task.txt using read_file, then summarize its note."
         ]
 
   res <- runExceptT $ runReActAgent agent prompt

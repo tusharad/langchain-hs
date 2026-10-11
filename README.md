@@ -2,7 +2,7 @@
 
 > **The Pure Functional, Effect-Polymorphic AI Agent & Multi-Agent Graph Engine in Haskell**
 >
-> *A strictly typed, effect-polymorphic, AI ecosystem built on pure AST pipelines (`RunnableTree`), cyclic state machines (`StateGraph`), Model Context Protocol (MCP), and production observability.*
+> *A strictly typed, effect-polymorphic, AI ecosystem built on pure AST pipelines (`RunnableTree`), cyclic state machines (`StateGraph`), Model Context Protocol (MCP), and observability.*
 
 ---
 
@@ -231,6 +231,42 @@ main = do
 *Run:* `stack --stack-yaml examples/stack.yaml run mcpollama` or `stack --stack-yaml examples/stack.yaml run mcpopenai`
 
 ---
+
+### 5. Tool Suite & Tiered Security
+
+Build resilient agents with Haskell-idiomatic tools designed specifically for LLMs:
+
+```haskell
+{-# LANGUAGE OverloadedStrings #-}
+import Langchain.Prelude
+import Langchain.Tool.FileSystem
+import Langchain.Tool.Process
+import Langchain.Tool.Security
+
+main :: IO ()
+main = do
+  -- 1. Configure strict workspace sandbox security policy with approval hook
+  let policy = (workspaceSandboxPolicy "/path/to/project")
+        { policyApprovalHook = Just $ \req -> do
+            putStrLn $ "HITL: Authorize " ++ show (approvalToolName req) ++ "? [y/n]"
+            resp <- getLine
+            pure $ if resp == "y" then Approved else Denied "User denied execution"
+        }
+
+  -- 2. Instantiate filesystem toolkit with automated read-before-edit and undo checkpoints
+  fsTools <- newFileSystemSuite policy
+
+  -- 3. Instantiate managed process runner (timeouts, log tailing, backgrounding)
+  procTools <- newProcessSuite policy
+
+  -- 4. Equip agent with full toolkit
+  let allTools = fsTools ++ procTools
+      agent = defaultReActAgent model allTools
+
+  res <- runExceptT $ runReActAgent agent
+    [ userMessage "Search for TODO comments in Haskell files and list their lines" ]
+  print res
+```
 
 ## Installation
 

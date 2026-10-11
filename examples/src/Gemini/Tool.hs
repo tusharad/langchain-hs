@@ -9,17 +9,17 @@ import qualified Data.Text.IO as T
 import Gemini.Common (defaultGeminiModelName, getGeminiModel)
 import Langchain.Prelude
 import Langchain.Provider.Gemini (Gemini)
-import Langchain.Tool.Calculator (calculatorTool)
 
 inputPrompt :: T.Text
-inputPrompt = "What is 15 * 4? Please use the calculator tool to find the answer."
+inputPrompt = "Search for Haskell files using find_files with pattern '*.hs'."
 
 runApp :: IO ()
 runApp = do
   T.putStrLn "--- Gemini Tool / Function Calling Loop ---"
   g <- getGeminiModel defaultGeminiModelName
   let promptMsgs = [userMessage inputPrompt]
-      tools = [calculatorTool @IO]
+      fsTool = findFilesTool @IO defaultSecurityPolicy
+      tools = [fsTool]
       chatReq = bindToolsConfig @Gemini tools Nothing
 
   res <- runLangchainT () $ do
@@ -35,7 +35,7 @@ runApp = do
         liftIO $ T.putStrLn $ "Tool called: " <> toolCallName tCall
         liftIO $ T.putStrLn $ "Arguments: " <> T.pack (show (toolCallArguments tCall))
 
-        eExec <- liftIO $ toolExecute (calculatorTool @IO) (toolCallArguments tCall)
+        eExec <- liftIO $ toolExecute fsTool (toolCallArguments tCall)
         toolResult <- case eExec of
           Left err -> pure $ "Tool execution error: " <> errorMessage err
           Right out -> pure out
