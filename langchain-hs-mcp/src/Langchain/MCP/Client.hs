@@ -52,7 +52,7 @@ import Network.HTTP.Simple
 import System.IO (BufferMode (..), hClose, hFlush, hGetLine, hSetBuffering)
 import System.Process (CreateProcess (..), StdStream (..), createProcess, proc, terminateProcess)
 
-import Langchain.Core.Error (LangchainError, toolError)
+import Langchain.Error (LangchainError, toolError)
 import Langchain.Tool.Core (Tool (..), createTool)
 
 -- | MCP Transport type

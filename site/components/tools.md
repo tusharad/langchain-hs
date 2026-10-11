@@ -5,7 +5,7 @@ category: Components
 ---
 
 <div class="component-header-meta">
-  <span class="badge badge-primary">Langchain.Core.Tool</span> <span class="badge badge-primary">Langchain.Core.Class</span>
+  <span class="badge badge-primary">Langchain.Tool</span>
 </div>
 
 Type-safe function definitions, JSON parameter schemas, and dynamic tool execution.

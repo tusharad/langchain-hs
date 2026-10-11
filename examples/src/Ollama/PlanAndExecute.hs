@@ -2,7 +2,7 @@
 
 module Ollama.PlanAndExecute (runApp) where
 
-import Control.Monad.Except (runExceptT)
+import Control.Monad.Except (ExceptT, runExceptT)
 import qualified Data.Text.IO as T
 import Langchain.Prelude
 import Langchain.Provider.Ollama
@@ -10,7 +10,8 @@ import Langchain.Provider.Ollama
 runApp :: IO ()
 runApp = do
   o <- newOllama "qwen3.5:2b" defaultConfig
-  let tools = [shellTool]
+  let tools :: [Tool (ExceptT LangchainError IO)]
+      tools = [shellTool]
       executor = defaultReActAgent (bindTools tools o) tools
       agent = newPlanAndExecuteAgent o executor Nothing
       goal =

@@ -54,10 +54,10 @@ library
     , mtl >=2.2 && <2.4
     , openai >=2.2.1 && <3
     , scientific ==0.3.*
-    , servant ==0.20.*
-    , servant-client ==0.20.*
-    , servant-client-core ==0.20.*
-    , servant-conduit ==0.16.*
+    , servant >=0.19 && <0.21
+    , servant-client >=0.19 && <0.21
+    , servant-client-core >=0.19 && <0.21
+    , servant-conduit >=0.15 && <0.17
     , servant-event-stream ==0.4.*
     , stm ==2.5.*
     , text >=1.2 && <3
@@ -93,10 +93,10 @@ test-suite langchain-hs-openai-test
     , openai
     , resourcet
     , scientific ==0.3.*
-    , servant ==0.20.*
-    , servant-client ==0.20.*
-    , servant-client-core ==0.20.*
-    , servant-conduit ==0.16.*
+    , servant >=0.19 && <0.21
+    , servant-client >=0.19 && <0.21
+    , servant-client-core >=0.19 && <0.21
+    , servant-conduit >=0.15 && <0.17
     , servant-event-stream ==0.4.*
     , stm ==2.5.*
     , tasty

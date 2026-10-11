@@ -4,10 +4,10 @@ module Test.Langchain.Graph.MultiAgentSpec (tests) where
 
 import Control.Monad.Except (ExceptT, runExceptT)
 import Data.Text (Text)
-import Langchain.Core.Error (LangchainError)
-import Langchain.Core.Model (ChatModel (..), assistantMessage)
+import Langchain.Error (LangchainError)
 import Langchain.Graph.MultiAgent
 import Langchain.Graph.StateGraph
+import Langchain.Model (ChatModel (..), assistantMessage)
 import Test.Tasty
 import Test.Tasty.HUnit
 

@@ -31,16 +31,16 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified Data.Text.Lazy as TL
 
-import Langchain.Core.Error (LangchainError)
-import Langchain.Core.Model
+import Langchain.DocumentLoader.Core (BaseLoader (..), Document (..))
+import Langchain.DocumentLoader.FileLoader (FileLoader (..))
+import Langchain.Error (LangchainError)
+import Langchain.Graph.StateGraph
+import Langchain.Model
   ( ChatModel (..)
   , extractMessageText
   , systemMessage
   , userMessage
   )
-import Langchain.DocumentLoader.Core (BaseLoader (..), Document (..))
-import Langchain.DocumentLoader.FileLoader (FileLoader (..))
-import Langchain.Graph.StateGraph
 import Langchain.Retriever.BM25 (bm25Search, newBM25Index)
 import Langchain.TextSplitter.Character
   ( CharacterSplitterOps (..)

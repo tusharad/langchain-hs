@@ -31,13 +31,19 @@ source-repository head
 
 library
   exposed-modules:
-      Langchain.Core.Error
-      Langchain.Core.Model
-      Langchain.Core.Model.Types
-      Langchain.Core.Monad
-      Langchain.Core.Stream
-      Langchain.Core.Runnable
-      Langchain.Core.Tool
+      Langchain.Error
+      Langchain.Model
+      Langchain.Model.Types
+      Langchain.Monad
+      Langchain.Stream
+      Langchain.Runnable
+      Langchain.Tool
+      Langchain.Tool.Binding
+      Langchain.Tool.Calculator
+      Langchain.Tool.Core
+      Langchain.Tool.FileSystem
+      Langchain.Tool.GenericSchema
+      Langchain.Tool.Shell
   other-modules:
       Paths_langchain_hs_core
   hs-source-dirs:
@@ -63,8 +69,11 @@ library
     , conduit ==1.3.*
     , containers >=0.6 && <0.9
     , deepseq >=1.4 && <1.6
+    , directory ==1.3.*
     , mtl >=2.2 && <2.4
+    , process ==1.6.*
     , resourcet >=1.2 && <1.4
+    , scientific ==0.3.*
     , stm ==2.5.*
     , text >=1.2 && <3
     , time >=1.9 && <1.15
@@ -74,12 +83,12 @@ test-suite langchain-hs-core-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Test.Langchain.Core.Model
-      Test.Langchain.Core.Monad
-      Test.Langchain.Core.Runnable
-      Test.Langchain.Core.Stream
-      Test.Langchain.Core.TestModel
-      Test.Langchain.Core.Tool
+      Test.Langchain.Model
+      Test.Langchain.Monad
+      Test.Langchain.Runnable
+      Test.Langchain.Stream
+      Test.Langchain.TestModel
+      Test.Langchain.Tool
       Paths_langchain_hs_core
   hs-source-dirs:
       test
@@ -106,9 +115,12 @@ test-suite langchain-hs-core-test
     , conduit ==1.3.*
     , containers >=0.6 && <0.9
     , deepseq >=1.4 && <1.6
+    , directory ==1.3.*
     , langchain-hs-core
     , mtl >=2.2 && <2.4
+    , process ==1.6.*
     , resourcet
+    , scientific ==0.3.*
     , stm ==2.5.*
     , tasty >=1.4
     , tasty-hunit >=0.10

@@ -2,7 +2,7 @@
 
 module OpenAI.PlanAndExecute (runApp) where
 
-import Control.Monad.Except (runExceptT)
+import Control.Monad.Except (ExceptT, runExceptT)
 import qualified Data.Text.IO as T
 import Langchain.Prelude
 import OpenAI.Common (defaultModelName, getOpenRouterModel)
@@ -10,7 +10,8 @@ import OpenAI.Common (defaultModelName, getOpenRouterModel)
 runApp :: IO ()
 runApp = do
   o <- getOpenRouterModel defaultModelName
-  let tools = [shellTool]
+  let tools :: [Tool (ExceptT LangchainError IO)]
+      tools = [shellTool]
       executor = defaultReActAgent o tools
       agent = newPlanAndExecuteAgent o executor Nothing
       goal =

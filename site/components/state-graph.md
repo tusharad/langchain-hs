@@ -56,8 +56,8 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified Data.Text.Lazy as TL
 
-import Langchain.Core.Error (LangchainError)
-import Langchain.Core.Model
+import Langchain.Error (LangchainError)
+import Langchain.Model
   ( ChatModel (..)
   , extractMessageText
   , systemMessage
@@ -242,8 +242,8 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified Data.Text.Lazy as TL
 
-import Langchain.Core.Error (LangchainError)
-import Langchain.Core.Model
+import Langchain.Error (LangchainError)
+import Langchain.Model
   ( ChatModel (..)
   , extractMessageText
   , systemMessage

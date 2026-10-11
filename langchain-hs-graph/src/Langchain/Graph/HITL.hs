@@ -24,7 +24,7 @@ import Data.Aeson (FromJSON, ToJSON)
 import Data.Text (Text)
 import qualified Data.Text as T
 
-import Langchain.Core.Error (LangchainError (..), agentError, errorMessage)
+import Langchain.Error (LangchainError (..), agentError, errorMessage)
 import Langchain.Graph.Checkpointer (Checkpointer (..))
 import Langchain.Graph.StateGraph (Node (..), NodeId, StateGraph, runGraph)
 

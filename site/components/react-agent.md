@@ -5,7 +5,7 @@ category: Components
 ---
 
 <div class="component-header-meta">
-  <span class="badge badge-primary">Langchain.Agent.ReAct</span> <span class="badge badge-primary">Langchain.Core.Tool</span> <span class="badge badge-primary">Langchain.Memory.Core</span>
+  <span class="badge badge-primary">Langchain.Agent.ReAct</span> <span class="badge badge-primary">Langchain.Tool</span> <span class="badge badge-primary">Langchain.Memory.Core</span>
 </div>
 
 Reasoning and acting loop with dynamic tool selection, effect-polymorphic tools, persistent conversation memory, and observation feedback.

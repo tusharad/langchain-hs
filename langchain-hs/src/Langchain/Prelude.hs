@@ -1,0 +1,381 @@
+{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE FlexibleContexts #-}
+
+{- |
+Module      : Langchain.Prelude
+Description : Canonical umbrella re-export module for langchain-hs
+Copyright   : (c) 2025-2026 Tushar Adhatrao
+License     : MIT
+Maintainer  : Tushar Adhatrao <tusharadhatrao@gmail.com>
+Stability   : experimental
+
+Exports all core data types, typeclasses, vector stores, memory stores,
+graph orchestration primitives, advanced multi-agent patterns, guardrails,
+observability, structured logging, circuit breakers, and pipeline DSLs.
+
+Provider-specific modules live in separate packages:
+
+  * @langchain-hs-ollama@ — 'Langchain.Provider.Ollama', 'Langchain.Embeddings.Ollama'
+  * @langchain-hs-openai@ — 'Langchain.Provider.OpenAI', 'Langchain.Embeddings.OpenAI'
+  * @langchain-hs-gemini@ — 'Langchain.Provider.Gemini'
+  * @langchain-hs-mcp@    — 'Langchain.MCP.Client'
+-}
+module Langchain.Prelude
+  ( -- * Core Monad & Errors
+    LangchainT
+  , runLangchainT
+  , throwLangchainError
+  , LangchainError (..)
+  , ErrorContext (..)
+  , errorMessage
+  , mkContext
+  , mkContextIO
+  , LangchainResult
+  , llmError
+  , parsingError
+  , vectorStoreError
+  , documentLoaderError
+  , embeddingError
+  , runnableError
+  , toolError
+  , agentError
+  , memoryError
+  , networkError
+  , configurationError
+  , validationError
+  , internalError
+
+    -- * Multi-Modal Models & Messages
+  , ChatModel (..)
+  , Message (..)
+  , Role
+  , ContentBlock (..)
+  , ToolCall (..)
+  , textMessage
+  , userMessage
+  , systemMessage
+  , assistantMessage
+  , toolMessage
+  , imageMessage
+  , extractMessageText
+  , StreamEvent
+    ( LLMStart
+    , LLMChunk
+    , LLMEnd
+    , ToolStart
+    , ToolEnd
+    , ToolErrorEvent
+    , ChainStart
+    , ChainEnd
+    , NodeStart
+    , NodeEnd
+    )
+  , TokenUsage (..)
+  , EventStream
+  , collectEvents
+  , printEvents
+
+    -- * Pure AST Pipelines (RunnableTree)
+  , RunnableTree (..)
+  , (|>>)
+  , (&>&)
+  , interpret
+  , runLambda
+  , runPrim
+  , runPure
+  , runPassthrough
+  , runIdent
+  , runBranch
+  , runFallback
+  , runChat
+  , runModel
+  , runRetriever
+  , ModelRunnable (..)
+  , TextModelRunnable (..)
+
+    -- * Effect-Polymorphic Tools
+  , Tool (..)
+  , createTool
+  , toolToValue
+  , ToolBinder (..)
+  , DeriveToolSchema (..)
+  , deriveToolParametersSchema
+
+    -- * State Graphs & Multi-Agent
+  , StateGraph (..)
+  , Node (Node)
+  , Edge (..)
+  , NodeId
+  , startNodeId
+  , endNodeId
+  , StateReducer
+  , emptyStateGraph
+  , addNode
+  , addEdge
+  , addConditionalEdge
+  , compileGraph
+  , runGraph
+  , appendMessagesReducer
+  , replaceFieldReducer
+  , Checkpointer (..)
+  , MemoryCheckpointer (..)
+  , newMemoryCheckpointer
+  , SQLiteCheckpointer (..)
+  , newSQLiteCheckpointer
+  , hitlNode
+  , resumeGraph
+  , supervisorNode
+  , embedSubGraphNode
+  , parallelNode
+  , addParallelNodes
+
+    -- * Advanced Agent Patterns
+  , PlanStep (..)
+  , Plan (..)
+  , StepExecutor (..)
+  , PlanAndExecuteAgent (..)
+  , newPlanAndExecuteAgent
+  , newPlanAndExecuteAgentWithTools
+  , runPlanAndExecute
+
+    -- * Guardrails & Safety
+  , GuardrailResult (..)
+  , Guardrail (..)
+  , contentSafetyGuardrail
+  , topicGuardrail
+  , outputLengthGuardrail
+  , composeGuardrails
+  , withGuardrails
+
+    -- * Telemetry, Logging & OpenTelemetry
+  , LogLevel (..)
+  , LogEvent (..)
+  , Logger (..)
+  , InMemoryLogger (..)
+  , newInMemoryLogger
+  , getInMemoryLogs
+  , stderrLogger
+  , logEvent
+  , logDebug
+  , logInfo
+  , logWarn
+  , logError
+  , SpanKind (..)
+  , SpanStatus (..)
+  , Span (..)
+  , OTelTracer (..)
+  , newOTelTracer
+  , getSpans
+  , startSpan
+  , endSpan
+  , addSpanAttribute
+  , withSpan
+  , exportSpansJson
+
+    -- * Callbacks
+  , CallbackEvent (..)
+  , CallbackHandler (..)
+  , CallbackManager (..)
+  , newCallbackManager
+  , registerHandler
+  , dispatchEvent
+  , dispatchEventAsync
+  , newLoggingCallbackHandler
+  , getCallbackLogs
+
+    -- * Resilience
+  , CircuitState (..)
+  , CircuitBreakerConfig (..)
+  , defaultCircuitConfig
+  , CircuitBreaker (..)
+  , newCircuitBreaker
+  , getCircuitState
+  , withCircuitBreaker
+
+    -- * Memory Systems
+  , BaseMemory (..)
+  , SomeMemory (..)
+  , WindowBufferMemory (..)
+  , newWindowBufferMemory
+  , TokenBufferMemory (..)
+  , newTokenBufferMemory
+  , countTokens
+  , SummaryMemory (..)
+  , newSummaryMemory
+  , EntityMemory (..)
+  , newEntityMemory
+  , initialMessages
+  , trimMessages
+
+    -- * Vector Stores & Retrieval
+  , VectorStore (..)
+  , InMemory (..)
+  , emptyInMemoryVectorStore
+  , fromDocuments
+  , SqliteVecStore (..)
+  , newSqliteVecStore
+  , Retriever (..)
+  , VectorStoreRetriever (..)
+  , retrieveWithCallbacks
+
+    -- * Embeddings (provider-agnostic typeclass)
+  , Embeddings (..)
+
+    -- * Document Loaders
+  , Document (..)
+  , BaseLoader (..)
+  , FileLoader (..)
+  , DirectoryLoader (..)
+  , DirectoryLoaderOptions (..)
+  , defaultDirectoryLoaderOptions
+  , CsvLoader (..)
+  , defaultCsvLoader
+
+    -- * Prompt Templates
+  , PromptTemplate (..)
+  , PromptTemplateOptions (..)
+  , TemplateFormat (..)
+  , defaultPromptTemplateOptions
+  , fromTemplate
+  , fromTemplateWithOptions
+  , fromTemplateWithFormat
+  , partialPromptTemplate
+  , FewShotPromptTemplate (..)
+  , renderPrompt
+  , renderFewShotPrompt
+
+    -- * Text Splitters
+  , CharacterSplitterOps (CharacterSplitterOps)
+  , defaultCharacterSplitterOps
+  , splitText
+  , RecursiveCharacterSplitterOps (RecursiveCharacterSplitterOps)
+  , defaultRecursiveCharacterSplitterOps
+  , splitTextRecursive
+  , MarkdownSplitterOps (MarkdownSplitterOps)
+  , defaultMarkdownSplitterOps
+  , splitMarkdown
+  , splitMarkdownToChunks
+  , TokenSplitterOps (TokenSplitterOps)
+  , defaultTokenSplitterOps
+  , splitByTokens
+  , Language (..)
+  , CodeSplitterOps (CodeSplitterOps)
+  , splitCode
+
+    -- * Caching & Resilience
+  , CacheBackend (..)
+  , InMemoryCache (..)
+  , newInMemoryCache
+  , SQLiteCache (..)
+  , newSQLiteCache
+  , CachedModel (..)
+  , CacheableChatModel (..)
+  , withCaching
+  , RetryPolicy (RetryPolicy)
+  , defaultRetryPolicy
+  , withRetry
+  , RateLimiter (..)
+  , newRateLimiter
+  , withRateLimit
+
+    -- * Chains
+  , RetrievalQA (RetrievalQA)
+  , newRetrievalQA
+  , runRetrievalQA
+  , MapReduceChain (..)
+  , newMapReduceChain
+  , runMapReduceChain
+
+    -- * Structured Output & Parsers
+  , OutputParser (..)
+  , CommaSeparatedList (..)
+  , JSONOutputStructure (..)
+  , NumberSeparatedList (..)
+  , StructuredOutput (..)
+  , TypeSchema (..)
+  , structuredInvoke
+  , structuredInvokeWithRetries
+
+    -- * Agents & Execution
+  , ReActAgent (ReActAgent)
+  , AgentStep (..)
+  , AgentTrace (..)
+  , ToolErrorStrategy (..)
+  , defaultReActAgent
+  , withMemory
+  , withoutMemory
+  , withSystemPrompt
+  , withMaxIterations
+  , withModelConfig
+  , withCallbackManager
+  , withStopCondition
+  , withToolErrorStrategy
+  , reactStep
+  , runReActAgent
+  , runReActAgentWithTrace
+
+    -- * Standard Tools
+  , shellTool
+
+    -- * Hybrid Retrieval & BM25
+  , BM25Index (..)
+  , newBM25Index
+  , newBM25IndexWithParams
+  , addDocumentsBM25
+  , bm25Search
+  , bm25SearchWithScores
+  , HybridRetriever (..)
+  , newHybridRetriever
+  , newHybridRetrieverWithWeights
+  , searchHybrid
+  , searchHybridWithScores
+  , reciprocalRankFusion
+  ) where
+
+import Langchain.Agent.PlanAndExecute
+import Langchain.Agent.ReAct
+import Langchain.Cache.Core
+import Langchain.Callback.Manager
+import Langchain.Chain.MapReduce
+import Langchain.Chain.RetrievalQA
+import Langchain.DocumentLoader.Core
+import Langchain.DocumentLoader.Csv
+import Langchain.DocumentLoader.DirectoryLoader
+import Langchain.DocumentLoader.FileLoader
+import Langchain.Embeddings.Core
+import Langchain.Error
+import Langchain.Graph.Checkpointer
+import Langchain.Graph.HITL
+import Langchain.Graph.MultiAgent
+import Langchain.Graph.Parallel
+import Langchain.Graph.StateGraph
+import Langchain.Guardrail.Core
+import Langchain.Memory.Core
+import Langchain.Memory.Entity
+import Langchain.Memory.Summary
+import Langchain.Model
+import Langchain.Monad
+import Langchain.Observability
+import Langchain.OutputParser.Core
+import Langchain.OutputParser.Structured
+import Langchain.PromptTemplate.FewShot
+import Langchain.PromptTemplate.Prompt
+import Langchain.Resilience.CircuitBreaker
+import Langchain.Resilience.Retry
+import Langchain.Retriever.BM25
+import Langchain.Retriever.Core
+import Langchain.Retriever.Hybrid
+import Langchain.Runnable hiding (invoke)
+import Langchain.Stream
+import Langchain.TextSplitter.Character
+import Langchain.TextSplitter.Code
+import Langchain.TextSplitter.Markdown
+import Langchain.TextSplitter.RecursiveCharacter
+import Langchain.TextSplitter.Token
+import Langchain.Tool
+import Langchain.Tool.Binding
+import Langchain.Tool.GenericSchema
+import Langchain.Tool.Shell (shellTool)
+import Langchain.VectorStore.Core
+import Langchain.VectorStore.InMemory
+import Langchain.VectorStore.SqliteVec

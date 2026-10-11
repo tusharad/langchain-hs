@@ -35,10 +35,10 @@ dependencies:
   - langchain-hs >= 0.0.6 && < 0.0.7
   - langchain-hs-core >= 0.0.6 && < 0.0.7
   - mtl >= 2.2 && < 2.4
-  - servant >= 0.20 && < 0.21
-  - servant-client >= 0.20 && < 0.21
-  - servant-client-core >= 0.20 && < 0.21
-  - servant-conduit >= 0.16 && < 0.17
+  - servant >= 0.19 && < 0.21
+  - servant-client >= 0.19 && < 0.21
+  - servant-client-core >= 0.19 && < 0.21
+  - servant-conduit >= 0.15 && < 0.17
   - servant-event-stream >= 0.4 && < 0.5
   - stm >= 2.5 && < 2.6
   - text >= 1.2 && < 3

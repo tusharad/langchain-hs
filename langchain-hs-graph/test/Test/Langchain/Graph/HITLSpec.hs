@@ -4,7 +4,7 @@ module Test.Langchain.Graph.HITLSpec (tests) where
 
 import Control.Monad.Except (ExceptT, runExceptT)
 import Data.Text (Text)
-import Langchain.Core.Error (LangchainError)
+import Langchain.Error (LangchainError)
 import Langchain.Graph.Checkpointer
 import Langchain.Graph.HITL
 import Langchain.Graph.StateGraph

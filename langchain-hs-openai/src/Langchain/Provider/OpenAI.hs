@@ -76,11 +76,11 @@ import qualified OpenAI.V1.Usage as OU
 
 import qualified Data.Aeson.KeyMap as KM
 import Langchain.Cache.Core (CacheableChatModel (..))
-import Langchain.Core.Error (LangchainError, llmError)
-import Langchain.Core.Model
-import Langchain.Core.Stream (StreamEvent (..), StreamM, TokenUsage (..), callbackSource)
-import Langchain.Core.Tool (Tool, toolToValue)
+import Langchain.Error (LangchainError, llmError)
+import Langchain.Model
 import Langchain.OutputParser.Structured (StructuredOutput (..))
+import Langchain.Stream (StreamEvent (..), StreamM, TokenUsage (..), callbackSource)
+import Langchain.Tool (Tool, toolToValue)
 import Langchain.Tool.Binding (ToolBinder (..))
 import Network.HTTP.Client (newManager)
 import Network.HTTP.Client.TLS (tlsManagerSettings)

@@ -58,10 +58,10 @@ import Servant.Client.Streaming (ClientM, client, mkClientEnv, withClientM)
 import Servant.Conduit ()
 
 import Langchain.Cache.Core (CacheableChatModel (..))
-import Langchain.Core.Error (LangchainError, llmError)
-import Langchain.Core.Model
-import Langchain.Core.Stream (StreamEvent (..), TokenUsage (..), callbackSource)
-import qualified Langchain.Core.Tool as CoreTool
+import Langchain.Error (LangchainError, llmError)
+import Langchain.Model
+import Langchain.Stream (StreamEvent (..), TokenUsage (..), callbackSource)
+import qualified Langchain.Tool as CoreTool
 import Langchain.Tool.Binding (ToolBinder (..))
 
 -- | Gemini configuration

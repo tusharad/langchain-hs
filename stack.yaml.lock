@@ -5,76 +5,15 @@
 
 packages:
 - completed:
-    commit: 408d6790dcd46e55293a983df47ca1988d2051ce
-    git: https://github.com/tusharad/ollama-haskell
-    name: ollama-haskell
+    hackage: openai-2.5.4@sha256:90722cfa6763749cfa87c5617554e0078db7930ac15bb9620d1314198f0b82f4,6987
     pantry-tree:
-      sha256: 1f7cd76690a2778c25de3f39bd1cdb4a3da150231211f8f10ade49b7f2618f7a
-      size: 6882
-    version: 0.4.1.0
+      sha256: 374b6d914a7e836887f087cd221ea17a0a8b5909135643abf47ebf11ea2e10e3
+      size: 3867
   original:
-    commit: 408d6790dcd46e55293a983df47ca1988d2051ce
-    git: https://github.com/tusharad/ollama-haskell
-- completed:
-    commit: 2031a05135b892a82b461558d19b813ab67cfb8f
-    git: https://github.com/MercuryTechnologies/openai
-    name: openai
-    pantry-tree:
-      sha256: b6d37a8aae100e690b97ae1b688157a22053fb21f47ab622324625f3a8b1667d
-      size: 5200
-    version: 2.2.1
-  original:
-    commit: 2031a05135b892a82b461558d19b813ab67cfb8f
-    git: https://github.com/MercuryTechnologies/openai
-- completed:
-    hackage: servant-multipart-client-0.12.2@sha256:e8105783e7dbef178a38dcfd05f4d12a8229eac88cfe49319f272dcb544e7365,2276
-    pantry-tree:
-      sha256: d0a337c6bc04203ed449939cce4cbe958b58147a71faf6cc967469decbdd0324
-      size: 400
-  original:
-    hackage: servant-multipart-client-0.12.2@sha256:e8105783e7dbef178a38dcfd05f4d12a8229eac88cfe49319f272dcb544e7365,2276
-- completed:
-    hackage: random-1.2.1.3@sha256:117541ba0a177397a3333f94870f789ef050dca31b0688a19824b2bc401b8823,6237
-    pantry-tree:
-      sha256: 79fdbb95ca2d108acb7b01903dbe288008cecbdc558105b7fdc095bfff7f3e09
-      size: 1528
-  original:
-    hackage: random-1.2.1.3@sha256:117541ba0a177397a3333f94870f789ef050dca31b0688a19824b2bc401b8823,6237
-- completed:
-    commit: 81196f86a16de8378a0ad264bf12af42c5ca7b65
-    git: https://github.com/lbobylev/format-heavy
-    name: format-heavy
-    pantry-tree:
-      sha256: ae3dd723f982d482b83304bd902dde3ee5371399969c27fdd96e90e0889bb0cd
-      size: 1639
-    version: 0.1.0.1
-  original:
-    commit: 81196f86a16de8378a0ad264bf12af42c5ca7b65
-    git: https://github.com/lbobylev/format-heavy
-- completed:
-    hackage: mcp-server-0.2.0.1@sha256:7b09ac83c868f7a5b453aefd68c769e9cac5c5b60a0bac3cc418df1ba9587945,6795
-    pantry-tree:
-      sha256: 9f3773f7067eefd89a58954150ebff2a538a9d1f825dfd0515b0cd9b48981cac
-      size: 7850
-  original:
-    hackage: mcp-server-0.2.0.1@sha256:7b09ac83c868f7a5b453aefd68c769e9cac5c5b60a0bac3cc418df1ba9587945,6795
-- completed:
-    hackage: http-types-0.12.5@sha256:cb708ff8d2001dc7bcff615350a835a6dc1b2488829acfcc6d8bc7e13d423153,2927
-    pantry-tree:
-      sha256: 965919723c06fdbf823a194da320717219f080da390516d76e842287ddecac99
-      size: 1379
-  original:
-    hackage: http-types-0.12.5@sha256:cb708ff8d2001dc7bcff615350a835a6dc1b2488829acfcc6d8bc7e13d423153,2927
-- completed:
-    hackage: servant-event-stream-0.4.0.1@sha256:c79ef3516626850347f2a92c15de473244539f2211c05d0350f4073d1659c669,1760
-    pantry-tree:
-      sha256: 60b1a777624be4cea3aa39592c9050ea3c8aed3e4b595afcff5b0ea127b32839
-      size: 393
-  original:
-    hackage: servant-event-stream-0.4.0.1@sha256:c79ef3516626850347f2a92c15de473244539f2211c05d0350f4073d1659c669,1760
+    hackage: openai-2.5.4@sha256:90722cfa6763749cfa87c5617554e0078db7930ac15bb9620d1314198f0b82f4,6987
 snapshots:
 - completed:
-    sha256: 6219f97234e8bfdc3f35d0e858b59206d74c50948a27d5d65c902f2fe98acb22
-    size: 775033
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2026/9/12.yaml
-  original: nightly-2026-09-12
+    sha256: fa2f14ea8fdcd12da9b7a2012994020cd00ceb714bb7210a6f1ad148b94f9a78
+    size: 776387
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2026/10/11.yaml
+  original: nightly-2026-10-11

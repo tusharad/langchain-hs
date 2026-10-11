@@ -7,7 +7,7 @@ import qualified Data.Map.Strict as Map
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import Langchain.Core.Model
+import Langchain.Model
 import Langchain.Provider.Ollama
   ( fromOllamaMessage
   , fromOllamaRole

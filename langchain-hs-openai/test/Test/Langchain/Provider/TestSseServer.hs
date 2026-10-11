@@ -23,9 +23,9 @@ import Network.HTTP.Types (hContentType, status200)
 import Network.Wai (Application, Request, responseStream, strictRequestBody)
 import Network.Wai.Handler.Warp (testWithApplication)
 
-import Langchain.Core.Error (LangchainError)
-import Langchain.Core.Model (ChatModel (..), Message)
-import Langchain.Core.Stream (StreamEvent, collectEvents)
+import Langchain.Error (LangchainError)
+import Langchain.Model (ChatModel (..), Message)
+import Langchain.Stream (StreamEvent, collectEvents)
 
 withTestApplication :: Application -> (T.Text -> IO a) -> IO a
 withTestApplication app action =

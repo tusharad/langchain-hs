@@ -5,7 +5,7 @@ category: Components
 ---
 
 <div class="component-header-meta">
-  <span class="badge badge-primary">Langchain.Core.Model</span> <span class="badge badge-primary">Langchain.Core.Stream</span>
+  <span class="badge badge-primary">Langchain.Model</span> <span class="badge badge-primary">Langchain.Stream</span>
 </div>
 
 Real-time token streaming and incremental response processing with streamChat.
