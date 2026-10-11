@@ -5,7 +5,7 @@ category: Components
 ---
 
 <div class="component-header-meta">
-  <span class="badge badge-primary">Langchain.Embedding.Class</span> <span class="badge badge-primary">Langchain.Core.VectorStore</span>
+  <span class="badge badge-primary">Langchain.Embeddings.Core</span> <span class="badge badge-primary">Langchain.VectorStore.Core</span>
 </div>
 
 Vector embeddings, cosine similarity calculation, and document chunking for retrieval.

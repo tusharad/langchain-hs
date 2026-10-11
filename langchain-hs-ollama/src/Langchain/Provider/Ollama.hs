@@ -89,10 +89,10 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 
 import Langchain.Cache.Core (CacheableChatModel (..))
-import Langchain.Core.Error (llmError)
-import Langchain.Core.Model
-import Langchain.Core.Stream (StreamEvent (..), TokenUsage (..))
-import Langchain.Core.Tool (Tool, toolToValue)
+import Langchain.Error (llmError)
+import Langchain.Model
+import Langchain.Stream (StreamEvent (..), TokenUsage (..))
+import Langchain.Tool (Tool, toolToValue)
 import Langchain.Tool.Binding (ToolBinder (..))
 
 import Ollama.API.Chat

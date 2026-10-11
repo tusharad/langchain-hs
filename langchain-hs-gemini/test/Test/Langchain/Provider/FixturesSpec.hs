@@ -7,7 +7,7 @@ import qualified Data.ByteString.Lazy as LBS
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import Langchain.Core.Model
+import Langchain.Model
 import Langchain.Provider.Gemini (parseGeminiResponse)
 
 loadFixture :: FilePath -> IO (Either String Value)

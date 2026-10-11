@@ -5,7 +5,7 @@ category: Components
 ---
 
 <div class="component-header-meta">
-  <span class="badge badge-primary">Langchain.Core.Runnable</span>
+  <span class="badge badge-primary">Langchain.Runnable</span>
 </div>
 
 First-class AST composition via pipe (|>>), parallel (&>&), and fallback (>>>#) operators.
@@ -74,7 +74,7 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified Data.Text.Lazy as TL
 
-import Langchain.Core.Runnable (runIdent)
+import Langchain.Runnable (runIdent)
 import Langchain.DocumentLoader.Core (Document (..))
 import Langchain.Prelude
 import Langchain.PromptTemplate.Prompt

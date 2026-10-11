@@ -35,8 +35,8 @@ import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 
-import Langchain.Core.Error (LangchainError, internalError)
-import Langchain.Core.Model (Message)
+import Langchain.Error (LangchainError, internalError)
+import Langchain.Model (Message)
 
 -- | Unique node identifier in a StateGraph
 type NodeId = Text

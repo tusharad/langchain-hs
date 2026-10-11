@@ -36,9 +36,9 @@ import qualified Data.Text.Lazy as TL
 import qualified Data.Vector as V
 import GHC.Generics
 
-import Langchain.Core.Error (llmError)
 import Langchain.DocumentLoader.Core
 import Langchain.Embeddings.Core
+import Langchain.Error (llmError)
 import Network.HTTP.Conduit
 import Network.HTTP.Simple
   ( getResponseBody

@@ -19,7 +19,7 @@ module Langchain.Graph.Parallel
 import Control.Concurrent.Async (mapConcurrently)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 
-import Langchain.Core.Error (LangchainError)
+import Langchain.Error (LangchainError)
 import Langchain.Graph.StateGraph
 
 -- | Construct a parallel composite node that executes worker actions concurrently

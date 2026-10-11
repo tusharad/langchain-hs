@@ -5,7 +5,7 @@ category: Components
 ---
 
 <div class="component-header-meta">
-  <span class="badge badge-primary">Langchain.Core.Monad</span> <span class="badge badge-primary">Control.Monad.Reader</span>
+  <span class="badge badge-primary">Langchain.Monad</span> <span class="badge badge-primary">Control.Monad.Reader</span>
 </div>
 
 The LangchainT monad transformer providing unified environment configuration and error management.

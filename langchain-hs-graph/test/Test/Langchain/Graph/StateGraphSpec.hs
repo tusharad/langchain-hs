@@ -4,7 +4,7 @@ module Test.Langchain.Graph.StateGraphSpec (tests) where
 
 import Control.Monad.Except (ExceptT, runExceptT)
 import Data.Text (Text)
-import Langchain.Core.Error (LangchainError)
+import Langchain.Error (LangchainError)
 import Langchain.Graph.StateGraph
 import Test.Tasty
 import Test.Tasty.HUnit

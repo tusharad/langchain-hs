@@ -10,9 +10,9 @@ import Data.Text (Text)
 import qualified Data.Text as T
 
 import qualified Data.List.NonEmpty as NonEmpty
-import Langchain.Core.Model
-import Langchain.Core.Tool (Tool)
+import Langchain.Model
 import Langchain.Provider.Ollama
+import Langchain.Tool (Tool)
 import Langchain.Tool.Calculator (calculatorTool)
 import qualified Ollama.Client as OC
 import qualified Ollama.Types.Format as OFormat

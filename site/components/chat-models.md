@@ -5,7 +5,7 @@ category: Components
 ---
 
 <div class="component-header-meta">
-  <span class="badge badge-primary">Langchain.Core.Model</span> <span class="badge badge-primary">Langchain.Provider.Ollama</span> <span class="badge badge-primary">Langchain.Provider.OpenAI</span>
+  <span class="badge badge-primary">Langchain.Model</span> <span class="badge badge-primary">Langchain.Provider.Ollama</span> <span class="badge badge-primary">Langchain.Provider.OpenAI</span>
 </div>
 
 Fundamental chat model interfaces for invocation, message generation, batching, and configuration.

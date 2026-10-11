@@ -21,12 +21,9 @@ runApp = do
             "Monads structure computations as sequences of steps while isolating effects like state or IO."
             mempty
         ]
-      dbPath = "/tmp/retrieval_qa_openai.db"
-
   res <- runExceptT $ do
     embed <- liftIO $ getOpenRouterEmbeddings "text-embedding-3-small"
-    store_ <- newSqliteVecStore dbPath embed
-    _ <- addDocuments store_ docs
+    store_ <- addDocuments (emptyInMemoryVectorStore embed) docs
     let retriever = VectorStoreRetriever store_
     o <- liftIO $ getOpenRouterModel defaultModelName
     let qa = newRetrievalQA o retriever

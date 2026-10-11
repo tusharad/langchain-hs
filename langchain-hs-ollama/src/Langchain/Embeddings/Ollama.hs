@@ -21,9 +21,9 @@ import Control.Monad.IO.Class (liftIO)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
-import Langchain.Core.Error (llmError)
 import Langchain.DocumentLoader.Core (Document (..))
 import Langchain.Embeddings.Core
+import Langchain.Error (llmError)
 
 import Ollama.API.Embed (EmbedRequest (..), EmbedResponse (..), embed)
 import Ollama.Client (defaultClient)

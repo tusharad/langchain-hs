@@ -10,9 +10,9 @@ The `langchain-hs` ecosystem is organized into modular packages to ensure a ligh
 
 | Package | Version | Hackage | Source | Description |
 |---|---|---|---|---|
-| **`langchain-hs-core`** | `0.0.6.0` | [Hackage ↗](https://hackage.haskell.org/package/langchain-hs-core) | [`./langchain-hs-core`](https://github.com/tusharad/langchain-hs/tree/develop/langchain-hs-core) | Pure AST pipelines (`RunnableTree`), `ChatModel`, `ContentBlock`, `Tool m`, `StreamEvent`. Zero network/HTTP dependencies. |
-| **`langchain-hs-graph`** | `0.0.6.0` | [Hackage ↗](https://hackage.haskell.org/package/langchain-hs-graph) | [`./langchain-hs-graph`](https://github.com/tusharad/langchain-hs/tree/develop/langchain-hs-graph) | `StateGraph s m`, `StateReducer s`, Checkpointers (STM & SQLite), HITL, TimeTravel, Parallel nodes, Graphviz DOT export. |
-| **`langchain-hs`** | `0.0.6.0` | [Hackage ↗](https://hackage.haskell.org/package/langchain-hs) | [`./`](https://github.com/tusharad/langchain-hs) | Core framework: Agents (`ReAct`, `PlanAndExecute`), Output Parsers, Vector Stores, Chains, Memory, Resilience, OpenTelemetry. |
+| **`langchain-hs-core`** | `0.0.6.0` | [Hackage ↗](https://hackage.haskell.org/package/langchain-hs-core) | [`./langchain-hs-core`](https://github.com/tusharad/langchain-hs/tree/develop/langchain-hs-core) | Core framework: AST pipelines (`RunnableTree`), `ChatModel`, `Tool`, agents (`ReAct`, `PlanAndExecute`), output parsers, vector stores, retrievers, memory, cache, guardrails, resilience, observability, and canonical `Langchain.Prelude`. |
+| **`langchain-hs-graph`** | `0.0.6.0` | [Hackage ↗](https://hackage.haskell.org/package/langchain-hs-graph) | [`./langchain-hs-graph`](https://github.com/tusharad/langchain-hs/tree/develop/langchain-hs-graph) | `StateGraph s m`, `StateReducer s`, Checkpointers (STM & SQLite), HITL, TimeTravel, Multi-Agent systems, Parallel nodes, Graphviz DOT export. |
+| **`langchain-hs`** | `0.0.6.0` | [Hackage ↗](https://hackage.haskell.org/package/langchain-hs) | [`./`](https://github.com/tusharad/langchain-hs) | Umbrella package re-exporting `langchain-hs-core` and `langchain-hs-graph` via Cabal `reexported-modules`. |
 | **`langchain-hs-ollama`** | `0.0.6.0` | [Hackage ↗](https://hackage.haskell.org/package/langchain-hs-ollama) | [`./langchain-hs-ollama`](https://github.com/tusharad/langchain-hs/tree/develop/langchain-hs-ollama) | Dedicated Ollama provider and embeddings integration via `ollama-haskell`. |
 | **`langchain-hs-openai`** | `0.0.6.0` | [Hackage ↗](https://hackage.haskell.org/package/langchain-hs-openai) | [`./langchain-hs-openai`](https://github.com/tusharad/langchain-hs/tree/develop/langchain-hs-openai) | Dedicated OpenAI & OpenAI-compatible provider, streaming, and embeddings via `openai`. |
 | **`langchain-hs-gemini`** | `0.0.6.0` | [Hackage ↗](https://hackage.haskell.org/package/langchain-hs-gemini) | [`./langchain-hs-gemini`](https://github.com/tusharad/langchain-hs/tree/develop/langchain-hs-gemini) | Dedicated Google Gemini provider with function calling and SSE streaming. |
@@ -24,21 +24,18 @@ The `langchain-hs` ecosystem is organized into modular packages to ensure a ligh
 
 ```mermaid
 flowchart TD
-    App[Your Haskell Application] --> LangchainHs["langchain-hs"]
+    App[Your Haskell Application] --> LangchainHs["langchain-hs (Umbrella)"]
     App -.-> Ollama["langchain-hs-ollama"]
     App -.-> OpenAI["langchain-hs-openai"]
     App -.-> Gemini["langchain-hs-gemini"]
     App -.-> MCP["langchain-hs-mcp"]
     
-    LangchainHs --> LangchainHsGraph["langchain-hs-graph"]
-    LangchainHs --> LangchainHsCore["langchain-hs-core"]
+    LangchainHs -.->|re-exports| LangchainHsGraph["langchain-hs-graph"]
+    LangchainHs -.->|re-exports| LangchainHsCore["langchain-hs-core"]
     LangchainHsGraph --> LangchainHsCore
     
-    Ollama --> LangchainHs
     Ollama --> LangchainHsCore
-    OpenAI --> LangchainHs
     OpenAI --> LangchainHsCore
-    Gemini --> LangchainHs
     Gemini --> LangchainHsCore
     MCP --> LangchainHsCore
 ```

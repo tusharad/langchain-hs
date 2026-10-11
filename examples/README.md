@@ -1,13 +1,13 @@
 # 🦜️🔗 Langchain-hs Examples
 
-A comprehensive suite of 34 verified example executables demonstrating each core component of the `langchain-hs` ecosystem using **Ollama** (local/offline) and **OpenAI** (cloud API).
+A comprehensive suite of 39 verified example executables demonstrating each core component of the `langchain-hs` ecosystem using **Ollama** (local/offline) and **OpenAI** (cloud API).
 
 ## How to Build & Run
 
 From the repository root:
 
 ```bash
-# Build all 34 example executables
+# Build all 39 example executables
 stack --stack-yaml examples/stack.yaml build
 
 # Run a specific example
@@ -43,18 +43,18 @@ stack run <executable-name>
 | **Langchain Monad** | `monadollama` | `monadopenai` | Decoupled `LangchainT` reader/error transformer |
 | **Structured Output** | `jsonollama` | `jsonopenai` | Typed JSON Schema generation and parsing |
 | **Tools & Calling** | `toolollama` | `toolopenai` | Function definition, invocation, and tool binders |
+| **Prompt Template** | `prompttemplate` | `prompttemplate` | Pure string template interpolation with pre-bound variables |
 | **RAG & Embeddings** | `ragollama` | `ragopenai` | Document loading, chunking, and embedding vectors |
 | **Hybrid Retrievers** | `retrieverollama` | `retrieveropenai` | BM25 + vector similarity hybrid retrieval |
 | **Memory Systems** | `memoryollama` | `memoryopenai` | Conversation buffer and sliding window memory |
 | **Retrieval QA** | `retrievalqaollama` | `retrievalqaopenai` | Question-answering pipeline over loaded documents |
-| **Map-Reduce** | `mapreduceollama` | `mapreduceopenai` | Document summarization via parallel map-reduce |
-| **ReAct Agent** | `reactollama` | - | Multi-turn reasoning and tool execution loop |
-| **Plan-and-Execute** | `planandexecuteollama` | - | Two-phase planning and step execution agent |
+| **ReAct Agent** | `reactollama` | `reactopenai` | Multi-turn reasoning and tool execution loop |
+| **Plan-and-Execute** | `planandexecuteollama` | `planandexecuteopenai` | Two-phase planning and step execution agent |
 | **Guardrails** | `guardrailollama` | `guardrailopenai` | Content safety and output length validation |
 | **Resilience** | `resilienceollama` | `resilienceopenai` | Circuit breakers, retry policies, and fallbacks |
 | **Observability** | `observabilityollama` | `observabilityopenai` | OpenTelemetry distributed tracing and structured logging |
 | **MCP Integration** | `mcpollama` | `mcpopenai` | Model Context Protocol client over stdio |
-| **StateGraph** | `stategraphollama` | - | Cyclic state machines with STM checkpoints |
-| **Multi-Agent** | - | - | Supervisor agent routing and multi-agent coordination |
+| **StateGraph** | `stategraphollama` | `stategraphopenai` | Cyclic state machines with STM checkpoints |
+| **Multi-Agent** | `multiagentollama` | `multiagentopenai` | Supervisor agent routing and multi-agent coordination |
 | **HITL** | `hitlollama` | `hitlopenai` | Human-in-the-loop interrupts and state resumption |
 | **Runnables** | `runnableollama` | `runnableopenai` | Pure AST composition (`\|>>`, `&>&`, `>>>#`) |

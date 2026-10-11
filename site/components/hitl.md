@@ -52,8 +52,8 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import GHC.Generics (Generic)
 
-import Langchain.Core.Error (LangchainError)
-import Langchain.Core.Model (extractMessageText, systemMessage, userMessage)
+import Langchain.Error (LangchainError)
+import Langchain.Model (extractMessageText, systemMessage, userMessage)
 import Langchain.Graph.Checkpointer
   ( MemoryCheckpointer
   , newMemoryCheckpointer
@@ -237,8 +237,8 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import GHC.Generics (Generic)
 
-import Langchain.Core.Error (LangchainError)
-import Langchain.Core.Model (extractMessageText, systemMessage, userMessage)
+import Langchain.Error (LangchainError)
+import Langchain.Model (extractMessageText, systemMessage, userMessage)
 import Langchain.Graph.Checkpointer
   ( MemoryCheckpointer
   , newMemoryCheckpointer

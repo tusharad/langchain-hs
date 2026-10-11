@@ -22,14 +22,11 @@ description:         Please see the README on GitHub at <https://github.com/tush
 dependencies:
 - base >= 4.7 && < 5
 - langchain-hs
-- langchain-hs-core
-- langchain-hs-graph
 - langchain-hs-ollama
 - langchain-hs-openai
 - langchain-hs-mcp
 - text
 - aeson
-- bytestring
 - mtl
 - conduit
 - resourcet
@@ -192,15 +189,6 @@ executables:
     dependencies:
     - examples
 
-  mapreduceollama:
-    main:                Main.hs
-    source-dirs:         app/mapreduceollama
-    ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
-    dependencies:
-    - examples
 
   resilienceollama:
     main:                Main.hs
@@ -395,15 +383,6 @@ executables:
     dependencies:
     - examples
 
-  mapreduceopenai:
-    main:                Main.hs
-    source-dirs:         app/mapreduceopenai
-    ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
-    dependencies:
-    - examples
 
   resilienceopenai:
     main:                Main.hs

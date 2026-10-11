@@ -28,7 +28,6 @@ dependencies:
   - base >= 4.17 && < 5
   - bytestring >= 0.10 && < 0.13
   - http-conduit >= 2 && < 3
-  - langchain-hs >= 0.0.6 && < 0.0.7
   - langchain-hs-core >= 0.0.6 && < 0.0.7
   - mtl >= 2.2 && < 2.4
   - process >= 1.6 && < 1.7
@@ -60,7 +59,6 @@ tests:
       - -with-rtsopts=-N
     dependencies:
       - langchain-hs-mcp
-      - langchain-hs
       - langchain-hs-core
       - text
       - bytestring

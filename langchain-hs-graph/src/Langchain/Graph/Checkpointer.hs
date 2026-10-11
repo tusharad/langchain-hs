@@ -32,7 +32,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import Database.SQLite.Simple
 
-import Langchain.Core.Error (LangchainError, internalError)
+import Langchain.Error (LangchainError, internalError)
 import Langchain.Graph.StateGraph (NodeId)
 
 -- | Effect-polymorphic Checkpointer typeclass

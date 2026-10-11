@@ -23,9 +23,9 @@ import Control.Monad.IO.Class (MonadIO)
 import Data.Text (Text)
 import qualified Data.Text as T
 
-import Langchain.Core.Error (LangchainError, agentError)
-import Langchain.Core.Model (ChatModel (..), extractMessageText, userMessage)
+import Langchain.Error (LangchainError, agentError)
 import Langchain.Graph.StateGraph (Node (..), NodeId, StateGraph, runGraph, startNodeId)
+import Langchain.Model (ChatModel (..), extractMessageText, userMessage)
 
 -- | Construct a supervisor routing node that uses an LLM to select the target sub-agent NodeId
 supervisorNode ::
