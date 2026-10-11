@@ -1153,6 +1153,11 @@ button {
   box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
 }
 
+.provider-switch-btn[data-provider="gemini"].active {
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+}
+
 /* In-Page Provider Group (Code Blocks) */
 .provider-group {
   margin: 1.5rem 0 2.25rem;

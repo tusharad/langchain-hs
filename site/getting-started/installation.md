@@ -23,7 +23,7 @@ category: Getting Started
 | `langchain-hs-graph` | Graph & Multi-Agent | `StateGraph`, Checkpointing, Time-Travel, Parallel Nodes |
 | `langchain-hs-ollama` | Ollama Provider | Local/offline inference via Ollama |
 | `langchain-hs-openai` | OpenAI Provider | OpenAI & OpenAI-compatible endpoints (OpenRouter, Fireworks) |
-| `langchain-hs-gemini` | Gemini Provider | Google Gemini API with function calling and SSE streaming |
+| `langchain-hs-gemini` | Gemini Provider | Google Gemini API (Interactions v1 OpenAPI spec), embeddings & SSE streaming |
 | `langchain-hs-mcp` | MCP Client | Connect to Model Context Protocol servers over stdio |
 
 ### Using Stack
@@ -57,6 +57,7 @@ dependencies:
   # Add only what you use:
   - langchain-hs-ollama
   - langchain-hs-openai
+  - langchain-hs-gemini
 ```
 
 ### Using Cabal

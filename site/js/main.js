@@ -61,16 +61,26 @@ function initProviderToggles() {
 
   function updateGlobalToggleUI(provider) {
     if (!globalToggle) return;
-    if (provider === 'openai') {
-      globalToggle.innerHTML = `<span class="toggle-icon">⚡</span><span>OpenAI</span>`;
-      globalToggle.classList.add('provider-openai');
-      globalToggle.classList.remove('provider-ollama');
-      globalToggle.title = 'Switch active provider to Ollama';
+    const btns = globalToggle.querySelectorAll('.provider-switch-btn');
+    if (btns.length > 0) {
+      btns.forEach(btn => {
+        if (btn.getAttribute('data-provider') === provider) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
     } else {
-      globalToggle.innerHTML = `<span class="toggle-icon">🦙</span><span>Ollama</span>`;
-      globalToggle.classList.add('provider-ollama');
-      globalToggle.classList.remove('provider-openai');
-      globalToggle.title = 'Switch active provider to OpenAI';
+      if (provider === 'gemini') {
+        globalToggle.innerHTML = `<span class="toggle-icon">✨</span><span>Gemini</span>`;
+        globalToggle.title = 'Switch active provider to Ollama';
+      } else if (provider === 'openai') {
+        globalToggle.innerHTML = `<span class="toggle-icon">⚡</span><span>OpenAI</span>`;
+        globalToggle.title = 'Switch active provider to Gemini';
+      } else {
+        globalToggle.innerHTML = `<span class="toggle-icon">🦙</span><span>Ollama</span>`;
+        globalToggle.title = 'Switch active provider to OpenAI';
+      }
     }
   }
 
@@ -131,7 +141,7 @@ function initProviderToggles() {
 
     panels.forEach(panel => {
       const pId = panel.getAttribute('data-provider') || 'ollama';
-      const label = panel.getAttribute('data-label') || (pId === 'openai' ? '⚡ OpenAI / OpenRouter' : '🦙 Ollama (Local)');
+      const label = panel.getAttribute('data-label') || (pId === 'gemini' ? '✨ Google Gemini' : (pId === 'openai' ? '⚡ OpenAI / OpenRouter' : '🦙 Ollama (Local)'));
       
       const tabBtn = document.createElement('button');
       tabBtn.className = 'provider-tab-btn' + (pId === currentProvider ? ' active' : '');
@@ -179,10 +189,21 @@ function initProviderToggles() {
 
   // Global toggle click handler
   if (globalToggle) {
-    globalToggle.addEventListener('click', () => {
-      const nextProvider = currentProvider === 'ollama' ? 'openai' : 'ollama';
-      setProvider(nextProvider);
-    });
+    const btns = globalToggle.querySelectorAll('.provider-switch-btn');
+    if (btns.length > 0) {
+      btns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const p = btn.getAttribute('data-provider');
+          if (p) setProvider(p);
+        });
+      });
+    } else {
+      globalToggle.addEventListener('click', () => {
+        const nextProvider = currentProvider === 'ollama' ? 'openai' : (currentProvider === 'openai' ? 'gemini' : 'ollama');
+        setProvider(nextProvider);
+      });
+    }
   }
 
   // Initial activation
