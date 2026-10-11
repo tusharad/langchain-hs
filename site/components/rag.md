@@ -57,8 +57,8 @@ runApp = do
                 id
                 [systemMessage, userMessage]
                 [systemPrompt, finalQ]
-        let chatReq = withOptions (defaultOptions {optNumCtx = Just 100096}) (chatRequestFor o msgs)
-        invoke o msgs (Just chatReq)
+        let cfg = withOptions (defaultOptions {optNumCtx = Just 100096}) defaultOllamaConfig
+        invoke o msgs (Just cfg)
       Left _ -> throwError $ internalError "Rendering of vars failed" Nothing Nothing
   case res of
     Left err -> T.putStrLn $ errorMessage err

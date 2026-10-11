@@ -28,9 +28,9 @@ runApp = do
 
     o <- newOllama "qwen3.5:2b" defaultConfig
     let msgs = [userMessage "Search Hoogle for the Haskell function 'traverse' using the search tool."]
-        req = withTools lcTools (chatRequestFor o msgs)
+        toolCfg = withTools lcTools defaultOllamaConfig
 
-    resp <- invoke o msgs (Just (OllamaOptions req))
+    resp <- invoke o msgs (Just toolCfg)
     case messageToolCalls resp of
       Just (tc : _) -> do
         liftIO $ T.putStrLn $ "\nLLM selected tool: " <> toolCallName tc
@@ -44,9 +44,8 @@ runApp = do
                   Right out -> out
                 toolMsg = (toolMessage toolResult) {messageName = Just (toolCallName tc)}
                 conv = msgs ++ [resp, toolMsg]
-                followReq = withTools lcTools (chatRequestFor o conv)
 
-            finalResp <- invoke o conv (Just (OllamaOptions followReq))
+            finalResp <- invoke o conv (Just toolCfg)
             liftIO $ T.putStrLn "\nAI:"
             liftIO $ T.putStrLn $ extractMessageText finalResp
           Nothing ->

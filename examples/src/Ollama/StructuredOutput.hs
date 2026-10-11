@@ -30,7 +30,6 @@ runApp :: IO ()
 runApp = do
   ollama <- newOllama "gemma3" defaultConfig
   let msgs = [userMessage inputPrompt]
-      chatReq = chatRequestFor ollama msgs
-      opts = withStructuredOutput @Person (OllamaOptions chatReq)
+      opts = withStructuredOutput @Person defaultOllamaConfig
   res <- runLangchainT () $ invoke ollama msgs (Just opts)
   T.putStrLn $ either errorMessage extractMessageText res

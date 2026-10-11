@@ -112,7 +112,7 @@ import Langchain.Provider.Ollama
 main :: IO ()
 main = do
   -- Connect to local Ollama instance (DeepSeek, Llama 3, Gemma)
-  model <- newOllama "gemma3" defaultOllamaConfig
+  model <- newOllama "gemma3" defaultClientConfig
   
   let msg = [userMessage "Write a poem about functional programming"]
   res <- runExceptT $ invoke model msg Nothing
