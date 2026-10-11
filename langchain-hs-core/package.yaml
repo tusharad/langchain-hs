@@ -34,6 +34,7 @@ dependencies:
 - text >= 1.2 && < 3
 - time >= 1.9 && < 1.15
 - directory >= 1.3 && < 1.4
+- filepath >= 1.4 && < 2
 - process >= 1.6 && < 1.7
 - scientific >= 0.3 && < 0.4
 
@@ -66,6 +67,20 @@ library:
     - Langchain.Tool.FileSystem
     - Langchain.Tool.GenericSchema
     - Langchain.Tool.Shell
+    - Langchain.Embeddings
+    - Langchain.Embeddings.Core
+    - Langchain.DocumentLoader
+    - Langchain.DocumentLoader.Core
+    - Langchain.DocumentLoader.DirectoryLoader
+    - Langchain.DocumentLoader.FileLoader
+    - Langchain.TextSplitter.Character
+    - Langchain.TextSplitter.Code
+    - Langchain.TextSplitter.Markdown
+    - Langchain.TextSplitter.RecursiveCharacter
+    - Langchain.TextSplitter.Token
+    - Langchain.VectorStore
+    - Langchain.VectorStore.Core
+    - Langchain.VectorStore.InMemory
 
 tests:
   langchain-hs-core-test:

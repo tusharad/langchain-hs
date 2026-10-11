@@ -212,8 +212,6 @@ module Langchain.Prelude
   , InMemory (..)
   , emptyInMemoryVectorStore
   , fromDocuments
-  , SqliteVecStore (..)
-  , newSqliteVecStore
   , Retriever (..)
   , VectorStoreRetriever (..)
   , retrieveWithCallbacks
@@ -228,8 +226,6 @@ module Langchain.Prelude
   , DirectoryLoader (..)
   , DirectoryLoaderOptions (..)
   , defaultDirectoryLoaderOptions
-  , CsvLoader (..)
-  , defaultCsvLoader
 
     -- * Prompt Templates
   , PromptTemplate (..)
@@ -339,7 +335,6 @@ import Langchain.Callback.Manager
 import Langchain.Chain.MapReduce
 import Langchain.Chain.RetrievalQA
 import Langchain.DocumentLoader.Core
-import Langchain.DocumentLoader.Csv
 import Langchain.DocumentLoader.DirectoryLoader
 import Langchain.DocumentLoader.FileLoader
 import Langchain.Embeddings.Core
@@ -378,4 +373,3 @@ import Langchain.Tool.GenericSchema
 import Langchain.Tool.Shell (shellTool)
 import Langchain.VectorStore.Core
 import Langchain.VectorStore.InMemory
-import Langchain.VectorStore.SqliteVec

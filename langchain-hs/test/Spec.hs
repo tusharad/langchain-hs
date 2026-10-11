@@ -12,7 +12,6 @@ import qualified Test.Langchain.Callback.CallbackManagerSpec as CallbackTest
 import qualified Test.Langchain.Chain.ChainsSpec as ChainsTest
 import qualified Test.Langchain.Chain.RetrievalQASpec as RetrievalQATest
 import qualified Test.Langchain.DocumentLoader.Core as DocumentLoaderTest
-import qualified Test.Langchain.DocumentLoader.CsvSpec as CsvLoaderTest
 import qualified Test.Langchain.DocumentLoader.DirectoryLoader as DirectoryLoaderTest
 import qualified Test.Langchain.Error as ErrorTest
 import qualified Test.Langchain.Graph.CompilationSpec as GraphCompilationTest
@@ -43,7 +42,6 @@ import qualified Test.Langchain.Tool.Calculator as CalculatorToolTest
 import qualified Test.Langchain.Tool.FileSystem as FileSystemToolTest
 import qualified Test.Langchain.Tool.Shell as ShellToolTest
 import qualified Test.Langchain.VectorStore.Core as VectorStoreTest
-import qualified Test.Langchain.VectorStore.SqliteVecSpec as SqliteVecStoreTest
 
 -- Property Test Modules (QuickCheck Laws & Invariants)
 import qualified Test.Langchain.Property.CheckpointerSpec as CheckpointerPropTest
@@ -76,12 +74,10 @@ main =
           , CodeSplitterTest.tests
           , DocumentLoaderTest.tests
           , DirectoryLoaderTest.tests
-          , CsvLoaderTest.tests
           , MemoryTest.tests
           , SummaryMemoryTest.tests
           , EntityMemoryTest.tests
           , VectorStoreTest.tests
-          , SqliteVecStoreTest.tests
           , ErrorTest.tests
           , RetrieverTest.tests
           , BM25Test.tests

@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 
 {- |
-Module      : Langchain.Embeddings.Core
+Module      : Langchain.Embeddings
 Description : Effect-polymorphic embedding model interface
 Copyright   : (c) 2025-2026 Tushar Adhatrao
 License     : MIT
@@ -10,7 +10,7 @@ Stability   : experimental
 
 Effect-polymorphic Embeddings typeclass.
 -}
-module Langchain.Embeddings.Core
+module Langchain.Embeddings
   ( Embeddings (..)
   ) where
 

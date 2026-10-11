@@ -22,12 +22,9 @@ runApp = do
             "Immutability is default across Haskell data structures, preventing hidden state mutations."
             mempty
         ]
-      dbPath = "/tmp/map_reduce_openai.db"
-
   res <- runExceptT $ do
     embed <- liftIO $ getOpenRouterEmbeddings "text-embedding-3-small"
-    store_ <- newSqliteVecStore dbPath embed
-    _ <- addDocuments store_ docs
+    store_ <- addDocuments (emptyInMemoryVectorStore embed) docs
     retrievedDocs <- similaritySearch store_ "core Haskell features" 3
     o <- liftIO $ getOpenRouterModel defaultModelName
     let chain = newMapReduceChain o

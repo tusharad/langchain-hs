@@ -42,11 +42,6 @@ library
       Langchain.Callback.Manager
       Langchain.Chain.MapReduce
       Langchain.Chain.RetrievalQA
-      Langchain.DocumentLoader.Core
-      Langchain.DocumentLoader.Csv
-      Langchain.DocumentLoader.DirectoryLoader
-      Langchain.DocumentLoader.FileLoader
-      Langchain.Embeddings.Core
       Langchain.Guardrail.Core
       Langchain.Memory.Core
       Langchain.Memory.Entity
@@ -66,14 +61,6 @@ library
       Langchain.Retriever.BM25
       Langchain.Retriever.Core
       Langchain.Retriever.Hybrid
-      Langchain.TextSplitter.Character
-      Langchain.TextSplitter.Code
-      Langchain.TextSplitter.Markdown
-      Langchain.TextSplitter.RecursiveCharacter
-      Langchain.TextSplitter.Token
-      Langchain.VectorStore.Core
-      Langchain.VectorStore.InMemory
-      Langchain.VectorStore.SqliteVec
   other-modules:
       Paths_langchain_hs
   hs-source-dirs:
@@ -114,7 +101,6 @@ test-suite langchain-hs-test
       Test.Langchain.Chain.ChainsSpec
       Test.Langchain.Chain.RetrievalQASpec
       Test.Langchain.DocumentLoader.Core
-      Test.Langchain.DocumentLoader.CsvSpec
       Test.Langchain.DocumentLoader.DirectoryLoader
       Test.Langchain.Error
       Test.Langchain.Graph.CompilationSpec
@@ -153,7 +139,6 @@ test-suite langchain-hs-test
       Test.Langchain.Tool.FileSystem
       Test.Langchain.Tool.Shell
       Test.Langchain.VectorStore.Core
-      Test.Langchain.VectorStore.SqliteVecSpec
       Paths_langchain_hs
   hs-source-dirs:
       test

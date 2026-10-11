@@ -23,11 +23,9 @@ runApp = do
             mempty
         ]
       embed = OllamaEmbeddings "nomic-embed-text:latest" Nothing Nothing Nothing
-      dbPath = "/tmp/map_reduce.db"
 
   res <- runExceptT $ do
-    store_ <- newSqliteVecStore dbPath embed
-    _ <- addDocuments store_ docs
+    store_ <- addDocuments (emptyInMemoryVectorStore embed) docs
     retrievedDocs <- similaritySearch store_ "core Haskell features" 3
     o <- newOllama "qwen3.5:2b" defaultConfig
     let chain = newMapReduceChain o
