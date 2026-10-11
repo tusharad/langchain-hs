@@ -13,7 +13,7 @@ runner 'runLangchainT'.
 
 'LangchainT' is parameterised over the reader environment @r@, so each
 provider (or application) can supply its own config type rather than being
-forced into a one-size-fits-all 'LangchainConfig'.  Use @r = ()@ when you do
+forced into a one-size-fits-all @LangchainConfig@.  Use @r = ()@ when you do
 not need a shared environment at all.
 
 @

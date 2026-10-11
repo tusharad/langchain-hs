@@ -79,7 +79,7 @@ instance (ChatModel c, MonadIO m) => Runnable (TextModelRunnable c) m where
     pure (extractMessageText <$> res)
 
 {- | Pure GADT representing a composable pipeline AST.
-'i' = input type, 'o' = output type, 'm' = monad context.
+@i@ = input type, @o@ = output type, @m@ = monad context.
 -}
 data RunnableTree m i o where
   -- | Identity: passes input through unchanged
@@ -169,7 +169,7 @@ interpret (Fallback t1 t2) input =
 runPure :: Monad m => (i -> o) -> RunnableTree m i o
 runPure f = runLambda (pure . Right . f)
 
--- | Identity node in a 'RunnableTree' (passes input through unchanged, like LangChain's 'RunnablePassthrough').
+-- | Identity node in a 'RunnableTree' (passes input through unchanged, like LangChain's @RunnablePassthrough@).
 runPassthrough :: RunnableTree m a a
 runPassthrough = Id
 

@@ -97,7 +97,7 @@ renderPrompt :: PromptTemplate -> Map.Map Text Text -> Either LangchainError Tex
 renderPrompt (PromptTemplate source _ partials format) vars =
   renderTemplateWithFormat format (vars `Map.union` partials) source
 
--- | 'PromptTemplate' implements 'Runnable' transforming variable 'Map' to rendered 'Text'.
+-- | t'PromptTemplate' implements 'Runnable' transforming variable @Map@ to rendered 'Text'.
 instance Monad m => Runnable PromptTemplate m where
   type RunnableInput PromptTemplate = Map.Map Text Text
   type RunnableOutput PromptTemplate = Text

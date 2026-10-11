@@ -39,10 +39,10 @@ import Data.Text.Internal.Search (indices)
 import Langchain.Error (LangchainResult, parsingError)
 
 {- | Typeclass for parsing output from language models into specific types.
-Instances of this class define how to convert a 'Text' output into a value of type 'a'.
+Instances of this class define how to convert a 'Text' output into a value of type @a@.
 -}
 class OutputParser a where
-  {- | Parse the given text into a value of type 'a'.
+  {- | Parse the given text into a value of type @a@.
   Returns 'Left' with an error message if parsing fails, or 'Right' with the parsed value.
   -}
   parse :: Text -> LangchainResult a

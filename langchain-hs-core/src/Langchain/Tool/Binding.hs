@@ -26,7 +26,7 @@ import Langchain.Tool (Tool)
 
 {- | Typeclass for models that support binding tools into their 'ModelConfig'.
 
-Agents like 'ReActAgent' use this to pass tool definitions to the LLM
+Agents like @ReActAgent@ use this to pass tool definitions to the LLM
 provider in a provider-agnostic way.
 
 = Example

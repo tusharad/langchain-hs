@@ -14,25 +14,25 @@ category: Core Concepts
 │  langchain-hs-ollama · langchain-hs-openai                  │
 │  langchain-hs-gemini · langchain-hs-mcp                     │
 └──────────────────────────────┬──────────────────────────────┘
-                               │ depends on
-┌──────────────────────────────▼──────────────────────────────┐
-│                       langchain-hs                          │
-│  Core Framework: Agents (ReAct, Plan&Execute) · Chains      │
-│  Vector Stores (InMemory, SQLiteVec) · Output Parsers       │
-│  Resilience (CircuitBreaker, Retry) · Observability (OTel)  │
-└──────────────────────────────┬──────────────────────────────┘
-                               │ depends on
-┌──────────────────────────────▼──────────────────────────────┐
+                               │ depends directly on
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    langchain-hs-core                        │
+│  Core Primitives & Framework:                               │
+│  RunnableTree · ChatModel · Tool m · Agents (ReAct, P&E)    │
+│  RetrievalQA · VectorStore · BM25 & Hybrid Retriever        │
+│  Memory · Cache · Parsers · Guardrails · Resilience · OTel  │
+└──────────────────────────────▲──────────────────────────────┘
+                               │ extends
+┌──────────────────────────────┴──────────────────────────────┐
 │                    langchain-hs-graph                       │
 │  StateGraph s m · StateReducer s · Checkpointers · HITL     │
-│  TimeTravel · Parallel Execution · Graphviz DOT Export      │
-└──────────────────────────────┬──────────────────────────────┘
-                               │ depends on
-┌──────────────────────────────▼──────────────────────────────┐
-│                    langchain-hs-core                        │
-│  Zero-Dependency Pure GADT ASTs (RunnableTree)              │
-│  ChatModel · ContentBlock · Tool m · StreamEvent Lifecycle  │
-│  Zero HTTP / Network / Database Dependencies                │
+│  TimeTravel · Parallel Execution · MultiAgent · DOT Export  │
+└──────────────────────────────▲──────────────────────────────┘
+                               │ re-exported by
+┌──────────────────────────────┴──────────────────────────────┐
+│                       langchain-hs                          │
+│  Umbrella Package: re-exports langchain-hs-core + graph     │
 └─────────────────────────────────────────────────────────────┘
 ```
 

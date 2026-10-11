@@ -93,29 +93,31 @@ langchain-hs is organized into decoupled, modular packages so that applications 
 │  langchain-hs-ollama · langchain-hs-openai                       │
 │  langchain-hs-gemini · langchain-hs-mcp                          │
 └──────────────┬───────────────────────────────┬───────────────────┘
-               │                               │
+               │ depends directly on           │
     ┌──────────▼───────────────────────────────▼───────────────────┐
-    │  langchain-hs  (Core Framework & Agentic Ecosystem)          │
-    │  Agents: ReAct, Plan-and-Execute, Multi-Agent Coordination   │
-    │  VectorStores: SQLite-vec, InMemory                          │
-    │  Chains: RetrievalQA, MapReduce   Memory: ConversationBuffer │
+    │  langchain-hs-core  (Core Framework & Agentic Ecosystem)     │
+    │  Agents: ReAct, Plan-and-Execute                             │
+    │  VectorStores: InMemory           Retrievers: BM25, Hybrid   │
+    │  Chains: RetrievalQA              Memory: ConversationBuffer │
     │  Resilience: CircuitBreaker, Retry, In-Memory Cache          │
     │  Observability: OpenTelemetry spans, Structured Logger       │
-    └──────────┬───────────────────────────────┬───────────────────┘
-               │                               │
-    ┌──────────▼────────────────┐   ┌──────────▼───────────────────┐
-    │  langchain-hs-graph       │   │  langchain-hs-core           │
-    │  StateGraph s m           │   │  RunnableTree m i o (GADT)   │
-    │  StateReducer s           │   │  ChatModel typeclass         │
-    │  MemoryCheckpointer (TVar)│──►│  StreamEvent / Conduit       │
-    │  SQLiteCheckpointer       │   │  LangchainT env m a          │
-    │  HITL Interrupts          │   │  LangchainError (sum type)   │
-    │  Time-Travel Replay       │   │  Tool / ContentBlock         │
-    │  Parallel Nodes (async)   │   │  (zero HTTP dependencies)    │
+    │  RunnableTree m i o (Pure GADT)   ChatModel typeclass        │
+    │  StreamEvent / Conduit            LangchainT env m a         │
+    └──────────▲───────────────────────────────▲───────────────────┘
+               │ extends                       │ re-exported by
+    ┌──────────┴────────────────┐   ┌──────────┴───────────────────┐
+    │  langchain-hs-graph       │   │  langchain-hs (Umbrella)     │
+    │  StateGraph s m           │   │  Re-exports core and graph   │
+    │  StateReducer s           │   │  via Cabal reexported-modules│
+    │  MemoryCheckpointer (TVar)│   │  Batteries-included single   │
+    │  SQLiteCheckpointer       │   │  convenience package         │
+    │  HITL Interrupts          │   │                              │
+    │  Time-Travel Replay       │   │                              │
+    │  MultiAgent & Parallel    │   │                              │
     └───────────────────────────┘   └──────────────────────────────┘
 ```
 
-`langchain-hs-core` has **zero HTTP dependencies** — it compiles without network access and is suitable for embedded or WASM targets. `langchain-hs` depends only on core, graph, and pure algorithms, while concrete AI providers and network protocol clients live in their own dedicated packages.
+`langchain-hs-core` provides the foundational framework and agent runtime with zero concrete provider dependencies. `langchain-hs-graph` extends core with stateful cyclic workflows, and `langchain-hs` serves as the batteries-included umbrella package re-exporting both `langchain-hs-core` and `langchain-hs-graph`. Concrete AI providers and network protocol clients live in their own dedicated packages.
 
 ---
 

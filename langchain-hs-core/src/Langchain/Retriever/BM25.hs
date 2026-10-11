@@ -144,7 +144,7 @@ bm25SearchWithScores BM25Index {..} query k
           scoreDelta = idf * tfWeight
        in Map.insertWith (+) docIdx scoreDelta acc
 
--- | 'BM25Index' implements 'Runnable' mapping a search query 'Text' to '[Document]' results.
+-- | t'BM25Index' implements 'Runnable' mapping a search query 'Text' to '[Document]' results.
 instance Monad m => Runnable BM25Index m where
   type RunnableInput BM25Index = Text
   type RunnableOutput BM25Index = [Document]

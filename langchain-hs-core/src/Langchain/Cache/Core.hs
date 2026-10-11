@@ -167,7 +167,7 @@ class (ChatModel model) => CacheableChatModel model where
 
 {- | Compute a canonical cache key from a model identity and complete input messages.
 
-The key includes all fields of each 'Message', so multi-modal content and
+The key includes all fields of each t'Message', so multi-modal content and
 tool calls cannot collide with text-only requests.
 -}
 computeCacheKey ::

@@ -8,7 +8,7 @@
 
 [![Hackage](https://img.shields.io/badge/hackage-0.0.6.0-blue.svg)](https://hackage.haskell.org/package/langchain-hs)
 [![GHC](https://img.shields.io/badge/GHC-9.8%2B-purple.svg)](https://www.haskell.org/ghc/)
-[![Components](https://img.shields.io/badge/components-20%20verified-brightgreen.svg)](#-20-core-components--verified-targets)
+[![Components](https://img.shields.io/badge/components-19%20verified-brightgreen.svg)](#-19-core-components--verified-targets)
 [![Providers](https://img.shields.io/badge/providers-Ollama%20%7C%20OpenAI%20%7C%20Gemini-orange.svg)](#-dual-provider-parity-ollama--openai)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Whitepaper](https://img.shields.io/badge/whitepaper-read%20now-blueviolet.svg)](whitepaper.md)
@@ -32,19 +32,19 @@ Modern AI orchestration frameworks often struggle with race conditions, hidden s
 
 | Package | Directory | Version | Description |
 |---|---|---|---|
-| `langchain-hs-core` | [`langchain-hs-core/`](./langchain-hs-core) | `0.0.6.0` | Zero-dependency pure core: `RunnableTree`, `ChatModel`, `ContentBlock`, `Tool`, and `LangchainT`. |
-| `langchain-hs-graph` | [`langchain-hs-graph/`](./langchain-hs-graph) | `0.0.6.0` | Stateful graph engine: `StateGraph s m`, checkpointers, HITL, time-travel, and parallel nodes. |
-| `langchain-hs` | [`./`](./) | `0.0.6.0` | Core framework: Agents, Output Parsers, Vector Stores, Chains, Memory, Resilience, Observability. |
+| `langchain-hs-core` | [`langchain-hs-core/`](./langchain-hs-core) | `0.0.6.0` | Core framework: `RunnableTree`, `ChatModel`, `Tool`, agents (`ReAct`, `PlanAndExecute`), output parsers, vector stores, retrievers, memory, cache, guardrails, resilience, observability, and canonical `Langchain.Prelude`. |
+| `langchain-hs-graph` | [`langchain-hs-graph/`](./langchain-hs-graph) | `0.0.6.0` | Stateful graph engine: `StateGraph s m`, checkpointers, HITL, time-travel, multi-agent systems, and parallel nodes. |
+| `langchain-hs` | [`./`](./) | `0.0.6.0` | Umbrella package re-exporting `langchain-hs-core` and `langchain-hs-graph` via Cabal `reexported-modules`. |
 | `langchain-hs-ollama` | [`langchain-hs-ollama/`](./langchain-hs-ollama) | `0.0.6.0` | Dedicated Ollama provider and embeddings integration via `ollama-haskell`. |
 | `langchain-hs-openai` | [`langchain-hs-openai/`](./langchain-hs-openai) | `0.0.6.0` | Dedicated OpenAI & OpenAI-compatible provider, streaming, and embeddings via `openai`. |
 | `langchain-hs-gemini` | [`langchain-hs-gemini/`](./langchain-hs-gemini) | `0.0.6.0` | Dedicated Google Gemini provider with function calling and SSE streaming. |
 | `langchain-hs-mcp` | [`langchain-hs-mcp/`](./langchain-hs-mcp) | `0.0.6.0` | Model Context Protocol client over stdio and HTTP JSON-RPC 2.0. |
-| `examples` | [`examples/`](./examples) | `0.1.0.0` | 34 runnable executables covering core components for Ollama and OpenAI. |
+| `examples` | [`examples/`](./examples) | `0.1.0.0` | 39 runnable executables covering core components for Ollama and OpenAI. |
 | `site` | [`site/`](./site) | - | Hakyll documentation website with live provider toggle and component reference. |
 
 ---
 
-## 20 Core Components & Verified Targets
+## 19 Core Components & Verified Targets
 
 | # | Component | Package Layer | Ollama Executable | OpenAI Executable | Documentation |
 |:---:|---|---|---|---|:---:|
@@ -57,17 +57,16 @@ Modern AI orchestration frameworks often struggle with race conditions, hidden s
 | 7 | **Hybrid Retrievers** | `Langchain.Retriever` | `stack run retrieverollama` | `stack run retrieveropenai` | [Docs](site/components/retrievers.md) |
 | 8 | **Memory Systems** | `Langchain.Memory` | `stack run memoryollama` | `stack run memoryopenai` | [Docs](site/components/memory.md) |
 | 9 | **Retrieval QA Chains** | `Langchain.Chain.RetrievalQA` | `stack run retrievalqaollama` | `stack run retrievalqaopenai` | [Docs](site/components/retrieval-qa.md) |
-| 10 | **Map-Reduce Processing** | `Langchain.Chain.MapReduce` | `stack run mapreduceollama` | `stack run mapreduceopenai` | [Docs](site/components/map-reduce.md) |
-| 11 | **ReAct Agent** | `Langchain.Agent.ReAct` | `stack run reactollama` | `stack run reactopenai` | [Docs](site/components/react-agent.md) |
-| 12 | **Plan-and-Execute Agent** | `Langchain.Agent.PlanAndExecute` | `stack run planandexecuteollama` | `stack run planandexecuteopenai` | [Docs](site/components/plan-and-execute.md) |
-| 13 | **Guardrails & Safety** | `Langchain.Guardrails` | `stack run guardrailollama` | `stack run guardrailopenai` | [Docs](site/components/guardrails.md) |
-| 14 | **Resilience & Retries** | `Langchain.Resilience` | `stack run resilienceollama` | `stack run resilienceopenai` | [Docs](site/components/resilience.md) |
-| 15 | **Observability & Tracing** | `Langchain.Observability` | `stack run observabilityollama` | `stack run observabilityopenai` | [Docs](site/components/observability.md) |
-| 16 | **Model Context Protocol** | `Langchain.MCP.Client` | `stack run mcpollama` | `stack run mcpopenai` | [Docs](site/components/mcp.md) |
-| 17 | **StateGraph Workflows** | `Langchain.Graph` | `stack run stategraphollama` | `stack run stategraphopenai` | [Docs](site/components/state-graph.md) |
-| 18 | **Multi-Agent Systems** | `Langchain.Graph.MultiAgent` | `stack run multiagentollama` | `stack run multiagentopenai` | [Docs](site/components/multi-agent.md) |
-| 19 | **Human-in-the-Loop (HITL)** | `Langchain.Graph.Checkpointer` | `stack run hitlollama` | `stack run hitlopenai` | [Docs](site/components/hitl.md) |
-| 20 | **Runnables & AST Composition** | `Langchain.Runnable` | `stack run runnableollama` | `stack run runnableopenai` | [Docs](site/components/runnables.md) |
+| 10 | **ReAct Agent** | `Langchain.Agent.ReAct` | `stack run reactollama` | `stack run reactopenai` | [Docs](site/components/react-agent.md) |
+| 11 | **Plan-and-Execute Agent** | `Langchain.Agent.PlanAndExecute` | `stack run planandexecuteollama` | `stack run planandexecuteopenai` | [Docs](site/components/plan-and-execute.md) |
+| 12 | **Guardrails & Safety** | `Langchain.Guardrails` | `stack run guardrailollama` | `stack run guardrailopenai` | [Docs](site/components/guardrails.md) |
+| 13 | **Resilience & Retries** | `Langchain.Resilience` | `stack run resilienceollama` | `stack run resilienceopenai` | [Docs](site/components/resilience.md) |
+| 14 | **Observability & Tracing** | `Langchain.Observability` | `stack run observabilityollama` | `stack run observabilityopenai` | [Docs](site/components/observability.md) |
+| 15 | **Model Context Protocol** | `Langchain.MCP.Client` | `stack run mcpollama` | `stack run mcpopenai` | [Docs](site/components/mcp.md) |
+| 16 | **StateGraph Workflows** | `Langchain.Graph` | `stack run stategraphollama` | `stack run stategraphopenai` | [Docs](site/components/state-graph.md) |
+| 17 | **Multi-Agent Systems** | `Langchain.Graph.MultiAgent` | `stack run multiagentollama` | `stack run multiagentopenai` | [Docs](site/components/multi-agent.md) |
+| 18 | **Human-in-the-Loop (HITL)** | `Langchain.Graph.Checkpointer` | `stack run hitlollama` | `stack run hitlopenai` | [Docs](site/components/hitl.md) |
+| 19 | **Runnables & AST Composition** | `Langchain.Runnable` | `stack run runnableollama` | `stack run runnableopenai` | [Docs](site/components/runnables.md) |
 
 ---
 
@@ -231,8 +230,9 @@ extra-deps:
 Then in your `.cabal` or `package.yaml`:
 ```yaml
 dependencies:
-  - langchain-hs        # Core framework (agents, chains, vector stores, memory, parsers)
-  - langchain-hs-core   # Pure AST & types only (zero network dependencies)
+  - langchain-hs        # Umbrella package: re-exports langchain-hs-core and langchain-hs-graph
+  # Or depend on granular packages:
+  - langchain-hs-core   # Foundational core framework (models, runnables, tools, agents, vector stores, memory)
   - langchain-hs-graph  # StateGraph cyclic orchestration engine
   # Add only the providers/clients you use:
   - langchain-hs-ollama # Ollama provider
@@ -253,7 +253,7 @@ cabal install langchain-hs langchain-hs-ollama langchain-hs-openai
 The repository enforces strict code quality and formatting via `make`:
 
 ```bash
-# Build the entire monorepo and all 41 example executables
+# Build the entire monorepo and all 39 example executables
 stack build
 
 # Run unit and property-based test suites
@@ -283,8 +283,8 @@ make site-watch
 |:---|:---|
 | **[Hackage Docs](https://hackage.haskell.org/package/langchain-hs)** | Full Haddock API reference for all exported modules |
 | **[Whitepaper](whitepaper.md)** | Deep technical dive: category theory foundations, algebraic laws, effect-polymorphic design, and advanced multi-agent patterns |
-| **[Documentation Website](site/)** | Hakyll site with 20 component pages, live provider toggle, and instant search (`Cmd+K`) |
-| **[Examples](examples/)** | 41 runnable executables covering every component for Ollama and OpenAI |
+| **[Documentation Website](site/)** | Hakyll site with 19 component pages, live provider toggle, and instant search (`Cmd+K`) |
+| **[Examples](examples/)** | 39 runnable executables covering every component for Ollama and OpenAI |
 
 To build the Haddock API docs locally:
 ```bash

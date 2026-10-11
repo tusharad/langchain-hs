@@ -148,7 +148,7 @@ searchHybridWithScores HybridRetriever {..} query k = do
 
   pure $ take k fused
 
--- | 'HybridRetriever' implements 'Runnable' mapping search query 'Text' to fused '[Document]' results.
+-- | t'HybridRetriever' implements 'Runnable' mapping search query 'Text' to fused '[Document]' results.
 instance MonadIO m => Runnable HybridRetriever m where
   type RunnableInput HybridRetriever = Text
   type RunnableOutput HybridRetriever = [Document]

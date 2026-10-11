@@ -138,41 +138,54 @@ mkErrorCtx ctor msg mbComp mbOp =
         (Nothing, Just o) -> Just $ mkContext "unspecified" o mempty
    in ctor msg mbCtx
 
+-- | Construct an 'LLMError' with optional component and operation.
 llmError :: Text -> Maybe Text -> Maybe Text -> LangchainError
 llmError = mkErrorCtx LLMError
 
+-- | Construct an 'AgentError' with optional component and operation.
 agentError :: Text -> Maybe Text -> Maybe Text -> LangchainError
 agentError = mkErrorCtx AgentError
 
+-- | Construct a 'MemoryError' with optional component and operation.
 memoryError :: Text -> Maybe Text -> Maybe Text -> LangchainError
 memoryError = mkErrorCtx MemoryError
 
+-- | Construct a 'ToolError' with optional component and operation.
 toolError :: Text -> Maybe Text -> Maybe Text -> LangchainError
 toolError = mkErrorCtx ToolError
 
+-- | Construct a 'VectorStoreError' with optional component and operation.
 vectorStoreError :: Text -> Maybe Text -> Maybe Text -> LangchainError
 vectorStoreError = mkErrorCtx VectorStoreError
 
+-- | Construct a 'DocumentLoaderError' with optional component and operation.
 documentLoaderError :: Text -> Maybe Text -> Maybe Text -> LangchainError
 documentLoaderError = mkErrorCtx DocumentLoaderError
 
+-- | Construct an 'EmbeddingError' with optional component and operation.
 embeddingError :: Text -> Maybe Text -> Maybe Text -> LangchainError
 embeddingError = mkErrorCtx EmbeddingError
 
+-- | Construct a 'RunnableError' with optional component and operation.
 runnableError :: Text -> Maybe Text -> Maybe Text -> LangchainError
 runnableError = mkErrorCtx RunnableError
 
+-- | Construct a 'ParsingError' with optional component and operation.
 parsingError :: Text -> Maybe Text -> Maybe Text -> LangchainError
 parsingError = mkErrorCtx ParsingError
 
+-- | Construct a 'NetworkError' with optional component and operation.
 networkError :: Text -> Maybe Text -> Maybe Text -> LangchainError
 networkError = mkErrorCtx NetworkError
 
+-- | Construct a 'ConfigurationError' with optional component and operation.
 configurationError :: Text -> Maybe Text -> Maybe Text -> LangchainError
 configurationError = mkErrorCtx ConfigurationError
 
+-- | Construct a 'ValidationError' with optional component and operation.
 validationError :: Text -> Maybe Text -> Maybe Text -> LangchainError
 validationError = mkErrorCtx ValidationError
 
+-- | Construct an 'InternalError' with optional component and operation.
 internalError :: Text -> Maybe Text -> Maybe Text -> LangchainError
 internalError = mkErrorCtx InternalError

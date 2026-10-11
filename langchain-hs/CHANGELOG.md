@@ -9,8 +9,8 @@
   - **`langchain-hs-ollama` (0.0.6.0)**: Dedicated Ollama chat model and embeddings integration via `ollama-haskell`.
   - **`langchain-hs-openai` (0.0.6.0)**: Dedicated OpenAI & OpenAI-compatible provider (OpenRouter, Together, Fireworks), streaming, structured outputs, and embeddings integration via `openai`.
   - **`langchain-hs-gemini` (0.0.6.0)**: Dedicated Google Gemini provider with function calling and SSE streaming.
-  - **`langchain-hs-mcp` (0.0.6.0)**: Standalone Model Context Protocol client over stdio and HTTP JSON-RPC 2.0.
-  - **`langchain-hs` (0.0.6.0)**: Core framework containing agents (`ReAct`, `PlanAndExecute`), output parsers, vector stores (`InMemory`, `SqliteVec`), chains (`RetrievalQA`, `MapReduce`), memory, resilience (`CircuitBreaker`, `Retry`), and observability (`OpenTelemetry`, `InMemoryLogger`).
+  - **`langchain-hs-core` (0.0.6.0)**: Foundational framework containing models, runnables, tools, agents (`ReAct`, `PlanAndExecute`), output parsers, vector stores (`InMemory`), retrievers (`BM25`, `Hybrid`), chains (`RetrievalQA`), memory, resilience (`CircuitBreaker`, `Retry`), observability (`OpenTelemetry`, `InMemoryLogger`), and canonical `Langchain.Prelude`.
+  - **`langchain-hs` (0.0.6.0)**: Umbrella package re-exporting `langchain-hs-core` and `langchain-hs-graph` via Cabal `reexported-modules`.
 - **Cleaned Dependencies & Build Plans**:
   - Completely removed direct dependencies on `ollama-haskell`, `openai`, `servant`, `req` from `langchain-hs`.
   - Decoupled `withStructuredOutput` in `langchain-hs-openai` using `Langchain.OutputParser.Structured` directly, eliminating any transitive dependency on `ollama-haskell`.

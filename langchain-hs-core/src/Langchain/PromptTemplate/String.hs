@@ -34,14 +34,18 @@ import GHC.Generics (Generic)
 
 import Langchain.Error (LangchainError, validationError)
 
+-- | Template format specification.
 data TemplateFormat
-  = FString
+  = -- | Python-style f-string formatting using @{variable}@ placeholders.
+    FString
   deriving (Show, Eq, Generic, ToJSON, FromJSON)
 
+-- | Render a template string using the specified 'TemplateFormat'.
 renderTemplateWithFormat ::
   TemplateFormat -> Map.Map Text Text -> Text -> Either LangchainError Text
 renderTemplateWithFormat FString = renderFStringTemplate
 
+-- | Render a Python-style f-string template using provided variable mappings.
 renderFStringTemplate :: Map.Map Text Text -> Text -> Either LangchainError Text
 renderFStringTemplate vars source = do
   items <- parseFStringTemplate source
@@ -86,9 +90,11 @@ validateFStringFormatSpec formatSpec
       Left $ validationError "Nested replacement fields are not allowed" (Just "PromptTemplate") Nothing
   | otherwise = Right ()
 
+-- | Extract variable names present in an f-string template.
 extractTemplateVariables :: Text -> [Text]
 extractTemplateVariables = extractTemplateVariablesWithFormat FString
 
+-- | Extract variable names present in a template of the given 'TemplateFormat'.
 extractTemplateVariablesWithFormat :: TemplateFormat -> Text -> [Text]
 extractTemplateVariablesWithFormat FString source =
   case parseFStringTemplate source of

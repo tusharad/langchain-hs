@@ -51,6 +51,7 @@ data ContentBlock
   | DataBlock {blockBytes :: ByteString}
   deriving (Eq, Show, Generic, NFData)
 
+-- | Multi-modal image content with source, optional detail, and metadata.
 data ImageContent = ImageContent
   { imageSource :: ImageSource
   , imageDetail :: Maybe Text
@@ -58,6 +59,7 @@ data ImageContent = ImageContent
   }
   deriving (Eq, Show, Generic, NFData)
 
+-- | Underlying image data source: either raw base64 or a remote URL.
 data ImageSource
   = ImageBase64 {imageMimeType :: Maybe Text, imageData :: Text}
   | ImageUrl {imageUrl :: Text}

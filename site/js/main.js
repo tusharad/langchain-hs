@@ -323,7 +323,7 @@ function initTableOfContents() {
    Instant Search Modal (Cmd+K / Ctrl+K)
    ========================================================================== */
 const searchDocs = [
-  // 20 Components
+  // 19 Components
   { title: "Chat Models", category: "Components", url: "/components/chat-models.html", snippet: "Simple chat invocation with ChatOllama and ChatOpenAI." },
   { title: "Streaming", category: "Components", url: "/components/streaming.html", snippet: "Real-time token streaming with streamChat and StreamEvents." },
   { title: "Langchain Monad", category: "Components", url: "/components/monad.html", snippet: "Monadic LLM computation with LangchainT, ReaderT, and Exception handling." },
@@ -333,7 +333,6 @@ const searchDocs = [
   { title: "Retrievers & Ensembles", category: "Components", url: "/components/retrievers.html", snippet: "BM25 keyword search, Vector store retriever, and ensemble rank fusion." },
   { title: "Memory Systems", category: "Components", url: "/components/memory.html", snippet: "ConversationBufferMemory and conversational context tracking." },
   { title: "Retrieval QA Chains", category: "Components", url: "/components/retrieval-qa.html", snippet: "End-to-end question answering over indexed knowledge bases." },
-  { title: "Map-Reduce Document Processing", category: "Components", url: "/components/map-reduce.html", snippet: "Hierarchical summarization and chunk reduction over large corpora." },
   { title: "ReAct Agent", category: "Components", url: "/components/react-agent.html", snippet: "Reasoning and acting loop with tool inspection and step execution." },
   { title: "Plan-and-Execute Agent", category: "Components", url: "/components/plan-and-execute.html", snippet: "Multi-step planner with dynamic task decomposition and re-planning." },
   { title: "Guardrails & Safety", category: "Components", url: "/components/guardrails.html", snippet: "Input/output moderation, PII redaction, and semantic guardrail enforcement." },
@@ -357,7 +356,7 @@ const searchDocs = [
   { title: "State Graphs & Checkpointers", category: "Core Concepts", url: "/concepts/state-graphs.html", snippet: "StateGraph s m, TVar memory checkpointers, SQLite persistence, time-travel." },
   { title: "Multi-Agent Architectures", category: "Core Concepts", url: "/concepts/multi-agent.html", snippet: "Supervisor teams, multi-agent debate, majority voting, and shared blackboards." },
   { title: "RAG & Hybrid Retrieval", category: "Core Concepts", url: "/concepts/rag-retrieval.html", snippet: "Vector stores, BM25 keyword search, Reciprocal Rank Fusion (RRF), Rerankers." },
-  { title: "Memory Systems & Caching", category: "Core Concepts", url: "/concepts/memory-caching.html", snippet: "WindowBufferMemory, SummaryMemory, EntityMemory, SQLite caching backend." },
+  { title: "Memory Systems & Caching", category: "Core Concepts", url: "/concepts/memory-caching.html", snippet: "WindowBufferMemory, SummaryMemory, and SQLite caching backend." },
   { title: "Observability & Resilience", category: "Core Concepts", url: "/concepts/observability-resilience.html", snippet: "OpenTelemetry spans, structured logs, CircuitBreakers, and rate limiters." },
   { title: "Local AI with Ollama", category: "Guides", url: "/guides/local-models-ollama.html", snippet: "Connecting DeepSeek-R1, Llama 3, Qwen, and nomic-embed-text locally." },
   { title: "Human-in-the-Loop (HITL)", category: "Guides", url: "/guides/human-in-the-loop.html", snippet: "Interrupting graph execution for human approval and resuming with SQLite." },

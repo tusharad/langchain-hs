@@ -72,6 +72,7 @@ genericJsonSchema _ =
         , "required" .= reqs
         ]
 
+-- | Generic record schema inspector for deriving JSON Schemas.
 class GRecordSchema (f :: Type -> Type) where
   gRecordSchema :: Proxy f -> ([(Key.Key, Value)], [Text])
 
@@ -201,7 +202,7 @@ retrying up to 3 times with error feedback if parsing fails.
 __Provider-Specific Grammar Enforcement:__
 Note that 'structuredInvoke' relies on prompt-based instructions and schema validation across
 generic 'ChatModel' instances. For strict token-level schema enforcement with Ollama, use
-'withStructuredOutput' from @langchain-hs-ollama@.
+@withStructuredOutput@ from @langchain-hs-ollama@.
 -}
 structuredInvoke ::
   forall a model m.

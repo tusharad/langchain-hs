@@ -112,7 +112,7 @@ data AgentTrace = AgentTrace
 
 {- | ReAct Agent configuration.
 
-Holds the LLM model, the effect-polymorphic tools @['Tool' m]@, and optional
+Holds the LLM model, the effect-polymorphic tools @[Tool m]@, and optional
 configuration for memory, callbacks, iterations, model config, and error strategy.
 Use 'defaultReActAgent' to construct, then configure with the @with*@ builder functions.
 -}
