@@ -63,4 +63,14 @@ tests =
         case res of
           Right msgs -> msgs @?= [systemMessage "You are a helpful AI assistant"]
           Left _ -> assertFailure "Clear failed unexpectedly"
+    , testCase "resetTokenBuffer restores initial seeded messages" $ do
+        let initMsgs = [systemMessage "Seeded system prompt"]
+        mem <- TB.newTokenBufferMemory 100 initMsgs
+        res <- runExceptT $ do
+          addMessage mem (userMessage "First message")
+          TB.resetTokenBuffer mem
+          messages mem
+        case res of
+          Right msgs -> msgs @?= initMsgs
+          Left err -> assertFailure $ "Failed: " ++ show err
     ]

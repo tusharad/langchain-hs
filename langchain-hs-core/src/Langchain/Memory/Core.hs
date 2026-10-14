@@ -48,6 +48,9 @@ module Langchain.Memory.Core
   , trimMessages
   , initialMessages
   , resetToInitial
+  , resetConversationBuffer
+  , resetWindowBuffer
+  , resetTokenBuffer
   ) where
 
 import Control.Concurrent.STM
@@ -420,6 +423,18 @@ resetToInitial ::
   [Message] ->
   m ()
 resetToInitial tv inits = liftIO $ atomically $ writeTVar tv inits
+
+-- | Reset a 'ConversationBufferMemory' back to its initial seed messages
+resetConversationBuffer :: (MonadIO m) => ConversationBufferMemory -> m ()
+resetConversationBuffer (ConversationBufferMemory tv inits) = resetToInitial tv inits
+
+-- | Reset a 'WindowBufferMemory' back to its initial seed messages
+resetWindowBuffer :: (MonadIO m) => WindowBufferMemory -> m ()
+resetWindowBuffer (WindowBufferMemory _ tv inits) = resetToInitial tv inits
+
+-- | Reset a 'TokenBufferMemory' back to its initial seed messages
+resetTokenBuffer :: (MonadIO m) => TokenBufferMemory -> m ()
+resetTokenBuffer (TokenBufferMemory _ tv _ _ inits) = resetToInitial tv inits
 
 -- | Pure helper to trim messages to last N
 trimMessages ::

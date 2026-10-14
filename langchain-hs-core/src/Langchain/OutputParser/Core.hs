@@ -21,6 +21,7 @@ module Langchain.OutputParser.Core
 
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Text.Read as TR
 
 import Langchain.Error (LangchainResult, parsingError)
 
@@ -60,3 +61,24 @@ newtype CommaSeparatedList = CommaSeparatedList [Text]
 
 instance OutputParser CommaSeparatedList where
   parse txt = Right $ CommaSeparatedList $ map T.strip $ T.splitOn "," txt
+
+-- | Parse an 'Int' value from trimmed text output.
+instance OutputParser Int where
+  parse txt =
+    case TR.readMaybe (T.unpack (T.strip txt)) of
+      Just n -> Right n
+      Nothing -> Left $ parsingError "Failed to parse Int from output" (Just "Int") (Just txt)
+
+-- | Parse an 'Integer' value from trimmed text output.
+instance OutputParser Integer where
+  parse txt =
+    case TR.readMaybe (T.unpack (T.strip txt)) of
+      Just n -> Right n
+      Nothing -> Left $ parsingError "Failed to parse Integer from output" (Just "Integer") (Just txt)
+
+-- | Parse a 'Double' value from trimmed text output.
+instance OutputParser Double where
+  parse txt =
+    case TR.readMaybe (T.unpack (T.strip txt)) of
+      Just n -> Right n
+      Nothing -> Left $ parsingError "Failed to parse Double from output" (Just "Double") (Just txt)

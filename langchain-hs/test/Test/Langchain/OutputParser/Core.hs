@@ -35,4 +35,18 @@ tests =
         parse "item" @?= Right (CommaSeparatedList ["item"])
     , testCase "CommaSeparatedList parser should parse multiple items and trim whitespace" $
         parse " item1 , item2 , item3 " @?= Right (CommaSeparatedList ["item1", "item2", "item3"])
+    , testCase "Int and Integer parser should parse valid numbers" $ do
+        (parse "42" :: Either LangchainError Int) @?= Right 42
+        (parse " -100 " :: Either LangchainError Int) @?= Right (-100)
+        (parse "99999999999999999999" :: Either LangchainError Integer) @?= Right 99999999999999999999
+    , testCase "Double parser should parse floating point numbers" $ do
+        (parse "3.14159" :: Either LangchainError Double) @?= Right 3.14159
+        (parse "-0.5" :: Either LangchainError Double) @?= Right (-0.5)
+    , testCase "Numeric parsers should fail on non-numeric input" $ do
+        case parse "not a number" :: Either LangchainError Int of
+          Left _ -> assertBool "Should be Left" True
+          Right _ -> assertFailure "Should have failed"
+        case parse "abc" :: Either LangchainError Double of
+          Left _ -> assertBool "Should be Left" True
+          Right _ -> assertFailure "Should have failed"
     ]

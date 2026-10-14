@@ -25,11 +25,14 @@
 - **`InVariableMemory`**: Thread-safe STM-backed transactional memory with snapshotting, resets, and clear semantics.
 - **`SessionMemory`**: Multi-session conversation manager supporting per-session state isolation, active session tracking, and TTL-based pruning.
 - **`FileMemory`**: Persistent file-backed conversation memory with atomic disk writes and metadata preservation across process restarts.
+- **Reset Helpers**: Added explicit seed-state reset combinators `resetConversationBuffer`, `resetWindowBuffer`, `resetTokenBuffer`, and `resetEntitiesToInitial`.
+- **Umbrella Prelude Re-exports**: Re-exported all memory implementations (`ConversationBufferMemory`, `SessionMemoryStore`, `EntityMemory`, `CombinedMemory`), buffer reset helpers, and `splitDocuments` in `Langchain.Prelude`.
 
 ### Output Parsers & Document Loaders
 
 - Trimmed fragile character-scanning parsers (`NumberSeparatedList`) and redundant wrapper types (`JSONOutputStructure`) in favor of type-safe `StructuredOutput` and `TextOutputParser`.
 - Hardened boolean output parser to exact normalized token recognition.
+- Added standard numeric `OutputParser` instances for `Int`, `Integer`, and `Double` with whitespace stripping.
 - Eliminated lazy I/O file handle leaks in `FileLoader` and `DirectoryLoader` with strict text I/O.
 - Added `splitDocuments` preserving document metadata across chunk splits, and provided default `loadAndSplit` implementation in `BaseLoader`.
 

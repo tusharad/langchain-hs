@@ -22,6 +22,7 @@ module Langchain.Memory.Entity
   , deleteEntity
   , clearEntities
   , formatEntities
+  , resetEntitiesToInitial
   ) where
 
 import Control.Concurrent.STM
@@ -77,6 +78,11 @@ deleteEntity EntityMemory {..} key = liftIO $ atomically $ do
 clearEntities :: MonadIO m => EntityMemory -> m ()
 clearEntities EntityMemory {..} = liftIO $ atomically $ do
   writeTVar entityVar Map.empty
+
+-- | Reset entity memory back to its initial seed facts
+resetEntitiesToInitial :: MonadIO m => EntityMemory -> m ()
+resetEntitiesToInitial EntityMemory {..} = liftIO $ atomically $ do
+  writeTVar entityVar initialEntities
 
 -- | Format key-value entities into bullet points
 formatEntities :: Map Text Text -> Text
