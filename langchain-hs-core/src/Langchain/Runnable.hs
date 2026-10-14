@@ -1,7 +1,10 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 {- |
 Module      : Langchain.Runnable
@@ -13,6 +16,7 @@ Stability   : experimental
 
 Pure, AST-based pipeline representation ('RunnableTree') where building pipelines performs
 NO side effects. Execution is strictly deferred to 'interpret'.
+Provides full configuration binding for 'ChatModel' instances.
 -}
 module Langchain.Runnable
   ( Runnable (..)
@@ -28,9 +32,19 @@ module Langchain.Runnable
   , runBranch
   , runFallback
   , runChat
+  , runChatWithConfig
   , runModel
+  , runModelWithConfig
+  , runConfiguredModel
   , ModelRunnable (..)
+  , modelRunnable
+  , modelRunnableWithConfig
+  , bindConfig
   , TextModelRunnable (..)
+  , textModelRunnable
+  , textModelRunnableWithConfig
+  , bindTextConfig
+  , ConfiguredModelRunnable (..)
   ) where
 
 import Control.Concurrent.Async (concurrently)
@@ -41,7 +55,7 @@ import Data.Kind (Type)
 import Data.Text (Text)
 
 import Langchain.Error (LangchainError)
-import Langchain.Model (ChatModel, extractMessageText, userMessage)
+import Langchain.Model (ChatModel, ModelConfig, extractMessageText, userMessage)
 import qualified Langchain.Model as M (invoke)
 import Langchain.Model.Types (Message)
 import Langchain.Tool (Tool (..))
@@ -58,25 +72,76 @@ instance Runnable (Tool m) m where
   type RunnableOutput (Tool m) = Text
   invoke = toolExecute
 
--- | Wrapper to treat any 'ChatModel' as a Runnable over '[Message]' -> 'Message'.
-newtype ModelRunnable c = ModelRunnable c
-  deriving (Eq, Show)
+-- ---------------------------------------------------------------------------
+-- Model Runnables with Configuration Support
+-- ---------------------------------------------------------------------------
+
+-- | Wrapper to treat any 'ChatModel' as a Runnable over '[Message]' -> 'Message' with optional bound configuration.
+data ModelRunnable c = ModelRunnable
+  { modelRunnableModel :: !c
+  , modelRunnableConfig :: !(Maybe (ModelConfig c))
+  }
+
+deriving instance (Show c, Show (ModelConfig c)) => Show (ModelRunnable c)
+deriving instance (Eq c, Eq (ModelConfig c)) => Eq (ModelRunnable c)
+
+-- | Construct a ModelRunnable without pre-set configuration.
+modelRunnable :: c -> ModelRunnable c
+modelRunnable c = ModelRunnable c Nothing
+
+-- | Construct a ModelRunnable with pre-bound model configuration.
+modelRunnableWithConfig :: c -> ModelConfig c -> ModelRunnable c
+modelRunnableWithConfig c cfg = ModelRunnable c (Just cfg)
+
+-- | Bind or replace the configuration on a ModelRunnable (equivalent to LangChain's model.bind).
+bindConfig :: ModelConfig c -> ModelRunnable c -> ModelRunnable c
+bindConfig cfg (ModelRunnable c _) = ModelRunnable c (Just cfg)
 
 instance (ChatModel c, MonadIO m) => Runnable (ModelRunnable c) m where
   type RunnableInput (ModelRunnable c) = [Message]
   type RunnableOutput (ModelRunnable c) = Message
-  invoke (ModelRunnable c) msgs = runExceptT (M.invoke c msgs Nothing)
+  invoke (ModelRunnable c mCfg) msgs = runExceptT (M.invoke c msgs mCfg)
 
--- | Wrapper to treat any 'ChatModel' as a simple 'Text' -> 'Text' Runnable.
-newtype TextModelRunnable c = TextModelRunnable c
-  deriving (Eq, Show)
+-- | Wrapper to treat any 'ChatModel' as a simple 'Text' -> 'Text' Runnable with optional bound configuration.
+data TextModelRunnable c = TextModelRunnable
+  { textModelRunnableModel :: !c
+  , textModelRunnableConfig :: !(Maybe (ModelConfig c))
+  }
+
+deriving instance (Show c, Show (ModelConfig c)) => Show (TextModelRunnable c)
+deriving instance (Eq c, Eq (ModelConfig c)) => Eq (TextModelRunnable c)
+
+-- | Construct a TextModelRunnable without pre-set configuration.
+textModelRunnable :: c -> TextModelRunnable c
+textModelRunnable c = TextModelRunnable c Nothing
+
+-- | Construct a TextModelRunnable with pre-bound model configuration.
+textModelRunnableWithConfig :: c -> ModelConfig c -> TextModelRunnable c
+textModelRunnableWithConfig c cfg = TextModelRunnable c (Just cfg)
+
+-- | Bind or replace the configuration on a TextModelRunnable.
+bindTextConfig :: ModelConfig c -> TextModelRunnable c -> TextModelRunnable c
+bindTextConfig cfg (TextModelRunnable c _) = TextModelRunnable c (Just cfg)
 
 instance (ChatModel c, MonadIO m) => Runnable (TextModelRunnable c) m where
   type RunnableInput (TextModelRunnable c) = Text
   type RunnableOutput (TextModelRunnable c) = Text
-  invoke (TextModelRunnable c) prompt = do
-    res <- runExceptT $ M.invoke c [userMessage prompt] Nothing
+  invoke (TextModelRunnable c mCfg) prompt = do
+    res <- runExceptT $ M.invoke c [userMessage prompt] mCfg
     pure (extractMessageText <$> res)
+
+-- | Dynamic model runnable allowing model configuration to be passed per-request.
+newtype ConfiguredModelRunnable c = ConfiguredModelRunnable c
+  deriving (Eq, Show)
+
+instance (ChatModel c, MonadIO m) => Runnable (ConfiguredModelRunnable c) m where
+  type RunnableInput (ConfiguredModelRunnable c) = ([Message], Maybe (ModelConfig c))
+  type RunnableOutput (ConfiguredModelRunnable c) = Message
+  invoke (ConfiguredModelRunnable c) (msgs, mCfg) = runExceptT (M.invoke c msgs mCfg)
+
+-- ---------------------------------------------------------------------------
+-- RunnableTree Pipeline AST
+-- ---------------------------------------------------------------------------
 
 {- | Pure GADT representing a composable pipeline AST.
 @i@ = input type, @o@ = output type, @m@ = monad context.
@@ -185,10 +250,24 @@ runBranch = Branch
 runFallback :: RunnableTree m i o -> RunnableTree m i o -> RunnableTree m i o
 runFallback = Fallback
 
--- | Lift any 'ChatModel' into a simple 'Text' -> 'Text' pipeline step.
+-- | Lift any 'ChatModel' into a simple 'Text' -> 'Text' pipeline step (without configuration).
 runChat :: (ChatModel c, MonadIO m) => c -> RunnableTree m Text Text
-runChat c = runPrim (TextModelRunnable c)
+runChat c = runPrim (TextModelRunnable c Nothing)
 
--- | Lift any 'ChatModel' into a structured '[Message]' -> 'Message' pipeline step.
+-- | Lift any 'ChatModel' into a simple 'Text' -> 'Text' pipeline step with bound model configuration.
+runChatWithConfig :: (ChatModel c, MonadIO m) => c -> ModelConfig c -> RunnableTree m Text Text
+runChatWithConfig c cfg = runPrim (TextModelRunnable c (Just cfg))
+
+-- | Lift any 'ChatModel' into a structured '[Message]' -> 'Message' pipeline step (without configuration).
 runModel :: (ChatModel c, MonadIO m) => c -> RunnableTree m [Message] Message
-runModel c = runPrim (ModelRunnable c)
+runModel c = runPrim (ModelRunnable c Nothing)
+
+-- | Lift any 'ChatModel' into a structured '[Message]' -> 'Message' pipeline step with bound model configuration.
+runModelWithConfig ::
+  (ChatModel c, MonadIO m) => c -> ModelConfig c -> RunnableTree m [Message] Message
+runModelWithConfig c cfg = runPrim (ModelRunnable c (Just cfg))
+
+-- | Lift any 'ChatModel' into a pipeline step taking dynamic messages and configuration per request.
+runConfiguredModel ::
+  (ChatModel c, MonadIO m) => c -> RunnableTree m ([Message], Maybe (ModelConfig c)) Message
+runConfiguredModel c = runPrim (ConfiguredModelRunnable c)

@@ -45,7 +45,9 @@ module Langchain.Graph.StateGraph
   , addRunnableNode
   , addRunnableTreeNode
   , addModelNode
+  , addModelNodeWithConfig
   , addChatNode
+  , addChatNodeWithConfig
   , addSubGraphNode
 
     -- * Compilation & Execution
@@ -67,7 +69,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 
 import Langchain.Error (LangchainError, agentError, internalError)
-import Langchain.Model (ChatModel, Message, extractMessageText, userMessage)
+import Langchain.Model (ChatModel, Message, ModelConfig, extractMessageText, userMessage)
 import qualified Langchain.Model as M (invoke)
 import Langchain.Runnable (Runnable (..), RunnableTree, interpret)
 
@@ -204,6 +206,21 @@ addModelNode name chatModel toMessages mergeMessage =
     eMsg <- liftIO $ runExceptT $ M.invoke chatModel (toMessages state) Nothing
     pure $ fmap (mergeMessage state) eMsg
 
+-- | Add a dedicated ChatModel node with explicit model configuration
+addModelNodeWithConfig ::
+  (ChatModel c, MonadIO m) =>
+  NodeId ->
+  c ->
+  ModelConfig c ->
+  (s -> [Message]) ->
+  (s -> Message -> s) ->
+  StateGraph s m ->
+  StateGraph s m
+addModelNodeWithConfig name chatModel cfg toMessages mergeMessage =
+  addNode name $ \state -> do
+    eMsg <- liftIO $ runExceptT $ M.invoke chatModel (toMessages state) (Just cfg)
+    pure $ fmap (mergeMessage state) eMsg
+
 -- | Add a simple text-in, text-out ChatModel node
 addChatNode ::
   (ChatModel c, MonadIO m) =>
@@ -217,6 +234,22 @@ addChatNode name chatModel toPrompt mergeText =
   addNode name $ \state -> do
     let msgs = [userMessage (toPrompt state)]
     eMsg <- liftIO $ runExceptT $ M.invoke chatModel msgs Nothing
+    pure $ fmap (mergeText state . extractMessageText) eMsg
+
+-- | Add a simple text-in, text-out ChatModel node with explicit model configuration
+addChatNodeWithConfig ::
+  (ChatModel c, MonadIO m) =>
+  NodeId ->
+  c ->
+  ModelConfig c ->
+  (s -> Text) ->
+  (s -> Text -> s) ->
+  StateGraph s m ->
+  StateGraph s m
+addChatNodeWithConfig name chatModel cfg toPrompt mergeText =
+  addNode name $ \state -> do
+    let msgs = [userMessage (toPrompt state)]
+    eMsg <- liftIO $ runExceptT $ M.invoke chatModel msgs (Just cfg)
     pure $ fmap (mergeText state . extractMessageText) eMsg
 
 -- | Embed a compiled sub-graph as a single node in a parent StateGraph

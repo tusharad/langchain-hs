@@ -30,7 +30,6 @@ module Langchain.Model.Types
   , formatMessageString
   ) where
 
-import Control.DeepSeq (NFData)
 import Data.Aeson (FromJSON (..), ToJSON (..), Value (..), object, withObject, (.:), (.:?), (.=))
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64 as Base64
@@ -49,7 +48,7 @@ data ContentBlock
   | ImageBlock ImageContent
   | AudioBlock {blockMimeType :: Text, blockBase64 :: Text}
   | DataBlock {blockBytes :: ByteString}
-  deriving (Eq, Show, Generic, NFData)
+  deriving (Eq, Show, Generic)
 
 -- | Multi-modal image content with source, optional detail, and metadata.
 data ImageContent = ImageContent
@@ -57,13 +56,13 @@ data ImageContent = ImageContent
   , imageDetail :: Maybe Text
   , imageMetadata :: Maybe Value
   }
-  deriving (Eq, Show, Generic, NFData)
+  deriving (Eq, Show, Generic)
 
 -- | Underlying image data source: either raw base64 or a remote URL.
 data ImageSource
   = ImageBase64 {imageMimeType :: Maybe Text, imageData :: Text}
   | ImageUrl {imageUrl :: Text}
-  deriving (Eq, Show, Generic, NFData)
+  deriving (Eq, Show, Generic)
 
 instance ToJSON ContentBlock where
   toJSON (TextBlock t) = object ["type" .= ("text" :: Text), "text" .= t]
@@ -125,7 +124,7 @@ data Role
   | Tool
   | Developer
   | Function
-  deriving (Eq, Ord, Show, Bounded, Enum, Generic, ToJSON, FromJSON, NFData)
+  deriving (Eq, Ord, Show, Bounded, Enum, Generic, ToJSON, FromJSON)
 
 -- | Structured tool call from an LLM response.
 data ToolCall = ToolCall
@@ -136,7 +135,7 @@ data ToolCall = ToolCall
   , toolCallArguments :: Value
   -- ^ Parsed JSON Value arguments
   }
-  deriving (Eq, Show, Generic, ToJSON, FromJSON, NFData)
+  deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 -- | Structured chat message supporting multi-modal content blocks.
 data Message = Message
@@ -149,7 +148,7 @@ data Message = Message
   , messageMetadata :: Map Text Value
   -- ^ Opaque provider-specific metadata.
   }
-  deriving (Eq, Show, Generic, ToJSON, FromJSON, NFData)
+  deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 -- | Create a message with a single text content block.
 textMessage :: Role -> Text -> Message
