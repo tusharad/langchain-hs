@@ -21,7 +21,7 @@ Macro-level planning decoupled from execution with dynamic replanning.
 Compare local execution via **Ollama** and cloud API execution via **OpenAI / OpenRouter**. Use the toggle tabs or the global provider switcher in the header to switch:
 
 ::: {.provider-group}
-::: {.provider-panel data-provider="ollama" data-label="🦙 Ollama (Local)" data-exe="stack run planandexecuteollama"}
+::: {.provider-panel data-provider="ollama" data-label="Ollama (Local)" data-exe="stack run planandexecuteollama"}
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -46,7 +46,7 @@ runApp = do
 ```
 :::
 
-::: {.provider-panel data-provider="openai" data-label="⚡ OpenAI / OpenRouter" data-exe="stack run planandexecuteopenai"}
+::: {.provider-panel data-provider="openai" data-label="OpenAI / OpenRouter" data-exe="stack run planandexecuteopenai"}
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
 

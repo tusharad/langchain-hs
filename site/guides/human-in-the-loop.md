@@ -14,7 +14,7 @@ flowchart LR
     RiskCheck -->|Yes| Interrupt[hitlNode Interrupt]
     RiskCheck -->|No| Exec[Execute Action]
     
-    Interrupt -.->|Persisted to SQLite| HumanReview([👤 Human Approval])
+    Interrupt -.->|Persisted to SQLite| HumanReview([Human Approval])
     HumanReview -.->|resumeGraph| Exec
     Exec --> Done([Complete])
 ```

@@ -21,7 +21,7 @@ Vector embeddings, cosine similarity calculation, and document chunking for retr
 Compare local execution via **Ollama** and cloud API execution via **OpenAI / OpenRouter**. Use the toggle tabs or the global provider switcher in the header to switch:
 
 ::: {.provider-group}
-::: {.provider-panel data-provider="ollama" data-label="🦙 Ollama (Local)" data-exe="stack run ragollama"}
+::: {.provider-panel data-provider="ollama" data-label="Ollama (Local)" data-exe="stack run ragollama"}
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -66,7 +66,7 @@ runApp = do
 ```
 :::
 
-::: {.provider-panel data-provider="openai" data-label="⚡ OpenAI / OpenRouter" data-exe="stack run ragopenai"}
+::: {.provider-panel data-provider="openai" data-label="OpenAI / OpenRouter" data-exe="stack run ragopenai"}
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -109,7 +109,7 @@ runApp = do
     Left err -> T.putStrLn $ errorMessage err
     Right r -> T.putStrLn $ extractMessageText r
 ```
-::: {.provider-panel data-provider="gemini" data-label="✨ Google Gemini" data-exe="cabal run raggemini"}
+::: {.provider-panel data-provider="gemini" data-label="Google Gemini" data-exe="cabal run raggemini"}
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
 

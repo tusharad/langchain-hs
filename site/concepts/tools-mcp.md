@@ -85,6 +85,6 @@ let nativeTools = map mcpToolToLangchainTool tools
 ```
 
 <div class="admonition tip">
-  <div class="admonition-title">🚀 Seamless Ecosystem Integration</div>
+  <div class="admonition-title">Seamless Ecosystem Integration</div>
   Any MCP server (PostgreSQL, GitHub, Memory, Filesystem, Slack, Brave Search) works out of the box in <code>langchain-hs</code> without custom wrapper code!
 </div>

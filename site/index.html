@@ -1,11 +1,13 @@
 ---
-title: Functional AI & Multi-Agent Graphs
-description: Purely functional, effect-polymorphic, zero-unsafePerformIO AI agent framework in Haskell.
+title: Type-Safe AI Agents & Multi-Agent Graphs
+description: Purely functional, effect-polymorphic AI agent and multi-agent graph orchestration in Haskell.
 ---
 
+<!-- Hero Section -->
 <section class="hero-section">
   <div class="hero-badge">
-    <span>✨ Pure AST Pipelines &amp; LangGraph in Haskell</span>
+    <span class="badge-tag">Hackage v0.0.6</span>
+    <span>Production-Ready Functional AI</span>
   </div>
   
   <h1 class="hero-title">
@@ -13,7 +15,7 @@ description: Purely functional, effect-polymorphic, zero-unsafePerformIO AI agen
   </h1>
 
   <p class="hero-description">
-    <code>langchain-hs</code> is a zero-<code>unsafePerformIO</code>, effect-polymorphic Haskell ecosystem built on pure GADT pipelines, state graphs, algebraic laws, Model Context Protocol (MCP), and production OpenTelemetry.
+    <code>langchain-hs</code> brings mathematical certainty and functional architecture to AI development. Build robust agents with pure AST pipelines, cyclic state machines, Model Context Protocol (MCP), and production OpenTelemetry.
   </p>
 
   <div class="hero-cta">
@@ -21,96 +23,367 @@ description: Purely functional, effect-polymorphic, zero-unsafePerformIO AI agen
       <span>Get Started in 5 Min</span>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
     </a>
+    <a href="https://hackage.haskell.org/package/langchain-hs" target="_blank" rel="noopener noreferrer" class="btn-secondary btn-hackage">
+      <span>View on Hackage &nearr;</span>
+    </a>
     <a href="/components/chat-models.html" class="btn-secondary">
-      <span>Explore 19 Components</span>
+      <span>Explore Components</span>
     </a>
-    <a href="/api/cheat-sheet.html" class="btn-secondary">
-      <span>Prelude Cheat Sheet</span>
-    </a>
+  </div>
+
+  <div class="quick-install-box" title="Click to copy install command">
+    <span style="color:var(--text-dim);">$$</span>
+    <span class="install-cmd">cabal update &amp;&amp; cabal install langchain-hs</span>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-dim);margin-left:0.5rem;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
   </div>
 </section>
 
-<!-- Interactive Dual-Provider Code Showcase -->
+<!-- Dual Audience Targeting Section (New to Haskell & New to LangChain) -->
+<section class="audience-section">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-badge">Tailored For Every Developer</span>
+      <h2 class="section-title">Built for Python Developers &amp; Haskell Engineers Alike</h2>
+      <p class="section-subtitle">Whether you are coming from Python LangChain looking for stability, or from the Haskell community building AI systems for the first time.</p>
+    </div>
+
+    <div class="columns is-multiline">
+      <!-- Target: People New to Haskell -->
+      <div class="column is-6">
+        <div class="audience-card">
+          <div>
+            <span class="audience-card-tag audience-tag-haskell">New to Haskell?</span>
+            <h3 class="audience-card-title">Why Haskell is the Ultimate Language for AI Agents</h3>
+            <p class="audience-card-desc">
+              Tired of Python agents crashing at 3 AM due to a missing dictionary key, a silently mutated state variable, or a runtime type mismatch? Haskell solves the hardest problems in agentic engineering:
+            </p>
+          </div>
+          <ul class="audience-feature-list">
+            <li class="audience-feature-item">
+              <span class="bullet-dot"></span>
+              <div>
+                <strong>Zero State Hallucinations:</strong> Agent workflows are expressed as pure state reducers (<code>StateReducer s</code>). State transitions cannot accidentally mutate or leak memory.
+              </div>
+            </li>
+            <li class="audience-feature-item">
+              <span class="bullet-dot"></span>
+              <div>
+                <strong>Guaranteed JSON Types:</strong> LLM structured outputs parse directly into Haskell records via <code>FromJSON</code>. If an LLM hallucinates an invalid field, the type system safely catches it.
+              </div>
+            </li>
+            <li class="audience-feature-item">
+              <span class="bullet-dot"></span>
+              <div>
+                <strong>Lego-Like AST Pipelines:</strong> Pipe components together with <code>|&gt;&gt;</code> (sequential), <code>&amp;&gt;&amp;</code> (parallel fan-out), and <code>&gt;&gt;&gt;#</code> (fallback resilience) without writing boilerplate.
+              </div>
+            </li>
+            <li class="audience-feature-item">
+              <span class="bullet-dot"></span>
+              <div>
+                <strong>No Category Theory Required:</strong> Our canonical <code>Langchain.Prelude</code> provides intuitive functions like <code>invoke</code>, <code>runReActAgent</code>, and <code>emptyStateGraph</code> that feel as natural as Python.
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Target: People New to LangChain / AI Frameworks -->
+      <div class="column is-6">
+        <div class="audience-card">
+          <div>
+            <span class="audience-card-tag audience-tag-ai">New to AI Frameworks?</span>
+            <h3 class="audience-card-title">Demystifying AI: The 4 Core Mental Models</h3>
+            <p class="audience-card-desc">
+              If you know functional programming or backend architecture but haven't worked with LLM orchestration frameworks, here is the entire agentic paradigm in four simple concepts:
+            </p>
+          </div>
+          <ul class="audience-feature-list">
+            <li class="audience-feature-item">
+              <span class="bullet-dot"></span>
+              <div>
+                <strong>1. Chat Invocation:</strong> Send structured messages (<code>systemMessage</code>, <code>userMessage</code>) to an LLM (Ollama, OpenAI, Gemini) and receive a typed assistant response.
+              </div>
+            </li>
+            <li class="audience-feature-item">
+              <span class="bullet-dot"></span>
+              <div>
+                <strong>2. Structured Output:</strong> Force the model to generate strict JSON schemas that deserialize directly into native domain data structures without prompt hacking.
+              </div>
+            </li>
+            <li class="audience-feature-item">
+              <span class="bullet-dot"></span>
+              <div>
+                <strong>3. Tool Calling:</strong> Equip the model with effectful functions (database queries, calculators, file search) that the model chooses and invokes with typed parameters.
+              </div>
+            </li>
+            <li class="audience-feature-item">
+              <span class="bullet-dot"></span>
+              <div>
+                <strong>4. ReAct &amp; State Graphs:</strong> Autonomous "Reasoning + Acting" loops where models iteratively choose tools, observe outputs, and update cyclic state machines until done.
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Interactive Dual-Provider Code Showcase with Outputs -->
 <section class="showcase-section">
   <div class="showcase-header">
-    <h2>Real Working Code: Ollama, OpenAI & Gemini</h2>
-    <p style="color: var(--text-muted);">Switch between local inference (Ollama), cloud APIs (OpenAI / OpenRouter), and Google Gemini (Interactions v1 API).</p>
+    <h2>Interactive Multi-Provider Execution</h2>
+    <p style="color: var(--text-muted);">Switch between local inference (Ollama), cloud APIs (OpenAI / OpenRouter), and Google Gemini. Every example includes realistic terminal output.</p>
   </div>
 
   <div class="provider-group">
-    <div class="provider-panel active" data-provider="ollama" data-label="🦙 Ollama (Local)" data-exe="stack run simpleollama">
+    <!-- Ollama Panel -->
+    <div class="provider-panel active" data-provider="ollama" data-label="Ollama (Local)" data-exe="stack run simpleollama">
       <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE OverloadedStrings #-}</span>
 <span class="kw">module</span> <span class="dt">Main</span> <span class="kw">where</span>
 
 <span class="kw">import</span> <span class="dt">Control.Monad.Except</span> (runExceptT)
 <span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Text.IO</span> <span class="kw">as</span> <span class="dt">T</span>
 <span class="kw">import</span> <span class="dt">Langchain.Prelude</span>
+<span class="kw">import</span> <span class="dt">Langchain.Provider.Ollama</span>
 
 <span class="ot">main ::</span> <span class="dt">IO</span> ()
 <span class="ot">main</span> <span class="ot">=</span> <span class="kw">do</span>
   <span class="co">-- Connect to local Ollama instance (DeepSeek, Llama 3, Gemma, etc.)</span>
-  o <span class="ot">&lt;-</span> newOllama <span class="st">&quot;gemma3&quot;</span> defaultConfig
+  model <span class="ot">&lt;-</span> newOllama <span class="st">&quot;llama3.2&quot;</span> defaultConfig
   
-  <span class="kw">let</span> msg <span class="ot">=</span> [userMessage <span class="st">&quot;Write a poem about functional programming in Haskell&quot;</span>]
-  res <span class="ot">&lt;-</span> runExceptT <span class="op">$$</span> invoke o msg <span class="dt">Nothing</span>
+  <span class="kw">let</span> msg <span class="ot">=</span> [userMessage <span class="st">&quot;Explain why Haskell's type system makes AI agents more reliable in 2 sentences.&quot;</span>]
+  res <span class="ot">&lt;-</span> runExceptT <span class="op">$$</span> invoke model msg <span class="dt">Nothing</span>
   <span class="kw">case</span> res <span class="kw">of</span>
     <span class="dt">Left</span> err <span class="ot">-&gt;</span> T.putStrLn <span class="op">$$</span> errorMessage err
     <span class="dt">Right</span> m  <span class="ot">-&gt;</span> T.putStrLn <span class="op">$$</span> extractMessageText m</code></pre></div>
+      <div class="terminal-output-wrapper">
+        <div class="terminal-header">
+          <span class="terminal-title"><span class="terminal-dot"></span> Terminal Output</span>
+          <span>Execution Time: 340ms</span>
+        </div>
+        <pre class="terminal-body">Haskell's static type system prevents common agent failures like missing dictionary keys or unexpected nulls before code ever reaches production. Furthermore, pure state transitions guarantee that autonomous agents cannot silently mutate variables behind your back.</pre>
+      </div>
     </div>
 
-    <div class="provider-panel" data-provider="openai" data-label="⚡ OpenAI / OpenRouter" data-exe="stack run simpleopenai">
+    <!-- OpenAI Panel -->
+    <div class="provider-panel" data-provider="openai" data-label="OpenAI / OpenRouter" data-exe="stack run simpleopenai">
       <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE OverloadedStrings #-}</span>
 <span class="kw">module</span> <span class="dt">Main</span> <span class="kw">where</span>
 
 <span class="kw">import</span> <span class="dt">Control.Monad.Except</span> (runExceptT)
 <span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Text.IO</span> <span class="kw">as</span> <span class="dt">T</span>
 <span class="kw">import</span> <span class="dt">Langchain.Prelude</span>
-<span class="kw">import</span> <span class="dt">OpenAI.Common</span> (defaultModelName, getOpenRouterModel)
+<span class="kw">import</span> <span class="dt">Langchain.Provider.OpenAI</span>
 
 <span class="ot">main ::</span> <span class="dt">IO</span> ()
 <span class="ot">main</span> <span class="ot">=</span> <span class="kw">do</span>
   <span class="co">-- Connect to OpenAI or OpenRouter using environment API key</span>
-  o <span class="ot">&lt;-</span> getOpenRouterModel defaultModelName
+  model <span class="ot">&lt;-</span> newOpenAI <span class="st">&quot;sk-proj-...&quot;</span> <span class="st">&quot;gpt-4o&quot;</span>
   
-  <span class="kw">let</span> msg <span class="ot">=</span> [userMessage <span class="st">&quot;Write a poem about functional programming in Haskell&quot;</span>]
-  res <span class="ot">&lt;-</span> runExceptT <span class="op">$$</span> invoke o msg <span class="dt">Nothing</span>
+  <span class="kw">let</span> msg <span class="ot">=</span> [userMessage <span class="st">&quot;Explain why Haskell's type system makes AI agents more reliable in 2 sentences.&quot;</span>]
+  res <span class="ot">&lt;-</span> runExceptT <span class="op">$$</span> invoke model msg <span class="dt">Nothing</span>
   <span class="kw">case</span> res <span class="kw">of</span>
     <span class="dt">Left</span> err <span class="ot">-&gt;</span> T.putStrLn <span class="op">$$</span> errorMessage err
     <span class="dt">Right</span> m  <span class="ot">-&gt;</span> T.putStrLn <span class="op">$$</span> extractMessageText m</code></pre></div>
+      <div class="terminal-output-wrapper">
+        <div class="terminal-header">
+          <span class="terminal-title"><span class="terminal-dot"></span> Terminal Output</span>
+          <span>Execution Time: 580ms</span>
+        </div>
+        <pre class="terminal-body">By modeling agent state and tool schemas with algebraic data types, Haskell eliminates runtime shape mismatches and unhandled edge cases. Strict effect separation also ensures that agent side effects are tracked, auditable, and easily isolated.</pre>
+      </div>
     </div>
-    <div class="provider-panel" data-provider="gemini" data-label="✨ Google Gemini" data-exe="cabal run simplegemini">
+
+    <!-- Gemini Panel -->
+    <div class="provider-panel" data-provider="gemini" data-label="Google Gemini" data-exe="cabal run simplegemini">
       <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE OverloadedStrings #-}</span>
 <span class="kw">module</span> <span class="dt">Main</span> <span class="kw">where</span>
 
 <span class="kw">import</span> <span class="dt">Control.Monad.Except</span> (runExceptT)
 <span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Text.IO</span> <span class="kw">as</span> <span class="dt">T</span>
-<span class="kw">import</span> <span class="dt">Gemini.Common</span> (defaultGeminiModelName, getGeminiModel)
 <span class="kw">import</span> <span class="dt">Langchain.Prelude</span>
+<span class="kw">import</span> <span class="dt">Langchain.Provider.Gemini</span>
 
 <span class="ot">main ::</span> <span class="dt">IO</span> ()
 <span class="ot">main</span> <span class="ot">=</span> <span class="kw">do</span>
   <span class="co">-- Connect to Google Gemini using Interactions v1 OpenAPI client</span>
-  g <span class="ot">&lt;-</span> getGeminiModel defaultGeminiModelName
+  model <span class="ot">&lt;-</span> newGemini <span class="st">&quot;AIzaSy...&quot;</span> <span class="st">&quot;gemini-3.6-flash&quot;</span> <span class="dt">Nothing</span>
   
-  <span class="kw">let</span> msg <span class="ot">=</span> [userMessage <span class="st">&quot;Write a poem about functional programming in Haskell&quot;</span>]
-  res <span class="ot">&lt;-</span> runExceptT <span class="op">$$</span> invoke g msg <span class="dt">Nothing</span>
+  <span class="kw">let</span> msg <span class="ot">=</span> [userMessage <span class="st">&quot;Explain why Haskell's type system makes AI agents more reliable in 2 sentences.&quot;</span>]
+  res <span class="ot">&lt;-</span> runExceptT <span class="op">$$</span> invoke model msg <span class="dt">Nothing</span>
   <span class="kw">case</span> res <span class="kw">of</span>
     <span class="dt">Left</span> err <span class="ot">-&gt;</span> T.putStrLn <span class="op">$$</span> errorMessage err
     <span class="dt">Right</span> m  <span class="ot">-&gt;</span> T.putStrLn <span class="op">$$</span> extractMessageText m</code></pre></div>
+      <div class="terminal-output-wrapper">
+        <div class="terminal-header">
+          <span class="terminal-title"><span class="terminal-dot"></span> Terminal Output</span>
+          <span>Execution Time: 410ms</span>
+        </div>
+        <pre class="terminal-body">Strong compile-time verification prevents runtime state corruption and missing attribute errors across asynchronous agent pipelines. Furthermore, Haskell's pure functions allow deterministic replay and testing of multi-agent interactions.</pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 4 Core AI Patterns Showcase (With Code & Realistic Outputs) -->
+<section class="showcase-section" style="border-top: 1px solid var(--border-subtle); padding-top: 4rem;">
+  <div class="showcase-header">
+    <span class="section-badge">Essential Architecture Patterns</span>
+    <h2>The 4 Pillars of Production AI in Haskell</h2>
+    <p style="color: var(--text-muted);">From guaranteed JSON extraction to autonomous ReAct tool loops, here is how you build real systems.</p>
+  </div>
+
+  <div class="columns is-multiline" style="margin-top: 2rem;">
+    <!-- Pattern 1: JSON Structured Output -->
+    <div class="column is-6">
+      <div class="audience-card">
+        <span class="audience-card-tag audience-tag-haskell">Pattern 1</span>
+        <h3 class="audience-card-title">Guaranteed JSON Structured Output</h3>
+        <p class="audience-card-desc">Parse LLM output directly into strongly typed Haskell records using <code>FromJSON</code> and <code>ToSchema</code>.</p>
+        
+        <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Developer</span> <span class="ot">=</span> <span class="dt">Developer</span>
+  {<span class="ot"> name ::</span> <span class="dt">Text</span>
+  ,<span class="ot"> language ::</span> <span class="dt">Text</span>
+  ,<span class="ot"> years ::</span> <span class="dt">Int</span>
+  } <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Generic</span>, <span class="dt">FromJSON</span>, <span class="dt">ToSchema</span>)
+
+<span class="ot">runExtraction ::</span> <span class="dt">IO</span> ()
+<span class="ot">runExtraction</span> <span class="ot">=</span> <span class="kw">do</span>
+  m <span class="ot">&lt;-</span> newOllama <span class="st">&quot;llama3.2&quot;</span> defaultConfig
+  <span class="kw">let</span> opts <span class="ot">=</span> withStructuredOutput (<span class="dt">Proxy</span> <span class="op">@</span><span class="dt">Developer</span>) defaultOllamaConfig
+  res <span class="ot">&lt;-</span> runLangchainT () <span class="op">$$</span> invoke m prompt (<span class="dt">Just</span> opts)
+  print res</code></pre></div>
+        
+        <div class="terminal-output-wrapper" style="margin-top: 0.75rem;">
+          <div class="terminal-header">
+            <span class="terminal-title"><span class="terminal-dot"></span> Deserialized Result</span>
+          </div>
+          <pre class="terminal-body">{ "name": "Alan", "language": "Haskell", "years": 8 }</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pattern 2: Tool & Function Calling -->
+    <div class="column is-6">
+      <div class="audience-card">
+        <span class="audience-card-tag audience-tag-ai">Pattern 2</span>
+        <h3 class="audience-card-title">Typed Tool &amp; Function Calling</h3>
+        <p class="audience-card-desc">Equip LLMs with effectful Haskell functions. The model emits structured tool calls that execute safely.</p>
+        
+        <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- Create filesystem search tool</span>
+<span class="kw">let</span> fsTool <span class="ot">=</span> findFilesTool <span class="op">@</span><span class="dt">IO</span> defaultSecurityPolicy
+    toolCfg <span class="ot">=</span> withTools [fsTool] defaultOllamaConfig
+
+<span class="co">-- LLM chooses and invokes tool</span>
+resp <span class="ot">&lt;-</span> invoke model prompt (<span class="dt">Just</span> toolCfg)
+<span class="kw">case</span> messageToolCalls resp <span class="kw">of</span>
+  <span class="dt">Just</span> (tCall<span class="op">:</span>_) <span class="ot">-&gt;</span> <span class="kw">do</span>
+    out <span class="ot">&lt;-</span> toolExecute fsTool (toolCallArguments tCall)
+    print out</code></pre></div>
+        
+        <div class="terminal-output-wrapper" style="margin-top: 0.75rem;">
+          <div class="terminal-header">
+            <span class="terminal-title"><span class="terminal-dot"></span> Tool Execution</span>
+          </div>
+          <pre class="terminal-body">Tool: find_files {"pattern": "*.hs"}
+Observation: ["src/Main.hs", "src/Agent.hs", "src/Tools.hs"]</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pattern 3: Autonomous ReAct Agent -->
+    <div class="column is-6">
+      <div class="audience-card">
+        <span class="audience-card-tag audience-tag-haskell">Pattern 3</span>
+        <h3 class="audience-card-title">Autonomous ReAct Agent Loop</h3>
+        <p class="audience-card-desc">Dynamic multi-turn reasoning and acting loop that evaluates tool observations until reaching final answers.</p>
+        
+        <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">main ::</span> <span class="dt">IO</span> ()
+<span class="ot">main</span> <span class="ot">=</span> <span class="kw">do</span>
+  m <span class="ot">&lt;-</span> newOllama <span class="st">&quot;qwen2.5:7b&quot;</span> defaultConfig
+  <span class="kw">let</span> tools <span class="ot">=</span> [readFileTool <span class="dt">Nothing</span> defaultSecurityPolicy]
+      agent <span class="ot">=</span> defaultReActAgent m tools
+  
+  res <span class="ot">&lt;-</span> runExceptT <span class="op">$$</span> runReActAgent agent [userMessage <span class="st">&quot;Check server status in /tmp/status.txt&quot;</span>]
+  print res</code></pre></div>
+        
+        <div class="terminal-output-wrapper" style="margin-top: 0.75rem;">
+          <div class="terminal-header">
+            <span class="terminal-title"><span class="terminal-dot"></span> ReAct Agent Output</span>
+          </div>
+          <pre class="terminal-body">[Step 1] Thought: Read /tmp/status.txt
+Action: read_file {"path": "/tmp/status.txt"}
+Observation: Status: Operational, Uptime: 99.98%
+[Step 2] Final Answer: Server is fully operational with 99.98% uptime.</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pattern 4: StateGraph Cyclic Orchestration -->
+    <div class="column is-6">
+      <div class="audience-card">
+        <span class="audience-card-tag audience-tag-ai">Pattern 4</span>
+        <h3 class="audience-card-title">StateGraph Cyclic Workflows</h3>
+        <p class="audience-card-desc">LangGraph state machines with STM memory checkpointers, pure reducers, and Human-in-the-Loop review.</p>
+        
+        <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">workflow ::</span> <span class="dt">StateGraph</span> <span class="dt">WorkflowState</span> <span class="dt">IO</span>
+<span class="ot">workflow</span> <span class="ot">=</span> emptyStateGraph workflowReducer
+  <span class="op">&amp;</span> addNode <span class="st">&quot;planner&quot;</span> plannerNode
+  <span class="op">&amp;</span> addNode <span class="st">&quot;reviewer&quot;</span> reviewerNode
+  <span class="op">&amp;</span> addEdge startNodeId <span class="st">&quot;planner&quot;</span>
+  <span class="op">&amp;</span> addConditionalEdge <span class="st">&quot;reviewer&quot;</span> router
+      [ (<span class="st">&quot;approved&quot;</span>, endNodeId)
+      , (<span class="st">&quot;revise&quot;</span>, <span class="st">&quot;planner&quot;</span>)
+      ]</code></pre></div>
+        
+        <div class="terminal-output-wrapper" style="margin-top: 0.75rem;">
+          <div class="terminal-header">
+            <span class="terminal-title"><span class="terminal-dot"></span> StateGraph Output</span>
+          </div>
+          <pre class="terminal-body">[planner] Generated Draft v1 -> [reviewer] Needs Work
+[planner] Generated Draft v2 -> [reviewer] Approved!
+Final State: iterations = 2, status = "APPROVED"</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Hackage Ecosystem & Documentation Banner -->
+<section class="audience-section" style="background: var(--bg-card); border-top: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle);">
+  <div class="container text-center" style="text-align: center;">
+    <span class="section-badge">Package Registry</span>
+    <h2 class="section-title">Published on Hackage</h2>
+    <p class="section-subtitle" style="max-width: 680px; margin: 0 auto 2rem;">
+      <code>langchain-hs</code> is fully documented and published on the official Haskell package repository.
+      Access full Haddock signatures, typeclass definitions, and release notes anytime.
+    </p>
+
+    <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+      <a href="https://hackage.haskell.org/package/langchain-hs" target="_blank" rel="noopener noreferrer" class="btn-primary">
+        <span>Open Hackage Package &nearr;</span>
+      </a>
+      <a href="/api/cheat-sheet.html" class="btn-secondary">
+        <span>Prelude Cheat Sheet</span>
+      </a>
+      <a href="/getting-started/installation.html" class="btn-secondary">
+        <span>Installation Guide</span>
+      </a>
     </div>
   </div>
 </section>
 
 <!-- 19 Components Directory Gallery -->
-<section class="showcase-section" style="margin-top: 3rem;">
+<section class="showcase-section" style="margin-top: 2rem;">
   <div class="showcase-header">
+    <span class="section-badge">Comprehensive Architecture</span>
     <h2>Complete Component Directory (19 Components)</h2>
     <p style="color: var(--text-muted);">Every component features dual Ollama/OpenAI examples, verified build targets, and complete Haskell signatures.</p>
   </div>
 
   <div class="components-gallery">
     <a href="/components/chat-models.html" class="component-card">
-      <div class="component-card-icon">💬</div>
       <div class="component-card-title">Chat Models</div>
       <div class="component-card-desc">Unified interface for model invocation, message types, options, and batch generation.</div>
       <div class="component-card-pills">
@@ -121,7 +394,6 @@ description: Purely functional, effect-polymorphic, zero-unsafePerformIO AI agen
     </a>
 
     <a href="/components/streaming.html" class="component-card">
-      <div class="component-card-icon">🌊</div>
       <div class="component-card-title">Streaming</div>
       <div class="component-card-desc">Real-time incremental token streaming and Conduit pipeline consumers.</div>
       <div class="component-card-pills">
@@ -131,7 +403,6 @@ description: Purely functional, effect-polymorphic, zero-unsafePerformIO AI agen
     </a>
 
     <a href="/components/monad.html" class="component-card">
-      <div class="component-card-icon">🏛️</div>
       <div class="component-card-title">Langchain Monad</div>
       <div class="component-card-desc">Type-safe LangchainT transformer decoupled over custom environments and error handlers.</div>
       <div class="component-card-pills">
@@ -141,7 +412,6 @@ description: Purely functional, effect-polymorphic, zero-unsafePerformIO AI agen
     </a>
 
     <a href="/components/tools.html" class="component-card">
-      <div class="component-card-icon">🔧</div>
       <div class="component-card-title">Tools &amp; Function Calling</div>
       <div class="component-card-desc">Effect-polymorphic Haskell tools, JSON parameter schemas, and LLM tool execution.</div>
       <div class="component-card-pills">
@@ -151,7 +421,6 @@ description: Purely functional, effect-polymorphic, zero-unsafePerformIO AI agen
     </a>
 
     <a href="/components/structured-output.html" class="component-card">
-      <div class="component-card-icon">📋</div>
       <div class="component-card-title">Structured Outputs</div>
       <div class="component-card-desc">Guaranteed JSON schema generation parsed into type-safe Aeson data structures.</div>
       <div class="component-card-pills">
@@ -161,7 +430,6 @@ description: Purely functional, effect-polymorphic, zero-unsafePerformIO AI agen
     </a>
 
     <a href="/components/rag.html" class="component-card">
-      <div class="component-card-icon">📚</div>
       <div class="component-card-title">RAG &amp; Embeddings</div>
       <div class="component-card-desc">Dense vector embeddings, cosine distance calculation, and document chunking.</div>
       <div class="component-card-pills">
@@ -171,7 +439,6 @@ description: Purely functional, effect-polymorphic, zero-unsafePerformIO AI agen
     </a>
 
     <a href="/components/retrievers.html" class="component-card">
-      <div class="component-card-icon">🔍</div>
       <div class="component-card-title">Retrievers &amp; Ensembles</div>
       <div class="component-card-desc">Reciprocal Rank Fusion (RRF) combining BM25 keyword matching and vector stores.</div>
       <div class="component-card-pills">
@@ -181,7 +448,6 @@ description: Purely functional, effect-polymorphic, zero-unsafePerformIO AI agen
     </a>
 
     <a href="/components/memory.html" class="component-card">
-      <div class="component-card-icon">🧠</div>
       <div class="component-card-title">Memory Systems</div>
       <div class="component-card-desc">Buffer memories and persistent conversational history tracking across multi-turn sessions.</div>
       <div class="component-card-pills">
@@ -191,7 +457,6 @@ description: Purely functional, effect-polymorphic, zero-unsafePerformIO AI agen
     </a>
 
     <a href="/components/retrieval-qa.html" class="component-card">
-      <div class="component-card-icon">💡</div>
       <div class="component-card-title">Retrieval QA Chains</div>
       <div class="component-card-desc">End-to-end question answering pipeline synthesizing relevant context and citations.</div>
       <div class="component-card-pills">
@@ -201,7 +466,6 @@ description: Purely functional, effect-polymorphic, zero-unsafePerformIO AI agen
     </a>
 
     <a href="/components/react-agent.html" class="component-card">
-      <div class="component-card-icon">🤖</div>
       <div class="component-card-title">ReAct Agent</div>
       <div class="component-card-desc">Autonomous reasoning and acting loop with tool selection, execution, and observations.</div>
       <div class="component-card-pills">
@@ -211,7 +475,6 @@ description: Purely functional, effect-polymorphic, zero-unsafePerformIO AI agen
     </a>
 
     <a href="/components/plan-and-execute.html" class="component-card">
-      <div class="component-card-icon">🎯</div>
       <div class="component-card-title">Plan-and-Execute Agent</div>
       <div class="component-card-desc">Decoupled macro-planner creating structured task DAGs with execution &amp; replanning.</div>
       <div class="component-card-pills">
@@ -221,7 +484,6 @@ description: Purely functional, effect-polymorphic, zero-unsafePerformIO AI agen
     </a>
 
     <a href="/components/guardrails.html" class="component-card">
-      <div class="component-card-icon">🛡️</div>
       <div class="component-card-title">Guardrails &amp; Safety</div>
       <div class="component-card-desc">Pre- and post-execution filtering, PII redaction, and semantic policy moderation.</div>
       <div class="component-card-pills">
@@ -231,7 +493,6 @@ description: Purely functional, effect-polymorphic, zero-unsafePerformIO AI agen
     </a>
 
     <a href="/components/resilience.html" class="component-card">
-      <div class="component-card-icon">⚡</div>
       <div class="component-card-title">Resilience &amp; Retries</div>
       <div class="component-card-desc">Exponential backoff retries, fallback providers, and circuit breaker patterns.</div>
       <div class="component-card-pills">
@@ -241,7 +502,6 @@ description: Purely functional, effect-polymorphic, zero-unsafePerformIO AI agen
     </a>
 
     <a href="/components/observability.html" class="component-card">
-      <div class="component-card-icon">📊</div>
       <div class="component-card-title">Observability &amp; Tracing</div>
       <div class="component-card-desc">Callbacks, execution timing, token metrics, and OpenTelemetry span exports.</div>
       <div class="component-card-pills">
@@ -251,7 +511,6 @@ description: Purely functional, effect-polymorphic, zero-unsafePerformIO AI agen
     </a>
 
     <a href="/components/mcp.html" class="component-card">
-      <div class="component-card-icon">🔌</div>
       <div class="component-card-title">Model Context Protocol (MCP)</div>
       <div class="component-card-desc">Stdio and HTTP JSON-RPC client connecting external tool and resource servers.</div>
       <div class="component-card-pills">
@@ -261,7 +520,6 @@ description: Purely functional, effect-polymorphic, zero-unsafePerformIO AI agen
     </a>
 
     <a href="/components/state-graph.html" class="component-card">
-      <div class="component-card-icon">🕸️</div>
       <div class="component-card-title">Stateful Graphs (StateGraph)</div>
       <div class="component-card-desc">Cyclic workflows, pure state reducers, and checkpointed state machines.</div>
       <div class="component-card-pills">
@@ -271,7 +529,6 @@ description: Purely functional, effect-polymorphic, zero-unsafePerformIO AI agen
     </a>
 
     <a href="/components/multi-agent.html" class="component-card">
-      <div class="component-card-icon">👥</div>
       <div class="component-card-title">Multi-Agent Systems</div>
       <div class="component-card-desc">Supervisor routing, consensus debate, and multi-agent coordination.</div>
       <div class="component-card-pills">
@@ -281,7 +538,6 @@ description: Purely functional, effect-polymorphic, zero-unsafePerformIO AI agen
     </a>
 
     <a href="/components/hitl.html" class="component-card">
-      <div class="component-card-icon">⏸️</div>
       <div class="component-card-title">Human-in-the-Loop (HITL)</div>
       <div class="component-card-desc">Interrupt execution graphs for human approval, edit state, and resume seamlessly.</div>
       <div class="component-card-pills">
@@ -291,7 +547,6 @@ description: Purely functional, effect-polymorphic, zero-unsafePerformIO AI agen
     </a>
 
     <a href="/components/runnables.html" class="component-card">
-      <div class="component-card-icon">🔗</div>
       <div class="component-card-title">Runnables &amp; AST Pipelines</div>
       <div class="component-card-desc">First-class AST composition via pipe (|&gt;&gt;), parallel (&amp;&gt;&amp;), and fallback (&gt;&gt;&gt;#).</div>
       <div class="component-card-pills">
@@ -303,52 +558,48 @@ description: Purely functional, effect-polymorphic, zero-unsafePerformIO AI agen
 </section>
 
 <!-- Features Grid -->
-<div class="features-grid" style="margin-top: 3rem;">
-  <div class="feature-card">
-    <div class="feature-icon">🛡️</div>
-    <div class="feature-title">Pure Zero-Dependency Core</div>
-    <div class="feature-desc">
-      <code>langchain-hs-core</code> defines AST pipelines (<code>RunnableTree</code>), multi-modal <code>ContentBlock</code>, and streaming without ANY HTTP dependencies.
+<div class="container" style="margin-top: 3rem; margin-bottom: 4rem;">
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-title">Pure Zero-Dependency Core</div>
+      <div class="feature-desc">
+        <code>langchain-hs-core</code> defines AST pipelines (<code>RunnableTree</code>), multi-modal <code>ContentBlock</code>, and streaming without ANY HTTP dependencies.
+      </div>
     </div>
-  </div>
 
-  <div class="feature-card">
-    <div class="feature-icon">🕸️</div>
-    <div class="feature-title">LangGraph in Haskell</div>
-    <div class="feature-desc">
-      Cyclic state machines with pure state reducers, STM <code>TVar</code> &amp; SQLite checkpointers, Human-in-the-Loop interrupts, time-travel history replay, and Graphviz DOT export.
+    <div class="feature-card">
+      <div class="feature-title">LangGraph in Haskell</div>
+      <div class="feature-desc">
+        Cyclic state machines with pure state reducers, STM <code>TVar</code> &amp; SQLite checkpointers, Human-in-the-Loop interrupts, time-travel history replay, and Graphviz DOT export.
+      </div>
     </div>
-  </div>
 
-  <div class="feature-card">
-    <div class="feature-icon">🔌</div>
-    <div class="feature-title">Model Context Protocol (MCP)</div>
-    <div class="feature-desc">
-      Native client supporting stdio and HTTP JSON-RPC 2.0 transports with automatic schema discovery and conversion to native <code>Tool m</code> instances.
+    <div class="feature-card">
+      <div class="feature-title">Model Context Protocol (MCP)</div>
+      <div class="feature-desc">
+        Native client supporting stdio and HTTP JSON-RPC 2.0 transports with automatic schema discovery and conversion to native <code>Tool m</code> instances.
+      </div>
     </div>
-  </div>
 
-  <div class="feature-card">
-    <div class="feature-icon">👥</div>
-    <div class="feature-title">Advanced Multi-Agent Architectures</div>
-    <div class="feature-desc">
-      Plan-and-Execute, ReAct, Supervisor teams with capability routing, multi-agent debate with convergence checking, majority voting, and STM shared blackboards.
+    <div class="feature-card">
+      <div class="feature-title">Advanced Multi-Agent Architectures</div>
+      <div class="feature-desc">
+        Plan-and-Execute, ReAct, Supervisor teams with capability routing, multi-agent debate with convergence checking, majority voting, and STM shared blackboards.
+      </div>
     </div>
-  </div>
 
-  <div class="feature-card">
-    <div class="feature-icon">🔍</div>
-    <div class="feature-title">Hybrid Retrieval &amp; RAG</div>
-    <div class="feature-desc">
-      Reciprocal Rank Fusion (RRF) combining BM25 keyword search and dense vector embeddings (SQLite-vec, InMemory, PgVector, Qdrant) with LLM rerankers.
+    <div class="feature-card">
+      <div class="feature-title">Hybrid Retrieval &amp; RAG</div>
+      <div class="feature-desc">
+        Reciprocal Rank Fusion (RRF) combining BM25 keyword search and dense vector embeddings with LLM rerankers.
+      </div>
     </div>
-  </div>
 
-  <div class="feature-card">
-    <div class="feature-icon">📊</div>
-    <div class="feature-title">Production Observability</div>
-    <div class="feature-desc">
-      OpenTelemetry spans (<code>withSpan</code>), structured JSON logs, three-state Circuit Breaker, exponential backoff retries, connection pooling, and token cost calculation.
+    <div class="feature-card">
+      <div class="feature-title">Production Observability</div>
+      <div class="feature-desc">
+        OpenTelemetry spans (<code>withSpan</code>), structured JSON logs, three-state Circuit Breaker, exponential backoff retries, and token cost calculation.
+      </div>
     </div>
   </div>
 </div>

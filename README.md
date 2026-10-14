@@ -1,109 +1,48 @@
-# 🦜️🔗 LangChain Haskell (`langchain-hs`)
+# LangChain Haskell (langchain-hs)
 
-> **The Pure Functional, Effect-Polymorphic AI Agent & Multi-Agent Graph Engine in Haskell**
->
-> *A strictly typed, effect-polymorphic, AI ecosystem built on pure AST pipelines (`RunnableTree`), cyclic state machines (`StateGraph`), Model Context Protocol (MCP), and observability.*
+> Type-Safe AI Agents & Multi-Agent Graphs in Haskell
 
----
+A functional, effect-polymorphic Haskell ecosystem for building production AI applications, featuring pure AST pipelines (`RunnableTree`), cyclic state graphs (`StateGraph`), Model Context Protocol (MCP), and OpenTelemetry observability.
 
 [![Hackage](https://img.shields.io/badge/hackage-0.0.6.0-blue.svg)](https://hackage.haskell.org/package/langchain-hs)
 [![GHC](https://img.shields.io/badge/GHC-9.8%2B-purple.svg)](https://www.haskell.org/ghc/)
-[![Components](https://img.shields.io/badge/components-19%20verified-brightgreen.svg)](#19-core-components--verified-targets)
-[![Providers](https://img.shields.io/badge/providers-Ollama%20%7C%20OpenAI%20%7C%20Gemini-orange.svg)](#2-multi-provider-chat-comparison-ollama-openai--gemini)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Whitepaper](https://img.shields.io/badge/whitepaper-read%20now-blueviolet.svg)](whitepaper.md)
+[![Documentation](https://img.shields.io/badge/docs-website-blueviolet.svg)](https://tusharad.github.io/langchain-hs/)
 
 ---
 
-## Why `langchain-hs`?
+## Installation
 
-Modern AI orchestration frameworks often struggle with race conditions, hidden side-effects, fragile dynamic schemas, and uninspectable opaque execution chains. `langchain-hs` brings mathematical precision and functional programming principles to AI development:
+Install `langchain-hs` and provider packages via **Cabal**:
 
-1. **First-Class Runnable AST Composition (`RunnableTree`)**: Every component—models, prompts, tools, chains, retrievers, and parsers—implements the `Runnable` typeclass. Connect components into trees or graphs using type-safe operators:
-   - `|>>` : Sequential composition (data flows from left to right).
-   - `&>&` : Parallel fan-out (concurrent evaluation of independent branches).
-   - `>>>#` : Fallback chains (automatic failover if the primary branch errors).
-2. **LangGraph in Haskell (`StateGraph`)**: Full cyclic state machine engine with pure monoidal state reducers (`StateReducer s`), thread-safe STM memory checkpointers (`TVar`), persistent SQLite checkpointers, Human-in-the-Loop (`HITL`) interrupts, and Time-Travel state replay.
-3. **Decoupled Modular Architecture**: The core framework is completely lightweight. AI providers (`Ollama`, `OpenAI`, `Gemini`) and protocol clients (`MCP`) live in dedicated, standalone sub-packages so you only pull in the dependencies you actually need.
+```bash
+cabal update
+cabal install langchain-hs langchain-hs-ollama langchain-hs-openai
+```
 
----
+Or add to your `stack.yaml`:
 
-### Monorepo Packages
+```yaml
+extra-deps:
+  - langchain-hs-0.0.6.0
+  - langchain-hs-core-0.0.6.0
+  - langchain-hs-graph-0.0.6.0
+  - langchain-hs-ollama-0.0.6.0
+  - langchain-hs-openai-0.0.6.0
+```
 
-| Package | Directory | Version | Description |
-|---|---|---|---|
-| `langchain-hs-core` | [`langchain-hs-core/`](./langchain-hs-core) | `0.0.6.0` | Core framework: `RunnableTree`, `ChatModel`, `Tool`, agents (`ReAct`, `PlanAndExecute`), output parsers, vector stores, retrievers, memory, cache, guardrails, resilience, observability, and canonical `Langchain.Prelude`. |
-| `langchain-hs-graph` | [`langchain-hs-graph/`](./langchain-hs-graph) | `0.0.6.0` | Stateful graph engine: `StateGraph s m`, checkpointers, HITL, time-travel, multi-agent systems, and parallel nodes. |
-| `langchain-hs` | [`langchain-hs/`](./langchain-hs) | `0.0.6.0` | Umbrella package re-exporting `langchain-hs-core` and `langchain-hs-graph` via Cabal `reexported-modules`. |
-| `langchain-hs-ollama` | [`langchain-hs-ollama/`](./langchain-hs-ollama) | `0.0.6.0` | Dedicated Ollama provider and embeddings integration via `ollama-haskell`. |
-| `langchain-hs-openai` | [`langchain-hs-openai/`](./langchain-hs-openai) | `0.0.6.0` | Dedicated OpenAI & OpenAI-compatible provider, streaming, and embeddings via `openai`. |
-| `langchain-hs-gemini` | [`langchain-hs-gemini/`](./langchain-hs-gemini) | `0.0.6.0` | Dedicated Google Gemini client & provider: Servant bindings over Interactions v1 OpenAPI spec, `ChatModel`, `ToolBinder`, `gemini-embedding-001`, SSE streaming. |
-| `langchain-hs-mcp` | [`langchain-hs-mcp/`](./langchain-hs-mcp) | `0.0.6.0` | Model Context Protocol client over stdio and HTTP JSON-RPC 2.0. |
-| `examples` | [`examples/`](./examples) | `0.1.0.0` | 43 runnable executables covering core components for Ollama, OpenAI, and Google Gemini. |
-| `site` | [`site/`](./site) | - | Hakyll documentation website with live provider toggle and component reference. |
+Package reference on Hackage: [https://hackage.haskell.org/package/langchain-hs](https://hackage.haskell.org/package/langchain-hs)
 
 ---
 
-## 19 Core Components & Verified Targets
+## 1. Simple Chat Calling
 
-| # | Component | Package Layer | Ollama Executable | OpenAI Executable | Gemini Executable | Documentation |
-|:---:|---|---|---|---|---|:---:|
-| 1 | **Chat Models** | `Langchain.Model` | `stack run simpleollama` | `stack run simpleopenai` | `cabal run simplegemini` | [Docs](site/components/chat-models.md) |
-| 2 | **Conduit Streaming** | `Langchain.Stream` | `stack run streamollama` | `stack run streamopenai` | `cabal run streamgemini` | [Docs](site/components/streaming.md) |
-| 3 | **Langchain Monad** | `Langchain.Monad` | `stack run monadollama` | `stack run monadopenai` | — | [Docs](site/components/monad.md) |
-| 4 | **Tools & Function Calling** | `Langchain.Tool` | `stack run toolollama` | `stack run toolopenai` | `cabal run toolgemini` | [Docs](site/components/tools.md) |
-| 5 | **Structured Outputs** | `Langchain.OutputParser` | `stack run jsonollama` | `stack run jsonopenai` | — | [Docs](site/components/structured-output.md) |
-| 6 | **RAG & Embeddings** | `Langchain.Embedding` | `stack run ragollama` | `stack run ragopenai` | `cabal run raggemini` | [Docs](site/components/rag.md) |
-| 7 | **Hybrid Retrievers** | `Langchain.Retriever` | `stack run retrieverollama` | `stack run retrieveropenai` | — | [Docs](site/components/retrievers.md) |
-| 8 | **Memory Systems** | `Langchain.Memory` | `stack run memoryollama` | `stack run memoryopenai` | — | [Docs](site/components/memory.md) |
-| 9 | **Retrieval QA Chains** | `Langchain.Chain.RetrievalQA` | `stack run retrievalqaollama` | `stack run retrievalqaopenai` | — | [Docs](site/components/retrieval-qa.md) |
-| 10 | **ReAct Agent** | `Langchain.Agent.ReAct` | `stack run reactollama` | `stack run reactopenai` | — | [Docs](site/components/react-agent.md) |
-| 11 | **Plan-and-Execute Agent** | `Langchain.Agent.PlanAndExecute` | `stack run planandexecuteollama` | `stack run planandexecuteopenai` | — | [Docs](site/components/plan-and-execute.md) |
-| 12 | **Guardrails & Safety** | `Langchain.Guardrails` | `stack run guardrailollama` | `stack run guardrailopenai` | — | [Docs](site/components/guardrails.md) |
-| 13 | **Resilience & Retries** | `Langchain.Resilience` | `stack run resilienceollama` | `stack run resilienceopenai` | — | [Docs](site/components/resilience.md) |
-| 14 | **Observability & Tracing** | `Langchain.Observability` | `stack run observabilityollama` | `stack run observabilityopenai` | — | [Docs](site/components/observability.md) |
-| 15 | **Model Context Protocol** | `Langchain.MCP.Client` | `stack run mcpollama` | `stack run mcpopenai` | — | [Docs](site/components/mcp.md) |
-| 16 | **StateGraph Workflows** | `Langchain.Graph` | `stack run stategraphollama` | `stack run stategraphopenai` | — | [Docs](site/components/state-graph.md) |
-| 17 | **Multi-Agent Systems** | `Langchain.Graph.MultiAgent` | `stack run multiagentollama` | `stack run multiagentopenai` | — | [Docs](site/components/multi-agent.md) |
-| 18 | **Human-in-the-Loop (HITL)** | `Langchain.Graph.Checkpointer` | `stack run hitlollama` | `stack run hitlopenai` | — | [Docs](site/components/hitl.md) |
-| 19 | **Runnables & AST Composition** | `Langchain.Runnable` | `stack run runnableollama` | `stack run runnableopenai` | — | [Docs](site/components/runnables.md) |
-
----
-
-## Code Showcases
-
-### 1. The Power of Runnables: Pure AST Composition
-
-Compose complex multi-stage pipelines using typed operators without executing any `IO` until interpretation:
+Send a prompt to an LLM (local Ollama, OpenAI, or Gemini) and retrieve a typed response:
 
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
-import Langchain.Prelude
-
--- Compose pure AST pipelines with (|>>), (&>&), and (>>>#)
-pipeline :: RunnableTree IO Text Text
-pipeline =
-      runLambda (\q -> (q, q))                          -- duplicate input query
-  |>> (fetchDocuments &>& generateFollowup)              -- parallel branch fan-out
-  |>> runLambda (\(docs, fup) -> renderPrompt docs fup) -- pure prompt synthesis
-  |>> (invokeLLM primaryModel >>># invokeLLM backupModel) -- fallback resilience
-  |>> parseStructuredResponse                           -- JSON parser
-
-main :: IO ()
-main = do
-  output <- interpret pipeline "Explain Monads in Haskell"
-  print output
-```
-
----
-
-### 2. Multi-Provider Chat Comparison: Ollama, OpenAI & Gemini
-
-#### Ollama (Local & Offline)
-```haskell
-{-# LANGUAGE OverloadedStrings #-}
 import Control.Monad.Except (runExceptT)
 import qualified Data.Text.IO as T
 import Langchain.Prelude
@@ -111,243 +50,217 @@ import Langchain.Provider.Ollama
 
 main :: IO ()
 main = do
-  -- Connect to local Ollama instance (DeepSeek, Llama 3, Gemma)
-  model <- newOllama "gemma3" defaultClientConfig
+  -- Connect to local Ollama instance (DeepSeek, Llama 3, Gemma, etc.)
+  model <- newOllama "llama3.2" defaultConfig
   
-  let msg = [userMessage "Write a poem about functional programming"]
-  res <- runExceptT $ invoke model msg Nothing
-  case res of
-    Left err -> T.putStrLn $ errorMessage err
-    Right m  -> T.putStrLn $ extractMessageText m
+  let messages = [userMessage "Explain in two sentences why Haskell makes AI agents more reliable."]
+  result <- runExceptT $ invoke model messages Nothing
+  
+  case result of
+    Left err   -> T.putStrLn $ errorMessage err
+    Right resp -> T.putStrLn $ extractMessageText resp
 ```
-*Run:* `stack --stack-yaml examples/stack.yaml run simpleollama`
 
-#### OpenAI / OpenRouter (Cloud)
+### Output
+
+```text
+Haskell's static type system prevents common agent failures like missing dictionary keys or unexpected nulls before code ever reaches production. Furthermore, pure state transitions guarantee that autonomous agents cannot silently mutate variables behind your back.
+```
+
+---
+
+## 2. JSON Structured Output
+
+Guarantee that the LLM response conforms to a typed Haskell record using `FromJSON` and `ToSchema`:
+
+```haskell
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
+module Main where
+
+import Data.Aeson (FromJSON)
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
+import GHC.Generics (Generic)
+import Langchain.Prelude
+import Langchain.Provider.Ollama
+
+-- Define your target data schema
+data Developer = Developer
+  { name              :: T.Text
+  , preferredLanguage :: T.Text
+  , yearsOfExperience :: Int
+  , favoriteLibrary   :: T.Text
+  } deriving (Show, Generic, FromJSON, ToSchema)
+
+main :: IO ()
+main = do
+  model <- newOllama "llama3.2" defaultConfig
+  
+  let prompt =
+        [ userMessage "Extract profile: Alan has been writing Haskell for 8 years and loves langchain-hs." ]
+      options = withStructuredOutput (Proxy @Developer) defaultOllamaConfig
+
+  result <- runLangchainT () $ invoke model prompt (Just options)
+  case result of
+    Left err  -> T.putStrLn $ errorMessage err
+    Right msg -> T.putStrLn $ extractMessageText msg
+```
+
+### Output
+
+```json
+{
+  "name": "Alan",
+  "preferredLanguage": "Haskell",
+  "yearsOfExperience": 8,
+  "favoriteLibrary": "langchain-hs"
+}
+```
+
+---
+
+## 3. Tool Calling
+
+Equip models with effectful Haskell tools. The LLM automatically emits structured tool calls, which your application executes and feeds back for final synthesis:
+
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
+module Main where
+
+import Control.Monad.IO.Class (liftIO)
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
+import Langchain.Prelude
+import Langchain.Provider.Ollama
+
+main :: IO ()
+main = do
+  model <- newOllama "qwen2.5:7b" defaultConfig
+  
+  -- Instantiate typed filesystem tool
+  let fsTool   = findFilesTool @IO defaultSecurityPolicy
+      toolCfg  = withTools [fsTool] defaultOllamaConfig
+      prompt   = [userMessage "Search for Haskell source files using find_files with pattern '*.hs'."]
+
+  res <- runLangchainT () $ do
+    response <- invoke model prompt (Just toolCfg)
+    case messageToolCalls response of
+      Just (tCall:_) -> do
+        liftIO $ T.putStrLn $ "Tool Invoked: " <> toolCallName tCall
+        liftIO $ T.putStrLn $ "Arguments:    " <> T.pack (show (toolCallArguments tCall))
+        
+        -- Execute tool with LLM arguments
+        execResult <- liftIO $ toolExecute fsTool (toolCallArguments tCall)
+        let observation = case execResult of
+              Left err  -> "Error: " <> errorMessage err
+              Right out -> out
+        liftIO $ T.putStrLn $ "Observation:  " <> observation
+        
+        -- Supply tool observation back to model for final response
+        let toolMsg = (toolMessage observation) { messageName = Just (toolCallName tCall) }
+            thread  = prompt ++ [response, toolMsg]
+            
+        finalMsg <- invoke model thread (Just toolCfg)
+        liftIO $ T.putStrLn "\nFinal Assistant Answer:"
+        liftIO $ T.putStrLn $ extractMessageText finalMsg
+      _ -> do
+        liftIO $ T.putStrLn $ extractMessageText response
+
+  case res of
+    Left err -> T.putStrLn $ "Error: " <> errorMessage err
+    Right () -> pure ()
+```
+
+### Output
+
+```text
+Tool Invoked: find_files
+Arguments:    fromList [("pattern",String "*.hs")]
+Observation:  ["src/Main.hs","src/Agent.hs","src/Tools.hs"]
+
+Final Assistant Answer:
+I scanned the repository and identified 3 Haskell source files matching your pattern:
+- src/Main.hs
+- src/Agent.hs
+- src/Tools.hs
+```
+
+---
+
+## 4. ReAct Agent
+
+Run an autonomous **Reason + Act** agent loop that decomposes user tasks, selects tools, evaluates observations, and iterates until completion:
+
+```haskell
+{-# LANGUAGE OverloadedStrings #-}
+module Main where
+
 import Control.Monad.Except (runExceptT)
 import qualified Data.Text.IO as T
 import Langchain.Prelude
-import Langchain.Provider.OpenAI
+import Langchain.Provider.Ollama
 
 main :: IO ()
 main = do
-  -- Connect to OpenAI or OpenRouter using environment API key
-  let model = newOpenAI "sk-..." "gpt-4o"
+  -- Setup sample file for demonstration
+  writeFile "/tmp/server_status.txt" "Service: api-gateway, Status: Degraded, Latency: 420ms"
   
-  let msg = [userMessage "Write a poem about functional programming"]
-  res <- runExceptT $ invoke model msg Nothing
+  model <- newOllama "qwen2.5:7b" defaultConfig
+  
+  -- Equip agent with file inspection tools
+  let policy = defaultSecurityPolicy
+      tools  = [readFileTool Nothing policy, findFilesTool policy]
+      agent  = defaultReActAgent model tools
+      prompt = [userMessage "Inspect /tmp/server_status.txt using read_file and summarize the service health."]
+
+  res <- runExceptT $ runReActAgent agent prompt
   case res of
-    Left err -> T.putStrLn $ errorMessage err
-    Right m  -> T.putStrLn $ extractMessageText m
-```
-*Run:* `stack --stack-yaml examples/stack.yaml run simpleopenai`
-
-#### Google Gemini (Interactions v1 API)
-```haskell
-{-# LANGUAGE OverloadedStrings #-}
-import Control.Monad.Except (runExceptT)
-import qualified Data.Text.IO as T
-import Gemini.Common (defaultGeminiModelName, getGeminiModel)
-import Langchain.Prelude
-import Langchain.Provider.Gemini
-
-main :: IO ()
-main = do
-  -- Connect to Google Gemini using Interactions v1 OpenAPI Servant bindings
-  g <- getGeminiModel defaultGeminiModelName
-  
-  let msg = [userMessage "Write a poem about functional programming"]
-  res <- runExceptT $ invoke g msg Nothing
-  case res of
-    Left err -> T.putStrLn $ errorMessage err
-    Right m  -> T.putStrLn $ extractMessageText m
-```
-*Run:* `cabal run simplegemini`
-
----
-
-### 3. Stateful Graphs (`StateGraph`): Cyclic Multi-Agent Workflow
-
-```haskell
-{-# LANGUAGE OverloadedStrings #-}
-import Langchain.Graph.StateGraph
-import Langchain.Prelude
-
--- Pure state with a list-append reducer
-data AgentState = AgentState { messages :: [Message], loopCount :: Int }
-
--- Build the graph using pure combinators
-workflow :: StateGraph AgentState IO
-workflow =
-  addEdge "reviewer" "planner"          -- cyclic feedback loop!
-    $ addConditionalEdge "executor"
-        (\s -> pure $ if done s then Right endNodeId else Right "reviewer")
-    $ addEdge "planner" "executor"
-    $ addEdge startNodeId "planner"
-    $ addNode "reviewer" (Node reviewerNode replaceFieldReducer)
-    $ addNode "executor" (Node executorNode replaceFieldReducer)
-    $ addNode "planner"  (Node plannerNode  replaceFieldReducer)
-    $ emptyStateGraph
-
-main :: IO ()
-main = do
-  checkpointer <- newMemoryCheckpointer
-  case compileGraph workflow of
-    Left err -> print err
-    Right compiled -> do
-      result <- runGraph compiled initialState (Just checkpointer)
-      print result
-```
-*Run:* `stack --stack-yaml examples/stack.yaml run stategraphollama` or `stack --stack-yaml examples/stack.yaml run stategraphopenai`
-
----
-
-### 4. Model Context Protocol (MCP) Tools Integration
-
-Connect Haskell agents to any external MCP server (e.g., Hackage doc search, SQLite, Filesystem, GitHub) over stdio:
-
-```haskell
-{-# LANGUAGE OverloadedStrings #-}
-import Langchain.Prelude
-import Langchain.MCP.Client
-
-main :: IO ()
-main = do
-  -- Connect to any MCP server via stdio JSON-RPC 2.0
-  client <- newStdioMcpClient "hackage-doc" "docker" ["run", "-i", "--rm", "mcp/hackage-doc"]
-  
-  -- Discover available tools from server
-  mcpTools <- listMcpTools client
-  let nativeTools = map (mcpToolToLangchainTool client) mcpTools
-  
-  -- Bind tools to your ReAct or Plan-and-Execute Agent
-  let agent = defaultReActAgent model nativeTools
-  res <- runExceptT $ runReActAgent agent [userMessage "Search Hoogle for the signature of 'traverse'"]
-  case res of
-    Left err  -> putStrLn ("Error: " ++ show err)
-    Right ans -> putStrLn ("Answer:\n" ++ T.unpack (extractMessageText ans))
-```
-*Run:* `stack --stack-yaml examples/stack.yaml run mcpollama` or `stack --stack-yaml examples/stack.yaml run mcpopenai`
-
----
-
-### 5. Tool Suite & Tiered Security
-
-Build resilient agents with Haskell-idiomatic tools designed specifically for LLMs:
-
-```haskell
-{-# LANGUAGE OverloadedStrings #-}
-import Langchain.Prelude
-import Langchain.Tool.FileSystem
-import Langchain.Tool.Process
-import Langchain.Tool.Security
-
-main :: IO ()
-main = do
-  -- 1. Configure strict workspace sandbox security policy with approval hook
-  let policy = (workspaceSandboxPolicy "/path/to/project")
-        { policyApprovalHook = Just $ \req -> do
-            putStrLn $ "HITL: Authorize " ++ show (approvalToolName req) ++ "? [y/n]"
-            resp <- getLine
-            pure $ if resp == "y" then Approved else Denied "User denied execution"
-        }
-
-  -- 2. Instantiate filesystem toolkit with automated read-before-edit and undo checkpoints
-  fsTools <- newFileSystemSuite policy
-
-  -- 3. Instantiate managed process runner (timeouts, log tailing, backgrounding)
-  procTools <- newProcessSuite policy
-
-  -- 4. Equip agent with full toolkit
-  let allTools = fsTools ++ procTools
-      agent = defaultReActAgent model allTools
-
-  res <- runExceptT $ runReActAgent agent
-    [ userMessage "Search for TODO comments in Haskell files and list their lines" ]
-  print res
+    Left err  -> T.putStrLn $ errorMessage err
+    Right msg -> T.putStrLn $ extractMessageText msg
 ```
 
-## Installation
+### Output
 
-`langchain-hs` is modular. Install the core framework and only the provider packages you need:
+```text
+[ReAct Iteration 1]
+Thought: I should read the contents of /tmp/server_status.txt to check the current health status.
+Action: read_file {"path": "/tmp/server_status.txt"}
+Observation: Service: api-gateway, Status: Degraded, Latency: 420ms
 
-### Stack
-Add to your `stack.yaml`:
-```yaml
-extra-deps:
-  - langchain-hs-core-0.0.6.0
-  - langchain-hs-graph-0.0.6.0
-  - langchain-hs-0.0.6.0
-  # Add providers as needed:
-  - langchain-hs-ollama-0.0.6.0
-  - langchain-hs-openai-0.0.6.0
-  - langchain-hs-gemini-0.0.6.0
-  - langchain-hs-mcp-0.0.6.0
-```
-Then in your `.cabal` or `package.yaml`:
-```yaml
-dependencies:
-  - langchain-hs        # Umbrella package: re-exports langchain-hs-core and langchain-hs-graph
-  # Or depend on granular packages:
-  - langchain-hs-core   # Foundational core framework (models, runnables, tools, agents, vector stores, memory)
-  - langchain-hs-graph  # StateGraph cyclic orchestration engine
-  # Add only the providers/clients you use:
-  - langchain-hs-ollama # Ollama provider
-  - langchain-hs-openai # OpenAI & OpenAI-compatible provider
-  - langchain-hs-gemini # Google Gemini provider
-  - langchain-hs-mcp    # Model Context Protocol client
-```
+[ReAct Iteration 2]
+Thought: The file has been read. The api-gateway service is in a degraded state with elevated latency. I will now summarize this for the user.
 
-### Cabal
-```bash
-cabal install langchain-hs langchain-hs-ollama langchain-hs-openai
+Final Answer:
+The api-gateway service is currently experiencing degraded health with high latency (420ms). Immediate investigation of the gateway service is recommended.
 ```
 
 ---
 
-## Development & Quality Commands
+## Documentation & Resources
 
-The repository enforces strict code quality and formatting via `make`:
+- **Hackage Package:** [https://hackage.haskell.org/package/langchain-hs](https://hackage.haskell.org/package/langchain-hs)
+- **Documentation Website:** [https://tusharad.github.io/langchain-hs/](https://tusharad.github.io/langchain-hs/)
+- **Whitepaper:** [whitepaper.md](whitepaper.md) (Effect polymorphism, categorical design, state graphs)
+- **Examples Directory:** [`examples/`](examples/)
+
+---
+
+## Development & Testing
 
 ```bash
-# Build the entire monorepo and all 39 example executables
+# Build project
 stack build
 
-# Run unit and property-based test suites
+# Run test suite
 stack test
 
-# Run HLint across all source trees (zero hints policy)
+# Code quality checks
 make lint
-
-# Check code formatting with Fourmolu
 make format-check
-
-# Format all files in-place
-make format
-
-# Build the documentation website (Hakyll)
-make site-build
-
-# Run live documentation server with auto-reload (port 8000)
-make site-watch
-```
-
----
-
-## Documentation & Research
-
-| Resource | Description |
-|:---|:---|
-| **[Hackage Docs](https://hackage.haskell.org/package/langchain-hs)** | Full Haddock API reference for all exported modules |
-| **[Whitepaper](whitepaper.md)** | Deep technical dive: category theory foundations, algebraic laws, effect-polymorphic design, and advanced multi-agent patterns |
-| **[Documentation Website](site/)** | Hakyll site with 19 component pages, live provider toggle, and instant search (`Cmd+K`) |
-| **[Examples](examples/)** | 39 runnable executables covering every component for Ollama and OpenAI |
-
-To build the Haddock API docs locally:
-```bash
-make docs
-# Opens in .stack-work/install/.../doc/index.html
 ```
 
 ---

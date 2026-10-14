@@ -21,7 +21,7 @@ Exponential backoff, jittered retries, fallback models, and circuit breaker patt
 Compare local execution via **Ollama** and cloud API execution via **OpenAI / OpenRouter**. Use the toggle tabs or the global provider switcher in the header to switch:
 
 ::: {.provider-group}
-::: {.provider-panel data-provider="ollama" data-label="🦙 Ollama (Local)" data-exe="stack run resilienceollama"}
+::: {.provider-panel data-provider="ollama" data-label="Ollama (Local)" data-exe="stack run resilienceollama"}
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -78,7 +78,7 @@ printItems = mapM_ (\item -> T.putStrLn $ "- " <> item)
 ```
 :::
 
-::: {.provider-panel data-provider="openai" data-label="⚡ OpenAI / OpenRouter" data-exe="stack run resilienceopenai"}
+::: {.provider-panel data-provider="openai" data-label="OpenAI / OpenRouter" data-exe="stack run resilienceopenai"}
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
 

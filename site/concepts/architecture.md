@@ -1,6 +1,6 @@
 ---
 title: Architecture & Purity
-description: The 3-tier monorepo architecture, effect polymorphism, and zero-unsafePerformIO guarantee.
+description: The 3-tier monorepo architecture, effect polymorphism, and pure functional guarantees.
 category: Core Concepts
 ---
 
@@ -38,7 +38,7 @@ category: Core Concepts
 
 ---
 
-## 1. Zero `unsafePerformIO` Guarantee
+## 1. Pure Functional Effect Management
 
 In many imperative AI frameworks, state mutation, network I/O, and tool executions are side-effecting operations scattered throughout code. In `langchain-hs`:
 

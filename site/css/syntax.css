@@ -1,51 +1,74 @@
 /* ==========================================================================
-   Syntax Highlighting Theme (Skylighting / Pandoc)
+   Syntax Highlighting Theme (Pandoc / Skylighting)
+   Optimized for "Blue Eclipse" Palette
    ========================================================================== */
 
 /* Dark Mode Syntax (Default) */
 pre code.sourceCode {
-  color: #f1f5f9;
+  color: #f1f2fa;
 }
 
 code span.al { color: #f87171; font-weight: bold; } /* Alert */
-code span.an { color: #94a3b8; font-style: italic; } /* Annotation */
-code span.at { color: #38bdf8; } /* Attribute */
-code span.bn { color: #f59e0b; } /* BaseN */
+code span.an { color: #8686ac; font-style: italic; } /* Annotation */
+code span.at { color: #93c5fd; } /* Attribute */
+code span.bn { color: #fbbf24; } /* BaseN */
 code span.cf { color: #c084fc; font-weight: bold; } /* ControlFlow (if, then, case, do) */
-code span.ch { color: #34d399; } /* Char */
-code span.cn { color: #fbbf24; } /* Constant */
-code span.co { color: #64748b; font-style: italic; } /* Comment */
-code span.cv { color: #94a3b8; font-style: italic; } /* CommentVar */
-code span.do { color: #64748b; font-style: italic; } /* Documentation */
-code span.dt { color: #67e8f9; } /* DataType / Type (Text, IO, StateGraph) */
+code span.ch { color: #6ee7b7; } /* Char */
+code span.cn { color: #fcd34d; } /* Constant */
+code span.co { color: #8686ac; font-style: italic; } /* Comment */
+code span.cv { color: #8686ac; font-style: italic; } /* CommentVar */
+code span.do { color: #8686ac; font-style: italic; } /* Documentation */
+code span.dt { color: #93c5fd; font-weight: 500; } /* DataType / Type (Text, IO, StateGraph) */
 code span.dv { color: #fbbf24; } /* DecVal / Numbers */
 code span.er { color: #ef4444; text-decoration: underline; } /* Error */
-code span.ex { color: #818cf8; } /* Extension */
+code span.ex { color: #a5b4fc; } /* Extension */
 code span.fl { color: #fbbf24; } /* Float */
-code span.fu { color: #818cf8; font-weight: 500; } /* Function (runGraph, pipe, invoke) */
-code span.im { color: #a78bfa; } /* Import */
-code span.in { color: #94a3b8; font-style: italic; } /* Information */
+code span.fu { color: #a5b4fc; font-weight: 500; } /* Function (runGraph, pipe, invoke) */
+code span.im { color: #c084fc; } /* Import */
+code span.in { color: #8686ac; font-style: italic; } /* Information */
 code span.kw { color: #f472b6; font-weight: bold; } /* Keyword (data, type, class, instance, let, in) */
-code span.op { color: #38bdf8; } /* Operator (|>>, &>&, >>>#, <>) */
-code span.ot { color: #60a5fa; } /* Other */
-code span.pp { color: #a78bfa; } /* Preprocessor */
-code span.sc { color: #34d399; } /* SpecialChar */
-code span.ss { color: #34d399; } /* SpecialString */
-code span.st { color: #34d399; } /* String */
-code span.va { color: #e2e8f0; } /* Variable */
-code span.vs { color: #34d399; } /* VerbatimString */
+code span.op { color: #67e8f9; } /* Operator (|>>, &>&, >>>#, <>) */
+code span.ot { color: #93c5fd; } /* Other */
+code span.pp { color: #c084fc; } /* Preprocessor */
+code span.sc { color: #6ee7b7; } /* SpecialChar */
+code span.ss { color: #6ee7b7; } /* SpecialString */
+code span.st { color: #6ee7b7; } /* String */
+code span.va { color: #f1f2fa; } /* Variable */
+code span.vs { color: #6ee7b7; } /* VerbatimString */
 code span.wa { color: #f59e0b; font-weight: bold; } /* Warning */
 
-/* Light Mode Syntax */
+/* ==========================================================================
+   Light Mode Syntax - High Contrast on Soft Light Slate Background (#F4F6FC)
+   ========================================================================== */
 [data-theme="light"] pre code.sourceCode {
-  color: #0f172a;
+  color: #0f0e47 !important;
 }
-[data-theme="light"] code span.cf { color: #7c3aed; font-weight: bold; }
-[data-theme="light"] code span.co { color: #64748b; font-style: italic; }
-[data-theme="light"] code span.dt { color: #0284c7; font-weight: 500; }
-[data-theme="light"] code span.dv { color: #d97706; }
-[data-theme="light"] code span.fu { color: #4338ca; font-weight: 500; }
-[data-theme="light"] code span.kw { color: #db2777; font-weight: bold; }
-[data-theme="light"] code span.op { color: #0284c7; }
-[data-theme="light"] code span.st { color: #059669; }
-[data-theme="light"] code span.va { color: #1e293b; }
+
+[data-theme="light"] code span.al { color: #dc2626; font-weight: bold; }
+[data-theme="light"] code span.an { color: #505081; font-style: italic; }
+[data-theme="light"] code span.at { color: #1d4ed8; }
+[data-theme="light"] code span.bn { color: #b45309; }
+[data-theme="light"] code span.cf { color: #6b21a8; font-weight: bold; } /* purple bold */
+[data-theme="light"] code span.ch { color: #047857; }
+[data-theme="light"] code span.cn { color: #b45309; font-weight: 600; }
+[data-theme="light"] code span.co { color: #505081; font-style: italic; } /* slate comment */
+[data-theme="light"] code span.cv { color: #505081; font-style: italic; }
+[data-theme="light"] code span.do { color: #505081; font-style: italic; }
+[data-theme="light"] code span.dt { color: #1e40af; font-weight: 600; } /* royal blue */
+[data-theme="light"] code span.dv { color: #b45309; } /* amber */
+[data-theme="light"] code span.er { color: #b91c1c; text-decoration: underline; }
+[data-theme="light"] code span.ex { color: #4338ca; }
+[data-theme="light"] code span.fl { color: #b45309; }
+[data-theme="light"] code span.fu { color: #272757; font-weight: 600; } /* deep indigo function */
+[data-theme="light"] code span.im { color: #6b21a8; font-weight: 500; }
+[data-theme="light"] code span.in { color: #505081; font-style: italic; }
+[data-theme="light"] code span.kw { color: #9d174d; font-weight: bold; } /* deep pink keyword */
+[data-theme="light"] code span.op { color: #0369a1; font-weight: 500; } /* cyan blue operator */
+[data-theme="light"] code span.ot { color: #1e40af; }
+[data-theme="light"] code span.pp { color: #6b21a8; }
+[data-theme="light"] code span.sc { color: #047857; }
+[data-theme="light"] code span.ss { color: #047857; }
+[data-theme="light"] code span.st { color: #065f46; font-weight: 500; } /* forest green string */
+[data-theme="light"] code span.va { color: #0f0e47; } /* deep navy variable */
+[data-theme="light"] code span.vs { color: #065f46; }
+[data-theme="light"] code span.wa { color: #b45309; font-weight: bold; }

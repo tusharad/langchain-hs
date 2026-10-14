@@ -21,7 +21,7 @@ Real-time token streaming and incremental response processing with streamChat.
 Compare local execution via **Ollama** and cloud API execution via **OpenAI / OpenRouter**. Use the toggle tabs or the global provider switcher in the header to switch:
 
 ::: {.provider-group}
-::: {.provider-panel data-provider="ollama" data-label="🦙 Ollama (Local)" data-exe="stack run streamollama"}
+::: {.provider-panel data-provider="ollama" data-label="Ollama (Local)" data-exe="stack run streamollama"}
 ```haskell
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -54,7 +54,7 @@ runApp = do
 ```
 :::
 
-::: {.provider-panel data-provider="openai" data-label="⚡ OpenAI / OpenRouter" data-exe="stack run streamopenai"}
+::: {.provider-panel data-provider="openai" data-label="OpenAI / OpenRouter" data-exe="stack run streamopenai"}
 ```haskell
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -86,7 +86,7 @@ runApp = do
         hFlush stdout
       _ -> pure ()
 ```
-::: {.provider-panel data-provider="gemini" data-label="✨ Google Gemini" data-exe="cabal run streamgemini"}
+::: {.provider-panel data-provider="gemini" data-label="Google Gemini" data-exe="cabal run streamgemini"}
 ```haskell
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}

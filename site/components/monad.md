@@ -21,7 +21,7 @@ The LangchainT monad transformer providing unified environment configuration and
 Compare local execution via **Ollama** and cloud API execution via **OpenAI / OpenRouter**. Use the toggle tabs or the global provider switcher in the header to switch:
 
 ::: {.provider-group}
-::: {.provider-panel data-provider="ollama" data-label="🦙 Ollama (Local)" data-exe="stack run monadollama"}
+::: {.provider-panel data-provider="ollama" data-label="Ollama (Local)" data-exe="stack run monadollama"}
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -47,7 +47,7 @@ runApp = do
 ```
 :::
 
-::: {.provider-panel data-provider="openai" data-label="⚡ OpenAI / OpenRouter" data-exe="stack run monadopenai"}
+::: {.provider-panel data-provider="openai" data-label="OpenAI / OpenRouter" data-exe="stack run monadopenai"}
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
 
