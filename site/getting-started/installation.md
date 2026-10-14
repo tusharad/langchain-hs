@@ -21,7 +21,7 @@ category: Getting Started
 |---|---|---|
 | `langchain-hs` | Core Framework | Agents (`ReAct`, `PlanAndExecute`), Chains, Vector Stores, Observability |
 | `langchain-hs-core` | Pure AST & Types | Pure ASTs (`RunnableTree`), `ChatModel`, `Tool` |
-| `langchain-hs-graph` | Graph & Multi-Agent | `StateGraph`, Checkpointing, Time-Travel, Parallel Nodes |
+| `langchain-hs-graph` | State Graphs | `StateGraph`, Sub-Graphs, Checkpointing, Time-Travel, HITL |
 | `langchain-hs-ollama` | Ollama Provider | Local/offline inference via Ollama |
 | `langchain-hs-openai` | OpenAI Provider | OpenAI & OpenAI-compatible endpoints (OpenRouter, Fireworks) |
 | `langchain-hs-gemini` | Gemini Provider | Google Gemini API (Interactions v1 OpenAPI spec), embeddings & SSE streaming |

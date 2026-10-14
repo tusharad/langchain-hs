@@ -1,32 +1,47 @@
 # Changelog for `langchain-hs`
 
-## 0.0.6.0 - 2026-10-02
+## 0.0.6.0 - 2026-10-15
 
-### Modular Provider Decoupling & Lightweight Core
+### Highlights
 
-- **Modular Provider Split**:
-  - `langchain-hs` is now completely lightweight. All concrete AI provider integrations (`Ollama`, `OpenAI`, `Gemini`) and protocol clients (`MCP`) have been decoupled into standalone sub-packages.
-  - **`langchain-hs-ollama` (0.0.6.0)**: Dedicated Ollama chat model and embeddings integration via `ollama-haskell`.
-  - **`langchain-hs-openai` (0.0.6.0)**: Dedicated OpenAI & OpenAI-compatible provider (OpenRouter, Together, Fireworks), streaming, structured outputs, and embeddings integration via `openai`.
-  - **`langchain-hs-gemini` (0.0.6.0)**: Dedicated Google Gemini provider with function calling and SSE streaming.
-  - **`langchain-hs-core` (0.0.6.0)**: Foundational framework containing models, runnables, tools, agents (`ReAct`, `PlanAndExecute`), output parsers, vector stores (`InMemory`), retrievers (`BM25`, `Hybrid`), chains (`RetrievalQA`), memory, resilience (`CircuitBreaker`, `Retry`), observability (`OpenTelemetry`, `InMemoryLogger`), and canonical `Langchain.Prelude`.
-  - **`langchain-hs` (0.0.6.0)**: Umbrella package re-exporting `langchain-hs-core` and `langchain-hs-graph` via Cabal `reexported-modules`.
-- **Cleaned Dependencies & Build Plans**:
-  - Completely removed direct dependencies on `ollama-haskell`, `openai`, `servant`, `req` from `langchain-hs`.
-  - Decoupled `withStructuredOutput` in `langchain-hs-openai` using `Langchain.OutputParser.Structured` directly, eliminating any transitive dependency on `ollama-haskell`.
-  - Purged obsolete extra-deps across all Stack and LTS configurations (`pdf-toolbox-document`, `pdf-toolbox-core`, `pdf-toolbox-content`, `cryptohash`, `cryptonite`, `ginger`).
-- **Independent Package Testing**:
-  - Every sub-package now has its own isolated `stack.yaml` and test suite that builds and executes independently.
-  - Verified across GHC 9.4 through GHC 9.12 (LTS 21.25, 22.44, 23.28, 24.12, 24.56, Nightly).
+- **Complete Modular Provider Architecture**:
+  All concrete AI providers and protocol clients are now decoupled into standalone Hackage packages:
+  - `langchain-hs-core` (0.0.6.0): Core abstractions, runnables, tools, agents, vector stores, memory, output parsers, and resilience.
+  - `langchain-hs-graph` (0.0.6.0): Production StateGraph engine with state reducers, checkpointing, and time-travel replay.
+  - `langchain-hs-ollama` (0.0.6.0): Ollama chat model and embeddings provider.
+  - `langchain-hs-openai` (0.0.6.0): OpenAI, OpenRouter, and OpenAI-compatible provider with structured output and streaming.
+  - `langchain-hs-gemini` (0.0.6.0): Google Gemini provider with function calling and SSE streaming.
+  - `langchain-hs-mcp` (0.0.6.0): Model Context Protocol (MCP) client over stdio and HTTP JSON-RPC 2.0.
+  - `langchain-hs` (0.0.6.0): Umbrella package re-exporting `langchain-hs-core` and `langchain-hs-graph`.
+
+### StateGraph Productionization (`langchain-hs-graph`)
+
+- Replaced prototype modules with robust execution combinators: `runGraph`, `runGraphWithConfig`, `runGraphInterleaved`, and `streamGraphSteps`.
+- Added `runnableNode` and `chatModelNode` combinators to lift arbitrary `Runnable` and `ChatModel` instances into graph nodes.
+- Full support for recursion limits, step-by-step transition logging, checkpointing, and human-in-the-loop interruption.
+
+### Memory Hardening (`langchain-hs-core`)
+
+- **`InVariableMemory`**: Thread-safe STM-backed transactional memory with snapshotting, resets, and clear semantics.
+- **`SessionMemory`**: Multi-session conversation manager supporting per-session state isolation, active session tracking, and TTL-based pruning.
+- **`FileMemory`**: Persistent file-backed conversation memory with atomic disk writes and metadata preservation across process restarts.
+
+### Output Parsers & Document Loaders
+
+- Trimmed fragile character-scanning parsers (`NumberSeparatedList`) and redundant wrapper types (`JSONOutputStructure`) in favor of type-safe `StructuredOutput` and `TextOutputParser`.
+- Hardened boolean output parser to exact normalized token recognition.
+- Eliminated lazy I/O file handle leaks in `FileLoader` and `DirectoryLoader` with strict text I/O.
+- Added `splitDocuments` preserving document metadata across chunk splits, and provided default `loadAndSplit` implementation in `BaseLoader`.
 
 ### Breaking Changes from 0.0.5.0
 
-- Provider modules are no longer re-exported from `langchain-hs`:
-  - For Ollama: Add `langchain-hs-ollama` to dependencies and `import Langchain.Provider.Ollama` / `import Langchain.Embeddings.Ollama`.
-  - For OpenAI: Add `langchain-hs-openai` to dependencies and `import Langchain.Provider.OpenAI` / `import Langchain.Embeddings.OpenAI`.
+- Provider modules are no longer bundled in `langchain-hs`:
+  - For Ollama: Add `langchain-hs-ollama` to dependencies and `import Langchain.Provider.Ollama`.
+  - For OpenAI: Add `langchain-hs-openai` to dependencies and `import Langchain.Provider.OpenAI`.
   - For Gemini: Add `langchain-hs-gemini` to dependencies and `import Langchain.Provider.Gemini`.
   - For MCP: Add `langchain-hs-mcp` to dependencies and `import Langchain.MCP.Client`.
 - `Langchain.Prelude` no longer re-exports provider-specific constructors (`newOllama`, `newOpenAI`, `newGemini`, `newStdioMcpClient`). Import the corresponding provider package.
+- `JSONOutputStructure` and `NumberSeparatedList` have been removed from `Langchain.OutputParser.Core` and `Langchain.Prelude`. Use `StructuredOutput` or `TextOutputParser`.
 
 ## 0.0.5.0 - 2026-09-10
 
