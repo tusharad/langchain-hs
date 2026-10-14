@@ -2,14 +2,11 @@
 
 module Test.Langchain.Tool.SecuritySpec (tests) where
 
-import Control.Monad.IO.Class (liftIO)
-import Data.Aeson (object, (.=))
-import Data.Text (Text)
+import Data.Aeson (object)
 import qualified Data.Text as T
 import Langchain.Tool (createTool, toolExecute)
 import Langchain.Tool.Security
-  ( SecurityPolicy (..)
-  , ToolTier (..)
+  ( ToolTier (..)
   , defaultSecurityPolicy
   , readOnlySecurityPolicy
   , validateCommandSafety

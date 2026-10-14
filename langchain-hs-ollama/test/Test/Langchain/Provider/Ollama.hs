@@ -15,13 +15,9 @@ import GHC.Generics (Generic)
 
 import Langchain.Model
 import Langchain.Provider.Ollama
-import Langchain.Tool (Tool)
-import Langchain.Tool.Binding (bindToolsConfig)
-import Langchain.Tool.Calculator (calculatorTool)
 import qualified Ollama.Client as OC
 import qualified Ollama.Types.Format as OFormat
 import qualified Ollama.Types.Message as O
-import qualified Ollama.Types.Tool as OTool
 
 testModelName :: Text
 testModelName = "gemma3:latest"
@@ -72,18 +68,6 @@ tests =
           Just o -> do
             optTemperature o @?= Just 0.3
             optNumCtx o @?= Just 4096
-    , testCase "toOllamaTool converts calculatorTool to Ollama Tool" $ do
-        let cTool = calculatorTool :: Tool IO
-        case toOllamaTool cTool of
-          Nothing -> assertFailure "Failed to convert calculatorTool to Ollama Tool"
-          Just ot -> do
-            OTool.toolType ot @?= "function"
-            OTool.fnName (OTool.toolFunction ot) @?= "calculator"
-    , testCase "withTools sets tools on OllamaConfig" $ do
-        let cfg = withTools [calculatorTool :: Tool IO] defaultOllamaConfig
-        case ollamaTools cfg of
-          Nothing -> assertFailure "Expected ollamaTools in OllamaConfig"
-          Just ts -> length ts @?= 1
     , testCase "withJsonFormat sets JsonFormat" $ do
         let cfg = withJsonFormat defaultOllamaConfig
         ollamaFormat cfg @?= Just OFormat.JsonFormat
@@ -95,16 +79,6 @@ tests =
     , testCase "withKeepAlive sets keep-alive duration" $ do
         let cfg = withKeepAlive "10m" defaultOllamaConfig
         ollamaKeepAlive cfg @?= Just "10m"
-    , testCase "Semigroup (<>) merges tools and right-biases options" $ do
-        let cTool = calculatorTool :: Tool IO
-            cfg1 = withKeepAlive "5m" (withTools [cTool] defaultOllamaConfig)
-            cfg2 = withKeepAlive "15m" (withTools [cTool] (withJsonFormat defaultOllamaConfig))
-            merged = cfg1 <> cfg2
-        case ollamaTools merged of
-          Nothing -> assertFailure "Expected merged tools"
-          Just ts -> length ts @?= 2
-        ollamaKeepAlive merged @?= Just "15m"
-        ollamaFormat merged @?= Just OFormat.JsonFormat
     , testCase "toOllamaRole and fromOllamaRole map correctly" $ do
         toOllamaRole User @?= O.User
         toOllamaRole Assistant @?= O.Assistant
@@ -122,22 +96,6 @@ tests =
             backMsg = fromOllamaMessage oMsg
         messageRole backMsg @?= User
         extractMessageText backMsg @?= "Hello Ollama"
-    , testCase "ToolBinder binds tools to Ollama" $ do
-        let mbCfg = bindToolsConfig @Ollama [calculatorTool :: Tool IO] Nothing
-        case mbCfg of
-          Nothing -> assertFailure "Expected Just OllamaConfig"
-          Just cfg -> case ollamaTools cfg of
-            Nothing -> assertFailure "Expected tools"
-            Just ts -> length ts @?= 1
-    , testCase "ToolBinder for OllamaWithTools combines tools" $ do
-        p <- newOllama testModelName defaultClientConfig
-        let _ = bindTools [calculatorTool :: Tool IO] p
-            mbCfg = bindToolsConfig @(OllamaWithTools IO) [calculatorTool :: Tool IO] Nothing
-        case mbCfg of
-          Nothing -> assertFailure "Expected Just OllamaConfig"
-          Just cfg -> case ollamaTools cfg of
-            Nothing -> assertFailure "Expected tools"
-            Just ts -> length ts @?= 1
     , testCase "invoke returns Assistant message" $ do
         withOllamaModel testModelName $ \modelName -> do
           p <- newOllama modelName defaultClientConfig

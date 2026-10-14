@@ -44,19 +44,16 @@ import Control.Concurrent.STM
   , writeTVar
   )
 import Control.Exception (SomeException, try)
-import Control.Monad (unless)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Aeson (FromJSON (..), Key, Object, ToJSON (..), Value (..), object, (.:?), (.=))
 import Data.Aeson.Types (parseEither)
 import qualified Data.Map.Strict as Map
-import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.Text.IO as TIO
 import Data.Time.Clock (NominalDiffTime, UTCTime, diffUTCTime, getCurrentTime)
 import GHC.Generics (Generic)
 import System.Exit (ExitCode (..))
-import System.IO (hGetLine, hIsEOF)
+import System.IO (hGetLine)
 import System.Process
   ( CreateProcess (..)
   , ProcessHandle
@@ -165,7 +162,7 @@ commandRunTool ::
   ProcessManager ->
   SecurityPolicy ->
   Tool m
-commandRunTool pm@ProcessManager {..} policy =
+commandRunTool pm policy =
   withSecurity TierExecution policy $
     createTool
       "command_run"

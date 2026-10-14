@@ -40,7 +40,6 @@ module Langchain.Tool.FileSystem
 
 import Control.Concurrent.Async (mapConcurrently)
 import Control.Exception (SomeException, try)
-import Control.Monad (filterM)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Aeson (FromJSON, Key, Object, Value (..), object, (.:?), (.=))
 import Data.Aeson.Types (parseEither)
@@ -78,7 +77,6 @@ import Langchain.Tool.Checkpoint
 import Langchain.Tool.Security
   ( SecurityPolicy
   , ToolTier (..)
-  , defaultSecurityPolicy
   , validateSandboxPath
   , withSecurity
   )

@@ -2,7 +2,6 @@
 
 module Test.Langchain.Tool.FileSystem (tests) where
 
-import Control.Monad.IO.Class (liftIO)
 import Data.Aeson (object, (.=))
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -10,7 +9,7 @@ import qualified Data.Text.IO as TIO
 import Langchain.Tool (toolExecute)
 import Langchain.Tool.Checkpoint (newCheckpointRegistry, undoFileEditTool)
 import Langchain.Tool.FileSystem
-import Langchain.Tool.Security (defaultSecurityPolicy, workspaceSandboxPolicy)
+import Langchain.Tool.Security (defaultSecurityPolicy)
 import System.Directory (createDirectoryIfMissing)
 import System.FilePath ((</>))
 import System.IO.Temp (withSystemTempDirectory)
