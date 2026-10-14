@@ -6,7 +6,7 @@
 module Test.Langchain.Agent.ReAct (tests) where
 
 import Control.Monad.Except (ExceptT, runExceptT)
-import Control.Monad.IO.Class (liftIO)
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Aeson (Value (..), object, (.=))
 import Data.IORef
 import Data.Maybe (listToMaybe)
@@ -18,10 +18,18 @@ import Langchain.Agent.ReAct
 import Langchain.Error (LangchainError)
 import Langchain.Memory.Core (BaseMemory (..), newWindowBufferMemory)
 import Langchain.Model
-import Langchain.Tool (Tool)
+import Langchain.Tool (Tool, createTool)
 import Langchain.Tool.Binding (ToolBinder (..))
-import Langchain.Tool.Calculator (calculatorTool)
 import Test.Langchain.Provider.Mock (newMockModel)
+
+-- | Mock calculator tool used for testing agent step dispatching
+calculatorTool :: MonadIO m => Tool m
+calculatorTool =
+  createTool
+    "calculator"
+    "Mock calculator tool"
+    (object [])
+    (\_ -> pure $ Right "4")
 
 -- | Mock model that records the config received by invoke
 data ConfigRecordingModel = ConfigRecordingModel (IORef (Maybe Value)) T.Text

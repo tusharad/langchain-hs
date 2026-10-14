@@ -268,7 +268,24 @@ module Langchain.Prelude
   , runReActAgent
   , runReActAgentWithTrace
 
-    -- * Standard Tools
+    -- * Tool Suite & Security
+  , ToolTier (..)
+  , SecurityPolicy (..)
+  , defaultSecurityPolicy
+  , readOnlySecurityPolicy
+  , workspaceSandboxPolicy
+  , withSecurity
+  , newFileSystemSuite
+  , findFilesTool
+  , grepSearchTool
+  , readFileTool
+  , listDirTool
+  , editFileTool
+  , writeFileTool
+  , newProcessSuite
+  , commandRunTool
+  , commandStatusTool
+  , commandKillTool
   , shellTool
 
     -- * Hybrid Retrieval & BM25
@@ -319,7 +336,10 @@ import Langchain.TextSplitter.RecursiveCharacter
 import Langchain.TextSplitter.Token
 import Langchain.Tool
 import Langchain.Tool.Binding
+import Langchain.Tool.FileSystem
 import Langchain.Tool.GenericSchema
+import Langchain.Tool.Process
+import Langchain.Tool.Security
 import Langchain.Tool.Shell (shellTool)
 import Langchain.VectorStore.Core
 import Langchain.VectorStore.InMemory

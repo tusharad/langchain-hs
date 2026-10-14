@@ -33,8 +33,9 @@ import qualified Test.Langchain.TextSplitter.MarkdownSpec as MarkdownSplitterTes
 import qualified Test.Langchain.TextSplitter.RecursiveCharacterSpec as RecursiveSplitterTest
 import qualified Test.Langchain.TextSplitter.TokenSpec as TokenSplitterTest
 import qualified Test.Langchain.Tool.AdvancedToolsSpec as AdvancedToolsTest
-import qualified Test.Langchain.Tool.Calculator as CalculatorToolTest
 import qualified Test.Langchain.Tool.FileSystem as FileSystemToolTest
+import qualified Test.Langchain.Tool.ProcessSpec as ProcessToolTest
+import qualified Test.Langchain.Tool.SecuritySpec as SecurityToolTest
 import qualified Test.Langchain.Tool.Shell as ShellToolTest
 import qualified Test.Langchain.VectorStore.Core as VectorStoreTest
 
@@ -84,8 +85,9 @@ main =
           , ObservabilityTest.tests
           , CallbackTest.tests
           , TokenBufferMemoryTest.tests
-          , CalculatorToolTest.tests
           , FileSystemToolTest.tests
+          , ProcessToolTest.tests
+          , SecurityToolTest.tests
           , ShellToolTest.tests
           , GraphCompilationTest.tests
           ]

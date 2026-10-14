@@ -46,10 +46,12 @@ library
     , Langchain.Runnable
     , Langchain.Tool
     , Langchain.Tool.Binding
-    , Langchain.Tool.Calculator
+    , Langchain.Tool.Checkpoint
     , Langchain.Tool.Core
     , Langchain.Tool.FileSystem
     , Langchain.Tool.GenericSchema
+    , Langchain.Tool.Process
+    , Langchain.Tool.Security
     , Langchain.Tool.Shell
     , Langchain.Embeddings
     , Langchain.Embeddings.Core
@@ -146,8 +148,9 @@ test-suite langchain-hs-test
       Test.Langchain.TextSplitter.RecursiveCharacterSpec
       Test.Langchain.TextSplitter.TokenSpec
       Test.Langchain.Tool.AdvancedToolsSpec
-      Test.Langchain.Tool.Calculator
       Test.Langchain.Tool.FileSystem
+      Test.Langchain.Tool.ProcessSpec
+      Test.Langchain.Tool.SecuritySpec
       Test.Langchain.Tool.Shell
       Test.Langchain.VectorStore.Core
       Paths_langchain_hs

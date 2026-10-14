@@ -51,7 +51,6 @@ import qualified Data.Text.Lazy as TL
 
 import Langchain.Prelude
 import Langchain.Provider.Ollama
-import Langchain.Tool.Calculator (calculatorTool)
 
 -- ---------------------------------------------------------------------------
 -- Domain Knowledge Base (Mock Documents for Retrieval)
@@ -86,8 +85,14 @@ runApp = do
   -- 2. Component 1: BM25 Knowledge Retriever (implements Runnable)
   let bm25 = newBM25Index knowledgeDocs
 
-  -- 3. Component 2: Calculator Tool (implements Runnable Value -> Text)
-  let calcTool = calculatorTool :: Tool (ExceptT LangchainError IO)
+  -- 3. Component 2: Sizing Tool (implements Runnable Value -> Text)
+  let calcTool =
+        createTool
+          "sizing_calculator"
+          "Calculate optimal buffer size"
+          (object [])
+          (\_ -> pure (Right "200")) ::
+          Tool (ExceptT LangchainError IO)
 
   -- 4. Component 3: PromptTemplate (implements Runnable Map Text Text -> Text)
   let ragTemplate =

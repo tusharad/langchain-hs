@@ -12,7 +12,6 @@ import Langchain.Memory.Core (BaseMemory (..), newWindowBufferMemory)
 import qualified Langchain.Memory.Core as TB
 import Langchain.Model
 import Langchain.Stream
-import Langchain.Tool.Calculator (calculatorTool)
 import Test.Langchain.Provider.Mock (newMockModel)
 
 tests :: TestTree
@@ -32,7 +31,7 @@ tests =
               _ -> assertFailure "Expected LLMEnd as last event in stream"
     , testCase "regression_react_agent_plain_response: Completes immediately when no tool calls" $ do
         let mockModel = newMockModel "Direct Answer without tool calls"
-            agent = defaultReActAgent mockModel [calculatorTool]
+            agent = defaultReActAgent mockModel []
         res <- runExceptT $ runReActAgent agent [userMessage "What is the capital of France?"]
         case res of
           Left err -> assertFailure ("ReAct agent failed: " ++ show err)
