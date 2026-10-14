@@ -83,6 +83,9 @@ library
     , Langchain.Memory
     , Langchain.Memory.Core
     , Langchain.Memory.Summary
+    , Langchain.Memory.Session
+    , Langchain.Memory.Entity
+    , Langchain.Memory.Combined
     , Langchain.Cache
     , Langchain.Cache.Core
     , Langchain.OutputParser
