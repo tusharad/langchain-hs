@@ -26,7 +26,7 @@ import qualified Data.Text as T
 
 import Langchain.Error (LangchainError (..), agentError, errorMessage)
 import Langchain.Graph.Checkpointer (Checkpointer (..))
-import Langchain.Graph.StateGraph (Node (..), NodeId, StateGraph, runGraph)
+import Langchain.Graph.StateGraph (CompiledGraph, Node (..), NodeId, runGraph)
 
 -- | Construct a special HITL Interrupt LangchainError
 hitlInterruptError :: NodeId -> LangchainError
@@ -64,14 +64,14 @@ hitlNode cp threadId name preAction =
 -- | Resume an interrupted graph execution after human modification of checkpoint state
 resumeGraph ::
   (Checkpointer cp m, FromJSON s, ToJSON s, MonadIO m, MonadError LangchainError m) =>
-  StateGraph s m ->
+  CompiledGraph s m ->
   cp ->
   Text ->
   NodeId ->
   NodeId ->
   (s -> s) ->
   m s
-resumeGraph stateGraph cp threadId checkpointNodeId resumeStartNodeId modifier = do
+resumeGraph compiledGraph cp threadId checkpointNodeId resumeStartNodeId modifier = do
   mbState <- loadCheckpoint cp threadId checkpointNodeId
   case mbState of
     Left err -> throwError err
@@ -84,4 +84,4 @@ resumeGraph stateGraph cp threadId checkpointNodeId resumeStartNodeId modifier =
     Right (Just savedState) -> do
       let modifiedState = modifier savedState
       _ <- saveCheckpoint cp threadId resumeStartNodeId modifiedState
-      runGraph stateGraph resumeStartNodeId modifiedState
+      runGraph compiledGraph resumeStartNodeId modifiedState

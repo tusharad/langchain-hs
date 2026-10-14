@@ -32,7 +32,13 @@ import Data.Foldable (for_)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
-import Network.HTTP.Client (Manager, newManager)
+import Network.HTTP.Client
+  ( Manager
+  , ManagerSettings
+  , managerResponseTimeout
+  , newManager
+  , responseTimeoutMicro
+  )
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Network.HTTP.Simple
 import Servant.Client (ClientError, ClientM, mkClientEnv, runClientM)
@@ -51,16 +57,22 @@ data GeminiClientEnv = GeminiClientEnv
 defaultBaseUrl :: BaseUrl
 defaultBaseUrl = BaseUrl Https "generativelanguage.googleapis.com" 443 ""
 
+geminiManagerSettings :: Network.HTTP.Client.ManagerSettings
+geminiManagerSettings =
+  tlsManagerSettings
+    { managerResponseTimeout = responseTimeoutMicro (120 * 1000000)
+    }
+
 -- | Initialize a new t'GeminiClientEnv' targeting the default Gemini endpoint.
 newGeminiClientEnv :: Text -> IO GeminiClientEnv
 newGeminiClientEnv apiKey = do
-  mgr <- newManager tlsManagerSettings
+  mgr <- newManager geminiManagerSettings
   pure $ GeminiClientEnv mgr defaultBaseUrl apiKey
 
 -- | Initialize a new t'GeminiClientEnv' targeting a custom base URL.
 newGeminiClientEnvWithBaseUrl :: Text -> Text -> IO GeminiClientEnv
 newGeminiClientEnvWithBaseUrl rawUrl apiKey = do
-  mgr <- newManager tlsManagerSettings
+  mgr <- newManager geminiManagerSettings
   bUrl <- parseBaseUrl (T.unpack rawUrl)
   pure $ GeminiClientEnv mgr bUrl apiKey
 

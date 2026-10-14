@@ -104,8 +104,6 @@ library:
     - Langchain.Graph.StateGraph
     - Langchain.Graph.Checkpointer
     - Langchain.Graph.HITL
-    - Langchain.Graph.MultiAgent
-    - Langchain.Graph.Parallel
 
 tests:
   langchain-hs-test:

@@ -31,6 +31,7 @@ library
       Gemini.Common
       Gemini.RAG
       Gemini.Simple
+      Gemini.StateGraph
       Gemini.Stream
       Gemini.Tool
       Ollama.Guardrail
@@ -86,6 +87,7 @@ library
     , filepath
     , langchain-hs
     , langchain-hs-gemini
+    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -112,6 +114,7 @@ executable guardrailollama
     , filepath
     , langchain-hs
     , langchain-hs-gemini
+    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -138,6 +141,7 @@ executable guardrailopenai
     , filepath
     , langchain-hs
     , langchain-hs-gemini
+    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -218,6 +222,7 @@ executable jsonollama
     , filepath
     , langchain-hs
     , langchain-hs-gemini
+    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -244,6 +249,7 @@ executable jsonopenai
     , filepath
     , langchain-hs
     , langchain-hs-gemini
+    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -270,6 +276,7 @@ executable mcpollama
     , filepath
     , langchain-hs
     , langchain-hs-gemini
+    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -296,6 +303,7 @@ executable mcpopenai
     , filepath
     , langchain-hs
     , langchain-hs-gemini
+    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -322,6 +330,7 @@ executable memoryollama
     , filepath
     , langchain-hs
     , langchain-hs-gemini
+    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -348,6 +357,7 @@ executable memoryopenai
     , filepath
     , langchain-hs
     , langchain-hs-gemini
+    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -374,6 +384,7 @@ executable monadollama
     , filepath
     , langchain-hs
     , langchain-hs-gemini
+    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -400,6 +411,7 @@ executable monadopenai
     , filepath
     , langchain-hs
     , langchain-hs-gemini
+    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -480,6 +492,7 @@ executable observabilityollama
     , filepath
     , langchain-hs
     , langchain-hs-gemini
+    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -506,6 +519,7 @@ executable observabilityopenai
     , filepath
     , langchain-hs
     , langchain-hs-gemini
+    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -532,6 +546,7 @@ executable planandexecuteollama
     , filepath
     , langchain-hs
     , langchain-hs-gemini
+    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -558,6 +573,7 @@ executable planandexecuteopenai
     , filepath
     , langchain-hs
     , langchain-hs-gemini
+    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -584,6 +600,7 @@ executable prompttemplate
     , filepath
     , langchain-hs
     , langchain-hs-gemini
+    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -610,6 +627,7 @@ executable raggemini
     , filepath
     , langchain-hs
     , langchain-hs-gemini
+    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -636,6 +654,7 @@ executable ragollama
     , filepath
     , langchain-hs
     , langchain-hs-gemini
+    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -662,6 +681,7 @@ executable ragopenai
     , filepath
     , langchain-hs
     , langchain-hs-gemini
+    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -688,6 +708,7 @@ executable reactollama
     , filepath
     , langchain-hs
     , langchain-hs-gemini
+    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -714,6 +735,7 @@ executable reactopenai
     , filepath
     , langchain-hs
     , langchain-hs-gemini
+    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -740,6 +762,7 @@ executable resilienceollama
     , filepath
     , langchain-hs
     , langchain-hs-gemini
+    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -766,6 +789,7 @@ executable resilienceopenai
     , filepath
     , langchain-hs
     , langchain-hs-gemini
+    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -792,6 +816,7 @@ executable retrievalqaollama
     , filepath
     , langchain-hs
     , langchain-hs-gemini
+    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -818,6 +843,7 @@ executable retrievalqaopenai
     , filepath
     , langchain-hs
     , langchain-hs-gemini
+    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -844,6 +870,7 @@ executable retrieverollama
     , filepath
     , langchain-hs
     , langchain-hs-gemini
+    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -870,6 +897,7 @@ executable retrieveropenai
     , filepath
     , langchain-hs
     , langchain-hs-gemini
+    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -896,6 +924,7 @@ executable runnableollama
     , filepath
     , langchain-hs
     , langchain-hs-gemini
+    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -922,6 +951,7 @@ executable runnableopenai
     , filepath
     , langchain-hs
     , langchain-hs-gemini
+    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -948,6 +978,7 @@ executable simplegemini
     , filepath
     , langchain-hs
     , langchain-hs-gemini
+    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -974,6 +1005,7 @@ executable simpleollama
     , filepath
     , langchain-hs
     , langchain-hs-gemini
+    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -1000,6 +1032,34 @@ executable simpleopenai
     , filepath
     , langchain-hs
     , langchain-hs-gemini
+    , langchain-hs-graph
+    , langchain-hs-mcp
+    , langchain-hs-ollama
+    , langchain-hs-openai
+    , mtl
+    , resourcet
+    , text
+    , time
+  default-language: Haskell2010
+
+executable stategraphgemini
+  main-is: Main.hs
+  other-modules:
+      Paths_examples
+  hs-source-dirs:
+      app/stategraphgemini
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , conduit
+    , containers
+    , directory
+    , examples
+    , filepath
+    , langchain-hs
+    , langchain-hs-gemini
+    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -1080,6 +1140,7 @@ executable streamgemini
     , filepath
     , langchain-hs
     , langchain-hs-gemini
+    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -1106,6 +1167,7 @@ executable streamollama
     , filepath
     , langchain-hs
     , langchain-hs-gemini
+    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -1132,6 +1194,7 @@ executable streamopenai
     , filepath
     , langchain-hs
     , langchain-hs-gemini
+    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -1158,6 +1221,7 @@ executable toolgemini
     , filepath
     , langchain-hs
     , langchain-hs-gemini
+    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -1184,6 +1248,7 @@ executable toolollama
     , filepath
     , langchain-hs
     , langchain-hs-gemini
+    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -1210,6 +1275,7 @@ executable toolopenai
     , filepath
     , langchain-hs
     , langchain-hs-gemini
+    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai
@@ -1237,6 +1303,7 @@ test-suite examples-test
     , filepath
     , langchain-hs
     , langchain-hs-gemini
+    , langchain-hs-graph
     , langchain-hs-mcp
     , langchain-hs-ollama
     , langchain-hs-openai

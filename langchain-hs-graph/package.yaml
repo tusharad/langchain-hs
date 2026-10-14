@@ -1,7 +1,7 @@
 name:                langchain-hs-graph
 version:             0.0.6.0
 synopsis:            Graph-based stateful agent orchestration engine for langchain-hs
-description:         StateGraph, StateReducer, Checkpointer, HITL interrupt/resume, and Multi-Agent supervisor patterns.
+description:         StateGraph, StateReducer, Checkpointer, and HITL interrupt/resume workflow patterns.
 category:            Web, AI, Control
 author:              Tushar Adhatrao
 maintainer:          tusharadhatrao@gmail.com
@@ -21,7 +21,6 @@ tested-with:
 
 dependencies:
 - aeson >= 2.0 && < 3
-- async >= 2.2 && < 2.3
 - base >= 4.17 && < 5
 - bytestring >= 0.10 && < 0.13
 - containers >= 0.6 && < 0.9
@@ -51,8 +50,6 @@ library:
     - Langchain.Graph.StateGraph
     - Langchain.Graph.Checkpointer
     - Langchain.Graph.HITL
-    - Langchain.Graph.MultiAgent
-    - Langchain.Graph.Parallel
 
 tests:
   langchain-hs-graph-test:

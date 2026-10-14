@@ -26,6 +26,7 @@ dependencies:
 - langchain-hs-openai
 - langchain-hs-gemini
 - langchain-hs-mcp
+- langchain-hs-graph
 - text
 - aeson
 - mtl
@@ -489,6 +490,17 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - examples
+
+  stategraphgemini:
+    main:                Main.hs
+    source-dirs:         app/stategraphgemini
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+    - langchain-hs-graph
 
 
 tests:
