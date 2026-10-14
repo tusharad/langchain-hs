@@ -1,6 +1,6 @@
 # langchain-hs: A Pure Functional, Effect-Polymorphic Framework for Compositional AI Agent Orchestration
 
-**Technical White Paper — v0.0.5.0**
+**Technical White Paper — v0.0.6.0**
 
 *Tushar Adhatrao — tusharadhatrao@gmail.com*  
 *Source: [github.com/tusharad/langchain-hs](https://github.com/tusharad/langchain-hs)*  
@@ -20,7 +20,7 @@ We present **langchain-hs**, a production-grade Haskell framework for building L
 
 3. **Effect Polymorphism without `unsafePerformIO`**: The `ChatModel` typeclass and the entire pipeline interpreter are parameterized over an arbitrary monad `m` satisfying `MonadIO m` and `MonadError LangchainError m`. No implicit global state, no `unsafePerformIO`, no hidden `IORef`s. Concurrency is expressed through Software Transactional Memory (STM) and `Control.Concurrent.Async`, both composable and deadlock-detectable.
 
-The framework ships as a three-tier monorepo (`langchain-hs-core`, `langchain-hs-graph`, `langchain-hs`) supporting Ollama, OpenAI, and Google Gemini, with 20 verified components, 41 runnable examples, and complete Model Context Protocol (MCP) integration.
+The framework ships as a modular monorepo (`langchain-hs-core`, `langchain-hs-graph`, `langchain-hs`, dedicated provider packages `langchain-hs-ollama`, `langchain-hs-openai`, `langchain-hs-gemini`, and standalone `langchain-hs-mcp`), with 20 verified components, 34 runnable examples, and complete Model Context Protocol (MCP) integration.
 
 ---
 
@@ -85,33 +85,39 @@ This conflation has measurable consequences in production:
 
 ## 2. Architecture Overview
 
-langchain-hs is a three-tier monorepo. Each tier has zero circular dependencies:
+langchain-hs is organized into decoupled, modular packages so that applications remain lightweight and only depend on the providers and protocols they actually invoke:
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│  langchain-hs  (Production Integrations & Ecosystem)             │
-│  Providers: Ollama, OpenAI, Gemini                               │
-│  Agents: ReAct, Plan-and-Execute, Supervisor, Debate             │
-│  VectorStores: SQLite-vec, InMemory, PgVector, Qdrant            │
-│  MCP: stdio + HTTP JSON-RPC 2.0 client                           │
-│  Chains: RetrievalQA, MapReduce   Memory: Entity, Summary        │
-│  Resilience: CircuitBreaker, Retry, Cache                        │
-│  Observability: OpenTelemetry spans, Callbacks                   │
+│  Provider & Protocol Satellite Packages                          │
+│  langchain-hs-ollama · langchain-hs-openai                       │
+│  langchain-hs-gemini · langchain-hs-mcp                          │
 └──────────────┬───────────────────────────────┬───────────────────┘
-               │                               │
-    ┌──────────▼────────────────┐   ┌──────────▼─────────────────────┐
-    │  langchain-hs-graph       │   │  langchain-hs-core              │
-    │  StateGraph s m           │   │  RunnableTree m i o (GADT)      │
-    │  StateReducer s           │   │  ChatModel typeclass            │
-    │  MemoryCheckpointer (TVar)│──►│  StreamEvent / Conduit          │
-    │  SQLiteCheckpointer       │   │  LangchainT r m a               │
-    │  HITL Interrupts          │   │  LangchainError (sum type)      │
-    │  Time-Travel Replay       │   │  Tool / ContentBlock            │
-    │  Parallel Nodes (async)   │   │  (zero HTTP dependencies)       │
-    └───────────────────────────┘   └────────────────────────────────┘
+               │ depends directly on           │
+    ┌──────────▼───────────────────────────────▼───────────────────┐
+    │  langchain-hs-core  (Core Framework & Agentic Ecosystem)     │
+    │  Agents: ReAct, Plan-and-Execute                             │
+    │  VectorStores: InMemory           Retrievers: BM25, Hybrid   │
+    │  Chains: RetrievalQA              Memory: ConversationBuffer │
+    │  Resilience: CircuitBreaker, Retry, In-Memory Cache          │
+    │  Observability: OpenTelemetry spans, Structured Logger       │
+    │  RunnableTree m i o (Pure GADT)   ChatModel typeclass        │
+    │  StreamEvent / Conduit            LangchainT env m a         │
+    └──────────▲───────────────────────────────▲───────────────────┘
+               │ extends                       │ re-exported by
+    ┌──────────┴────────────────┐   ┌──────────┴───────────────────┐
+    │  langchain-hs-graph       │   │  langchain-hs (Umbrella)     │
+    │  StateGraph s m           │   │  Re-exports core and graph   │
+    │  StateReducer s           │   │  via Cabal reexported-modules│
+    │  MemoryCheckpointer (TVar)│   │  Batteries-included single   │
+    │  SQLiteCheckpointer       │   │  convenience package         │
+    │  HITL Interrupts          │   │                              │
+    │  Time-Travel Replay       │   │                              │
+    │  MultiAgent & Parallel    │   │                              │
+    └───────────────────────────┘   └──────────────────────────────┘
 ```
 
-`langchain-hs-core` has **zero HTTP dependencies** — it compiles without network access and is suitable for embedded or WASM targets.
+`langchain-hs-core` provides the foundational framework and agent runtime with zero concrete provider dependencies. `langchain-hs-graph` extends core with stateful cyclic workflows, and `langchain-hs` serves as the batteries-included umbrella package re-exporting both `langchain-hs-core` and `langchain-hs-graph`. Concrete AI providers and network protocol clients live in their own dedicated packages.
 
 ---
 

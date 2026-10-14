@@ -1,0 +1,171 @@
+cabal-version: 1.22
+
+-- This file has been generated from package.yaml by hpack version 0.39.6.
+--
+-- see: https://github.com/sol/hpack
+
+name:           langchain-hs
+version:        0.0.6.0
+synopsis:       Pure functional LLM agent framework and multi-agent graph engine in Haskell
+description:    Build LLM-powered applications, ReAct agents, and LangGraph-style stateful workflows
+                in Haskell. Provider-specific packages:
+                  - langchain-hs-ollama
+                  - langchain-hs-openai
+                  - langchain-hs-gemini
+                  - langchain-hs-mcp
+category:       AI
+homepage:       https://github.com/tusharad/langchain-hs#readme
+bug-reports:    https://github.com/tusharad/langchain-hs/issues
+author:         Tushar Adhatrao
+maintainer:     tusharadhatrao@gmail.com
+copyright:      2025-2026 Tushar Adhatrao
+license:        MIT
+license-file:   LICENSE
+build-type:     Simple
+tested-with:
+    GHC == 9.12.4
+  , GHC == 9.10.3
+  , GHC == 9.8.4
+extra-doc-files:
+    README.md
+    CHANGELOG.md
+
+source-repository head
+  type: git
+  location: https://github.com/tusharad/langchain-hs
+
+library
+  other-modules:
+      Paths_langchain_hs
+  reexported-modules:
+      Langchain.Error
+    , Langchain.Model
+    , Langchain.Model.Types
+    , Langchain.Monad
+    , Langchain.Stream
+    , Langchain.Runnable
+    , Langchain.Tool
+    , Langchain.Tool.Binding
+    , Langchain.Tool.Checkpoint
+    , Langchain.Tool.Core
+    , Langchain.Tool.FileSystem
+    , Langchain.Tool.GenericSchema
+    , Langchain.Tool.Process
+    , Langchain.Tool.Security
+    , Langchain.Tool.Shell
+    , Langchain.Embeddings
+    , Langchain.Embeddings.Core
+    , Langchain.DocumentLoader
+    , Langchain.DocumentLoader.Core
+    , Langchain.DocumentLoader.DirectoryLoader
+    , Langchain.DocumentLoader.FileLoader
+    , Langchain.TextSplitter.Character
+    , Langchain.TextSplitter.Code
+    , Langchain.TextSplitter.Markdown
+    , Langchain.TextSplitter.RecursiveCharacter
+    , Langchain.TextSplitter.Token
+    , Langchain.VectorStore
+    , Langchain.VectorStore.Core
+    , Langchain.VectorStore.InMemory
+    , Langchain.PromptTemplate
+    , Langchain.PromptTemplate.Prompt
+    , Langchain.PromptTemplate.String
+    , Langchain.Observability
+    , Langchain.Callback
+    , Langchain.Callback.Manager
+    , Langchain.Retriever
+    , Langchain.Retriever.Core
+    , Langchain.Retriever.BM25
+    , Langchain.Retriever.Hybrid
+    , Langchain.Resilience
+    , Langchain.Resilience.CircuitBreaker
+    , Langchain.Resilience.Retry
+    , Langchain.Memory
+    , Langchain.Memory.Core
+    , Langchain.Memory.Summary
+    , Langchain.Memory.Session
+    , Langchain.Memory.Entity
+    , Langchain.Memory.Combined
+    , Langchain.Cache
+    , Langchain.Cache.Core
+    , Langchain.OutputParser
+    , Langchain.OutputParser.Core
+    , Langchain.OutputParser.Structured
+    , Langchain.Chain
+    , Langchain.Chain.RetrievalQA
+    , Langchain.Agent
+    , Langchain.Agent.ReAct
+    , Langchain.Agent.PlanAndExecute
+    , Langchain.Guardrail
+    , Langchain.Guardrail.Core
+    , Langchain.Prelude
+    , Langchain.Graph.StateGraph
+    , Langchain.Graph.Checkpointer
+    , Langchain.Graph.HITL
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
+  build-depends:
+      base >=4.17 && <5
+    , langchain-hs-core ==0.0.6.*
+    , langchain-hs-graph ==0.0.6.*
+  default-language: Haskell2010
+
+test-suite langchain-hs-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Test.Langchain.Agent.AdvancedAgentsSpec
+      Test.Langchain.Agent.ReAct
+      Test.Langchain.Cache.CacheSpec
+      Test.Langchain.Chain.RetrievalQASpec
+      Test.Langchain.DocumentLoader.Core
+      Test.Langchain.DocumentLoader.DirectoryLoader
+      Test.Langchain.Error
+      Test.Langchain.Graph.CompilationSpec
+      Test.Langchain.Guardrail.GuardrailSpec
+      Test.Langchain.Memory.Core
+      Test.Langchain.Memory.SummarySpec
+      Test.Langchain.Memory.TokenBufferMemory
+      Test.Langchain.OutputParser.AdvancedParsersSpec
+      Test.Langchain.OutputParser.Core
+      Test.Langchain.Provider.Mock
+      Test.Langchain.RegressionSpec
+      Test.Langchain.Retriever.BM25Spec
+      Test.Langchain.TextSplitter.Character
+      Test.Langchain.TextSplitter.CodeSpec
+      Test.Langchain.TextSplitter.MarkdownSpec
+      Test.Langchain.TextSplitter.RecursiveCharacterSpec
+      Test.Langchain.TextSplitter.TokenSpec
+      Test.Langchain.Tool.AdvancedToolsSpec
+      Test.Langchain.Tool.FileSystem
+      Test.Langchain.Tool.ProcessSpec
+      Test.Langchain.Tool.SecuritySpec
+      Test.Langchain.Tool.Shell
+      Test.Langchain.VectorStore.Core
+      Paths_langchain_hs
+  hs-source-dirs:
+      test
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      QuickCheck
+    , aeson
+    , async
+    , base >=4.17 && <5
+    , bytestring
+    , conduit
+    , containers
+    , directory
+    , filepath
+    , langchain-hs
+    , langchain-hs-core ==0.0.6.*
+    , langchain-hs-graph ==0.0.6.*
+    , mtl
+    , resourcet
+    , stm
+    , tasty
+    , tasty-hunit
+    , tasty-quickcheck
+    , temporary
+    , text
+    , time
+    , vector
+  default-language: Haskell2010

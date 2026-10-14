@@ -8,19 +8,25 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 
 import Langchain.Prelude
-import Langchain.Tool.Calculator (calculatorTool)
+import Langchain.Provider.Ollama
+  ( defaultConfig
+  , defaultOllamaConfig
+  , newOllama
+  , withTools
+  )
 
 inputPrompt :: T.Text
-inputPrompt = "What is 15 * 4? Please use the calculator tool to find the answer."
+inputPrompt = "Search for Haskell files using find_files with pattern '*.hs'."
 
 runApp :: IO ()
 runApp = do
   o <- newOllama "qwen3.5:2b" defaultConfig
   let promptMsgs = [userMessage inputPrompt]
-      chatReq = withTools [calculatorTool @IO] (chatRequestFor o promptMsgs)
+      fsTool = findFilesTool @IO defaultSecurityPolicy
+      toolCfg = withTools [fsTool] defaultOllamaConfig
 
   res <- runLangchainT () $ do
-    respMsg <- invoke o promptMsgs (Just chatReq)
+    respMsg <- invoke o promptMsgs (Just toolCfg)
     case messageToolCalls respMsg of
       Nothing -> do
         liftIO $ T.putStrLn "No tool called, direct answer:"
@@ -32,7 +38,7 @@ runApp = do
         liftIO $ T.putStrLn $ "Tool called: " <> toolCallName tCall
         liftIO $ T.putStrLn $ "Arguments: " <> T.pack (show (toolCallArguments tCall))
 
-        eExec <- liftIO $ toolExecute (calculatorTool @IO) (toolCallArguments tCall)
+        eExec <- liftIO $ toolExecute fsTool (toolCallArguments tCall)
         toolResult <- case eExec of
           Left err -> pure $ "Tool execution error: " <> errorMessage err
           Right out -> pure out
@@ -44,9 +50,8 @@ runApp = do
                 { messageName = Just (toolCallName tCall)
                 }
             conversation = promptMsgs ++ [respMsg, toolMsg]
-            followUpReq = withTools [calculatorTool @IO] (chatRequestFor o conversation)
 
-        finalMsg <- invoke o conversation (Just followUpReq)
+        finalMsg <- invoke o conversation (Just toolCfg)
         liftIO $ T.putStrLn "\nFinal Assistant Answer:"
         liftIO $ T.putStrLn $ extractMessageText finalMsg
 

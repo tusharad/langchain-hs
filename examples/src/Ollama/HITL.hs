@@ -27,7 +27,6 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import GHC.Generics (Generic)
 
-import Langchain.Core.Model (extractMessageText, systemMessage, userMessage)
 import Langchain.Graph.Checkpointer
   ( newMemoryCheckpointer
   )
@@ -46,8 +45,9 @@ import Langchain.Graph.StateGraph
   , replaceFieldReducer
   , runGraph
   )
+import Langchain.Model (extractMessageText, systemMessage, userMessage)
 import Langchain.Prelude (invoke)
-import Langchain.Provider.Ollama (defaultConfig, newOllama)
+import Langchain.Provider.Ollama
 
 -- ---------------------------------------------------------------------------
 -- Shared blog post draft state

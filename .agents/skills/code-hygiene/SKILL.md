@@ -10,16 +10,10 @@ You are a Haskell code quality and engineering standards expert. Enforce strict 
 ## Use this skill when
 
 * Writing, modifying, or refactoring Haskell modules
-* Enforcing clean builds under `-Wall -Werror` or `--pedantic`
-* Eliminating compiler warnings, partial functions, and dead code
-* Running post-implementation formatting with Fourmolu and linting with HLint
-* Preparing modules for production release or CI/CD pipelines
 
 ## Do not use this skill when
 
 * Working in non-Haskell codebases
-* Running throwaway scratchpads where warning suppression is explicitly requested
-* The request is strictly for high-level documentation without code modifications
 
 ## Context
 
@@ -31,34 +25,14 @@ $ARGUMENTS
 
 ## Instructions
 
-* Write total, warning-free code by default using explicit import lists (`import Module (x, y)`) or qualified imports (`import qualified Module as M`).
-* Ensure all pattern matches are exhaustive; replace partial functions (`head`, `tail`, `fromJust`, `read`) with total alternatives (`listToMaybe`, `uncons`, explicit pattern matching, `readMaybe`).
-* Prefix intentionally unused variables with an underscore (e.g., `_conn`, `_jobId`).
-* Never suppress compiler warnings with file-level `OPTIONS_GHC` pragmas or build flags (e.g., `-Wno-unused-imports`, `-Wno-unused-matches`, `-Wno-name-shadowing`). Address the root cause directly.
-* Treat warning suppression exceptions with strict scrutiny:
-* `-Wno-orphans`: Allowed only when bridging foreign libraries where a `newtype` wrapper is structurally unviable.
-* `-Wno-partial-fields` / `-Wno-x-partial`: Allowed only when interfacing with legacy records or auto-generated code where total refactoring is impossible.
+After modifying code, before finishing always do below checks:
 
-
-* Run `fourmolu -i` across all modified `.hs` files to enforce standard formatting.
-* Run `hlint .` and apply all actionable lint recommendations.
-* Verify clean compilation via `cabal build --ghc-options="-Wall -Werror"` or `stack build --pedantic`.
-
-## Safety
-
-* Avoid adding `-Wno-*` pragmas or compiler flags to silence legitimate code smells.
-* Do not introduce non-exhaustive pattern matches or runtime exceptions to satisfy types.
-* Ensure all refactoring preserves existing public API behavior and passes all test suites.
-
-## Output Format
-
-* Summary of resolved warnings and applied code improvements
-* Status of Fourmolu formatting and HLint static analysis checks
-* Verification confirmation under `-Wall -Werror` / `--pedantic`
-* Clean, formatted Haskell code snippets or file diffs
-
-## Resources
-
-* `fourmolu` CLI for deterministic code formatting
-* `hlint` for static analysis and lint suggestions
-* GHC user guide on warning flags and totality analysis
+* Ensure the `examples` directory is building without any errors or warnings and all examples are correct as intended.
+* All packages are building without any warnings or errors.
+* The code is formatted using `make format` command.
+* No hlint warnings from `make lint`.
+* Ensure haddock documentation is building correctly without any bugs or errors.
+* Ensure `site` directory is correct as per the latest changes in the code.
+* Ensure `README.md` is updated if required as per latest changes in the code.
+* Ensure the modified change is not a simple `duck tape` or temporary solution but a real feature or upgrade.
+* Ensure after every code modification, everything aligns correctly, whether it's the documentation, examples, tests and all the apis.

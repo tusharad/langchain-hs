@@ -6,46 +6,63 @@ category: Getting Started
 
 ## Requirements
 
-- **GHC**: `9.6.x` through `9.10.x` supported (GHC 9.6.7 recommended)
+- **GHC**: `9.6.x` through `9.12.x` supported (`9.8+` recommended)
 - **Stack** (`>= 2.9`) or **Cabal** (`>= 3.8`)
 - Local LLM provider (e.g. [Ollama](https://ollama.com/)) or API keys (OpenAI, Gemini, OpenRouter)
+- Available on Hackage: [https://hackage.haskell.org/package/langchain-hs](https://hackage.haskell.org/package/langchain-hs)
 
 ---
 
 ## Adding to Your Project
 
-`langchain-hs` is structured into three composable packages. Depending on your needs, you can depend on the full umbrella package or just the pure core.
+`langchain-hs` is structured into modular, decoupled packages. Install the core framework and only the provider integrations you actually need:
 
 | Package | Purpose | Typical Use Case |
 |---|---|---|
-| `langchain-hs` | Full ecosystem | Providers, MCP, Vector Stores, Chains, Agents, Observability |
-| `langchain-hs-graph` | Graph & Multi-Agent | `StateGraph`, Checkpointing, Time-Travel, Parallel Nodes |
-| `langchain-hs-core` | Pure AST & Types | Zero-dependency pure ASTs (`RunnableTree`), `ChatModel`, `Tool` |
+| `langchain-hs` | Core Framework | Agents (`ReAct`, `PlanAndExecute`), Chains, Vector Stores, Observability |
+| `langchain-hs-core` | Pure AST & Types | Pure ASTs (`RunnableTree`), `ChatModel`, `Tool` |
+| `langchain-hs-graph` | State Graphs | `StateGraph`, Sub-Graphs, Checkpointing, Time-Travel, HITL |
+| `langchain-hs-ollama` | Ollama Provider | Local/offline inference via Ollama |
+| `langchain-hs-openai` | OpenAI Provider | OpenAI & OpenAI-compatible endpoints (OpenRouter, Fireworks) |
+| `langchain-hs-gemini` | Gemini Provider | Google Gemini API (Interactions v1 OpenAPI spec), embeddings & SSE streaming |
+| `langchain-hs-mcp` | MCP Client | Connect to Model Context Protocol servers over stdio |
+
+### Using Cabal
+
+```bash
+cabal update
+cabal install langchain-hs langchain-hs-ollama langchain-hs-openai
+```
+
+Add to your `cabal.project` or `.cabal` build-depends:
+
+```cabal
+build-depends:
+    base >= 4.14 && < 5,
+    text,
+    langchain-hs >= 0.0.6,
+    langchain-hs-ollama >= 0.0.6
+```
 
 ### Using Stack
 
-Add the packages and required extra dependencies to your `stack.yaml`:
+Add the packages to your `stack.yaml`:
 
 ```yaml
-resolver: lts-22.44 # Or nightly / lts-23+
+resolver: lts-24.56 # Or nightly / lts-23+ / lts-22+
 
 packages:
   - .
 
 extra-deps:
-  # langchain-hs packages (or from Hackage)
-  - langchain-hs-0.5.0.0
-  - langchain-hs-graph-0.5.0.0
-  - langchain-hs-core-0.2.0.0
-
-  # Upstream dependencies
-  - git: https://github.com/tusharad/ollama-haskell
-    commit: e38a92529d83303c5d05c38b73d73a278721700e
-  - git: https://github.com/MercuryTechnologies/openai
-    commit: 2031a05135b892a82b461558d19b813ab67cfb8f
-  - git: https://github.com/lbobylev/format-heavy
-    commit: 81196f86a16de8378a0ad264bf12af42c5ca7b65
-  - mcp-server-0.2.0.1
+  - langchain-hs-0.0.6.0
+  - langchain-hs-core-0.0.6.0
+  - langchain-hs-graph-0.0.6.0
+  # Add providers as needed:
+  - langchain-hs-ollama-0.0.6.0
+  - langchain-hs-openai-0.0.6.0
+  - langchain-hs-gemini-0.0.6.0
+  - langchain-hs-mcp-0.0.6.0
 ```
 
 In your `package.yaml` (or `.cabal` file):
@@ -55,17 +72,10 @@ dependencies:
   - base >= 4.14 && < 5
   - text
   - langchain-hs
-```
-
-### Using Cabal
-
-Add to your `cabal.project` or `.cabal` build-depends:
-
-```cabal
-build-depends:
-    base >= 4.14 && < 5,
-    text,
-    langchain-hs >= 0.5.0
+  # Add only what you use:
+  - langchain-hs-ollama
+  - langchain-hs-openai
+  - langchain-hs-gemini
 ```
 
 ---
@@ -80,7 +90,7 @@ build-depends:
 import Langchain.Prelude
 ```
 
-<div class="admonition tip">
-  <div class="admonition-title">💡 Pro Tip</div>
-  <code>Langchain.Prelude</code> does not conflict with Haskell's standard <code>Prelude</code>. You can safely import both without name shadowing.
+<div class="admonition">
+  <div class="admonition-title">Pro Tip</div>
+  <code>Langchain.Prelude</code> does not conflict with Haskell's standard <code>Prelude</code>. You can safely import both without name shadowing. All documentation is hosted on <a href="https://hackage.haskell.org/package/langchain-hs" target="_blank" rel="noopener noreferrer">Hackage</a>.
 </div>

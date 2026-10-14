@@ -22,16 +22,20 @@ description:         Please see the README on GitHub at <https://github.com/tush
 dependencies:
 - base >= 4.7 && < 5
 - langchain-hs
-- langchain-hs-core
+- langchain-hs-ollama
+- langchain-hs-openai
+- langchain-hs-gemini
+- langchain-hs-mcp
 - langchain-hs-graph
 - text
 - aeson
-- bytestring
 - mtl
 - conduit
 - resourcet
 - containers
 - time
+- directory
+- filepath
 
 
 ghc-options:
@@ -189,15 +193,6 @@ executables:
     dependencies:
     - examples
 
-  mapreduceollama:
-    main:                Main.hs
-    source-dirs:         app/mapreduceollama
-    ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
-    dependencies:
-    - examples
 
   resilienceollama:
     main:                Main.hs
@@ -392,15 +387,6 @@ executables:
     dependencies:
     - examples
 
-  mapreduceopenai:
-    main:                Main.hs
-    source-dirs:         app/mapreduceopenai
-    ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
-    dependencies:
-    - examples
 
   resilienceopenai:
     main:                Main.hs
@@ -457,6 +443,57 @@ executables:
   hitlopenai:
     main:                Main.hs
     source-dirs:         app/hitlopenai
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+    - langchain-hs-graph
+
+  simplegemini:
+    main:                Main.hs
+    source-dirs:         app/simplegemini
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  streamgemini:
+    main:                Main.hs
+    source-dirs:         app/streamgemini
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  toolgemini:
+    main:                Main.hs
+    source-dirs:         app/toolgemini
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  raggemini:
+    main:                Main.hs
+    source-dirs:         app/raggemini
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples
+
+  stategraphgemini:
+    main:                Main.hs
+    source-dirs:         app/stategraphgemini
     ghc-options:
     - -threaded
     - -rtsopts

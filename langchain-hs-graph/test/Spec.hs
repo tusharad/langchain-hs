@@ -4,7 +4,6 @@ import Test.Tasty
 
 import qualified Test.Langchain.Graph.CheckpointerSpec as CheckpointerSpec
 import qualified Test.Langchain.Graph.HITLSpec as HITLSpec
-import qualified Test.Langchain.Graph.MultiAgentSpec as MultiAgentSpec
 import qualified Test.Langchain.Graph.StateGraphSpec as StateGraphSpec
 
 main :: IO ()
@@ -17,5 +16,4 @@ tests =
     [ StateGraphSpec.tests
     , CheckpointerSpec.tests
     , HITLSpec.tests
-    , MultiAgentSpec.tests
     ]

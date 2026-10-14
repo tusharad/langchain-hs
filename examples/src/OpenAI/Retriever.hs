@@ -9,6 +9,7 @@ import qualified Data.Text.IO as T
 import qualified Data.Text.Lazy as TL
 import Data.Time.Clock (diffUTCTime, getCurrentTime)
 import Langchain.Prelude
+import Langchain.Provider.OpenAI (OpenAI)
 import OpenAI.Common (defaultModelName, getOpenRouterEmbeddings, getOpenRouterModel)
 
 runApp :: IO ()

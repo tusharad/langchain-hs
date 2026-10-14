@@ -1,27 +1,34 @@
 ---
-title: Tools & Function Calling
-description: Type-safe function definitions, JSON parameter schemas, and dynamic tool execution.
+title: Tools & Security System
+description: Type-safe function definitions, sandboxed filesystem tools, process management, checkpoints, and permission tiers.
 category: Components
 ---
 
 <div class="component-header-meta">
-  <span class="badge badge-primary">Langchain.Core.Tool</span> <span class="badge badge-primary">Langchain.Core.Class</span>
+  <span class="badge badge-primary">Langchain.Tool</span>
+  <span class="badge badge-primary">Langchain.Tool.FileSystem</span>
+  <span class="badge badge-primary">Langchain.Tool.Process</span>
+  <span class="badge badge-primary">Langchain.Tool.Security</span>
+  <span class="badge badge-primary">Langchain.Tool.Checkpoint</span>
 </div>
 
-Type-safe function definitions, JSON parameter schemas, and dynamic tool execution.
+Haskell-native, tools designed specifically for LLM agents. Built with memory and context-window protection, read-before-edit verification, automatic undo checkpoints, asynchronous background process management, and strict tiered security policies.
 
-## Key Concepts
+## Key Capabilities
 
-- **Typed Tool Definitions**: Define function names, descriptions, and JSON Schema parameters that models can inspect and invoke.
-- **Effect-Polymorphic Execution**: Tool execution functions operate cleanly in `IO` or custom monads with typed arguments and string results.
-- **Tool Dispatching**: Automated mapping between LLM function call responses and Haskell handlers.
+- **Tiered Permissions**: 4 distinct privilege tiers (`TierReadOnly`, `TierWorkspaceWrite`, `TierExecution`, `TierAdmin`) with configurable policies.
+- **Observational File Tools**: Concurrent recursive find (`find_files`) ignoring `.git` / `.stack-work` / `dist-newstyle`, and ripgrep-style content search (`grep_search`) with line numbering and context limits.
+- **Context-Aware Reading**: Paginated file reading (`read_file`) with line ranges, line-numbered formatting, and automatic registration into the read-before-edit tracker.
+- **Safe Editing & Undo**: String replacement (`edit_file`) requiring prior inspection, ambiguity verification, and atomic snapshot rollbacks (`undo_file_edit`).
+- **Managed Long-Lived Processes**: Asynchronous command execution (`command_run`) with timeout auto-backgrounding, log tailing (`command_status`), and process termination (`command_kill`).
+- **Human-in-the-Loop (HITL)**: First-class approval hooks before executing high-risk operations.
 
 ## Working Code Example
 
-Compare local execution via **Ollama** and cloud API execution via **OpenAI / OpenRouter**. Use the toggle tabs or the global provider switcher in the header to switch:
+Compare tool invocation across **Ollama**, **OpenAI / OpenRouter**, and **Google Gemini**:
 
 ::: {.provider-group}
-::: {.provider-panel data-provider="ollama" data-label="🦙 Ollama (Local)" data-exe="stack run toolollama"}
+::: {.provider-panel data-provider="ollama" data-label="Ollama (Local)" data-exe="stack run toolollama"}
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
@@ -33,45 +40,43 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 
 import Langchain.Prelude
-import Langchain.Tool.Calculator (calculatorTool)
+import Langchain.Provider.Ollama
+  ( defaultConfig
+  , defaultOllamaConfig
+  , newOllama
+  , withTools
+  )
 
 inputPrompt :: T.Text
-inputPrompt = "What is 15 * 4? Please use the calculator tool to find the answer."
+inputPrompt = "Search for Haskell files using find_files with pattern '*.hs'."
 
 runApp :: IO ()
 runApp = do
   o <- newOllama "qwen3.5:2b" defaultConfig
   let promptMsgs = [userMessage inputPrompt]
-      chatReq = withTools [calculatorTool @IO] (chatRequestFor o promptMsgs)
+      fsTool = findFilesTool @IO defaultSecurityPolicy
+      toolCfg = withTools [fsTool] defaultOllamaConfig
 
   res <- runLangchainT () $ do
-    respMsg <- invoke o promptMsgs (Just chatReq)
+    respMsg <- invoke o promptMsgs (Just toolCfg)
     case messageToolCalls respMsg of
-      Nothing -> do
-        liftIO $ T.putStrLn "No tool called, direct answer:"
-        liftIO $ T.putStrLn $ extractMessageText respMsg
-      Just [] -> do
-        liftIO $ T.putStrLn "No tool called, direct answer:"
-        liftIO $ T.putStrLn $ extractMessageText respMsg
+      Nothing -> liftIO $ T.putStrLn $ extractMessageText respMsg
+      Just [] -> liftIO $ T.putStrLn $ extractMessageText respMsg
       Just (tCall : _) -> do
         liftIO $ T.putStrLn $ "Tool called: " <> toolCallName tCall
         liftIO $ T.putStrLn $ "Arguments: " <> T.pack (show (toolCallArguments tCall))
 
-        eExec <- liftIO $ toolExecute (calculatorTool @IO) (toolCallArguments tCall)
+        eExec <- liftIO $ toolExecute fsTool (toolCallArguments tCall)
         toolResult <- case eExec of
           Left err -> pure $ "Tool execution error: " <> errorMessage err
           Right out -> pure out
 
-        liftIO $ T.putStrLn $ "Tool execution result: " <> toolResult
+        liftIO $ T.putStrLn $ "Tool execution result:\n" <> toolResult
 
-        let toolMsg =
-              (toolMessage toolResult)
-                { messageName = Just (toolCallName tCall)
-                }
+        let toolMsg = (toolMessage toolResult) { messageName = Just (toolCallName tCall) }
             conversation = promptMsgs ++ [respMsg, toolMsg]
-            followUpReq = withTools [calculatorTool @IO] (chatRequestFor o conversation)
 
-        finalMsg <- invoke o conversation (Just followUpReq)
+        finalMsg <- invoke o conversation (Just toolCfg)
         liftIO $ T.putStrLn "\nFinal Assistant Answer:"
         liftIO $ T.putStrLn $ extractMessageText finalMsg
 
@@ -81,7 +86,7 @@ runApp = do
 ```
 :::
 
-::: {.provider-panel data-provider="openai" data-label="⚡ OpenAI / OpenRouter" data-exe="stack run toolopenai"}
+::: {.provider-panel data-provider="openai" data-label="OpenAI / OpenRouter" data-exe="stack run toolopenai"}
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
@@ -92,38 +97,35 @@ import Control.Monad.IO.Class (liftIO)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Langchain.Prelude
-import Langchain.Tool.Calculator (calculatorTool)
+import Langchain.Provider.OpenAI (OpenAI)
 import OpenAI.Common (defaultModelName, getOpenRouterModel)
 
 inputPrompt :: T.Text
-inputPrompt = "What is 15 * 4? Please use the calculator tool to find the answer."
+inputPrompt = "Please search for Haskell source files using find_files with pattern '*.hs'."
 
 runApp :: IO ()
 runApp = do
   o <- getOpenRouterModel defaultModelName
   let promptMsgs = [userMessage inputPrompt]
-      tools = [calculatorTool @IO]
+      fsTool = findFilesTool @IO defaultSecurityPolicy
+      tools = [fsTool]
       chatReq = bindToolsConfig @OpenAI tools Nothing
 
   res <- runLangchainT () $ do
     respMsg <- invoke o promptMsgs chatReq
     case messageToolCalls respMsg of
-      Nothing -> do
-        liftIO $ T.putStrLn "No tool called, direct answer:"
-        liftIO $ T.putStrLn $ extractMessageText respMsg
-      Just [] -> do
-        liftIO $ T.putStrLn "No tool called, direct answer:"
-        liftIO $ T.putStrLn $ extractMessageText respMsg
+      Nothing -> liftIO $ T.putStrLn $ extractMessageText respMsg
+      Just [] -> liftIO $ T.putStrLn $ extractMessageText respMsg
       Just (tCall : _) -> do
         liftIO $ T.putStrLn $ "Tool called: " <> toolCallName tCall
         liftIO $ T.putStrLn $ "Arguments: " <> T.pack (show (toolCallArguments tCall))
 
-        eExec <- liftIO $ toolExecute (calculatorTool @IO) (toolCallArguments tCall)
+        eExec <- liftIO $ toolExecute fsTool (toolCallArguments tCall)
         toolResult <- case eExec of
           Left err -> pure $ "Tool execution error: " <> errorMessage err
           Right out -> pure out
 
-        liftIO $ T.putStrLn $ "Tool execution result: " <> toolResult
+        liftIO $ T.putStrLn $ "Tool execution result:\n" <> toolResult
 
         let toolMsg =
               (toolMessage toolResult)
@@ -142,29 +144,122 @@ runApp = do
     Right () -> pure ()
 ```
 :::
+
+::: {.provider-panel data-provider="gemini" data-label="Google Gemini" data-exe="cabal run toolgemini"}
+```haskell
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
+
+module Gemini.Tool (runApp) where
+
+import Control.Monad.IO.Class (liftIO)
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
+import Gemini.Common (defaultGeminiModelName, getGeminiModel)
+import Langchain.Prelude
+import Langchain.Provider.Gemini (Gemini)
+
+inputPrompt :: T.Text
+inputPrompt = "Search for Haskell files using find_files with pattern '*.hs'."
+
+runApp :: IO ()
+runApp = do
+  T.putStrLn "--- Gemini Tool / Function Calling Loop ---"
+  g <- getGeminiModel defaultGeminiModelName
+  let promptMsgs = [userMessage inputPrompt]
+      fsTool = findFilesTool @IO defaultSecurityPolicy
+      tools = [fsTool]
+      chatReq = bindToolsConfig @Gemini tools Nothing
+
+  res <- runLangchainT () $ do
+    respMsg <- invoke g promptMsgs chatReq
+    case messageToolCalls respMsg of
+      Nothing -> liftIO $ T.putStrLn $ extractMessageText respMsg
+      Just [] -> liftIO $ T.putStrLn $ extractMessageText respMsg
+      Just (tCall : _) -> do
+        liftIO $ T.putStrLn $ "Tool called: " <> toolCallName tCall
+        liftIO $ T.putStrLn $ "Arguments: " <> T.pack (show (toolCallArguments tCall))
+
+        eExec <- liftIO $ toolExecute fsTool (toolCallArguments tCall)
+        toolResult <- case eExec of
+          Left err -> pure $ "Tool execution error: " <> errorMessage err
+          Right out -> pure out
+
+        liftIO $ T.putStrLn $ "Tool execution result:\n" <> toolResult
+
+        let toolMsg =
+              (toolMessage toolResult)
+                { messageName = Just (toolCallName tCall)
+                , messageToolId = Just (toolCallId tCall)
+                }
+            conversation = promptMsgs ++ [respMsg, toolMsg]
+            followUpReq = bindToolsConfig @Gemini tools Nothing
+
+        finalMsg <- invoke g conversation followUpReq
+        liftIO $ T.putStrLn "\nFinal Assistant Answer:"
+        liftIO $ T.putStrLn $ extractMessageText finalMsg
+
+  case res of
+    Left err -> T.putStrLn $ "Error: " <> errorMessage err
+    Right () -> pure ()
+```
+:::
 :::
 
-## Core Types & Functions
+## Complete Tool Suite Reference
+
+### 1. Filesystem Suite (`Langchain.Tool.FileSystem`)
+
+| Tool Name | Tier | Parameters | Description |
+|-----------|------|------------|-------------|
+| `find_files` | `TierReadOnly` | `path`, `pattern`, `max_depth`, `file_type`, `max_results` | Concurrent search ignoring `.git`, `node_modules`, `dist-newstyle`, etc. |
+| `grep_search` | `TierReadOnly` | `path`, `query`, `case_sensitive`, `include_glob`, `context_lines`, `max_results` | Ripgrep-style search with line numbers, context slices, and truncation limits. |
+| `read_file` | `TierReadOnly` | `path`, `start_line`, `end_line` | Paginated reading with 1-indexed line numbers and read-before-edit tracking. |
+| `list_directory` | `TierReadOnly` | `path` | Lists directories and files with formatted sizes (e.g. `12 KB`). |
+| `edit_file` | `TierWorkspaceWrite` | `path`, `old_string`, `new_string`, `expected_occurrences` | Enforces read-before-edit policy, verifies uniqueness, creates undo checkpoint. |
+| `write_file` | `TierWorkspaceWrite` | `path`, `content`, `overwrite` | Creates file and parent directories. Requires `overwrite=true` to overwrite. |
+
+### 2. Checkpoints & Rollback (`Langchain.Tool.Checkpoint`)
+
+| Tool Name | Tier | Parameters | Description |
+|-----------|------|------------|-------------|
+| `undo_file_edit` | `TierWorkspaceWrite` | `path`, `checkpoint_id` (optional) | Reverts a file to its previous state before edit or overwrite. |
+| `list_checkpoints` | `TierReadOnly` | `path` (optional) | Inspect audit trail of snapshots taken during the session. |
+
+### 3. Managed Background Processes (`Langchain.Tool.Process`)
+
+| Tool Name | Tier | Parameters | Description |
+|-----------|------|------------|-------------|
+| `command_run` | `TierExecution` | `command`, `cwd`, `timeout_ms` | Runs command with synchronous timeout (default: 5000ms). If exceeded, automatically backgrounds to `proc-<id>`. |
+| `command_status` | `TierReadOnly` | `process_id`, `tail_lines` | Returns runtime duration, exit status, and tails stdout/stderr logs. |
+| `command_kill` | `TierExecution` | `process_id` | Terminate running background process and cleans up resources. |
+
+## Security & Permission Tiers (`Langchain.Tool.Security`)
+
+Every tool is bound to a `ToolTier`:
 
 ```haskell
-data Tool = Tool { toolName :: Text, toolDescription :: Text, toolExecute :: Value -> IO (Either Text Value) }
+data ToolTier
+  = TierReadOnly       -- Safe queries: read, find, grep, list, status
+  | TierWorkspaceWrite  -- File modifications within workspace
+  | TierExecution       -- Process launch, shell commands
+  | TierAdmin           -- Unrestricted system changes
 ```
+
+### Configurable Security Policies
+
 ```haskell
-data FunctionDefinition = FunctionDefinition { funcName :: Text, funcDescription :: Text, funcParameters :: Value }
-```
+-- Restrict agent strictly to workspace directory
+let policy = workspaceSandboxPolicy "/home/user/project"
 
-## Running This Example
+-- Restrict agent strictly to read-only observation
+let readOnlyPolicy = readOnlySecurityPolicy
 
-### Local Ollama
-Ensure your Ollama daemon is running locally with the target model:
-```bash
-ollama run gemma3 # or your desired model
-stack run toolollama
-```
-
-### OpenAI / OpenRouter
-Ensure your `OPENROUTER_API_KEY` or `OPENAI_API_KEY` is exported:
-```bash
-export OPENROUTER_API_KEY="your-api-key"
-stack run toolopenai
+-- Attach an interactive Human-in-the-Loop approval hook
+let approvalPolicy = defaultSecurityPolicy
+      { policyApprovalHook = Just $ \req -> do
+          putStrLn $ "Approve " ++ show (approvalToolName req) ++ "? [y/n]"
+          ans <- getLine
+          pure $ if ans == "y" then Approved else Denied "User denied execution"
+      }
 ```

@@ -5,7 +5,7 @@ category: Components
 ---
 
 <div class="component-header-meta">
-  <span class="badge badge-primary">Langchain.Embedding.Class</span> <span class="badge badge-primary">Langchain.Core.VectorStore</span>
+  <span class="badge badge-primary">Langchain.Embeddings.Core</span> <span class="badge badge-primary">Langchain.VectorStore.Core</span>
 </div>
 
 Vector embeddings, cosine similarity calculation, and document chunking for retrieval.
@@ -21,7 +21,7 @@ Vector embeddings, cosine similarity calculation, and document chunking for retr
 Compare local execution via **Ollama** and cloud API execution via **OpenAI / OpenRouter**. Use the toggle tabs or the global provider switcher in the header to switch:
 
 ::: {.provider-group}
-::: {.provider-panel data-provider="ollama" data-label="🦙 Ollama (Local)" data-exe="stack run ragollama"}
+::: {.provider-panel data-provider="ollama" data-label="Ollama (Local)" data-exe="stack run ragollama"}
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -57,8 +57,8 @@ runApp = do
                 id
                 [systemMessage, userMessage]
                 [systemPrompt, finalQ]
-        let chatReq = withOptions (defaultOptions {optNumCtx = Just 100096}) (chatRequestFor o msgs)
-        invoke o msgs (Just chatReq)
+        let cfg = withOptions (defaultOptions {optNumCtx = Just 100096}) defaultOllamaConfig
+        invoke o msgs (Just cfg)
       Left _ -> throwError $ internalError "Rendering of vars failed" Nothing Nothing
   case res of
     Left err -> T.putStrLn $ errorMessage err
@@ -66,7 +66,7 @@ runApp = do
 ```
 :::
 
-::: {.provider-panel data-provider="openai" data-label="⚡ OpenAI / OpenRouter" data-exe="stack run ragopenai"}
+::: {.provider-panel data-provider="openai" data-label="OpenAI / OpenRouter" data-exe="stack run ragopenai"}
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -109,6 +109,50 @@ runApp = do
     Left err -> T.putStrLn $ errorMessage err
     Right r -> T.putStrLn $ extractMessageText r
 ```
+::: {.provider-panel data-provider="gemini" data-label="Google Gemini" data-exe="cabal run raggemini"}
+```haskell
+{-# LANGUAGE OverloadedStrings #-}
+
+module Gemini.RAG (runApp) where
+
+import Control.Monad.Except (throwError)
+import Control.Monad.IO.Class (liftIO)
+import qualified Data.Map as Map
+import qualified Data.Text.IO as T
+import qualified Data.Text.Lazy as T
+import Gemini.Common (defaultGeminiModelName, getGeminiEmbeddings, getGeminiModel)
+import Langchain.Prelude
+import Langchain.PromptTemplate.Prompt
+
+runApp :: IO ()
+runApp = do
+  T.putStrLn "--- Gemini RAG with GeminiEmbeddings ---"
+  let systemPrompt = "Answer the question based on the Context provided to you."
+      userQuestion = "What are the features of LangChain Haskell?"
+  let fPath = FileLoader "README.md"
+  res <- runLangchainT () $ do
+    docs <- load fPath
+    geminiEmbed <- liftIO getGeminiEmbeddings
+    vs1 <- fromDocuments geminiEmbed docs
+    relevantDocs <- similaritySearch vs1 userQuestion 1
+    g <- liftIO $ getGeminiModel defaultGeminiModelName
+    let ragTemplate = "{userQuestion} CONTEXT: {context}"
+    let x = (T.toStrict . pageContent) $ mconcat relevantDocs
+    let vars = Map.fromList [("userQuestion", userQuestion), ("context", x)]
+    let eFinalQ = renderFStringTemplate vars ragTemplate
+    case eFinalQ of
+      Right finalQ -> do
+        let msgs =
+              zipWith
+                id
+                [systemMessage, userMessage]
+                [systemPrompt, finalQ]
+        invoke g msgs Nothing
+      Left _ -> throwError $ internalError "Rendering of vars failed" Nothing Nothing
+  case res of
+    Left err -> T.putStrLn $ "Error: " <> errorMessage err
+    Right r -> T.putStrLn $ extractMessageText r
+```
 :::
 :::
 
@@ -138,4 +182,11 @@ Ensure your `OPENROUTER_API_KEY` or `OPENAI_API_KEY` is exported:
 ```bash
 export OPENROUTER_API_KEY="your-api-key"
 stack run ragopenai
+```
+
+### Google Gemini
+Set your `GEMINI_API_KEY` in environment or store in `~/.gemini_api_key`:
+```bash
+export GEMINI_API_KEY="AIzaSy..."
+cabal run raggemini
 ```

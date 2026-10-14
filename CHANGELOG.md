@@ -1,5 +1,51 @@
 # Changelog for `langchain-hs`
 
+## 0.0.6.0 - 2026-10-15
+
+### Highlights
+
+- **Complete Modular Provider Architecture**:
+  All concrete AI providers and protocol clients are now decoupled into standalone Hackage packages:
+  - `langchain-hs-core` (0.0.6.0): Core abstractions, runnables, tools, agents, vector stores, memory, output parsers, and resilience.
+  - `langchain-hs-graph` (0.0.6.0): Production StateGraph engine with state reducers, checkpointing, and time-travel replay.
+  - `langchain-hs-ollama` (0.0.6.0): Ollama chat model and embeddings provider.
+  - `langchain-hs-openai` (0.0.6.0): OpenAI, OpenRouter, and OpenAI-compatible provider with structured output and streaming.
+  - `langchain-hs-gemini` (0.0.6.0): Google Gemini provider with function calling and SSE streaming.
+  - `langchain-hs-mcp` (0.0.6.0): Model Context Protocol (MCP) client over stdio and HTTP JSON-RPC 2.0.
+  - `langchain-hs` (0.0.6.0): Umbrella package re-exporting `langchain-hs-core` and `langchain-hs-graph`.
+
+### StateGraph Productionization (`langchain-hs-graph`)
+
+- Replaced prototype modules with robust execution combinators: `runGraph`, `runGraphWithConfig`, `runGraphInterleaved`, and `streamGraphSteps`.
+- Added `runnableNode` and `chatModelNode` combinators to lift arbitrary `Runnable` and `ChatModel` instances into graph nodes.
+- Full support for recursion limits, step-by-step transition logging, checkpointing, and human-in-the-loop interruption.
+
+### Memory Hardening (`langchain-hs-core`)
+
+- **`InVariableMemory`**: Thread-safe STM-backed transactional memory with snapshotting, resets, and clear semantics.
+- **`SessionMemory`**: Multi-session conversation manager supporting per-session state isolation, active session tracking, and TTL-based pruning.
+- **`FileMemory`**: Persistent file-backed conversation memory with atomic disk writes and metadata preservation across process restarts.
+- **Reset Helpers**: Added explicit seed-state reset combinators `resetConversationBuffer`, `resetWindowBuffer`, `resetTokenBuffer`, and `resetEntitiesToInitial`.
+- **Umbrella Prelude Re-exports**: Re-exported all memory implementations (`ConversationBufferMemory`, `SessionMemoryStore`, `EntityMemory`, `CombinedMemory`), buffer reset helpers, and `splitDocuments` in `Langchain.Prelude`.
+
+### Output Parsers & Document Loaders
+
+- Trimmed fragile character-scanning parsers (`NumberSeparatedList`) and redundant wrapper types (`JSONOutputStructure`) in favor of type-safe `StructuredOutput` and `TextOutputParser`.
+- Hardened boolean output parser to exact normalized token recognition.
+- Added standard numeric `OutputParser` instances for `Int`, `Integer`, and `Double` with whitespace stripping.
+- Eliminated lazy I/O file handle leaks in `FileLoader` and `DirectoryLoader` with strict text I/O.
+- Added `splitDocuments` preserving document metadata across chunk splits, and provided default `loadAndSplit` implementation in `BaseLoader`.
+
+### Breaking Changes from 0.0.5.0
+
+- Provider modules are no longer bundled in `langchain-hs`:
+  - For Ollama: Add `langchain-hs-ollama` to dependencies and `import Langchain.Provider.Ollama`.
+  - For OpenAI: Add `langchain-hs-openai` to dependencies and `import Langchain.Provider.OpenAI`.
+  - For Gemini: Add `langchain-hs-gemini` to dependencies and `import Langchain.Provider.Gemini`.
+  - For MCP: Add `langchain-hs-mcp` to dependencies and `import Langchain.MCP.Client`.
+- `Langchain.Prelude` no longer re-exports provider-specific constructors (`newOllama`, `newOpenAI`, `newGemini`, `newStdioMcpClient`). Import the corresponding provider package.
+- `JSONOutputStructure` and `NumberSeparatedList` have been removed from `Langchain.OutputParser.Core` and `Langchain.Prelude`. Use `StructuredOutput` or `TextOutputParser`.
+
 ## 0.0.5.0 - 2026-09-10
 
 ### Major Architecture & Ecosystem Evolution
@@ -29,7 +75,7 @@
   - Migrated to `MercuryTechnologies/openai` client.
   - Full PVP upper bounds across all packages for Hackage compliance.
 
-### ⚠️ Breaking Changes from 0.0.3.0
+### Breaking Changes from 0.0.3.0
 
 - **`LangchainT` is now parameterized over `env`** (`LangchainT env m a` instead of the former implicit `LangchainConfig`).
   - Replace `runLangchainT config action` with `runLangchainT env action` where `env` is your custom environment type (use `()` if you have no shared config).

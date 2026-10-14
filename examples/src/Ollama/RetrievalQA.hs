@@ -4,7 +4,9 @@ module Ollama.RetrievalQA (runApp) where
 
 import Control.Monad.Except (runExceptT)
 import qualified Data.Text.IO as T
+import Langchain.Embeddings.Ollama (OllamaEmbeddings (..))
 import Langchain.Prelude
+import Langchain.Provider.Ollama
 
 runApp :: IO ()
 runApp = do
@@ -20,11 +22,9 @@ runApp = do
             mempty
         ]
       embed = OllamaEmbeddings "nomic-embed-text:latest" Nothing Nothing Nothing
-      dbPath = "/tmp/retrieval_qa.db"
 
   res <- runExceptT $ do
-    store_ <- newSqliteVecStore dbPath embed
-    _ <- addDocuments store_ docs
+    store_ <- addDocuments (emptyInMemoryVectorStore embed) docs
     let retriever = VectorStoreRetriever store_
     o <- newOllama "qwen3.5:2b" defaultConfig
     let qa = newRetrievalQA o retriever

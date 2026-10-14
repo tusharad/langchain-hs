@@ -5,7 +5,7 @@ category: Components
 ---
 
 <div class="component-header-meta">
-  <span class="badge badge-primary">Langchain.Core.Runnable</span>
+  <span class="badge badge-primary">Langchain.Runnable</span>
 </div>
 
 First-class AST composition via pipe (|>>), parallel (&>&), and fallback (>>>#) operators.
@@ -21,7 +21,7 @@ First-class AST composition via pipe (|>>), parallel (&>&), and fallback (>>>#) 
 Compare local execution via **Ollama** and cloud API execution via **OpenAI / OpenRouter**. Use the toggle tabs or the global provider switcher in the header to switch:
 
 ::: {.provider-group}
-::: {.provider-panel data-provider="ollama" data-label="🦙 Ollama (Local)" data-exe="stack run runnableollama"}
+::: {.provider-panel data-provider="ollama" data-label="Ollama (Local)" data-exe="stack run runnableollama"}
 ```haskell
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -74,7 +74,7 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified Data.Text.Lazy as TL
 
-import Langchain.Core.Runnable (runIdent)
+import Langchain.Runnable (runIdent)
 import Langchain.DocumentLoader.Core (Document (..))
 import Langchain.Prelude
 import Langchain.PromptTemplate.Prompt
@@ -232,7 +232,7 @@ runApp = do
 ```
 :::
 
-::: {.provider-panel data-provider="openai" data-label="⚡ OpenAI / OpenRouter" data-exe="stack run runnableopenai"}
+::: {.provider-panel data-provider="openai" data-label="OpenAI / OpenRouter" data-exe="stack run runnableopenai"}
 ```haskell
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}

@@ -21,7 +21,7 @@ End-to-end question answering synthesizing document retrieval and model generati
 Compare local execution via **Ollama** and cloud API execution via **OpenAI / OpenRouter**. Use the toggle tabs or the global provider switcher in the header to switch:
 
 ::: {.provider-group}
-::: {.provider-panel data-provider="ollama" data-label="🦙 Ollama (Local)" data-exe="stack run retrievalqaollama"}
+::: {.provider-panel data-provider="ollama" data-label="Ollama (Local)" data-exe="stack run retrievalqaollama"}
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -45,11 +45,9 @@ runApp = do
             mempty
         ]
       embed = OllamaEmbeddings "nomic-embed-text:latest" Nothing Nothing Nothing
-      dbPath = "/tmp/retrieval_qa.db"
 
   res <- runExceptT $ do
-    store_ <- newSqliteVecStore dbPath embed
-    _ <- addDocuments store_ docs
+    store_ <- addDocuments (emptyInMemoryVectorStore embed) docs
     let retriever = VectorStoreRetriever store_
     o <- newOllama "qwen3.5:2b" defaultConfig
     let qa = newRetrievalQA o retriever
@@ -62,7 +60,7 @@ runApp = do
 ```
 :::
 
-::: {.provider-panel data-provider="openai" data-label="⚡ OpenAI / OpenRouter" data-exe="stack run retrievalqaopenai"}
+::: {.provider-panel data-provider="openai" data-label="OpenAI / OpenRouter" data-exe="stack run retrievalqaopenai"}
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -87,12 +85,9 @@ runApp = do
             "Monads structure computations as sequences of steps while isolating effects like state or IO."
             mempty
         ]
-      dbPath = "/tmp/retrieval_qa_openai.db"
-
   res <- runExceptT $ do
     embed <- liftIO $ getOpenRouterEmbeddings "text-embedding-3-small"
-    store_ <- newSqliteVecStore dbPath embed
-    _ <- addDocuments store_ docs
+    store_ <- addDocuments (emptyInMemoryVectorStore embed) docs
     let retriever = VectorStoreRetriever store_
     o <- liftIO $ getOpenRouterModel defaultModelName
     let qa = newRetrievalQA o retriever

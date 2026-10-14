@@ -21,7 +21,7 @@ Cyclic workflows, typed channels, state reducers, and checkpointed state machine
 Compare local execution via **Ollama** and cloud API execution via **OpenAI / OpenRouter**. Use the toggle tabs or the global provider switcher in the header to switch:
 
 ::: {.provider-group}
-::: {.provider-panel data-provider="ollama" data-label="🦙 Ollama (Local)" data-exe="stack run stategraphollama"}
+::: {.provider-panel data-provider="ollama" data-label="Ollama (Local)" data-exe="stack run stategraphollama"}
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -56,8 +56,8 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified Data.Text.Lazy as TL
 
-import Langchain.Core.Error (LangchainError)
-import Langchain.Core.Model
+import Langchain.Error (LangchainError)
+import Langchain.Model
   ( ChatModel (..)
   , extractMessageText
   , systemMessage
@@ -207,7 +207,7 @@ runApp = do
 ```
 :::
 
-::: {.provider-panel data-provider="openai" data-label="⚡ OpenAI / OpenRouter" data-exe="stack run stategraphopenai"}
+::: {.provider-panel data-provider="openai" data-label="OpenAI / OpenRouter" data-exe="stack run stategraphopenai"}
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -242,8 +242,8 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified Data.Text.Lazy as TL
 
-import Langchain.Core.Error (LangchainError)
-import Langchain.Core.Model
+import Langchain.Error (LangchainError)
+import Langchain.Model
   ( ChatModel (..)
   , extractMessageText
   , systemMessage

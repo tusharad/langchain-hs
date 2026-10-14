@@ -7,17 +7,18 @@ import Control.Monad.IO.Class (liftIO)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Langchain.Prelude
-import Langchain.Tool.Calculator (calculatorTool)
+import Langchain.Provider.OpenAI (OpenAI)
 import OpenAI.Common (defaultModelName, getOpenRouterModel)
 
 inputPrompt :: T.Text
-inputPrompt = "What is 15 * 4? Please use the calculator tool to find the answer."
+inputPrompt = "Please search for Haskell source files using find_files with pattern '*.hs'."
 
 runApp :: IO ()
 runApp = do
   o <- getOpenRouterModel defaultModelName
   let promptMsgs = [userMessage inputPrompt]
-      tools = [calculatorTool @IO]
+      fsTool = findFilesTool @IO defaultSecurityPolicy
+      tools = [fsTool]
       chatReq = bindToolsConfig @OpenAI tools Nothing
 
   res <- runLangchainT () $ do
@@ -33,7 +34,7 @@ runApp = do
         liftIO $ T.putStrLn $ "Tool called: " <> toolCallName tCall
         liftIO $ T.putStrLn $ "Arguments: " <> T.pack (show (toolCallArguments tCall))
 
-        eExec <- liftIO $ toolExecute (calculatorTool @IO) (toolCallArguments tCall)
+        eExec <- liftIO $ toolExecute fsTool (toolCallArguments tCall)
         toolResult <- case eExec of
           Left err -> pure $ "Tool execution error: " <> errorMessage err
           Right out -> pure out

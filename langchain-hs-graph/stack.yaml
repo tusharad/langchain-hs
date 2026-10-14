@@ -1,0 +1,5 @@
+resolver: nightly-2026-09-12
+packages:
+  - .
+  - ../langchain-hs-core
+# No extra-deps needed — langchain-hs-graph has only Hackage dependencies.

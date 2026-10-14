@@ -1,0 +1,138 @@
+name: langchain-hs
+version: 0.0.6.0
+github: "tusharad/langchain-hs"
+license: MIT
+license-file: LICENSE
+author: "Tushar Adhatrao"
+maintainer: "tusharadhatrao@gmail.com"
+copyright: "2025-2026 Tushar Adhatrao"
+category: AI
+synopsis: "Pure functional LLM agent framework and multi-agent graph engine in Haskell"
+extra-doc-files:
+  - README.md
+  - CHANGELOG.md
+
+description: |
+  Build LLM-powered applications, ReAct agents, and LangGraph-style stateful workflows
+  in Haskell. Provider-specific packages:
+    - langchain-hs-ollama
+    - langchain-hs-openai
+    - langchain-hs-gemini
+    - langchain-hs-mcp
+
+tested-with:
+  - GHC == 9.12.4
+  - GHC == 9.10.3
+  - GHC == 9.8.4
+
+dependencies:
+  - base >= 4.17 && < 5
+  - langchain-hs-core >= 0.0.6 && < 0.0.7
+  - langchain-hs-graph >= 0.0.6 && < 0.0.7
+
+ghc-options:
+  - -Wall
+  - -Wcompat
+  - -Widentities
+  - -Wincomplete-record-updates
+  - -Wincomplete-uni-patterns
+  - -Wmissing-export-lists
+  - -Wmissing-home-modules
+  - -Wpartial-fields
+  - -Wredundant-constraints
+
+library:
+  reexported-modules:
+    - Langchain.Error
+    - Langchain.Model
+    - Langchain.Model.Types
+    - Langchain.Monad
+    - Langchain.Stream
+    - Langchain.Runnable
+    - Langchain.Tool
+    - Langchain.Tool.Binding
+    - Langchain.Tool.Checkpoint
+    - Langchain.Tool.Core
+    - Langchain.Tool.FileSystem
+    - Langchain.Tool.GenericSchema
+    - Langchain.Tool.Process
+    - Langchain.Tool.Security
+    - Langchain.Tool.Shell
+    - Langchain.Embeddings
+    - Langchain.Embeddings.Core
+    - Langchain.DocumentLoader
+    - Langchain.DocumentLoader.Core
+    - Langchain.DocumentLoader.DirectoryLoader
+    - Langchain.DocumentLoader.FileLoader
+    - Langchain.TextSplitter.Character
+    - Langchain.TextSplitter.Code
+    - Langchain.TextSplitter.Markdown
+    - Langchain.TextSplitter.RecursiveCharacter
+    - Langchain.TextSplitter.Token
+    - Langchain.VectorStore
+    - Langchain.VectorStore.Core
+    - Langchain.VectorStore.InMemory
+    - Langchain.PromptTemplate
+    - Langchain.PromptTemplate.Prompt
+    - Langchain.PromptTemplate.String
+    - Langchain.Observability
+    - Langchain.Callback
+    - Langchain.Callback.Manager
+    - Langchain.Retriever
+    - Langchain.Retriever.Core
+    - Langchain.Retriever.BM25
+    - Langchain.Retriever.Hybrid
+    - Langchain.Resilience
+    - Langchain.Resilience.CircuitBreaker
+    - Langchain.Resilience.Retry
+    - Langchain.Memory
+    - Langchain.Memory.Core
+    - Langchain.Memory.Summary
+    - Langchain.Memory.Session
+    - Langchain.Memory.Entity
+    - Langchain.Memory.Combined
+    - Langchain.Cache
+    - Langchain.Cache.Core
+    - Langchain.OutputParser
+    - Langchain.OutputParser.Core
+    - Langchain.OutputParser.Structured
+    - Langchain.Chain
+    - Langchain.Chain.RetrievalQA
+    - Langchain.Agent
+    - Langchain.Agent.ReAct
+    - Langchain.Agent.PlanAndExecute
+    - Langchain.Guardrail
+    - Langchain.Guardrail.Core
+    - Langchain.Prelude
+    - Langchain.Graph.StateGraph
+    - Langchain.Graph.Checkpointer
+    - Langchain.Graph.HITL
+
+tests:
+  langchain-hs-test:
+    main: Spec.hs
+    source-dirs: test
+    ghc-options:
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
+    dependencies:
+      - langchain-hs
+      - text
+      - bytestring
+      - aeson
+      - containers
+      - directory
+      - filepath
+      - temporary
+      - tasty
+      - tasty-hunit
+      - tasty-quickcheck
+      - QuickCheck
+      - async
+      - resourcet
+      - mtl
+      - stm
+      - time
+      - conduit
+      - vector

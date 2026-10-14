@@ -8,23 +8,25 @@ category: Getting Started
 
 Unlike a basic linear prompt-response cycle, an **Agent** uses the model to dynamically choose which tools to invoke, interpret their outputs (observations), and iterate until it reaches a conclusive answer.
 
-```
-       ┌─────────────┐
-       │   User Q    │
-       └──────┬──────┘
-              ▼
-   ┌──────────────────────┐
-┌─►│   LLM Reasoning      ├─┐ (Final Answer)
-│  └──────────┬───────────┘ │
-│ (Observation)│ (Tool Call) │
-│             ▼             │
-│  ┌──────────────────────┐ │
-└──┤   Tool Execution     │ │
-   └──────────────────────┘ │
-              ▼             ▼
-       ┌──────────────────────┐
-       │     Final Answer     │
-       └──────────────────────┘
+```text
+       +-------------+
+       |   User Q    |
+       +------+------+
+              |
+              v
+       +----------------------+
++----> |    LLM Reasoning     | ---+ (Final Answer)
+|      +----------+-----------+    |
+| (Observation)   | (Tool Call)    |
+|                 v                |
+|      +----------------------+    |
++----- |    Tool Execution    |    |
+       +----------------------+    |
+                  |                |
+                  v                v
+           +----------------------+
+           |     Final Answer     |
+           +----------------------+
 ```
 
 ---
@@ -68,7 +70,7 @@ calculatorTool = Tool
 
 ## 2. Running a ReAct Agent
 
-Construct a `ReActAgent` with your LLM, toolset, and iteration limits:
+Construct a `ReActAgent` with your LLM and toolset using `defaultReActAgent` and optional builder combinators (`withMemory`, `withMaxIterations`, `withSystemPrompt`):
 
 ```haskell
 main :: IO ()
@@ -77,13 +79,28 @@ main = do
   let tools = [calculatorTool]
   
   -- Create ReAct Agent with default limits (max 15 iterations)
-  let agent = createReActAgent model tools defaultAgentConfig
+  let agent = defaultReActAgent model tools
 
   putStrLn "Running agent..."
-  res <- runReActAgent agent "What is 12 * 45 plus 10?"
+  res <- runExceptT $ runReActAgent agent [userMessage "What is 12 * 45 plus 10?"]
   case res of
     Left err  -> putStrLn ("Agent Error: " ++ show err)
-    Right ans -> putStrLn ("Final Answer:\n" ++ T.unpack ans)
+    Right ans -> putStrLn ("Final Answer:\n" ++ T.unpack (extractMessageText ans))
+```
+
+### Execution Output
+
+```text
+Running agent...
+[ReAct Step 1]
+Thought: I need to calculate 12 * 45 first before adding 10.
+Action: calculator {"expression": "12 * 45"}
+Observation: 540
+
+[ReAct Step 2]
+Thought: Now I need to add 10 to 540, which is 550.
+Final Answer:
+12 * 45 is 540, and adding 10 yields 550.
 ```
 
 ---
@@ -98,7 +115,7 @@ For complex multi-step problems, a `PlanAndExecuteAgent` uses two specialized mo
 planAndExecuteExample :: IO ()
 planAndExecuteExample = do
   model <- newOllama "qwen2.5:7b" defaultConfig
-  let agent = newPlanAndExecuteAgent model model (Just [calculatorTool])
+  let agent = newPlanAndExecuteAgentWithTools model model [calculatorTool] Nothing
 
   res <- runExceptT $ runPlanAndExecute agent "Calculate (12 * 45) + 10 and format the explanation."
   case res of
@@ -106,7 +123,7 @@ planAndExecuteExample = do
     Right response -> print response
 ```
 
-<div class="admonition tip">
-  <div class="admonition-title">💡 Middleware Support</div>
+<div class="admonition">
+  <div class="admonition-title">Middleware Support</div>
   You can attach logging, rate-limiting, and guardrail middleware to agents with <code>chainMiddlewares [loggingMiddleware, defaultMiddleware]</code>.
 </div>

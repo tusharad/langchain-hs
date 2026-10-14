@@ -21,7 +21,7 @@ Interrupting workflows before critical actions, waiting for human approval, and 
 Compare local execution via **Ollama** and cloud API execution via **OpenAI / OpenRouter**. Use the toggle tabs or the global provider switcher in the header to switch:
 
 ::: {.provider-group}
-::: {.provider-panel data-provider="ollama" data-label="🦙 Ollama (Local)" data-exe="stack run hitlollama"}
+::: {.provider-panel data-provider="ollama" data-label="Ollama (Local)" data-exe="stack run hitlollama"}
 ```haskell
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -52,8 +52,8 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import GHC.Generics (Generic)
 
-import Langchain.Core.Error (LangchainError)
-import Langchain.Core.Model (extractMessageText, systemMessage, userMessage)
+import Langchain.Error (LangchainError)
+import Langchain.Model (extractMessageText, systemMessage, userMessage)
 import Langchain.Graph.Checkpointer
   ( MemoryCheckpointer
   , newMemoryCheckpointer
@@ -206,7 +206,7 @@ runApp = do
 ```
 :::
 
-::: {.provider-panel data-provider="openai" data-label="⚡ OpenAI / OpenRouter" data-exe="stack run hitlopenai"}
+::: {.provider-panel data-provider="openai" data-label="OpenAI / OpenRouter" data-exe="stack run hitlopenai"}
 ```haskell
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -237,8 +237,8 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import GHC.Generics (Generic)
 
-import Langchain.Core.Error (LangchainError)
-import Langchain.Core.Model (extractMessageText, systemMessage, userMessage)
+import Langchain.Error (LangchainError)
+import Langchain.Model (extractMessageText, systemMessage, userMessage)
 import Langchain.Graph.Checkpointer
   ( MemoryCheckpointer
   , newMemoryCheckpointer

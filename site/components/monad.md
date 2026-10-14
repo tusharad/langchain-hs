@@ -5,7 +5,7 @@ category: Components
 ---
 
 <div class="component-header-meta">
-  <span class="badge badge-primary">Langchain.Core.Monad</span> <span class="badge badge-primary">Control.Monad.Reader</span>
+  <span class="badge badge-primary">Langchain.Monad</span> <span class="badge badge-primary">Control.Monad.Reader</span>
 </div>
 
 The LangchainT monad transformer providing unified environment configuration and error management.
@@ -21,7 +21,7 @@ The LangchainT monad transformer providing unified environment configuration and
 Compare local execution via **Ollama** and cloud API execution via **OpenAI / OpenRouter**. Use the toggle tabs or the global provider switcher in the header to switch:
 
 ::: {.provider-group}
-::: {.provider-panel data-provider="ollama" data-label="🦙 Ollama (Local)" data-exe="stack run monadollama"}
+::: {.provider-panel data-provider="ollama" data-label="Ollama (Local)" data-exe="stack run monadollama"}
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -36,18 +36,18 @@ runApp = do
   o <- newOllama "gemma3" defaultConfig
   let msg = [userMessage "Write a poem about functional programming"]
   res <- runLangchainT () $ do
-    let chatReq =
+    let cfg =
           withOptions
             (defaultOptions {optTemperature = Just 0.7, optTopP = Just 0.9, optNumCtx = Just 100096})
-            (chatRequestFor o msg)
-    invoke o msg (Just chatReq)
+            defaultOllamaConfig
+    invoke o msg (Just cfg)
   case res of
     Left err -> T.putStrLn $ errorMessage err
     Right m -> T.putStrLn $ extractMessageText m
 ```
 :::
 
-::: {.provider-panel data-provider="openai" data-label="⚡ OpenAI / OpenRouter" data-exe="stack run monadopenai"}
+::: {.provider-panel data-provider="openai" data-label="OpenAI / OpenRouter" data-exe="stack run monadopenai"}
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
 

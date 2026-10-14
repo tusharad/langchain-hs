@@ -9,6 +9,7 @@ import qualified Data.Text.Lazy as T
 import Langchain.Embeddings.Ollama
 import Langchain.Prelude
 import Langchain.PromptTemplate.Prompt
+import Langchain.Provider.Ollama
 
 runApp :: IO ()
 runApp = do
@@ -32,8 +33,8 @@ runApp = do
                 id
                 [systemMessage, userMessage]
                 [systemPrompt, finalQ]
-        let chatReq = withOptions (defaultOptions {optNumCtx = Just 100096}) (chatRequestFor o msgs)
-        invoke o msgs (Just chatReq)
+        let cfg = withOptions (defaultOptions {optNumCtx = Just 100096}) defaultOllamaConfig
+        invoke o msgs (Just cfg)
       Left _ -> throwError $ internalError "Rendering of vars failed" Nothing Nothing
   case res of
     Left err -> T.putStrLn $ errorMessage err

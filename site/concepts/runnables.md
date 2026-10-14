@@ -70,6 +70,6 @@ main = do
 ```
 
 <div class="admonition tip">
-  <div class="admonition-title">⚡ High Performance</div>
+  <div class="admonition-title">High Performance</div>
   Because parallel branches (<code>&>&</code>) are explicitly represented in the AST, the interpreter evaluates them concurrently using lightweight GHC green threads (<code>async</code>).
 </div>

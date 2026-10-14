@@ -21,7 +21,7 @@ Macro-level planning decoupled from execution with dynamic replanning.
 Compare local execution via **Ollama** and cloud API execution via **OpenAI / OpenRouter**. Use the toggle tabs or the global provider switcher in the header to switch:
 
 ::: {.provider-group}
-::: {.provider-panel data-provider="ollama" data-label="🦙 Ollama (Local)" data-exe="stack run planandexecuteollama"}
+::: {.provider-panel data-provider="ollama" data-label="Ollama (Local)" data-exe="stack run planandexecuteollama"}
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -35,7 +35,7 @@ runApp :: IO ()
 runApp = do
   o <- newOllama "qwen3.5:2b" defaultConfig
   let tools = [shellTool]
-      executor = createReActAgent (bindTools tools o) tools
+      executor = defaultReActAgent (bindTools tools o) tools
       agent = newPlanAndExecuteAgent o executor Nothing
       goal =
         "Use shell commands to check the operating system name (uname -s) and architecture (uname -m), then summarize the host platform."
@@ -46,7 +46,7 @@ runApp = do
 ```
 :::
 
-::: {.provider-panel data-provider="openai" data-label="⚡ OpenAI / OpenRouter" data-exe="stack run planandexecuteopenai"}
+::: {.provider-panel data-provider="openai" data-label="OpenAI / OpenRouter" data-exe="stack run planandexecuteopenai"}
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -61,7 +61,7 @@ runApp :: IO ()
 runApp = do
   o <- getOpenRouterModel defaultModelName
   let tools = [shellTool]
-      executor = createReActAgent o tools
+      executor = defaultReActAgent o tools
       agent = newPlanAndExecuteAgent o executor Nothing
       goal =
         "Use shell commands to check the operating system name (uname -s) and architecture (uname -m), then summarize the host platform."
@@ -76,10 +76,32 @@ runApp = do
 ## Core Types & Functions
 
 ```haskell
-data Plan = Plan { planSteps :: [Text] }
-```
-```haskell
-ChatModel m => m -> [Tool] -> Text -> IO (Either LangchainError Text)
+data Plan = Plan { steps :: ![PlanStep] }
+data PlanStep = PlanStep { stepNumber :: !Int, stepDescription :: !Text }
+
+class StepExecutor e m where
+  executeStep :: e -> Text -> m Text
+
+newPlanAndExecuteAgent
+  :: (ChatModel planner m, StepExecutor executor m)
+  => planner
+  -> executor
+  -> Maybe (ModelConfig planner)
+  -> PlanAndExecuteAgent planner executor
+
+newPlanAndExecuteAgentWithTools
+  :: (ChatModel planner m, ToolBinder executorModel m)
+  => planner
+  -> executorModel
+  -> [Tool m]
+  -> Maybe (ModelConfig planner)
+  -> PlanAndExecuteAgent planner (ReActAgent executorModel m)
+
+runPlanAndExecute
+  :: (ChatModel planner m, StepExecutor executor m, MonadIO m, MonadError LangchainError m)
+  => PlanAndExecuteAgent planner executor
+  -> Text
+  -> m Text
 ```
 
 ## Running This Example

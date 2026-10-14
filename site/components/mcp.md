@@ -21,7 +21,7 @@ Standardized tool and resource integration over stdio and HTTP JSON-RPC.
 Compare local execution via **Ollama** and cloud API execution via **OpenAI / OpenRouter**. Use the toggle tabs or the global provider switcher in the header to switch:
 
 ::: {.provider-group}
-::: {.provider-panel data-provider="ollama" data-label="🦙 Ollama (Local)" data-exe="stack run mcpollama"}
+::: {.provider-panel data-provider="ollama" data-label="Ollama (Local)" data-exe="stack run mcpollama"}
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -51,9 +51,9 @@ runApp = do
 
     o <- newOllama "qwen3.5:2b" defaultConfig
     let msgs = [userMessage "Search Hoogle for the Haskell function 'traverse' using the search tool."]
-        req = withTools lcTools (chatRequestFor o msgs)
+        toolCfg = withTools lcTools defaultOllamaConfig
 
-    resp <- invoke o msgs (Just req)
+    resp <- invoke o msgs (Just toolCfg)
     case messageToolCalls resp of
       Just (tc : _) -> do
         liftIO $ T.putStrLn $ "\nLLM selected tool: " <> toolCallName tc
@@ -67,9 +67,8 @@ runApp = do
                   Right out -> out
                 toolMsg = (toolMessage toolResult) {messageName = Just (toolCallName tc)}
                 conv = msgs ++ [resp, toolMsg]
-                followReq = withTools lcTools (chatRequestFor o conv)
 
-            finalResp <- invoke o conv (Just followReq)
+            finalResp <- invoke o conv (Just toolCfg)
             liftIO $ T.putStrLn "\nAI:"
             liftIO $ T.putStrLn $ extractMessageText finalResp
           Nothing ->
@@ -84,7 +83,7 @@ runApp = do
 ```
 :::
 
-::: {.provider-panel data-provider="openai" data-label="⚡ OpenAI / OpenRouter" data-exe="stack run mcpopenai"}
+::: {.provider-panel data-provider="openai" data-label="OpenAI / OpenRouter" data-exe="stack run mcpopenai"}
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}

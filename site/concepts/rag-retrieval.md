@@ -28,7 +28,6 @@ flowchart LR
 `langchain-hs` supports multiple vector store backends implementing the `VectorStore` typeclass:
 
 - **`InMemory`**: Zero-dependency vector store using cosine similarity.
-- **`SqliteVecStore`**: Local, single-file vector storage via `sqlite-vec`.
 - **`PgVectorStore`**: Production PostgreSQL vector storage via `pgvector`.
 - **`QdrantStore`**: Scalable cloud vector database integration.
 

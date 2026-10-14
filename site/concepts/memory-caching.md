@@ -23,13 +23,6 @@ Maintains a running natural language summary of the ongoing dialogue, updating i
 summaryMem <- newSummaryMemory summarizerModel
 ```
 
-### 3. `EntityMemory`
-Extracts and maintains dynamic key-value entity profiles (e.g. user preferences, facts) across multi-turn conversations:
-
-```haskell
-entityMem <- newEntityMemory model
-```
-
 ---
 
 ## Semantic & Exact LLM Caching

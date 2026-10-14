@@ -21,7 +21,7 @@ Extracting typed, validated JSON structures matching Haskell data types via Aeso
 Compare local execution via **Ollama** and cloud API execution via **OpenAI / OpenRouter**. Use the toggle tabs or the global provider switcher in the header to switch:
 
 ::: {.provider-group}
-::: {.provider-panel data-provider="ollama" data-label="🦙 Ollama (Local)" data-exe="stack run jsonollama"}
+::: {.provider-panel data-provider="ollama" data-label="Ollama (Local)" data-exe="stack run jsonollama"}
 ```haskell
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -55,16 +55,16 @@ runApp :: IO ()
 runApp = do
   o <- newOllama "gemma3" defaultConfig
   let msg = [userMessage inputPrompt]
-  let chatReq = withStructuredOutput @Person (chatRequestFor o msg)
+  let cfg = withStructuredOutput (Proxy @Person) defaultOllamaConfig
   res <- runLangchainT () $ do
-    invoke o msg (Just chatReq)
+    invoke o msg (Just cfg)
   case res of
     Left err -> T.putStrLn $ errorMessage err
     Right r -> T.putStrLn $ extractMessageText r
 ```
 :::
 
-::: {.provider-panel data-provider="openai" data-label="⚡ OpenAI / OpenRouter" data-exe="stack run jsonopenai"}
+::: {.provider-panel data-provider="openai" data-label="OpenAI / OpenRouter" data-exe="stack run jsonopenai"}
 ```haskell
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}

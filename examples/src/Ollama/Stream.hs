@@ -10,6 +10,7 @@ import Data.Conduit (runConduit, (.|))
 import qualified Data.Conduit.List as CL
 import qualified Data.Text.IO as T
 import Langchain.Prelude
+import Langchain.Provider.Ollama
 import System.IO (hFlush, stdout)
 
 runApp :: IO ()

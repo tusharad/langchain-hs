@@ -1,0 +1,32 @@
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE OverloadedStrings #-}
+
+module Test.Langchain.Tool.AdvancedToolsSpec (tests) where
+
+import Data.Aeson (FromJSON, ToJSON, Value (..))
+import Data.Proxy (Proxy (..))
+import Data.Text (Text)
+import GHC.Generics (Generic)
+import Test.Tasty
+import Test.Tasty.HUnit
+
+import Langchain.Tool.GenericSchema
+
+data SearchArgs = SearchArgs
+  { queryTerm :: Text
+  , maxResults :: Int
+  , filterCategory :: Maybe Text
+  }
+  deriving (Show, Eq, Generic, ToJSON, FromJSON, DeriveToolSchema)
+
+tests :: TestTree
+tests =
+  testGroup
+    "Langchain.Tool.AdvancedToolsSpec"
+    [ testCase "deriveToolSchema generates valid JSON Schema object with properties" $ do
+        let schemaVal = deriveToolSchema (Proxy :: Proxy SearchArgs)
+        case schemaVal of
+          Object o -> assertBool "Schema contains type or properties" (not $ null o)
+          _ -> assertFailure "Expected Object schema"
+    ]

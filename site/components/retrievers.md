@@ -21,7 +21,7 @@ Combining BM25 keyword search, vector stores, and Reciprocal Rank Fusion (RRF).
 Compare local execution via **Ollama** and cloud API execution via **OpenAI / OpenRouter**. Use the toggle tabs or the global provider switcher in the header to switch:
 
 ::: {.provider-group}
-::: {.provider-panel data-provider="ollama" data-label="🦙 Ollama (Local)" data-exe="stack run retrieverollama"}
+::: {.provider-panel data-provider="ollama" data-label="Ollama (Local)" data-exe="stack run retrieverollama"}
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -91,7 +91,7 @@ firstDoc (d : _) = TL.toStrict (pageContent d)
 ```
 :::
 
-::: {.provider-panel data-provider="openai" data-label="⚡ OpenAI / OpenRouter" data-exe="stack run retrieveropenai"}
+::: {.provider-panel data-provider="openai" data-label="OpenAI / OpenRouter" data-exe="stack run retrieveropenai"}
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
 

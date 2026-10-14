@@ -51,19 +51,18 @@ jobs:
 
       - name: Run cabal check on all packages
         run: |
-          echo "Checking langchain-hs-core..."
-          (cd langchain-hs-core && cabal check)
-          echo "Checking langchain-hs-graph..."
-          (cd langchain-hs-graph && cabal check)
-          echo "Checking langchain-hs..."
-          cabal check
+          for pkg in langchain-hs-core langchain-hs-graph langchain-hs-mcp langchain-hs-ollama langchain-hs-openai langchain-hs-gemini langchain-hs; do
+            echo "Checking $pkg..."
+            (cd "$pkg" && cabal check)
+          done
 
       - name: Generate sdist tarballs
         run: |
           mkdir -p artifacts
-          (cd langchain-hs-core && cabal sdist -o ../artifacts)
-          (cd langchain-hs-graph && cabal sdist -o ../artifacts)
-          cabal sdist -o artifacts
+          for pkg in langchain-hs-core langchain-hs-graph langchain-hs-mcp langchain-hs-ollama langchain-hs-openai langchain-hs-gemini langchain-hs; do
+            echo "Packaging $pkg..."
+            (cd "$pkg" && cabal sdist -o ../artifacts)
+          done
           echo "Generated packages in artifacts/:"
           ls -la artifacts/
 
@@ -72,12 +71,10 @@ jobs:
         run: |
           mkdir -p artifacts/docs
           DOCS_DIR=$(mktemp -d dist-docs.XXXXXX)
-          echo "Building Haddock for langchain-hs-core..."
-          cabal v2-haddock langchain-hs-core --builddir="$DOCS_DIR" --haddock-for-hackage --enable-doc
-          echo "Building Haddock for langchain-hs-graph..."
-          cabal v2-haddock langchain-hs-graph --builddir="$DOCS_DIR" --haddock-for-hackage --enable-doc
-          echo "Building Haddock for langchain-hs..."
-          cabal v2-haddock langchain-hs --builddir="$DOCS_DIR" --haddock-for-hackage --enable-doc
+          for pkg in langchain-hs-core langchain-hs-graph langchain-hs-mcp langchain-hs-ollama langchain-hs-openai langchain-hs-gemini langchain-hs; do
+            echo "Building Haddock for $pkg..."
+            cabal v2-haddock "$pkg" --builddir="$DOCS_DIR" --haddock-for-hackage --enable-doc
+          done
 
           find "$DOCS_DIR" -name "*-docs.tar.gz" -exec cp {} artifacts/docs/ \;
           rm -rf "$DOCS_DIR"
@@ -185,7 +182,7 @@ jobs:
           echo "Uploading documentation $CORE_DOC_TAR to Hackage..."
           cabal upload $AUTH_FLAG $PUBLISH_FLAG -d $CANDIDATE "$CORE_DOC_TAR"
 
-      - name: Publish langchain-hs-graph to Hackage
+      - name: Publish provider and extension packages to Hackage
         if: github.event_name == 'push' || inputs.publish_to_hackage == true
         env:
           HACKAGE_KEY: ${{ secrets.HACKAGE_KEY }}
@@ -201,6 +198,9 @@ jobs:
             AUTH_FLAG="--token $HACKAGE_KEY"
           elif [ -n "$HACKAGE_USERNAME" ] && [ -n "$HACKAGE_PASSWORD" ]; then
             AUTH_FLAG="-u $HACKAGE_USERNAME -p $HACKAGE_PASSWORD"
+          else
+            echo "::error::No Hackage credentials found!"
+            exit 1
           fi
 
           PUBLISH_FLAG="--publish"
@@ -208,14 +208,16 @@ jobs:
             PUBLISH_FLAG=""
           fi
 
-          GRAPH_TAR=$(ls artifacts/langchain-hs-graph-*.tar.gz)
-          echo "Uploading $GRAPH_TAR to Hackage..."
-          cabal upload $AUTH_FLAG $PUBLISH_FLAG $CANDIDATE "$GRAPH_TAR"
+          for pkg in langchain-hs-graph langchain-hs-mcp langchain-hs-ollama langchain-hs-openai langchain-hs-gemini; do
+            PKG_TAR=$(ls artifacts/${pkg}-*.tar.gz)
+            echo "Uploading $PKG_TAR to Hackage..."
+            cabal upload $AUTH_FLAG $PUBLISH_FLAG $CANDIDATE "$PKG_TAR"
+          done
 
           echo "Waiting 30 seconds for Hackage index update before uploading langchain-hs..."
           sleep 30
 
-      - name: Publish langchain-hs-graph documentation to Hackage
+      - name: Publish provider and extension packages documentation to Hackage
         if: github.event_name == 'push' || inputs.publish_docs == true
         env:
           HACKAGE_KEY: ${{ secrets.HACKAGE_KEY }}
@@ -231,6 +233,9 @@ jobs:
             AUTH_FLAG="--token $HACKAGE_KEY"
           elif [ -n "$HACKAGE_USERNAME" ] && [ -n "$HACKAGE_PASSWORD" ]; then
             AUTH_FLAG="-u $HACKAGE_USERNAME -p $HACKAGE_PASSWORD"
+          else
+            echo "::error::No Hackage credentials found!"
+            exit 1
           fi
 
           PUBLISH_FLAG="--publish"
@@ -238,9 +243,11 @@ jobs:
             PUBLISH_FLAG=""
           fi
 
-          GRAPH_DOC_TAR=$(ls artifacts/docs/langchain-hs-graph-*-docs.tar.gz)
-          echo "Uploading documentation $GRAPH_DOC_TAR to Hackage..."
-          cabal upload $AUTH_FLAG $PUBLISH_FLAG -d $CANDIDATE "$GRAPH_DOC_TAR"
+          for pkg in langchain-hs-graph langchain-hs-mcp langchain-hs-ollama langchain-hs-openai langchain-hs-gemini; do
+            PKG_DOC_TAR=$(ls artifacts/docs/${pkg}-*-docs.tar.gz)
+            echo "Uploading documentation $PKG_DOC_TAR to Hackage..."
+            cabal upload $AUTH_FLAG $PUBLISH_FLAG -d $CANDIDATE "$PKG_DOC_TAR"
+          done
 
       - name: Publish langchain-hs to Hackage
         if: github.event_name == 'push' || inputs.publish_to_hackage == true

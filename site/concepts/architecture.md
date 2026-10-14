@@ -1,37 +1,44 @@
 ---
 title: Architecture & Purity
-description: The 3-tier monorepo architecture, effect polymorphism, and zero-unsafePerformIO guarantee.
+description: The 3-tier monorepo architecture, effect polymorphism, and pure functional guarantees.
 category: Core Concepts
 ---
 
 ## Monorepo Architecture
 
-`langchain-hs` is split into three independent layers to guarantee modularity and zero unnecessary runtime dependencies:
+`langchain-hs` is split into decoupled, modular packages so applications remain lightweight and only depend on the providers and protocols they actually invoke:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                       langchain-hs                          │
-│  Providers (Ollama, OpenAI, Gemini) · MCP Client · RAG     │
-│  Chains · Vector Stores · Agents · OpenTelemetry Observability│
+│  Provider & Protocol Satellite Packages                     │
+│  langchain-hs-ollama · langchain-hs-openai                  │
+│  langchain-hs-gemini · langchain-hs-mcp                     │
 └──────────────────────────────┬──────────────────────────────┘
-                               │ depends on
-┌──────────────────────────────▼──────────────────────────────┐
+                               │ depends directly on
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    langchain-hs-core                        │
+│  Core Primitives & Framework:                               │
+│  RunnableTree · ChatModel · Tool m · Agents (ReAct, P&E)    │
+│  RetrievalQA · VectorStore · BM25 & Hybrid Retriever        │
+│  Memory · Cache · Parsers · Guardrails · Resilience · OTel  │
+└──────────────────────────────▲──────────────────────────────┘
+                               │ extends
+┌──────────────────────────────┴──────────────────────────────┐
 │                    langchain-hs-graph                       │
 │  StateGraph s m · StateReducer s · Checkpointers · HITL     │
-│  TimeTravel · Parallel Execution · Graphviz DOT Export      │
-└──────────────────────────────┬──────────────────────────────┘
-                               │ depends on
-┌──────────────────────────────▼──────────────────────────────┐
-│                    langchain-hs-core                        │
-│  Zero-Dependency Pure GADT ASTs (RunnableTree)              │
-│  ChatModel · ContentBlock · Tool m · StreamEvent Lifecycle  │
-│  Zero HTTP / Network / Database Dependencies                │
+│  TimeTravel · SubGraphs · Runnable Nodes · DOT Export       │
+└──────────────────────────────▲──────────────────────────────┘
+                               │ re-exported by
+┌──────────────────────────────┴──────────────────────────────┐
+│                       langchain-hs                          │
+│  Umbrella Package: re-exports langchain-hs-core + graph     │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 1. Zero `unsafePerformIO` Guarantee
+## 1. Pure Functional Effect Management
 
 In many imperative AI frameworks, state mutation, network I/O, and tool executions are side-effecting operations scattered throughout code. In `langchain-hs`:
 

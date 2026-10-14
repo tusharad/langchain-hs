@@ -1,27 +1,27 @@
 ---
 title: Multi-Agent Systems
-description: Supervisor routing, collaborative debates, peer consensus, and specialized agents.
+description: Supervisor routing, sub-graph delegation, and multi-agent coordination.
 category: Components
 ---
 
 <div class="component-header-meta">
-  <span class="badge badge-primary">Langchain.Graph</span> <span class="badge badge-primary">Langchain.Agent</span>
+  <span class="badge badge-primary">Langchain.Graph.StateGraph</span>
 </div>
 
-Supervisor routing, collaborative debates, peer consensus, and specialized agents.
+Supervisor routing, hierarchical sub-graphs, and multi-agent state coordination.
 
 ## Key Concepts
 
 - **Supervisor Pattern**: A supervisor agent analyzes incoming goals and delegates tasks to specialized sub-agents.
-- **Multi-Agent Debate**: Multiple agents critique each other's outputs to achieve higher factual correctness.
-- **Shared State Blackboard**: Agents communicate through an immutable state channel in a compiled StateGraph.
+- **Embedded Sub-Graphs**: Sub-graphs are independently compiled `CompiledGraph sub m` state machines embedded as single nodes inside a parent graph via `addSubGraphNode`.
+- **Typed State Mapping**: Pure functions map parent state into child sub-graph state `(parent -> sub)` and reconcile results back into parent state `(parent -> sub -> parent)`.
 
 ## Working Code Example
 
-Compare local execution via **Ollama** and cloud API execution via **OpenAI / OpenRouter**. Use the toggle tabs or the global provider switcher in the header to switch:
+Compare local execution via **Ollama** and cloud API execution via **OpenAI / OpenRouter**:
 
 ::: {.provider-group}
-::: {.provider-panel data-provider="ollama" data-label="🦙 Ollama (Local)" data-exe="stack run multiagentollama"}
+::: {.provider-panel data-provider="ollama" data-label="Ollama (Local)" data-exe="stack run multiagentollama"}
 ```haskell
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -39,47 +39,30 @@ Compare local execution via **Ollama** and cloud API execution via **OpenAI / Op
                     │                                      ▲
                     └──► coderNode (embedded sub-graph) ──┘
                          [coderGen ──► coderReview]
-
-  1. The supervisor LLM evaluates the user prompt and routes to either:
-     - "researcher": conceptual, architectural, or theoretical questions
-     - "coder": implementation, code generation, or syntax questions
-  2. The "coderNode" is an embedded sub-graph (compiled StateGraph) with its
-     own internal pipeline: generate code -> review/refine code.
-  3. The "researcherNode" answers directly via Ollama.
-  4. Both flow to __end__.
 -}
 module Ollama.MultiAgent (runApp) where
 
-import Control.Monad.Except (ExceptT, runExceptT)
+import Control.Monad.Except (runExceptT)
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import GHC.Generics (Generic)
 
-import Langchain.Core.Error (LangchainError)
-import Langchain.Core.Model (extractMessageText, systemMessage, userMessage)
-import Langchain.Graph.MultiAgent
-  ( embedSubGraphNodeWithStart
-  , supervisorNode
-  )
 import Langchain.Graph.StateGraph
-  ( Node (..)
-  , addConditionalEdge
+  ( addConditionalEdge
   , addEdge
   , addNode
+  , addSubGraphNode
   , compileGraph
   , emptyStateGraph
   , endNodeId
   , replaceFieldReducer
   , runGraph
   )
+import Langchain.Model (extractMessageText, systemMessage, userMessage)
 import Langchain.Prelude (invoke)
-import Langchain.Provider.Ollama (defaultConfig, newOllama)
-
--- ---------------------------------------------------------------------------
--- Top-level parent graph state
--- ---------------------------------------------------------------------------
+import Langchain.Provider.Ollama
 
 data ParentState = ParentState
   { taskPrompt :: T.Text
@@ -88,18 +71,12 @@ data ParentState = ParentState
   }
   deriving (Show, Eq, Generic, ToJSON, FromJSON)
 
--- ---------------------------------------------------------------------------
--- Sub-graph state (for the specialized coding sub-agent pipeline)
--- ---------------------------------------------------------------------------
-
 data CoderSubState = CoderSubState
   { codeTask :: T.Text
   , rawCode :: T.Text
   , reviewedCode :: T.Text
   }
   deriving (Show, Eq, Generic, ToJSON, FromJSON)
-
-type App = ExceptT LangchainError IO
 
 runApp :: IO ()
 runApp = do
@@ -108,9 +85,7 @@ runApp = do
 
   T.putStrLn "=== Initializing Multi-Agent System with Ollama ==="
 
-  -- -------------------------------------------------------------------------
   -- 1. Construct the specialized Coder Sub-Graph
-  -- -------------------------------------------------------------------------
   let coderGenNode s = do
         liftIO $ T.putStrLn "  [Coder Sub-Graph] Generating initial code implementation..."
         let prompt =
@@ -150,9 +125,7 @@ runApp = do
     Left err -> error $ "Failed to compile coder sub-graph: " ++ show err
     Right sg -> pure sg
 
-  -- -------------------------------------------------------------------------
   -- 2. Embed Coder Sub-Graph as a single node in Parent Graph
-  -- -------------------------------------------------------------------------
   let toSubState p =
         CoderSubState
           { codeTask = taskPrompt p
@@ -162,17 +135,7 @@ runApp = do
       fromSubState p sub =
         p {finalAnswer = reviewedCode sub}
 
-      embeddedCoderNode =
-        embedSubGraphNodeWithStart
-          "coderNode"
-          "coderGen"
-          compiledSubGraph
-          toSubState
-          fromSubState
-
-  -- -------------------------------------------------------------------------
   -- 3. Construct Researcher node
-  -- -------------------------------------------------------------------------
   let researcherNode s = do
         liftIO $ T.putStrLn "  [Researcher Agent] Researching conceptual explanation..."
         let prompt =
@@ -187,40 +150,35 @@ runApp = do
 
       liftParentNode f s = fmap Right (f s)
 
-  -- -------------------------------------------------------------------------
   -- 4. Supervisor Routing Node
-  -- -------------------------------------------------------------------------
-  let routes =
-        [ ("researcher", "researcherNode")
-        , ("coder", "coderNode")
-        ]
-      supNode =
-        supervisorNode
-          o
-          "supervisor"
-          routes
-          taskPrompt
-          (\target s -> s {selectedRoute = target})
+  let supervisorAction s = do
+        let prompt =
+              "You are a supervisor delegating tasks to sub-agents. Available routes:\n"
+                <> "researcher -> researcherNode\n"
+                <> "coder -> coderNode\n"
+                <> "\nTask context: "
+                <> taskPrompt s
+                <> "\nReply with ONLY 'researcher' or 'coder'."
+        resp <- invoke o [userMessage prompt] Nothing
+        let rawRoute = T.toLower $ T.strip (extractMessageText resp)
+            target = if "code" `T.isInfixOf` rawRoute then "coderNode" else "researcherNode"
+        pure $ Right $ s {selectedRoute = target}
 
-  -- -------------------------------------------------------------------------
   -- 5. Compile Parent Multi-Agent Graph
-  -- -------------------------------------------------------------------------
   let parentGraphDef =
         addEdge "researcherNode" endNodeId
           . addEdge "coderNode" endNodeId
           . addConditionalEdge "supervisor" (pure . Right . selectedRoute)
           . addNode "researcherNode" (liftParentNode researcherNode)
-          . addNode "coderNode" (nodeAction embeddedCoderNode)
-          . addNode "supervisor" (nodeAction supNode)
+          . addSubGraphNode "coderNode" "coderGen" compiledSubGraph toSubState fromSubState
+          . addNode "supervisor" supervisorAction
           $ emptyStateGraph replaceFieldReducer
 
   compiledParentGraph <- case compileGraph parentGraphDef of
     Left err -> error $ "Failed to compile parent graph: " ++ show err
     Right g -> pure g
 
-  -- -------------------------------------------------------------------------
   -- 6. Test with a coding task
-  -- -------------------------------------------------------------------------
   let codingTask =
         ParentState
           { taskPrompt = "Write a function `fibonacci :: Int -> Integer` with memoization."
@@ -238,9 +196,7 @@ runApp = do
       T.putStrLn "=== Result ==="
       T.putStrLn (finalAnswer finalSt)
 
-  -- -------------------------------------------------------------------------
   -- 7. Test with a conceptual research task
-  -- -------------------------------------------------------------------------
   let researchTask =
         ParentState
           { taskPrompt = "What is the difference between Lazy and Strict evaluation in functional languages?"
@@ -260,7 +216,7 @@ runApp = do
 ```
 :::
 
-::: {.provider-panel data-provider="openai" data-label="⚡ OpenAI / OpenRouter" data-exe="stack run multiagentopenai"}
+::: {.provider-panel data-provider="openai" data-label="OpenAI / OpenRouter" data-exe="stack run multiagentopenai"}
 ```haskell
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -278,47 +234,30 @@ runApp = do
                     │                                      ▲
                     └──► coderNode (embedded sub-graph) ──┘
                          [coderGen ──► coderReview]
-
-  1. The supervisor LLM evaluates the user prompt and routes to either:
-     - "researcher": conceptual, architectural, or theoretical questions
-     - "coder": implementation, code generation, or syntax questions
-  2. The "coderNode" is an embedded sub-graph (compiled StateGraph) with its
-     own internal pipeline: generate code -> review/refine code.
-  3. The "researcherNode" answers directly via OpenAI.
-  4. Both flow to __end__.
 -}
 module OpenAI.MultiAgent (runApp) where
 
-import Control.Monad.Except (ExceptT, runExceptT)
+import Control.Monad.Except (runExceptT)
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import GHC.Generics (Generic)
 
-import Langchain.Core.Error (LangchainError)
-import Langchain.Core.Model (extractMessageText, systemMessage, userMessage)
-import Langchain.Graph.MultiAgent
-  ( embedSubGraphNodeWithStart
-  , supervisorNode
-  )
 import Langchain.Graph.StateGraph
-  ( Node (..)
-  , addConditionalEdge
+  ( addConditionalEdge
   , addEdge
   , addNode
+  , addSubGraphNode
   , compileGraph
   , emptyStateGraph
   , endNodeId
   , replaceFieldReducer
   , runGraph
   )
+import Langchain.Model (extractMessageText, systemMessage, userMessage)
 import Langchain.Prelude (invoke)
 import OpenAI.Common (defaultModelName, getOpenRouterModel)
-
--- ---------------------------------------------------------------------------
--- Top-level parent graph state
--- ---------------------------------------------------------------------------
 
 data ParentState = ParentState
   { taskPrompt :: T.Text
@@ -326,10 +265,6 @@ data ParentState = ParentState
   , finalAnswer :: T.Text
   }
   deriving (Show, Eq, Generic, ToJSON, FromJSON)
-
--- ---------------------------------------------------------------------------
--- Sub-graph state (for the specialized coding sub-agent pipeline)
--- ---------------------------------------------------------------------------
 
 data CoderSubState = CoderSubState
   { codeTask :: T.Text
@@ -345,9 +280,7 @@ runApp = do
 
   T.putStrLn "=== Initializing Multi-Agent System with OpenAI / OpenRouter ==="
 
-  -- -------------------------------------------------------------------------
   -- 1. Construct the specialized Coder Sub-Graph
-  -- -------------------------------------------------------------------------
   let coderGenNode s = do
         liftIO $ T.putStrLn "  [Coder Sub-Graph] Generating initial code implementation..."
         let prompt =
@@ -387,9 +320,7 @@ runApp = do
     Left err -> error $ "Failed to compile coder sub-graph: " ++ show err
     Right sg -> pure sg
 
-  -- -------------------------------------------------------------------------
   -- 2. Embed Coder Sub-Graph as a single node in Parent Graph
-  -- -------------------------------------------------------------------------
   let toSubState p =
         CoderSubState
           { codeTask = taskPrompt p
@@ -399,17 +330,7 @@ runApp = do
       fromSubState p sub =
         p {finalAnswer = reviewedCode sub}
 
-      embeddedCoderNode =
-        embedSubGraphNodeWithStart
-          "coderNode"
-          "coderGen"
-          compiledSubGraph
-          toSubState
-          fromSubState
-
-  -- -------------------------------------------------------------------------
   -- 3. Construct Researcher node
-  -- -------------------------------------------------------------------------
   let researcherNode s = do
         liftIO $ T.putStrLn "  [Researcher Agent] Researching conceptual explanation..."
         let prompt =
@@ -424,40 +345,35 @@ runApp = do
 
       liftParentNode f s = fmap Right (f s)
 
-  -- -------------------------------------------------------------------------
   -- 4. Supervisor Routing Node
-  -- -------------------------------------------------------------------------
-  let routes =
-        [ ("researcher", "researcherNode")
-        , ("coder", "coderNode")
-        ]
-      supNode =
-        supervisorNode
-          o
-          "supervisor"
-          routes
-          taskPrompt
-          (\target s -> s {selectedRoute = target})
+  let supervisorAction s = do
+        let prompt =
+              "You are a supervisor delegating tasks to sub-agents. Available routes:\n"
+                <> "researcher -> researcherNode\n"
+                <> "coder -> coderNode\n"
+                <> "\nTask context: "
+                <> taskPrompt s
+                <> "\nReply with ONLY 'researcher' or 'coder'."
+        resp <- invoke o [userMessage prompt] Nothing
+        let rawRoute = T.toLower $ T.strip (extractMessageText resp)
+            target = if "code" `T.isInfixOf` rawRoute then "coderNode" else "researcherNode"
+        pure $ Right $ s {selectedRoute = target}
 
-  -- -------------------------------------------------------------------------
   -- 5. Compile Parent Multi-Agent Graph
-  -- -------------------------------------------------------------------------
   let parentGraphDef =
         addEdge "researcherNode" endNodeId
           . addEdge "coderNode" endNodeId
           . addConditionalEdge "supervisor" (pure . Right . selectedRoute)
           . addNode "researcherNode" (liftParentNode researcherNode)
-          . addNode "coderNode" (nodeAction embeddedCoderNode)
-          . addNode "supervisor" (nodeAction supNode)
+          . addSubGraphNode "coderNode" "coderGen" compiledSubGraph toSubState fromSubState
+          . addNode "supervisor" supervisorAction
           $ emptyStateGraph replaceFieldReducer
 
   compiledParentGraph <- case compileGraph parentGraphDef of
     Left err -> error $ "Failed to compile parent graph: " ++ show err
     Right g -> pure g
 
-  -- -------------------------------------------------------------------------
   -- 6. Test with a coding task
-  -- -------------------------------------------------------------------------
   let codingTask =
         ParentState
           { taskPrompt = "Write a function `fibonacci :: Int -> Integer` with memoization."
@@ -475,9 +391,7 @@ runApp = do
       T.putStrLn "=== Result ==="
       T.putStrLn (finalAnswer finalSt)
 
-  -- -------------------------------------------------------------------------
   -- 7. Test with a conceptual research task
-  -- -------------------------------------------------------------------------
   let researchTask =
         ParentState
           { taskPrompt = "What is the difference between Lazy and Strict evaluation in functional languages?"
@@ -498,26 +412,43 @@ runApp = do
 :::
 :::
 
-## Core Types & Functions
+## Expected Output
 
-```haskell
-Shared state record tracking current speaker, dialogue history, and final verdict
-```
-```haskell
-CompiledGraph s m -> s -> m s
+```text
+=== Initializing Multi-Agent System ===
+
+--- Dispatching Task 1: Coding Request ---
+User: Write a function `fibonacci :: Int -> Integer` with memoization.
+  [Coder Sub-Graph] Generating initial code implementation...
+  [Coder Sub-Graph] Reviewing and formatting code...
+Route Selected: coderNode
+=== Result ===
+fibonacci :: Int -> Integer
+fibonacci = (map fib [0..] !!)
+  where
+    fib 0 = 0
+    fib 1 = 1
+    fib n = fibonacci (n - 1) + fibonacci (n - 2)
+
+--- Dispatching Task 2: Conceptual Research Request ---
+User: What is the difference between Lazy and Strict evaluation in functional languages?
+  [Researcher Agent] Researching conceptual explanation...
+Route Selected: researcherNode
+=== Result ===
+In functional programming, evaluation strategy dictates when expressions are calculated into values. In a strict language, expressions are evaluated immediately when bound to a variable or passed as an argument (call-by-value). 
+
+In contrast, lazy evaluation (call-by-need) defers computation until the value is strictly required for execution. Expressions are represented as unevaluated thunks and memoized once calculated.
 ```
 
 ## Running This Example
 
 ### Local Ollama
-Ensure your Ollama daemon is running locally with the target model:
 ```bash
-ollama run gemma3 # or your desired model
+ollama run gemma3
 stack run multiagentollama
 ```
 
 ### OpenAI / OpenRouter
-Ensure your `OPENROUTER_API_KEY` or `OPENAI_API_KEY` is exported:
 ```bash
 export OPENROUTER_API_KEY="your-api-key"
 stack run multiagentopenai
