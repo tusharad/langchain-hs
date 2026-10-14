@@ -108,6 +108,17 @@ windowBufferMemoryTests =
             case msgs of
               (m : _) -> m @?= systemMessage "You are a helpful AI assistant"
               [] -> assertFailure "Expected non-empty messages"
+    , testCase "resetWindowBuffer restores initial seeded messages" $ do
+        let initialMsgs = [systemMessage "Initial system prompt"]
+        memory <- newWindowBufferMemory 3 initialMsgs
+        res <- runExceptT $ do
+          saveContext memory "User1" "AI1"
+          saveContext memory "User2" "AI2"
+          resetWindowBuffer memory
+          messages memory
+        case res of
+          Left err -> assertFailure $ "Failed: " ++ show err
+          Right msgs -> msgs @?= initialMsgs
     ]
 
 conversationBufferMemoryTests :: TestTree
@@ -132,6 +143,16 @@ conversationBufferMemoryTests =
         case res of
           Left err -> assertFailure $ "Failed: " ++ show err
           Right vars -> Map.lookup "history" vars @?= Just "Human: Hello\nAI: Hi there!"
+    , testCase "resetConversationBuffer restores initial seeded messages" $ do
+        let initialMsgs = [systemMessage "Base prompt"]
+        mem <- newConversationBufferMemory initialMsgs
+        res <- runExceptT $ do
+          saveContext mem "Hello" "World"
+          resetConversationBuffer mem
+          messages mem
+        case res of
+          Left err -> assertFailure $ "Failed: " ++ show err
+          Right msgs -> msgs @?= initialMsgs
     ]
 
 persistenceTests :: TestTree
@@ -227,6 +248,23 @@ entityMemoryTests =
             case msgs of
               (m : _) -> assertBool "Contains entities" ("favorite_language: Haskell" `T.isInfixOf` extractMessageText m)
               [] -> assertFailure "Expected non-empty message"
+    , testCase "resetEntitiesToInitial restores original seeded facts" $ do
+        mem <- newEntityMemory (Map.fromList [("role", "Engineer")])
+        setEntity mem "role" "Manager"
+        setEntity mem "location" "Remote"
+        resetEntitiesToInitial mem
+        val <- getEntity mem "role"
+        val @?= Just "Engineer"
+        loc <- getEntity mem "location"
+        loc @?= Nothing
+    , testCase "deleteEntity and clearEntities remove attributes" $ do
+        mem <- newEntityMemory (Map.fromList [("a", "1"), ("b", "2")])
+        deleteEntity mem "a"
+        valA <- getEntity mem "a"
+        valA @?= Nothing
+        clearEntities mem
+        allEnts <- getAllEntities mem
+        assertBool "All entities cleared" (Map.null allEnts)
     ]
 
 combinedMemoryTests :: TestTree

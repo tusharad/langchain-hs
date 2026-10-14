@@ -30,7 +30,6 @@ import System.FilePath (takeExtension, takeFileName, (</>))
 import Langchain.DocumentLoader.Core
 import Langchain.DocumentLoader.FileLoader (FileLoader (FileLoader))
 import Langchain.Error (documentLoaderError)
-import Langchain.TextSplitter.Character
 
 -- | Options for directory loading behavior
 data DirectoryLoaderOptions = DirectoryLoaderOptions
@@ -119,7 +118,3 @@ instance BaseLoader DirectoryLoader where
             (T.pack $ "Directory does not exist: " ++ dirPath)
             (Just "DirectoryLoader")
             (Just $ T.pack dirPath)
-
-  loadAndSplit dirLoader = do
-    documents <- load dirLoader
-    pure $ splitText defaultCharacterSplitterOps (pageContent $ mconcat documents)

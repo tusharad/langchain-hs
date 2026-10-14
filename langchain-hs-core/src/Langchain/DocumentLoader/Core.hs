@@ -13,6 +13,7 @@ Implementation of LangChain's document loading abstraction.
 module Langchain.DocumentLoader.Core
   ( Document (..)
   , BaseLoader (..)
+  , splitDocuments
   ) where
 
 import Control.Monad.Except (MonadError)
@@ -23,6 +24,7 @@ import qualified Data.Text as TS
 import Data.Text.Lazy (Text)
 
 import Langchain.Error (LangchainError)
+import Langchain.TextSplitter.Character (defaultCharacterSplitterOps, splitText)
 
 -- | Document container with content and metadata
 data Document = Document
@@ -50,8 +52,26 @@ class BaseLoader loader where
     loader ->
     m [Document]
 
-  -- | Load all documents and split their content
+  -- | Load all documents and split their content into chunks using 'defaultCharacterSplitterOps'.
   loadAndSplit ::
     (MonadIO m, MonadError LangchainError m) =>
     loader ->
     m [Text]
+  loadAndSplit loader = do
+    docs <- load loader
+    pure $ concatMap (splitText defaultCharacterSplitterOps . pageContent) docs
+
+{- | Split a list of documents using any text splitting function, preserving metadata on each chunk.
+
+Example:
+
+@
+chunks = splitDocuments (splitTextRecursive defaultRecursiveCharacterSplitterOps) docs
+@
+-}
+splitDocuments :: (Text -> [Text]) -> [Document] -> [Document]
+splitDocuments splitFn docs =
+  [ Document chunk (metadata doc)
+  | doc <- docs
+  , chunk <- splitFn (pageContent doc)
+  ]

@@ -8,7 +8,7 @@ maintainer: "tusharadhatrao@gmail.com"
 copyright: "2025-2026 Tushar Adhatrao"
 category: AI
 synopsis: "Pure functional LLM agent framework and multi-agent graph engine in Haskell"
-extra-source-files:
+extra-doc-files:
   - README.md
   - CHANGELOG.md
 

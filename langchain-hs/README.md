@@ -37,6 +37,8 @@ Package reference on Hackage: [https://hackage.haskell.org/package/langchain-hs]
 
 ## 1. Simple Chat Calling
 
+Send a prompt to an LLM (local Ollama, OpenAI, or Gemini) and retrieve a typed response:
+
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
@@ -48,9 +50,12 @@ import Langchain.Provider.Ollama
 
 main :: IO ()
 main = do
+  -- Connect to local Ollama instance (DeepSeek, Llama 3, Gemma, etc.)
   model <- newOllama "llama3.2" defaultConfig
+  
   let messages = [userMessage "Explain in two sentences why Haskell makes AI agents more reliable."]
   result <- runExceptT $ invoke model messages Nothing
+  
   case result of
     Left err   -> T.putStrLn $ errorMessage err
     Right resp -> T.putStrLn $ extractMessageText resp
@@ -66,6 +71,8 @@ Haskell's static type system prevents common agent failures like missing diction
 
 ## 2. JSON Structured Output
 
+Guarantee that the LLM response conforms to a typed Haskell record using `FromJSON` and `ToSchema`:
+
 ```haskell
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -80,6 +87,7 @@ import GHC.Generics (Generic)
 import Langchain.Prelude
 import Langchain.Provider.Ollama
 
+-- Define your target data schema
 data Developer = Developer
   { name              :: T.Text
   , preferredLanguage :: T.Text
@@ -90,7 +98,9 @@ data Developer = Developer
 main :: IO ()
 main = do
   model <- newOllama "llama3.2" defaultConfig
-  let prompt = [userMessage "Extract profile: Alan has been writing Haskell for 8 years and loves langchain-hs."]
+  
+  let prompt =
+        [ userMessage "Extract profile: Alan has been writing Haskell for 8 years and loves langchain-hs." ]
       options = withStructuredOutput (Proxy @Developer) defaultOllamaConfig
 
   result <- runLangchainT () $ invoke model prompt (Just options)
@@ -114,6 +124,8 @@ main = do
 
 ## 3. Tool Calling
 
+Equip models with effectful Haskell tools. The LLM automatically emits structured tool calls, which your application executes and feeds back for final synthesis:
+
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
@@ -128,6 +140,8 @@ import Langchain.Provider.Ollama
 main :: IO ()
 main = do
   model <- newOllama "qwen2.5:7b" defaultConfig
+  
+  -- Instantiate typed filesystem tool
   let fsTool   = findFilesTool @IO defaultSecurityPolicy
       toolCfg  = withTools [fsTool] defaultOllamaConfig
       prompt   = [userMessage "Search for Haskell source files using find_files with pattern '*.hs'."]
@@ -138,17 +152,23 @@ main = do
       Just (tCall:_) -> do
         liftIO $ T.putStrLn $ "Tool Invoked: " <> toolCallName tCall
         liftIO $ T.putStrLn $ "Arguments:    " <> T.pack (show (toolCallArguments tCall))
+        
+        -- Execute tool with LLM arguments
         execResult <- liftIO $ toolExecute fsTool (toolCallArguments tCall)
         let observation = case execResult of
               Left err  -> "Error: " <> errorMessage err
               Right out -> out
         liftIO $ T.putStrLn $ "Observation:  " <> observation
+        
+        -- Supply tool observation back to model for final response
         let toolMsg = (toolMessage observation) { messageName = Just (toolCallName tCall) }
             thread  = prompt ++ [response, toolMsg]
+            
         finalMsg <- invoke model thread (Just toolCfg)
         liftIO $ T.putStrLn "\nFinal Assistant Answer:"
         liftIO $ T.putStrLn $ extractMessageText finalMsg
-      _ -> liftIO $ T.putStrLn $ extractMessageText response
+      _ -> do
+        liftIO $ T.putStrLn $ extractMessageText response
 
   case res of
     Left err -> T.putStrLn $ "Error: " <> errorMessage err
@@ -173,6 +193,8 @@ I scanned the repository and identified 3 Haskell source files matching your pat
 
 ## 4. ReAct Agent
 
+Run an autonomous **Reason + Act** agent loop that decomposes user tasks, selects tools, evaluates observations, and iterates until completion:
+
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
@@ -184,8 +206,12 @@ import Langchain.Provider.Ollama
 
 main :: IO ()
 main = do
+  -- Setup sample file for demonstration
   writeFile "/tmp/server_status.txt" "Service: api-gateway, Status: Degraded, Latency: 420ms"
+  
   model <- newOllama "qwen2.5:7b" defaultConfig
+  
+  -- Equip agent with file inspection tools
   let policy = defaultSecurityPolicy
       tools  = [readFileTool Nothing policy, findFilesTool policy]
       agent  = defaultReActAgent model tools
@@ -218,8 +244,24 @@ The api-gateway service is currently experiencing degraded health with high late
 
 - **Hackage Package:** [https://hackage.haskell.org/package/langchain-hs](https://hackage.haskell.org/package/langchain-hs)
 - **Documentation Website:** [https://tusharad.github.io/langchain-hs/](https://tusharad.github.io/langchain-hs/)
-- **Whitepaper:** [whitepaper.md](../whitepaper.md)
-- **Examples:** [`examples/`](../examples/)
+- **Whitepaper:** [whitepaper.md](whitepaper.md) (Effect polymorphism, categorical design, state graphs)
+- **Examples Directory:** [`examples/`](examples/)
+
+---
+
+## Development & Testing
+
+```bash
+# Build project
+stack build
+
+# Run test suite
+stack test
+
+# Code quality checks
+make lint
+make format-check
+```
 
 ---
 

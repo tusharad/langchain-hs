@@ -14,7 +14,7 @@ format-check:
 
 ## Build Haddock documentation
 docs:
-	stack haddock --no-haddock-deps langchain-hs-core langchain-hs-graph langchain-hs
+	stack haddock --no-haddock-deps langchain-hs-core langchain-hs-graph langchain-hs-mcp langchain-hs-ollama langchain-hs-openai langchain-hs-gemini langchain-hs
 
 ## Build Hakyll documentation website
 site-build:

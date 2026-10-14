@@ -170,15 +170,44 @@ module Langchain.Prelude
     -- * Memory Systems
   , BaseMemory (..)
   , SomeMemory (..)
+  , ConversationBufferMemory (..)
+  , newConversationBufferMemory
+  , resetConversationBuffer
   , WindowBufferMemory (..)
   , newWindowBufferMemory
+  , resetWindowBuffer
   , TokenBufferMemory (..)
   , newTokenBufferMemory
+  , resetTokenBuffer
   , countTokens
   , SummaryMemory (..)
   , newSummaryMemory
+  , SessionId
+  , SessionMemoryStore (..)
+  , newSessionMemoryStore
+  , newSessionMemoryStoreWithTTL
+  , getSessionMemory
+  , listSessions
+  , hasSession
+  , deleteSession
+  , clearAllSessions
+  , sessionCount
+  , cleanupExpiredSessions
+  , exportAllSessions
+  , EntityMemory (..)
+  , newEntityMemory
+  , setEntity
+  , getEntity
+  , getAllEntities
+  , deleteEntity
+  , clearEntities
+  , formatEntities
+  , resetEntitiesToInitial
+  , CombinedMemory (..)
+  , newCombinedMemory
   , initialMessages
   , trimMessages
+  , resetToInitial
 
     -- * Vector Stores & Retrieval
   , VectorStore (..)
@@ -199,6 +228,7 @@ module Langchain.Prelude
   , DirectoryLoader (..)
   , DirectoryLoaderOptions (..)
   , defaultDirectoryLoaderOptions
+  , splitDocuments
 
     -- * Prompt Templates
   , PromptTemplate (..)
@@ -253,8 +283,6 @@ module Langchain.Prelude
     -- * Structured Output & Parsers
   , OutputParser (..)
   , CommaSeparatedList (..)
-  , JSONOutputStructure (..)
-  , NumberSeparatedList (..)
   , StructuredOutput (..)
   , TypeSchema (..)
   , structuredInvoke
@@ -324,8 +352,7 @@ import Langchain.DocumentLoader.FileLoader
 import Langchain.Embeddings.Core
 import Langchain.Error
 import Langchain.Guardrail.Core
-import Langchain.Memory.Core
-import Langchain.Memory.Summary
+import Langchain.Memory
 import Langchain.Model
 import Langchain.Monad
 import Langchain.Observability

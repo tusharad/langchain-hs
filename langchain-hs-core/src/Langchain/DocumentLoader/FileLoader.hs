@@ -18,15 +18,14 @@ module Langchain.DocumentLoader.FileLoader
 import Control.Exception (SomeException, try)
 import Control.Monad.Except (throwError)
 import Control.Monad.IO.Class (liftIO)
-import Data.Aeson
+import Data.Aeson (Value (..))
 import Data.Map (fromList)
 import qualified Data.Text as T
-import qualified Data.Text.Lazy as TL
+import qualified Data.Text.Lazy.IO as TLIO
 import System.Directory (doesFileExist)
 
-import Langchain.DocumentLoader.Core
+import Langchain.DocumentLoader.Core (BaseLoader (..), Document (..))
 import Langchain.Error (documentLoaderError)
-import Langchain.TextSplitter.Character
 
 -- | File loader configuration
 newtype FileLoader = FileLoader FilePath
@@ -37,7 +36,7 @@ instance BaseLoader FileLoader where
     exists <- liftIO $ doesFileExist path
     if exists
       then do
-        eContent <- liftIO $ try (readFile path)
+        eContent <- liftIO $ try (TLIO.readFile path)
         case eContent of
           Left err ->
             throwError $
@@ -47,27 +46,7 @@ instance BaseLoader FileLoader where
                 (Just $ T.pack path)
           Right content -> do
             let meta = fromList [("source", String $ T.pack path)]
-            pure [Document (TL.pack content) meta]
-      else
-        throwError $
-          documentLoaderError
-            (T.pack $ "File not found: " ++ path)
-            (Just "FileLoader")
-            (Just $ T.pack path)
-
-  loadAndSplit (FileLoader path) = do
-    exists <- liftIO $ doesFileExist path
-    if exists
-      then do
-        eContent <- liftIO $ try (readFile path)
-        case eContent of
-          Left err ->
-            throwError $
-              documentLoaderError
-                (T.pack $ "Error reading file " ++ path ++ ": " ++ show (err :: SomeException))
-                (Just "FileLoader")
-                (Just $ T.pack path)
-          Right content -> pure $ splitText defaultCharacterSplitterOps (TL.pack content)
+            pure [Document content meta]
       else
         throwError $
           documentLoaderError

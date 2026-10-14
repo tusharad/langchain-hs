@@ -27,7 +27,7 @@ category: Core Concepts
 ┌──────────────────────────────┴──────────────────────────────┐
 │                    langchain-hs-graph                       │
 │  StateGraph s m · StateReducer s · Checkpointers · HITL     │
-│  TimeTravel · Parallel Execution · MultiAgent · DOT Export  │
+│  TimeTravel · SubGraphs · Runnable Nodes · DOT Export       │
 └──────────────────────────────▲──────────────────────────────┘
                                │ re-exported by
 ┌──────────────────────────────┴──────────────────────────────┐
