@@ -1,5 +1,6 @@
 /**
  * langchain-hs Documentation Client Logic
+ * Modern, zero-emoji, responsive interface
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -10,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initTableOfContents();
   initSearch();
   initLandingTabs();
-  initMermaid();
+  initCopyInstallButtons();
 });
 
 /* ==========================================================================
@@ -30,58 +31,26 @@ function initThemeToggle() {
     const nextTheme = isDark ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', nextTheme);
     localStorage.setItem('theme', nextTheme);
-    
-    // Refresh mermaid if present
-    if (window.mermaid) {
-      window.mermaid.initialize({
-        startOnLoad: true,
-        theme: nextTheme === 'light' ? 'default' : 'dark',
-        themeVariables: {
-          darkMode: nextTheme !== 'light',
-          background: nextTheme === 'light' ? '#ffffff' : '#0e1322',
-          primaryColor: '#6366f1',
-          primaryTextColor: nextTheme === 'light' ? '#0f172a' : '#f1f5f9',
-          primaryBorderColor: '#232d48',
-          lineColor: '#06b6d4',
-          secondaryColor: '#151d33',
-          tertiaryColor: '#192237'
-        }
-      });
-    }
   });
 }
 
 /* ==========================================================================
-   Provider Toggles (Ollama vs OpenAI / OpenRouter)
+   Provider Toggles (Ollama vs OpenAI / OpenRouter vs Gemini)
    ========================================================================== */
 function initProviderToggles() {
   let currentProvider = localStorage.getItem('langchain_provider') || 'ollama';
-
   const globalToggle = document.getElementById('global-provider-toggle');
 
   function updateGlobalToggleUI(provider) {
     if (!globalToggle) return;
     const btns = globalToggle.querySelectorAll('.provider-switch-btn');
-    if (btns.length > 0) {
-      btns.forEach(btn => {
-        if (btn.getAttribute('data-provider') === provider) {
-          btn.classList.add('active');
-        } else {
-          btn.classList.remove('active');
-        }
-      });
-    } else {
-      if (provider === 'gemini') {
-        globalToggle.innerHTML = `<span class="toggle-icon">✨</span><span>Gemini</span>`;
-        globalToggle.title = 'Switch active provider to Ollama';
-      } else if (provider === 'openai') {
-        globalToggle.innerHTML = `<span class="toggle-icon">⚡</span><span>OpenAI</span>`;
-        globalToggle.title = 'Switch active provider to Gemini';
+    btns.forEach(btn => {
+      if (btn.getAttribute('data-provider') === provider) {
+        btn.classList.add('active');
       } else {
-        globalToggle.innerHTML = `<span class="toggle-icon">🦙</span><span>Ollama</span>`;
-        globalToggle.title = 'Switch active provider to OpenAI';
+        btn.classList.remove('active');
       }
-    }
+    });
   }
 
   function setProvider(provider) {
@@ -111,7 +80,8 @@ function initProviderToggles() {
       }
 
       tabs.forEach(t => {
-        if (t.getAttribute('data-provider') === (targetPanel ? targetPanel.getAttribute('data-provider') : provider)) {
+        const activeTarget = targetPanel ? targetPanel.getAttribute('data-provider') : provider;
+        if (t.getAttribute('data-provider') === activeTarget) {
           t.classList.add('active');
         } else {
           t.classList.remove('active');
@@ -127,7 +97,6 @@ function initProviderToggles() {
 
   // Set up all provider groups on the page
   document.querySelectorAll('.provider-group').forEach(group => {
-    // Avoid double header generation
     if (group.querySelector('.provider-tabs-header')) return;
 
     const panels = group.querySelectorAll('.provider-panel');
@@ -141,12 +110,22 @@ function initProviderToggles() {
 
     panels.forEach(panel => {
       const pId = panel.getAttribute('data-provider') || 'ollama';
-      const label = panel.getAttribute('data-label') || (pId === 'gemini' ? '✨ Google Gemini' : (pId === 'openai' ? '⚡ OpenAI / OpenRouter' : '🦙 Ollama (Local)'));
+      let label = panel.getAttribute('data-label');
+      if (!label) {
+        label = pId === 'gemini' ? 'Gemini' : (pId === 'openai' ? 'OpenAI / OpenRouter' : 'Ollama (Local)');
+      }
       
       const tabBtn = document.createElement('button');
       tabBtn.className = 'provider-tab-btn' + (pId === currentProvider ? ' active' : '');
       tabBtn.setAttribute('data-provider', pId);
-      tabBtn.innerText = label;
+      
+      const dot = document.createElement('span');
+      dot.className = `pill-dot pill-dot-${pId}`;
+      const text = document.createElement('span');
+      text.innerText = label;
+      
+      tabBtn.appendChild(dot);
+      tabBtn.appendChild(text);
       tabBtn.addEventListener('click', () => {
         setProvider(pId);
       });
@@ -154,26 +133,24 @@ function initProviderToggles() {
     });
 
     const actionsContainer = document.createElement('div');
-    actionsContainer.className = 'provider-header-actions';
+    actionsContainer.className = 'provider-actions';
 
     const activePanel = group.querySelector(`.provider-panel[data-provider="${currentProvider}"]`) || panels[0];
     const initialExe = activePanel ? (activePanel.getAttribute('data-exe') || '') : '';
 
     const commandPill = document.createElement('div');
     commandPill.className = 'provider-command-pill';
-    commandPill.title = 'Click to copy execution command';
-    commandPill.innerHTML = `<span class="pill-label">Run:</span> <code>${initialExe}</code>`;
+    commandPill.title = 'Click to copy run command';
+    commandPill.innerHTML = `<span>Run:</span> <code>${initialExe}</code>`;
     commandPill.addEventListener('click', async () => {
       const curActive = group.querySelector('.provider-panel.active') || panels[0];
       const exe = curActive ? curActive.getAttribute('data-exe') : '';
       if (exe) {
         try {
           await navigator.clipboard.writeText(exe);
-          const oldLabel = commandPill.querySelector('.pill-label').innerText;
-          commandPill.querySelector('.pill-label').innerText = 'Copied!';
-          setTimeout(() => {
-            commandPill.querySelector('.pill-label').innerText = oldLabel;
-          }, 1800);
+          const orig = commandPill.innerHTML;
+          commandPill.innerHTML = `<span>Copied!</span> <code>${exe}</code>`;
+          setTimeout(() => { commandPill.innerHTML = orig; }, 1800);
         } catch (e) {
           console.error(e);
         }
@@ -190,20 +167,13 @@ function initProviderToggles() {
   // Global toggle click handler
   if (globalToggle) {
     const btns = globalToggle.querySelectorAll('.provider-switch-btn');
-    if (btns.length > 0) {
-      btns.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const p = btn.getAttribute('data-provider');
-          if (p) setProvider(p);
-        });
+    btns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const p = btn.getAttribute('data-provider');
+        if (p) setProvider(p);
       });
-    } else {
-      globalToggle.addEventListener('click', () => {
-        const nextProvider = currentProvider === 'ollama' ? 'openai' : (currentProvider === 'openai' ? 'gemini' : 'ollama');
-        setProvider(nextProvider);
-      });
-    }
+    });
   }
 
   // Initial activation
@@ -217,18 +187,21 @@ function initCodeCopyButtons() {
   const codeBlocks = document.querySelectorAll('div.sourceCode, pre');
 
   codeBlocks.forEach((block) => {
-    // Avoid double wrapping
+    // Avoid double wrapping and skip mermaid diagrams or terminal outputs
     if (block.closest('.code-block-wrapper')) return;
+    if (block.classList.contains('mermaid') || block.classList.contains('terminal-body')) return;
+    if (block.closest('.terminal-output-wrapper')) return;
 
     const pre = block.tagName === 'PRE' ? block : block.querySelector('pre');
     if (!pre) return;
+    if (pre.classList.contains('mermaid') || pre.classList.contains('terminal-body')) return;
 
     const code = pre.querySelector('code') || pre;
     const textContent = code.innerText;
 
     // Detect language from class
-    let lang = 'code';
-    const classes = (block.className + ' ' + (code.className || '')).split(/\s+/);
+    let lang = 'haskell';
+    const classes = (block.className + ' ' + (code.className || '') + ' ' + (pre.className || '')).split(/\s+/);
     for (const cls of classes) {
       if (cls.startsWith('language-') || cls.startsWith('sourceCode')) {
         const extracted = cls.replace('language-', '').replace('sourceCode', '').trim();
@@ -277,20 +250,45 @@ function initCodeCopyButtons() {
 }
 
 /* ==========================================================================
-   Mobile Sidebar Menu
+   Quick Install Copy Buttons
+   ========================================================================== */
+function initCopyInstallButtons() {
+  document.querySelectorAll('.quick-install-box').forEach(box => {
+    box.style.cursor = 'pointer';
+    box.title = 'Click to copy install command';
+    box.addEventListener('click', async () => {
+      const text = box.querySelector('.install-cmd')?.innerText || box.innerText;
+      try {
+        await navigator.clipboard.writeText(text);
+        const originalContent = box.innerHTML;
+        box.innerHTML = `<span style="color:#10b981;font-weight:600;">Copied to clipboard!</span>`;
+        setTimeout(() => { box.innerHTML = originalContent; }, 1800);
+      } catch (e) {
+        console.error(e);
+      }
+    });
+  });
+}
+
+/* ==========================================================================
+   Mobile Sidebar & Menu Toggle
    ========================================================================== */
 function initMobileMenu() {
   const toggleBtn = document.getElementById('mobile-toggle');
   const sidebar = document.querySelector('.doc-sidebar');
+  const navCenter = document.getElementById('main-nav');
 
-  if (toggleBtn && sidebar) {
+  if (toggleBtn) {
     toggleBtn.addEventListener('click', () => {
-      sidebar.classList.toggle('open');
+      if (sidebar) {
+        sidebar.classList.toggle('open');
+      } else if (navCenter) {
+        navCenter.classList.toggle('open-mobile');
+      }
     });
 
-    // Close when clicking outside on mobile
     document.addEventListener('click', (e) => {
-      if (sidebar.classList.contains('open') && !sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
+      if (sidebar && sidebar.classList.contains('open') && !sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
         sidebar.classList.remove('open');
       }
     });
@@ -321,7 +319,6 @@ function initTableOfContents() {
     tocContainer.appendChild(li);
   });
 
-  // IntersectionObserver for active header
   const observer = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
       if (entry.isIntersecting) {
@@ -341,50 +338,34 @@ function initTableOfContents() {
 }
 
 /* ==========================================================================
-   Instant Search Modal (Cmd+K / Ctrl+K)
+   Instant Search Modal (Ctrl+K / Cmd+K)
    ========================================================================== */
 const searchDocs = [
-  // 19 Components
-  { title: "Chat Models", category: "Components", url: "/components/chat-models.html", snippet: "Simple chat invocation with ChatOllama and ChatOpenAI." },
-  { title: "Streaming", category: "Components", url: "/components/streaming.html", snippet: "Real-time token streaming with streamChat and StreamEvents." },
-  { title: "Langchain Monad", category: "Components", url: "/components/monad.html", snippet: "Monadic LLM computation with LangchainT, ReaderT, and Exception handling." },
-  { title: "Tools & Function Calling", category: "Components", url: "/components/tools.html", snippet: "Defining typed Haskell tools with FunctionDefinition and tool invocation." },
-  { title: "Structured Outputs", category: "Components", url: "/components/structured-output.html", snippet: "Generating typed JSON schemas and Aeson FromJSON decoding." },
-  { title: "RAG & Embeddings", category: "Components", url: "/components/rag.html", snippet: "Vector embeddings, cosine similarity, Document chunking and retrieval." },
-  { title: "Retrievers & Ensembles", category: "Components", url: "/components/retrievers.html", snippet: "BM25 keyword search, Vector store retriever, and ensemble rank fusion." },
-  { title: "Memory Systems", category: "Components", url: "/components/memory.html", snippet: "ConversationBufferMemory and conversational context tracking." },
-  { title: "Retrieval QA Chains", category: "Components", url: "/components/retrieval-qa.html", snippet: "End-to-end question answering over indexed knowledge bases." },
-  { title: "ReAct Agent", category: "Components", url: "/components/react-agent.html", snippet: "Reasoning and acting loop with tool inspection and step execution." },
-  { title: "Plan-and-Execute Agent", category: "Components", url: "/components/plan-and-execute.html", snippet: "Multi-step planner with dynamic task decomposition and re-planning." },
-  { title: "Guardrails & Safety", category: "Components", url: "/components/guardrails.html", snippet: "Input/output moderation, PII redaction, and semantic guardrail enforcement." },
-  { title: "Resilience & Circuit Breakers", category: "Components", url: "/components/resilience.html", snippet: "Retry policies, exponential backoff, rate limiting, and fallback providers." },
-  { title: "Observability & Tracing", category: "Components", url: "/components/observability.html", snippet: "Callbacks, OpenTelemetry tracing, and execution timing metrics." },
-  { title: "Model Context Protocol (MCP)", category: "Components", url: "/components/mcp.html", snippet: "Stdio and HTTP MCP client connecting external tool servers." },
-  { title: "Stateful Graphs (StateGraph)", category: "Components", url: "/components/state-graph.html", snippet: "Cyclic workflows, typed channels, state reducers, and conditional branching." },
+  { title: "Chat Models", category: "Components", url: "/components/chat-models.html", snippet: "Simple chat invocation with ChatOllama, ChatOpenAI, and Gemini." },
+  { title: "Streaming", category: "Components", url: "/components/streaming.html", snippet: "Real-time incremental token streaming and Conduit pipelines." },
+  { title: "Langchain Monad", category: "Components", url: "/components/monad.html", snippet: "Monadic LLM computation with LangchainT, ReaderT, and error handling." },
+  { title: "Tools & Function Calling", category: "Components", url: "/components/tools.html", snippet: "Defining typed Haskell tools with FunctionDefinition and execution." },
+  { title: "Structured Outputs", category: "Components", url: "/components/structured-output.html", snippet: "Guaranteed JSON schema generation parsed into type-safe Aeson records." },
+  { title: "RAG & Embeddings", category: "Components", url: "/components/rag.html", snippet: "Vector embeddings, cosine distance, Document chunking and semantic search." },
+  { title: "Retrievers & Ensembles", category: "Components", url: "/components/retrievers.html", snippet: "BM25 keyword search, vector stores, and Reciprocal Rank Fusion (RRF)." },
+  { title: "Memory Systems", category: "Components", url: "/components/memory.html", snippet: "ConversationBufferMemory and persistent multi-turn history tracking." },
+  { title: "Retrieval QA Chains", category: "Components", url: "/components/retrieval-qa.html", snippet: "End-to-end question answering pipeline synthesizing relevant context." },
+  { title: "ReAct Agent", category: "Components", url: "/components/react-agent.html", snippet: "Autonomous reasoning and acting loop with tool selection and observations." },
+  { title: "Plan-and-Execute Agent", category: "Components", url: "/components/plan-and-execute.html", snippet: "Decoupled macro-planner creating structured task DAGs with execution." },
+  { title: "Guardrails & Safety", category: "Components", url: "/components/guardrails.html", snippet: "Pre- and post-execution filtering, PII redaction, and policy moderation." },
+  { title: "Resilience & Circuit Breakers", category: "Components", url: "/components/resilience.html", snippet: "Exponential backoff retries, fallback providers, and circuit breakers." },
+  { title: "Observability & Tracing", category: "Components", url: "/components/observability.html", snippet: "Callbacks, execution timing, token metrics, and OpenTelemetry spans." },
+  { title: "Model Context Protocol (MCP)", category: "Components", url: "/components/mcp.html", snippet: "Stdio and HTTP JSON-RPC client connecting external tool servers." },
+  { title: "Stateful Graphs (StateGraph)", category: "Components", url: "/components/state-graph.html", snippet: "Cyclic workflows, pure state reducers, and checkpointed state machines." },
   { title: "Multi-Agent Systems", category: "Components", url: "/components/multi-agent.html", snippet: "Supervisor routing, consensus debate, and multi-agent coordination." },
-  { title: "Human-in-the-Loop (HITL)", category: "Components", url: "/components/hitl.html", snippet: "Interrupting graph workflows for approval, review, and resuming state." },
-  { title: "Runnables & AST Composition", category: "Components", url: "/components/runnables.html", snippet: "Pipe (|>>), parallel (&>&), fallback, and AST pipeline execution." },
-
-  // Getting Started & Concepts
-  { title: "Installation & Packages", category: "Getting Started", url: "/getting-started/installation.html", snippet: "Stack, Cabal, Nix setup, GHC 9.6+, monorepo architecture." },
-  { title: "Quickstart (5-Minute Guide)", category: "Getting Started", url: "/getting-started/quickstart.html", snippet: "Building your first LLM app with Ollama, OpenAI, or Gemini." },
-  { title: "Building Your First Agent", category: "Getting Started", url: "/getting-started/first-agent.html", snippet: "Constructing ReAct and Plan-and-Execute agents with typed tools." },
-  { title: "Stateful Graphs (StateGraph)", category: "Getting Started", url: "/getting-started/first-graph.html", snippet: "Creating cyclic state machines, reducers, and graph compilation." },
-  { title: "Monorepo Architecture", category: "Core Concepts", url: "/concepts/architecture.html", snippet: "Zero-dependency pure core, graph engine, and high-level ecosystem." },
-  { title: "Runnable AST Pipelines", category: "Core Concepts", url: "/concepts/runnables.html", snippet: "RunnableTree GADT, |>>, &>&, >>># operators, and AST interpretation." },
-  { title: "Models & Multi-Modal Messages", category: "Core Concepts", url: "/concepts/models-messages.html", snippet: "ChatModel, ContentBlock (text, image, tool use), and StreamEvents." },
-  { title: "Tools & Model Context Protocol (MCP)", category: "Core Concepts", url: "/concepts/tools-mcp.html", snippet: "Effect-polymorphic tools, stdio & HTTP MCP client integration." },
-  { title: "State Graphs & Checkpointers", category: "Core Concepts", url: "/concepts/state-graphs.html", snippet: "StateGraph s m, TVar memory checkpointers, SQLite persistence, time-travel." },
-  { title: "Multi-Agent Architectures", category: "Core Concepts", url: "/concepts/multi-agent.html", snippet: "Supervisor teams, multi-agent debate, majority voting, and shared blackboards." },
-  { title: "RAG & Hybrid Retrieval", category: "Core Concepts", url: "/concepts/rag-retrieval.html", snippet: "Vector stores, BM25 keyword search, Reciprocal Rank Fusion (RRF), Rerankers." },
-  { title: "Memory Systems & Caching", category: "Core Concepts", url: "/concepts/memory-caching.html", snippet: "WindowBufferMemory, SummaryMemory, and SQLite caching backend." },
-  { title: "Observability & Resilience", category: "Core Concepts", url: "/concepts/observability-resilience.html", snippet: "OpenTelemetry spans, structured logs, CircuitBreakers, and rate limiters." },
-  { title: "Local AI with Ollama", category: "Guides", url: "/guides/local-models-ollama.html", snippet: "Connecting DeepSeek-R1, Llama 3, Qwen, and nomic-embed-text locally." },
-  { title: "Human-in-the-Loop (HITL)", category: "Guides", url: "/guides/human-in-the-loop.html", snippet: "Interrupting graph execution for human approval and resuming with SQLite." },
-  { title: "Structured Type Extraction", category: "Guides", url: "/guides/structured-outputs.html", snippet: "Extracting typed Haskell data structures and JSON schemas safely." },
-  { title: "Building an MCP Agent", category: "Guides", url: "/guides/building-mcp-agent.html", snippet: "Connecting Haskell agents to GitHub, filesystem, and SQLite MCP servers." },
-  { title: "API Cheat Sheet", category: "Reference", url: "/api/cheat-sheet.html", snippet: "Comprehensive type, operator, and reducer reference for Langchain.Prelude." },
-  { title: "Monorepo Packages", category: "Reference", url: "/api/packages.html", snippet: "Package versions, dependencies, and Hackage documentation." }
+  { title: "Human-in-the-Loop (HITL)", category: "Components", url: "/components/hitl.html", snippet: "Interrupt execution graphs for human approval, edit state, and resume." },
+  { title: "Runnables & AST Composition", category: "Components", url: "/components/runnables.html", snippet: "First-class AST composition via pipe (|>>), parallel (&>&), and fallback." },
+  { title: "Installation", category: "Getting Started", url: "/getting-started/installation.html", snippet: "Stack, Cabal setup, GHC 9.8+, package installation from Hackage." },
+  { title: "Quickstart", category: "Getting Started", url: "/getting-started/quickstart.html", snippet: "Building your first LLM app with Ollama, OpenAI, or Gemini in 5 minutes." },
+  { title: "First ReAct Agent", category: "Getting Started", url: "/getting-started/first-agent.html", snippet: "Constructing autonomous ReAct agents with typed tools." },
+  { title: "First StateGraph", category: "Getting Started", url: "/getting-started/first-graph.html", snippet: "Creating cyclic state machines, pure reducers, and graph compilation." },
+  { title: "Prelude Cheat Sheet", category: "Reference", url: "/api/cheat-sheet.html", snippet: "Comprehensive reference for Langchain.Prelude types, operators, and reducers." },
+  { title: "Hackage Docs", category: "Reference", url: "https://hackage.haskell.org/package/langchain-hs", snippet: "Official Hackage documentation and Haddock API signatures." }
 ];
 
 function initSearch() {
@@ -395,10 +376,28 @@ function initSearch() {
 
   if (!searchBtn || !searchModal || !searchInput || !searchResults) return;
 
+  function renderResults(items) {
+    searchResults.innerHTML = '';
+    if (items.length === 0) {
+      searchResults.innerHTML = '<div style="padding: 1rem; color: var(--text-dim); text-align: center;">No documentation found</div>';
+      return;
+    }
+    items.forEach((item, idx) => {
+      const a = document.createElement('a');
+      a.className = 'search-result-item' + (idx === 0 ? ' selected' : '');
+      a.href = item.url;
+      a.innerHTML = `
+        <div class="search-result-title">${item.title} <span class="tag is-small" style="background:var(--palette-1);color:#fff;margin-left:0.5rem;">${item.category}</span></div>
+        <div class="search-result-snippet">${item.snippet}</div>
+      `;
+      searchResults.appendChild(a);
+    });
+  }
+
   function openSearch() {
     searchModal.classList.add('open');
     searchInput.value = '';
-    renderResults(searchDocs.slice(0, 5));
+    renderResults(searchDocs.slice(0, 6));
     searchInput.focus();
   }
 
@@ -429,7 +428,7 @@ function initSearch() {
   searchInput.addEventListener('input', (e) => {
     const q = e.target.value.toLowerCase().trim();
     if (!q) {
-      renderResults(searchDocs.slice(0, 5));
+      renderResults(searchDocs.slice(0, 6));
       return;
     }
     const filtered = searchDocs.filter(d => 
@@ -439,31 +438,8 @@ function initSearch() {
     );
     renderResults(filtered);
   });
-
-  function renderResults(items) {
-    searchResults.innerHTML = '';
-    if (items.length === 0) {
-      searchResults.innerHTML = `<div style="padding: 1.5rem; text-align: center; color: var(--text-dim);">No matching documentation found.</div>`;
-      return;
-    }
-
-    items.forEach((item) => {
-      const a = document.createElement('a');
-      a.href = item.url;
-      a.className = 'search-result-item';
-      a.innerHTML = `
-        <div class="search-result-category">${item.category}</div>
-        <div class="search-result-title">${item.title}</div>
-        <div class="search-result-snippet">${item.snippet}</div>
-      `;
-      searchResults.appendChild(a);
-    });
-  }
 }
 
-/* ==========================================================================
-   Landing Page Interactive Tabs
-   ========================================================================== */
 function initLandingTabs() {
   const tabBtns = document.querySelectorAll('.tab-btn');
   const tabPanes = document.querySelectorAll('.tab-pane');
@@ -471,47 +447,11 @@ function initLandingTabs() {
   tabBtns.forEach((btn) => {
     btn.addEventListener('click', () => {
       const target = btn.getAttribute('data-tab');
-
       tabBtns.forEach((b) => b.classList.remove('active'));
       tabPanes.forEach((p) => p.classList.remove('active'));
-
       btn.classList.add('active');
       const pane = document.getElementById('tab-' + target);
       if (pane) pane.classList.add('active');
     });
   });
-}
-
-/* ==========================================================================
-   Mermaid.js Initialization
-   ========================================================================== */
-function initMermaid() {
-  const mermaidBlocks = document.querySelectorAll('pre.mermaid, div.mermaid');
-  if (mermaidBlocks.length === 0) return;
-
-  const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
-
-  // Load Mermaid dynamically if not loaded
-  if (!window.mermaid) {
-    const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js';
-    script.onload = () => {
-      window.mermaid.initialize({
-        startOnLoad: true,
-        theme: currentTheme === 'light' ? 'default' : 'dark',
-        themeVariables: {
-          darkMode: currentTheme !== 'light',
-          background: currentTheme === 'light' ? '#ffffff' : '#0e1322',
-          primaryColor: '#6366f1',
-          primaryTextColor: currentTheme === 'light' ? '#0f172a' : '#f1f5f9',
-          primaryBorderColor: '#232d48',
-          lineColor: '#06b6d4',
-          secondaryColor: '#151d33',
-          tertiaryColor: '#192237'
-        }
-      });
-      window.mermaid.run();
-    };
-    document.head.appendChild(script);
-  }
 }

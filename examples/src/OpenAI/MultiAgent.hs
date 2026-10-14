@@ -32,15 +32,11 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import GHC.Generics (Generic)
 
-import Langchain.Graph.MultiAgent
-  ( embedSubGraphNodeWithStart
-  , supervisorNode
-  )
 import Langchain.Graph.StateGraph
-  ( Node (..)
-  , addConditionalEdge
+  ( addConditionalEdge
   , addEdge
   , addNode
+  , addSubGraphNode
   , compileGraph
   , emptyStateGraph
   , endNodeId
@@ -134,14 +130,6 @@ runApp = do
       fromSubState p sub =
         p {finalAnswer = reviewedCode sub}
 
-      embeddedCoderNode =
-        embedSubGraphNodeWithStart
-          "coderNode"
-          "coderGen"
-          compiledSubGraph
-          toSubState
-          fromSubState
-
   -- -------------------------------------------------------------------------
   -- 3. Construct Researcher node
   -- -------------------------------------------------------------------------
@@ -162,17 +150,18 @@ runApp = do
   -- -------------------------------------------------------------------------
   -- 4. Supervisor Routing Node
   -- -------------------------------------------------------------------------
-  let routes =
-        [ ("researcher", "researcherNode")
-        , ("coder", "coderNode")
-        ]
-      supNode =
-        supervisorNode
-          o
-          "supervisor"
-          routes
-          taskPrompt
-          (\target s -> s {selectedRoute = target})
+  let supervisorAction s = do
+        let prompt =
+              "You are a supervisor delegating tasks to sub-agents. Available routes:\n"
+                <> "researcher -> researcherNode\n"
+                <> "coder -> coderNode\n"
+                <> "\nTask context: "
+                <> taskPrompt s
+                <> "\nReply with ONLY 'researcher' or 'coder'."
+        resp <- invoke o [userMessage prompt] Nothing
+        let rawRoute = T.toLower $ T.strip (extractMessageText resp)
+            target = if "code" `T.isInfixOf` rawRoute then "coderNode" else "researcherNode"
+        pure $ Right $ s {selectedRoute = target}
 
   -- -------------------------------------------------------------------------
   -- 5. Compile Parent Multi-Agent Graph
@@ -182,8 +171,8 @@ runApp = do
           . addEdge "coderNode" endNodeId
           . addConditionalEdge "supervisor" (pure . Right . selectedRoute)
           . addNode "researcherNode" (liftParentNode researcherNode)
-          . addNode "coderNode" (nodeAction embeddedCoderNode)
-          . addNode "supervisor" (nodeAction supNode)
+          . addSubGraphNode "coderNode" "coderGen" compiledSubGraph toSubState fromSubState
+          . addNode "supervisor" supervisorAction
           $ emptyStateGraph replaceFieldReducer
 
   compiledParentGraph <- case compileGraph parentGraphDef of

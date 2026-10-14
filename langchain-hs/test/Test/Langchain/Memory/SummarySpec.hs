@@ -7,10 +7,11 @@ import qualified Data.Text as T
 import Test.Tasty
 import Test.Tasty.HUnit
 
+import Langchain.Error (LangchainError (..))
 import Langchain.Memory.Core (BaseMemory (..))
 import Langchain.Memory.Summary
 import Langchain.Model (extractMessageText, userMessage)
-import Test.Langchain.Provider.Mock (newMockModel)
+import Test.Langchain.Provider.Mock (newMockErrorModel, newMockModel)
 
 tests :: TestTree
 tests =
@@ -34,4 +35,15 @@ tests =
             assertBool
               "Messages contains summary in system message"
               (any (\m -> "Summary" `T.isInfixOf` extractMessageText m) msgs)
+    , testCase "SummaryMemory retains messages without data loss if summarizer fails" $ do
+        let failingModel = newMockErrorModel (LLMError "Rate limit exceeded" Nothing)
+        mem <- newSummaryMemory failingModel 2 []
+        _ <- runExceptT $ do
+          addMessage mem (userMessage "Message 1")
+          addMessage mem (userMessage "Message 2")
+          addMessage mem (userMessage "Message 3") -- triggers summarizer which fails
+        allMsgs <- runExceptT $ messages mem
+        case allMsgs of
+          Right msgs -> length msgs @?= 3 -- History was NOT deleted!
+          Left err -> assertFailure ("Failed to retrieve messages: " ++ show err)
     ]

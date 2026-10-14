@@ -1,4 +1,4 @@
-# 🦜️🔗 Langchain-hs Examples
+# Langchain-hs Examples
 
 A comprehensive suite of 43 verified example executables demonstrating each core component of the `langchain-hs` ecosystem using **Ollama** (local/offline), **OpenAI** (cloud API), and **Google Gemini** (Interactions v1 API).
 

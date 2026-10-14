@@ -8,23 +8,25 @@ category: Getting Started
 
 Unlike a basic linear prompt-response cycle, an **Agent** uses the model to dynamically choose which tools to invoke, interpret their outputs (observations), and iterate until it reaches a conclusive answer.
 
-```
-       ┌─────────────┐
-       │   User Q    │
-       └──────┬──────┘
-              ▼
-   ┌──────────────────────┐
-┌─►│   LLM Reasoning      ├─┐ (Final Answer)
-│  └──────────┬───────────┘ │
-│ (Observation)│ (Tool Call) │
-│             ▼             │
-│  ┌──────────────────────┐ │
-└──┤   Tool Execution     │ │
-   └──────────────────────┘ │
-              ▼             ▼
-       ┌──────────────────────┐
-       │     Final Answer     │
-       └──────────────────────┘
+```text
+       +-------------+
+       |   User Q    |
+       +------+------+
+              |
+              v
+       +----------------------+
++----> |    LLM Reasoning     | ---+ (Final Answer)
+|      +----------+-----------+    |
+| (Observation)   | (Tool Call)    |
+|                 v                |
+|      +----------------------+    |
++----- |    Tool Execution    |    |
+       +----------------------+    |
+                  |                |
+                  v                v
+           +----------------------+
+           |     Final Answer     |
+           +----------------------+
 ```
 
 ---
@@ -86,6 +88,21 @@ main = do
     Right ans -> putStrLn ("Final Answer:\n" ++ T.unpack (extractMessageText ans))
 ```
 
+### Execution Output
+
+```text
+Running agent...
+[ReAct Step 1]
+Thought: I need to calculate 12 * 45 first before adding 10.
+Action: calculator {"expression": "12 * 45"}
+Observation: 540
+
+[ReAct Step 2]
+Thought: Now I need to add 10 to 540, which is 550.
+Final Answer:
+12 * 45 is 540, and adding 10 yields 550.
+```
+
 ---
 
 ## 3. Plan-and-Execute Agent
@@ -106,7 +123,7 @@ planAndExecuteExample = do
     Right response -> print response
 ```
 
-<div class="admonition tip">
-  <div class="admonition-title">💡 Middleware Support</div>
+<div class="admonition">
+  <div class="admonition-title">Middleware Support</div>
   You can attach logging, rate-limiting, and guardrail middleware to agents with <code>chainMiddlewares [loggingMiddleware, defaultMiddleware]</code>.
 </div>

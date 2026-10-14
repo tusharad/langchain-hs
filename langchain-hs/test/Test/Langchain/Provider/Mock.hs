@@ -17,13 +17,17 @@ Provides a purely in-memory 'MockModel' implementing 'ChatModel' for testing and
 module Test.Langchain.Provider.Mock
   ( MockModel (..)
   , newMockModel
+  , MockErrorModel (..)
+  , newMockErrorModel
   ) where
 
+import Control.Monad.Except (throwError)
 import Data.Aeson (object, (.=))
 import Data.Conduit (yield)
 import Data.Text (Text)
 
 import Langchain.Cache.Core (CacheableChatModel (..))
+import Langchain.Error (LangchainError)
 import Langchain.Model
   ( ChatModel (..)
   , assistantMessage
@@ -63,3 +67,18 @@ instance CacheableChatModel MockModel where
       , "model" .= mName
       , "response" .= response
       ]
+
+-- | Mock model that deterministically throws an error on invocation
+newtype MockErrorModel = MockErrorModel
+  { mockError :: LangchainError
+  }
+  deriving (Eq, Show)
+
+newMockErrorModel :: LangchainError -> MockErrorModel
+newMockErrorModel = MockErrorModel
+
+instance ChatModel MockErrorModel where
+  type ModelConfig MockErrorModel = ()
+
+  invoke model _ _ = throwError (mockError model)
+  stream model _ _ = throwError (mockError model)

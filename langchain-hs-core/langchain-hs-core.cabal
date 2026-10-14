@@ -76,6 +76,9 @@ library
       Langchain.Memory
       Langchain.Memory.Core
       Langchain.Memory.Summary
+      Langchain.Memory.Session
+      Langchain.Memory.Entity
+      Langchain.Memory.Combined
       Langchain.Cache
       Langchain.Cache.Core
       Langchain.OutputParser
@@ -113,7 +116,6 @@ library
     , bytestring >=0.10 && <0.13
     , conduit ==1.3.*
     , containers >=0.6 && <0.9
-    , deepseq >=1.4 && <1.6
     , directory ==1.3.*
     , filepath >=1.4 && <2
     , format-heavy ==0.1.*
@@ -168,7 +170,6 @@ test-suite langchain-hs-core-test
     , bytestring >=0.10 && <0.13
     , conduit ==1.3.*
     , containers >=0.6 && <0.9
-    , deepseq >=1.4 && <1.6
     , directory ==1.3.*
     , filepath >=1.4 && <2
     , format-heavy ==0.1.*

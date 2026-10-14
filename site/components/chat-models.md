@@ -21,7 +21,7 @@ Fundamental chat model interfaces for invocation, message generation, batching, 
 Compare local execution via **Ollama**, cloud API execution via **OpenAI / OpenRouter**, and Google's **Gemini Interactions v1 API**. Use the toggle tabs or the global provider switcher in the header to switch:
 
 ::: {.provider-group}
-::: {.provider-panel data-provider="ollama" data-label="🦙 Ollama (Local)" data-exe="stack run simpleollama"}
+::: {.provider-panel data-provider="ollama" data-label="Ollama (Local)" data-exe="stack run simpleollama"}
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -78,7 +78,7 @@ runApp = do
 ```
 :::
 
-::: {.provider-panel data-provider="openai" data-label="⚡ OpenAI / OpenRouter" data-exe="stack run simpleopenai"}
+::: {.provider-panel data-provider="openai" data-label="OpenAI / OpenRouter" data-exe="stack run simpleopenai"}
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -138,7 +138,7 @@ runApp = do
 ```
 :::
 
-::: {.provider-panel data-provider="gemini" data-label="✨ Google Gemini" data-exe="cabal run simplegemini"}
+::: {.provider-panel data-provider="gemini" data-label="Google Gemini" data-exe="cabal run simplegemini"}
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
 

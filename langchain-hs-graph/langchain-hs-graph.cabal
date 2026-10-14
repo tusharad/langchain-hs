@@ -7,7 +7,7 @@ cabal-version: 1.12
 name:           langchain-hs-graph
 version:        0.0.6.0
 synopsis:       Graph-based stateful agent orchestration engine for langchain-hs
-description:    StateGraph, StateReducer, Checkpointer, HITL interrupt/resume, and Multi-Agent supervisor patterns.
+description:    StateGraph, StateReducer, Checkpointer, and HITL interrupt/resume workflow patterns.
 category:       Web, AI, Control
 homepage:       https://github.com/tusharad/langchain-hs#readme
 bug-reports:    https://github.com/tusharad/langchain-hs/issues
@@ -34,8 +34,6 @@ library
       Langchain.Graph.StateGraph
       Langchain.Graph.Checkpointer
       Langchain.Graph.HITL
-      Langchain.Graph.MultiAgent
-      Langchain.Graph.Parallel
   other-modules:
       Paths_langchain_hs_graph
   hs-source-dirs:
@@ -55,7 +53,6 @@ library
       ScopedTypeVariables
   build-depends:
       aeson >=2.0 && <3
-    , async ==2.2.*
     , base >=4.17 && <5
     , bytestring >=0.10 && <0.13
     , containers >=0.6 && <0.9
@@ -72,7 +69,6 @@ test-suite langchain-hs-graph-test
   other-modules:
       Test.Langchain.Graph.CheckpointerSpec
       Test.Langchain.Graph.HITLSpec
-      Test.Langchain.Graph.MultiAgentSpec
       Test.Langchain.Graph.StateGraphSpec
       Paths_langchain_hs_graph
   hs-source-dirs:
@@ -94,7 +90,6 @@ test-suite langchain-hs-graph-test
   build-depends:
       QuickCheck >=2.14
     , aeson >=2.0 && <3
-    , async ==2.2.*
     , base >=4.17 && <5
     , bytestring >=0.10 && <0.13
     , containers >=0.6 && <0.9

@@ -6,26 +6,26 @@ category: Getting Started
 
 ## 1. Minimal Working Example (Ollama)
 
-Make sure you have [Ollama](https://ollama.com/) running locally (`ollama run qwen2.5:7b` or `ollama run llama3.2`):
+Make sure you have [Ollama](https://ollama.com/) running locally (`ollama run llama3.2` or `ollama run qwen2.5:7b`):
 
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
-
 module Main where
 
 import Control.Monad.Except (runExceptT)
 import qualified Data.Text.IO as TIO
 import Langchain.Prelude
+import Langchain.Provider.Ollama
 
 main :: IO ()
 main = do
   -- 1. Initialize the ChatModel instance
-  model <- newOllama "qwen2.5:7b" defaultConfig
+  model <- newOllama "llama3.2" defaultConfig
 
   -- 2. Construct messages
   let messages =
         [ systemMessage "You are a concise, helpful Haskell tutor."
-        , userMessage "What is the difference between Functor, Applicative, and Monad?"
+        , userMessage "What is the difference between Functor, Applicative, and Monad in one sentence?"
         ]
 
   -- 3. Invoke the model
@@ -35,6 +35,13 @@ main = do
     Right responseMsg -> do
       putStrLn "--- LLM Response ---"
       TIO.putStrLn (extractMessageText responseMsg)
+```
+
+### Execution Output
+
+```text
+--- LLM Response ---
+A Functor maps a normal function over wrapped values, an Applicative maps a wrapped function over wrapped values, and a Monad feeds a wrapped value into a function that returns a wrapped value.
 ```
 
 ---
@@ -63,11 +70,12 @@ let model = newGemini "AIzaSy..." "gemini-3.6-flash" Nothing
 
 ```haskell
 import Langchain.Prelude
+import Langchain.Provider.Ollama
 
 streamExample :: IO ()
 streamExample = do
-  model <- newOllama "qwen2.5:7b" defaultConfig
-  let messages = [userMessage "Count from 1 to 10 with explanations."]
+  model <- newOllama "llama3.2" defaultConfig
+  let messages = [userMessage "Explain Monads briefly."]
 
   -- Stream tokens directly to stdout as they arrive
   streamModel model messages $ \event ->
@@ -97,7 +105,7 @@ runIt = do
   putStrLn (show answer)
 ```
 
-<div class="admonition note">
-  <div class="admonition-title">📘 What's Next?</div>
-  Learn how to equip LLMs with tools and autonomous reasoning in the <a href="/getting-started/first-agent.html">First Agent Guide</a>, or build stateful graph workflows in the <a href="/getting-started/first-graph.html">First StateGraph Guide</a>.
+<div class="admonition">
+  <div class="admonition-title">What's Next?</div>
+  Learn how to equip LLMs with tools and autonomous reasoning in the <a href="/getting-started/first-agent.html">First Agent Guide</a>, or build stateful graph workflows in the <a href="/getting-started/first-graph.html">First StateGraph Guide</a>. You can also view package releases on <a href="https://hackage.haskell.org/package/langchain-hs" target="_blank" rel="noopener noreferrer">Hackage</a>.
 </div>

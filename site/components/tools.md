@@ -28,7 +28,7 @@ Haskell-native, tools designed specifically for LLM agents. Built with memory an
 Compare tool invocation across **Ollama**, **OpenAI / OpenRouter**, and **Google Gemini**:
 
 ::: {.provider-group}
-::: {.provider-panel data-provider="ollama" data-label="🦙 Ollama (Local)" data-exe="stack run toolollama"}
+::: {.provider-panel data-provider="ollama" data-label="Ollama (Local)" data-exe="stack run toolollama"}
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
@@ -86,7 +86,7 @@ runApp = do
 ```
 :::
 
-::: {.provider-panel data-provider="openai" data-label="⚡ OpenAI / OpenRouter" data-exe="stack run toolopenai"}
+::: {.provider-panel data-provider="openai" data-label="OpenAI / OpenRouter" data-exe="stack run toolopenai"}
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
@@ -145,7 +145,7 @@ runApp = do
 ```
 :::
 
-::: {.provider-panel data-provider="gemini" data-label="✨ Google Gemini" data-exe="cabal run toolgemini"}
+::: {.provider-panel data-provider="gemini" data-label="Google Gemini" data-exe="cabal run toolgemini"}
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}

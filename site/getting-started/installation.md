@@ -6,9 +6,10 @@ category: Getting Started
 
 ## Requirements
 
-- **GHC**: `9.6.x` through `9.10.x` supported (GHC 9.6.7 recommended)
+- **GHC**: `9.6.x` through `9.12.x` supported (`9.8+` recommended)
 - **Stack** (`>= 2.9`) or **Cabal** (`>= 3.8`)
 - Local LLM provider (e.g. [Ollama](https://ollama.com/)) or API keys (OpenAI, Gemini, OpenRouter)
+- Available on Hackage: [https://hackage.haskell.org/package/langchain-hs](https://hackage.haskell.org/package/langchain-hs)
 
 ---
 
@@ -19,12 +20,29 @@ category: Getting Started
 | Package | Purpose | Typical Use Case |
 |---|---|---|
 | `langchain-hs` | Core Framework | Agents (`ReAct`, `PlanAndExecute`), Chains, Vector Stores, Observability |
-| `langchain-hs-core` | Pure AST & Types | Zero-dependency pure ASTs (`RunnableTree`), `ChatModel`, `Tool` |
+| `langchain-hs-core` | Pure AST & Types | Pure ASTs (`RunnableTree`), `ChatModel`, `Tool` |
 | `langchain-hs-graph` | Graph & Multi-Agent | `StateGraph`, Checkpointing, Time-Travel, Parallel Nodes |
 | `langchain-hs-ollama` | Ollama Provider | Local/offline inference via Ollama |
 | `langchain-hs-openai` | OpenAI Provider | OpenAI & OpenAI-compatible endpoints (OpenRouter, Fireworks) |
 | `langchain-hs-gemini` | Gemini Provider | Google Gemini API (Interactions v1 OpenAPI spec), embeddings & SSE streaming |
 | `langchain-hs-mcp` | MCP Client | Connect to Model Context Protocol servers over stdio |
+
+### Using Cabal
+
+```bash
+cabal update
+cabal install langchain-hs langchain-hs-ollama langchain-hs-openai
+```
+
+Add to your `cabal.project` or `.cabal` build-depends:
+
+```cabal
+build-depends:
+    base >= 4.14 && < 5,
+    text,
+    langchain-hs >= 0.0.6,
+    langchain-hs-ollama >= 0.0.6
+```
 
 ### Using Stack
 
@@ -60,18 +78,6 @@ dependencies:
   - langchain-hs-gemini
 ```
 
-### Using Cabal
-
-Add to your `cabal.project` or `.cabal` build-depends:
-
-```cabal
-build-depends:
-    base >= 4.14 && < 5,
-    text,
-    langchain-hs >= 0.0.6,
-    langchain-hs-ollama >= 0.0.6
-```
-
 ---
 
 ## Canonical Import: `Langchain.Prelude`
@@ -84,7 +90,7 @@ build-depends:
 import Langchain.Prelude
 ```
 
-<div class="admonition tip">
-  <div class="admonition-title">💡 Pro Tip</div>
-  <code>Langchain.Prelude</code> does not conflict with Haskell's standard <code>Prelude</code>. You can safely import both without name shadowing.
+<div class="admonition">
+  <div class="admonition-title">Pro Tip</div>
+  <code>Langchain.Prelude</code> does not conflict with Haskell's standard <code>Prelude</code>. You can safely import both without name shadowing. All documentation is hosted on <a href="https://hackage.haskell.org/package/langchain-hs" target="_blank" rel="noopener noreferrer">Hackage</a>.
 </div>

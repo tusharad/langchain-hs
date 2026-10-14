@@ -81,10 +81,20 @@ module Langchain.Prelude
   , runBranch
   , runFallback
   , runChat
+  , runChatWithConfig
   , runModel
+  , runModelWithConfig
+  , runConfiguredModel
   , runRetriever
   , ModelRunnable (..)
+  , modelRunnable
+  , modelRunnableWithConfig
+  , bindConfig
   , TextModelRunnable (..)
+  , textModelRunnable
+  , textModelRunnableWithConfig
+  , bindTextConfig
+  , ConfiguredModelRunnable (..)
 
     -- * Effect-Polymorphic Tools
   , Tool (..)

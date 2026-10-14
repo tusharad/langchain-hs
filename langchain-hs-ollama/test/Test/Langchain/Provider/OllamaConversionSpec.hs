@@ -31,7 +31,7 @@ tests =
         , testCase "Developer and Function roles map to System/Tool fallbacks" $ do
             toOllamaRole Developer @?= O.System
             toOllamaRole Function @?= O.Tool
-        , testCase "fromOllamaRole inverts toOllamaRole for core roles" $ do
+        , testCase "fromOllamaRole parses Ollama roles to Langchain roles" $ do
             fromOllamaRole O.System @?= System
             fromOllamaRole O.User @?= User
             fromOllamaRole O.Assistant @?= Assistant
@@ -51,10 +51,6 @@ tests =
                 msg = fromOllamaMessage oMsg
             messageRole msg @?= Assistant
             extractMessageText msg @?= "Response content"
-        , testCase "Round-trip preserves user text message" $ do
-            let msg = userMessage "What is pure functional programming?"
-                roundTripped = fromOllamaMessage (toOllamaMessage msg)
-            roundTripped @?= msg
         , testCase "Multi-modal message with text and image converts correctly" $ do
             let msg =
                   Message

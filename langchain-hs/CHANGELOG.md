@@ -19,7 +19,7 @@
   - Every sub-package now has its own isolated `stack.yaml` and test suite that builds and executes independently.
   - Verified across GHC 9.4 through GHC 9.12 (LTS 21.25, 22.44, 23.28, 24.12, 24.56, Nightly).
 
-### ⚠️ Breaking Changes from 0.0.5.0
+### Breaking Changes from 0.0.5.0
 
 - Provider modules are no longer re-exported from `langchain-hs`:
   - For Ollama: Add `langchain-hs-ollama` to dependencies and `import Langchain.Provider.Ollama` / `import Langchain.Embeddings.Ollama`.
@@ -57,7 +57,7 @@
   - Migrated to `MercuryTechnologies/openai` client.
   - Full PVP upper bounds across all packages for Hackage compliance.
 
-### ⚠️ Breaking Changes from 0.0.3.0
+### Breaking Changes from 0.0.3.0
 
 - **`LangchainT` is now parameterized over `env`** (`LangchainT env m a` instead of the former implicit `LangchainConfig`).
   - Replace `runLangchainT config action` with `runLangchainT env action` where `env` is your custom environment type (use `()` if you have no shared config).
