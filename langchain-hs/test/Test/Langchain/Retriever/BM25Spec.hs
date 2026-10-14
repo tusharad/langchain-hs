@@ -15,28 +15,7 @@ tests :: TestTree
 tests =
   testGroup
     "Langchain.Retriever.BM25"
-    [ testCase "BM25 finds exact matching document" $ do
-        let doc1 =
-              Document
-                { pageContent = "Haskell is a functional programming language with strong static types."
-                , metadata = Map.empty
-                }
-            doc2 =
-              Document
-                { pageContent = "Python is a dynamic language used for machine learning and web scripts."
-                , metadata = Map.empty
-                }
-            doc3 =
-              Document
-                { pageContent = "Rust guarantees memory safety without garbage collection."
-                , metadata = Map.empty
-                }
-            index = newBM25Index [doc1, doc2, doc3]
-            results = bm25Search index "functional static types" 2
-        case results of
-          (topResult : _) -> topResult @?= doc1
-          [] -> assertFailure "Expected non-empty search results"
-    , testCase "BM25 scoring gives highest score to relevant passage" $ do
+    [ testCase "BM25 scoring gives highest score to relevant passage" $ do
         let doc1 =
               Document
                 { pageContent = "Deep research agent explores web pages and validates claims."

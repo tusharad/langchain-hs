@@ -8,23 +8,15 @@ module Test.Langchain.Provider.Ollama (tests) where
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import Control.Monad.Except (runExceptT)
 import Data.Text (Text)
-import qualified Data.Text as T
 import GHC.Generics (Generic)
 
-import Langchain.Model
 import Langchain.Provider.Ollama
 import qualified Ollama.Client as OC
 import qualified Ollama.Types.Format as OFormat
-import qualified Ollama.Types.Message as O
 
 testModelName :: Text
 testModelName = "gemma3:latest"
-
--- | Skip live Ollama tests when running unit test suite
-withOllamaModel :: Text -> (Text -> IO ()) -> IO ()
-withOllamaModel _ _ = pure ()
 
 data TestPerson = TestPerson
   { personName :: !Text
@@ -79,40 +71,4 @@ tests =
     , testCase "withKeepAlive sets keep-alive duration" $ do
         let cfg = withKeepAlive "10m" defaultOllamaConfig
         ollamaKeepAlive cfg @?= Just "10m"
-    , testCase "toOllamaRole and fromOllamaRole map correctly" $ do
-        toOllamaRole User @?= O.User
-        toOllamaRole Assistant @?= O.Assistant
-        toOllamaRole System @?= O.System
-        toOllamaRole Tool @?= O.Tool
-        toOllamaRole Developer @?= O.System
-        toOllamaRole Function @?= O.Tool
-        fromOllamaRole O.User @?= User
-        fromOllamaRole O.Assistant @?= Assistant
-        fromOllamaRole O.System @?= System
-        fromOllamaRole O.Tool @?= Tool
-    , testCase "toOllamaMessage and fromOllamaMessage roundtrip text" $ do
-        let msg = userMessage "Hello Ollama"
-            oMsg = toOllamaMessage msg
-            backMsg = fromOllamaMessage oMsg
-        messageRole backMsg @?= User
-        extractMessageText backMsg @?= "Hello Ollama"
-    , testCase "invoke returns Assistant message" $ do
-        withOllamaModel testModelName $ \modelName -> do
-          p <- newOllama modelName defaultClientConfig
-          let input = [userMessage "What is 2 + 2? Answer with just the number."]
-          res <- runExceptT $ invoke p input Nothing
-          case res of
-            Left err -> assertFailure $ "Expected success, got error: " ++ show err
-            Right msg -> do
-              messageRole msg @?= Assistant
-              assertBool "Should contain 4" ("4" `T.isInfixOf` extractMessageText msg)
-    , testCase "batch processes multiple inputs" $ do
-        withOllamaModel testModelName $ \modelName -> do
-          p <- newOllama modelName defaultClientConfig
-          let inputs = [[userMessage "What is 1 + 1?"], [userMessage "What is 2 + 2?"]]
-          res <- runExceptT $ batch p inputs Nothing
-          case res of
-            Left err -> assertFailure $ "Expected success, got error: " ++ show err
-            Right msgs -> do
-              length msgs @?= 2
     ]

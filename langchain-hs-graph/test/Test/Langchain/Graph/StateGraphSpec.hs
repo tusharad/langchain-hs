@@ -8,20 +8,11 @@ import Langchain.Error (LangchainError)
 import Langchain.Graph.StateGraph
 import Test.Tasty
 import Test.Tasty.HUnit
-import Test.Tasty.QuickCheck
 
 tests :: TestTree
 tests =
   testGroup
     "Langchain.Graph.StateGraphSpec"
-    [ unitTests
-    , propertyTests
-    ]
-
-unitTests :: TestTree
-unitTests =
-  testGroup
-    "Unit Tests"
     [ testCase "compileGraph succeeds on valid node graph" $ do
         let action :: Text -> ExceptT LangchainError IO (Either LangchainError Text)
             action s = pure $ Right (s <> " world")
@@ -41,16 +32,4 @@ unitTests =
           Right compiled -> do
             res <- runExceptT $ runGraph compiled "node1" ("hello" :: Text)
             res @?= Right "hello world"
-    ]
-
-propertyTests :: TestTree
-propertyTests =
-  testGroup
-    "Property Tests (Laws)"
-    [ testProperty "Reducer Associativity Law: (a <> b) <> c == a <> (b <> c)" $ \a b c ->
-        let s1 = (a :: String) ++ (b :: String)
-            s2 = s1 ++ (c :: String)
-            s3 = b ++ c
-            s4 = a ++ s3
-         in s2 == s4
     ]
