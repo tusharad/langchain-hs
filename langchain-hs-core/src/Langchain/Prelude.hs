@@ -253,8 +253,6 @@ module Langchain.Prelude
     -- * Structured Output & Parsers
   , OutputParser (..)
   , CommaSeparatedList (..)
-  , JSONOutputStructure (..)
-  , NumberSeparatedList (..)
   , StructuredOutput (..)
   , TypeSchema (..)
   , structuredInvoke

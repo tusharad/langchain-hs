@@ -15,6 +15,7 @@ import Test.Tasty.HUnit
 
 import Langchain.DocumentLoader.Core
 import Langchain.DocumentLoader.FileLoader
+import Langchain.TextSplitter.Character
 
 createTestFile :: FilePath -> String -> IO ()
 createTestFile = writeFile
@@ -41,6 +42,13 @@ documentTests =
         doc <> mempty @?= doc
         pageContent mempty @?= ""
         metadata mempty @?= empty
+    , testCase "splitDocuments preserves metadata across all generated chunks" $ do
+        let doc = Document "Chunk 1\n\nChunk 2" (fromList [("source", String "manual.md")])
+            chunks = splitDocuments (splitText defaultCharacterSplitterOps) [doc]
+        length chunks @?= 2
+        map pageContent chunks @?= ["Chunk 1", "Chunk 2"]
+        map metadata chunks
+          @?= [fromList [("source", String "manual.md")], fromList [("source", String "manual.md")]]
     ]
 
 fileLoaderTests :: TestTree
