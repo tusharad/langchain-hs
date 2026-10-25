@@ -233,13 +233,11 @@ toOllamaMessage msg =
         Nothing -> Nothing
         Just tcs ->
           Just
-            [ OTool.ToolCall
-                { OTool.tcFunction =
-                    OTool.ToolCallFunction
-                      { OTool.tcfName = toolCallName tc
-                      , OTool.tcfArguments = parseArgs (toolCallArguments tc)
-                      }
-                }
+            [ OTool.mkToolCall
+                ( OTool.mkToolCallFunction
+                    (toolCallName tc)
+                    (parseArgs (toolCallArguments tc))
+                )
             | tc <- tcs
             ]
       parseArgs v = case v of
@@ -250,19 +248,19 @@ toOllamaMessage msg =
         _ -> case fromJSON v of
           Success m -> m
           _ -> mempty
-   in O.Message r txt imgs tools (messageName msg) Nothing
+   in O.Message r txt imgs tools (messageName msg) Nothing Nothing
 
 -- | Convert Ollama 'O.Message' to core 'Message'.
 fromOllamaMessage :: O.Message -> Message
-fromOllamaMessage (O.Message r txt _imgs tools name _think) =
-  let cRole = fromOllamaRole r
-      cMsg = (textMessage cRole txt) {messageName = name}
-      cTools = case tools of
+fromOllamaMessage oMsg =
+  let cRole = fromOllamaRole (O.messageRole oMsg)
+      cMsg = (textMessage cRole (O.messageContent oMsg)) {messageName = O.messageToolName oMsg}
+      cTools = case O.messageToolCalls oMsg of
         Nothing -> Nothing
         Just tcs ->
           Just
             [ ToolCall
-                { toolCallId = ""
+                { toolCallId = fromMaybe "" (OTool.tcId tc)
                 , toolCallType = "function"
                 , toolCallName = OTool.tcfName (OTool.tcFunction tc)
                 , toolCallArguments = toJSON (OTool.tcfArguments (OTool.tcFunction tc))
@@ -288,10 +286,8 @@ toChatRequest (Ollama _ mName) inputMsgs mbConfig =
         (m : ms) -> NonEmpty.map toOllamaMessage (m NonEmpty.:| ms)
         [] -> O.userMessage "" NonEmpty.:| []
       cfg = fromMaybe defaultOllamaConfig mbConfig
-   in OllamaChat.ChatRequest
-        { OllamaChat.chatModel = ModelName mName
-        , OllamaChat.chatMessages = oMsgs
-        , OllamaChat.chatTools = ollamaTools cfg
+   in (OllamaChat.chatRequest (ModelName mName) oMsgs)
+        { OllamaChat.chatTools = ollamaTools cfg
         , OllamaChat.chatFormat = ollamaFormat cfg
         , OllamaChat.chatOptions = ollamaOptions cfg
         , OllamaChat.chStream = Just False
@@ -339,7 +335,7 @@ instance ChatModel Ollama where
                       Just tcs ->
                         Just
                           [ ToolCall
-                              { toolCallId = ""
+                              { toolCallId = fromMaybe "" (OTool.tcId tc)
                               , toolCallType = "function"
                               , toolCallName = OTool.tcfName (OTool.tcFunction tc)
                               , toolCallArguments = toJSON (OTool.tcfArguments (OTool.tcFunction tc))
