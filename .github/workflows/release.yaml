@@ -4,8 +4,14 @@ on:
   push:
     tags:
       - 'v*'
+      - '*-v*'
   workflow_dispatch:
     inputs:
+      package:
+        description: 'Specific package to release (or "all" for all packages)'
+        required: false
+        type: string
+        default: 'all'
       publish_to_hackage:
         description: 'Publish source packages (.tar.gz) to Hackage'
         required: true
@@ -119,14 +125,12 @@ jobs:
           name: hackage-docs
           path: artifacts/docs
 
-      - name: Publish langchain-hs-core to Hackage
-        if: github.event_name == 'push' || inputs.publish_to_hackage == true
+      - name: Check and Publish Packages to Hackage
         env:
           HACKAGE_KEY: ${{ secrets.HACKAGE_KEY }}
           HACKAGE_TOKEN: ${{ secrets.HACKAGE_TOKEN }}
           HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
           HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
-          CANDIDATE: ${{ inputs.as_candidate == true && '--candidate' || '' }}
         run: |
           AUTH_FLAG=""
           if [ -n "$HACKAGE_TOKEN" ]; then
@@ -145,169 +149,114 @@ jobs:
             PUBLISH_FLAG=""
           fi
 
-          CORE_TAR=$(ls artifacts/langchain-hs-core-*.tar.gz)
-          echo "Uploading $CORE_TAR to Hackage..."
-          cabal upload $AUTH_FLAG $PUBLISH_FLAG $CANDIDATE "$CORE_TAR"
-
-          echo "Waiting 30 seconds for Hackage index update before uploading dependent packages..."
-          sleep 30
-
-      - name: Publish langchain-hs-core documentation to Hackage
-        if: github.event_name == 'push' || inputs.publish_docs == true
-        env:
-          HACKAGE_KEY: ${{ secrets.HACKAGE_KEY }}
-          HACKAGE_TOKEN: ${{ secrets.HACKAGE_TOKEN }}
-          HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
-          HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
-          CANDIDATE: ${{ inputs.as_candidate == true && '--candidate' || '' }}
-        run: |
-          AUTH_FLAG=""
-          if [ -n "$HACKAGE_TOKEN" ]; then
-            AUTH_FLAG="--token $HACKAGE_TOKEN"
-          elif [ -n "$HACKAGE_KEY" ]; then
-            AUTH_FLAG="--token $HACKAGE_KEY"
-          elif [ -n "$HACKAGE_USERNAME" ] && [ -n "$HACKAGE_PASSWORD" ]; then
-            AUTH_FLAG="-u $HACKAGE_USERNAME -p $HACKAGE_PASSWORD"
-          else
-            echo "::error::No Hackage credentials found!"
-            exit 1
-          fi
-
-          PUBLISH_FLAG="--publish"
+          CANDIDATE_FLAG=""
           if [ "${{ inputs.as_candidate }}" = "true" ]; then
-            PUBLISH_FLAG=""
+            CANDIDATE_FLAG="--candidate"
           fi
 
-          CORE_DOC_TAR=$(ls artifacts/docs/langchain-hs-core-*-docs.tar.gz)
-          echo "Uploading documentation $CORE_DOC_TAR to Hackage..."
-          cabal upload $AUTH_FLAG $PUBLISH_FLAG -d $CANDIDATE "$CORE_DOC_TAR"
-
-      - name: Publish provider and extension packages to Hackage
-        if: github.event_name == 'push' || inputs.publish_to_hackage == true
-        env:
-          HACKAGE_KEY: ${{ secrets.HACKAGE_KEY }}
-          HACKAGE_TOKEN: ${{ secrets.HACKAGE_TOKEN }}
-          HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
-          HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
-          CANDIDATE: ${{ inputs.as_candidate == true && '--candidate' || '' }}
-        run: |
-          AUTH_FLAG=""
-          if [ -n "$HACKAGE_TOKEN" ]; then
-            AUTH_FLAG="--token $HACKAGE_TOKEN"
-          elif [ -n "$HACKAGE_KEY" ]; then
-            AUTH_FLAG="--token $HACKAGE_KEY"
-          elif [ -n "$HACKAGE_USERNAME" ] && [ -n "$HACKAGE_PASSWORD" ]; then
-            AUTH_FLAG="-u $HACKAGE_USERNAME -p $HACKAGE_PASSWORD"
+          TARGET_PKG=""
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.package }}" ] && [ "${{ inputs.package }}" != "all" ]; then
+            TARGET_PKG="${{ inputs.package }}"
           else
-            echo "::error::No Hackage credentials found!"
-            exit 1
+            TAG_NAME="${GITHUB_REF#refs/tags/}"
+            case "$TAG_NAME" in
+              *-v*) TARGET_PKG="${TAG_NAME%-v*}" ;;
+              *) TARGET_PKG="" ;;
+            esac
           fi
 
-          PUBLISH_FLAG="--publish"
-          if [ "${{ inputs.as_candidate }}" = "true" ]; then
-            PUBLISH_FLAG=""
+          if [ -n "$TARGET_PKG" ]; then
+            echo "Targeting specific package: $TARGET_PKG"
+          else
+            echo "Checking all packages in repository..."
           fi
 
-          for pkg in langchain-hs-graph langchain-hs-mcp langchain-hs-ollama langchain-hs-openai langchain-hs-gemini; do
-            PKG_TAR=$(ls artifacts/${pkg}-*.tar.gz)
-            echo "Uploading $PKG_TAR to Hackage..."
-            cabal upload $AUTH_FLAG $PUBLISH_FLAG $CANDIDATE "$PKG_TAR"
+          publish_pkg() {
+            local pkg="$1"
+            if [ -n "$TARGET_PKG" ] && [ "$TARGET_PKG" != "$pkg" ]; then
+              echo "Skipping $pkg (target package is $TARGET_PKG)"
+              return 0
+            fi
+
+            local pkg_tar
+            pkg_tar=$(ls artifacts/${pkg}-[0-9]*.tar.gz 2>/dev/null || true)
+            if [ -z "$pkg_tar" ]; then
+              echo "No sdist found for $pkg in artifacts/, skipping."
+              return 0
+            fi
+
+            local pkg_tar_base
+            pkg_tar_base=$(basename "$pkg_tar")
+            local ver
+            ver=$(echo "$pkg_tar_base" | sed -E "s/^${pkg}-([0-9]+(\.[0-9]+)*)\.tar\.gz$/\1/")
+
+            echo ""
+            echo "============================================================"
+            echo "Checking $pkg (version $ver)"
+            echo "============================================================"
+
+            local http_code
+            http_code=$(curl -s -L -o /dev/null -w "%{http_code}" "https://hackage.haskell.org/package/${pkg}-${ver}")
+            local newly_published=0
+
+            if [ "$http_code" = "200" ]; then
+              echo "==> ${pkg}-${ver} is already published on Hackage (HTTP 200). Skipping sdist upload."
+            else
+              echo "==> New version detected: ${pkg}-${ver} (HTTP $http_code on Hackage)."
+              if [ "${{ inputs.publish_to_hackage }}" = "true" ] || [ "${{ github.event_name }}" = "push" ]; then
+                echo "Uploading $pkg_tar to Hackage..."
+                cabal upload $AUTH_FLAG $PUBLISH_FLAG $CANDIDATE_FLAG "$pkg_tar"
+                newly_published=1
+              fi
+            fi
+
+            if [ "${{ inputs.publish_docs }}" = "true" ] || [ "${{ github.event_name }}" = "push" ]; then
+              local doc_tar
+              doc_tar=$(ls artifacts/docs/${pkg}-[0-9]*-docs.tar.gz 2>/dev/null || true)
+              if [ -n "$doc_tar" ]; then
+                local doc_code
+                doc_code=$(curl -s -L -o /dev/null -w "%{http_code}" "https://hackage.haskell.org/package/${pkg}-${ver}/docs")
+                if [ "$doc_code" = "200" ] && [ "$newly_published" -eq 0 ]; then
+                  echo "==> Documentation for ${pkg}-${ver} already exists on Hackage (HTTP 200). Skipping docs upload."
+                else
+                  echo "Uploading documentation $doc_tar to Hackage..."
+                  cabal upload $AUTH_FLAG $PUBLISH_FLAG -d $CANDIDATE_FLAG "$doc_tar"
+                fi
+              fi
+            fi
+
+            if [ "$newly_published" -eq 1 ]; then
+              return 1
+            fi
+            return 0
+          }
+
+          # Tier 1: Core package
+          CORE_PUB=0
+          publish_pkg "langchain-hs-core" || CORE_PUB=1
+          if [ "$CORE_PUB" -eq 1 ]; then
+            echo "Waiting 30 seconds for Hackage index update before uploading dependent packages..."
+            sleep 30
+          fi
+
+          # Tier 2: Provider and extension packages
+          TIER2_PUB=0
+          for p in langchain-hs-graph langchain-hs-mcp langchain-hs-ollama langchain-hs-openai langchain-hs-gemini; do
+            publish_pkg "$p" || TIER2_PUB=1
           done
-
-          echo "Waiting 30 seconds for Hackage index update before uploading langchain-hs..."
-          sleep 30
-
-      - name: Publish provider and extension packages documentation to Hackage
-        if: github.event_name == 'push' || inputs.publish_docs == true
-        env:
-          HACKAGE_KEY: ${{ secrets.HACKAGE_KEY }}
-          HACKAGE_TOKEN: ${{ secrets.HACKAGE_TOKEN }}
-          HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
-          HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
-          CANDIDATE: ${{ inputs.as_candidate == true && '--candidate' || '' }}
-        run: |
-          AUTH_FLAG=""
-          if [ -n "$HACKAGE_TOKEN" ]; then
-            AUTH_FLAG="--token $HACKAGE_TOKEN"
-          elif [ -n "$HACKAGE_KEY" ]; then
-            AUTH_FLAG="--token $HACKAGE_KEY"
-          elif [ -n "$HACKAGE_USERNAME" ] && [ -n "$HACKAGE_PASSWORD" ]; then
-            AUTH_FLAG="-u $HACKAGE_USERNAME -p $HACKAGE_PASSWORD"
-          else
-            echo "::error::No Hackage credentials found!"
-            exit 1
+          if [ "$TIER2_PUB" -eq 1 ]; then
+            echo "Waiting 30 seconds for Hackage index update before uploading umbrella package..."
+            sleep 30
           fi
 
-          PUBLISH_FLAG="--publish"
-          if [ "${{ inputs.as_candidate }}" = "true" ]; then
-            PUBLISH_FLAG=""
-          fi
-
-          for pkg in langchain-hs-graph langchain-hs-mcp langchain-hs-ollama langchain-hs-openai langchain-hs-gemini; do
-            PKG_DOC_TAR=$(ls artifacts/docs/${pkg}-*-docs.tar.gz)
-            echo "Uploading documentation $PKG_DOC_TAR to Hackage..."
-            cabal upload $AUTH_FLAG $PUBLISH_FLAG -d $CANDIDATE "$PKG_DOC_TAR"
-          done
-
-      - name: Publish langchain-hs to Hackage
-        if: github.event_name == 'push' || inputs.publish_to_hackage == true
-        env:
-          HACKAGE_KEY: ${{ secrets.HACKAGE_KEY }}
-          HACKAGE_TOKEN: ${{ secrets.HACKAGE_TOKEN }}
-          HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
-          HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
-          CANDIDATE: ${{ inputs.as_candidate == true && '--candidate' || '' }}
-        run: |
-          AUTH_FLAG=""
-          if [ -n "$HACKAGE_TOKEN" ]; then
-            AUTH_FLAG="--token $HACKAGE_TOKEN"
-          elif [ -n "$HACKAGE_KEY" ]; then
-            AUTH_FLAG="--token $HACKAGE_KEY"
-          elif [ -n "$HACKAGE_USERNAME" ] && [ -n "$HACKAGE_PASSWORD" ]; then
-            AUTH_FLAG="-u $HACKAGE_USERNAME -p $HACKAGE_PASSWORD"
-          fi
-
-          PUBLISH_FLAG="--publish"
-          if [ "${{ inputs.as_candidate }}" = "true" ]; then
-            PUBLISH_FLAG=""
-          fi
-
-          MAIN_TAR=$(ls artifacts/langchain-hs-[0-9]*.tar.gz)
-          echo "Uploading $MAIN_TAR to Hackage..."
-          cabal upload $AUTH_FLAG $PUBLISH_FLAG $CANDIDATE "$MAIN_TAR"
-
-      - name: Publish langchain-hs documentation to Hackage
-        if: github.event_name == 'push' || inputs.publish_docs == true
-        env:
-          HACKAGE_KEY: ${{ secrets.HACKAGE_KEY }}
-          HACKAGE_TOKEN: ${{ secrets.HACKAGE_TOKEN }}
-          HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
-          HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
-          CANDIDATE: ${{ inputs.as_candidate == true && '--candidate' || '' }}
-        run: |
-          AUTH_FLAG=""
-          if [ -n "$HACKAGE_TOKEN" ]; then
-            AUTH_FLAG="--token $HACKAGE_TOKEN"
-          elif [ -n "$HACKAGE_KEY" ]; then
-            AUTH_FLAG="--token $HACKAGE_KEY"
-          elif [ -n "$HACKAGE_USERNAME" ] && [ -n "$HACKAGE_PASSWORD" ]; then
-            AUTH_FLAG="-u $HACKAGE_USERNAME -p $HACKAGE_PASSWORD"
-          fi
-
-          PUBLISH_FLAG="--publish"
-          if [ "${{ inputs.as_candidate }}" = "true" ]; then
-            PUBLISH_FLAG=""
-          fi
-
-          MAIN_DOC_TAR=$(ls artifacts/docs/langchain-hs-[0-9]*-docs.tar.gz)
-          echo "Uploading documentation $MAIN_DOC_TAR to Hackage..."
-          cabal upload $AUTH_FLAG $PUBLISH_FLAG -d $CANDIDATE "$MAIN_DOC_TAR"
+          # Tier 3: Umbrella package
+          publish_pkg "langchain-hs"
 
   create-github-release:
     name: Create GitHub Release
     needs: validate-and-package
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/')
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -329,22 +278,53 @@ jobs:
         id: notes
         run: |
           TAG_NAME="${GITHUB_REF#refs/tags/}"
-          VERSION="${TAG_NAME#v}"
-          awk -v ver="$VERSION" '
-            $0 ~ "^## " ver { flag=1; next }
-            $0 ~ "^## " && flag { flag=0; exit }
-            flag { print }
-          ' CHANGELOG.md > RELEASE_NOTES.md
-          if [ ! -s RELEASE_NOTES.md ]; then
+          VERSION="${TAG_NAME##*v}"
+          case "$TAG_NAME" in
+            *-v*) PKG_NAME="${TAG_NAME%-v*}" ;;
+            *) PKG_NAME="" ;;
+          esac
+
+          NOTES=""
+          if [ -n "$PKG_NAME" ] && [ -f "${PKG_NAME}/CHANGELOG.md" ]; then
+            NOTES=$(awk -v ver="$VERSION" '$0 ~ "^## " ver { flag=1; next } $0 ~ "^## " && flag { flag=0; exit } flag { print }' "${PKG_NAME}/CHANGELOG.md")
+          fi
+
+          if [ -z "$NOTES" ] && [ -f "CHANGELOG.md" ]; then
+            NOTES=$(awk -v ver="$VERSION" '$0 ~ "^## " ver { flag=1; next } $0 ~ "^## " && flag { flag=0; exit } flag { print }' "CHANGELOG.md")
+          fi
+
+          if [ -z "$NOTES" ]; then
+            for cl in */CHANGELOG.md; do
+              NOTES=$(awk -v ver="$VERSION" '$0 ~ "^## " ver { flag=1; next } $0 ~ "^## " && flag { flag=0; exit } flag { print }' "$cl")
+              if [ -n "$NOTES" ]; then
+                break
+              fi
+            done
+          fi
+
+          if [ -n "$NOTES" ]; then
+            echo "$NOTES" > RELEASE_NOTES.md
+          else
             echo "Release $TAG_NAME" > RELEASE_NOTES.md
+          fi
+
+          if [ -n "$PKG_NAME" ]; then
+            echo "RELEASE_TITLE=${PKG_NAME} v${VERSION}" >> $GITHUB_ENV
+            echo "RELEASE_FILES<<EOF" >> $GITHUB_ENV
+            ls artifacts/${PKG_NAME}-*.tar.gz artifacts/docs/${PKG_NAME}-*-docs.tar.gz 2>/dev/null >> $GITHUB_ENV || true
+            echo "EOF" >> $GITHUB_ENV
+          else
+            echo "RELEASE_TITLE=Release v${VERSION}" >> $GITHUB_ENV
+            echo "RELEASE_FILES<<EOF" >> $GITHUB_ENV
+            ls artifacts/*.tar.gz artifacts/docs/*-docs.tar.gz 2>/dev/null >> $GITHUB_ENV || true
+            echo "EOF" >> $GITHUB_ENV
           fi
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          name: ${{ env.RELEASE_TITLE }}
           body_path: RELEASE_NOTES.md
-          files: |
-            artifacts/*.tar.gz
-            artifacts/docs/*-docs.tar.gz
+          files: ${{ env.RELEASE_FILES }}
           draft: false
           prerelease: false
