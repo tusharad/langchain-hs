@@ -15,8 +15,7 @@ extra-deps:
   - ollama-haskell-0.4.2.0@sha256:b99db8b70752cad0f9a96dc3823d61b2a67e297ff4368b53986f7c343737b55b,7854
   - git: https://github.com/MercuryTechnologies/openai
     commit: 2031a05135b892a82b461558d19b813ab67cfb8f
-  - git: https://github.com/lbobylev/format-heavy
-    commit: 81196f86a16de8378a0ad264bf12af42c5ca7b65
+  - format-heavy-0.1.0.4
   - servant-multipart-client-0.12.2@sha256:e8105783e7dbef178a38dcfd05f4d12a8229eac88cfe49319f272dcb544e7365,2276
   - mcp-server-0.3.0.0@sha256:85d633f42bbd3110f3f55d8b02bc567a2b5fa8c11a506875a206f8ca60c0b4a3,6880
   - servant-event-stream-0.4.0.1@sha256:c79ef3516626850347f2a92c15de473244539f2211c05d0350f4073d1659c669,1760

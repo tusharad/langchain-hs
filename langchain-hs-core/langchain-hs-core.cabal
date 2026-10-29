@@ -127,7 +127,7 @@ library
     , sqlite-simple >=0.4.18 && <0.5
     , stm ==2.5.*
     , text >=1.2 && <3
-    , time >=1.9 && <1.15
+    , time >=1.9 && <1.16
   default-language: Haskell2010
 
 test-suite langchain-hs-core-test
@@ -185,5 +185,5 @@ test-suite langchain-hs-core-test
     , tasty-hunit >=0.10
     , tasty-quickcheck >=0.10
     , text >=1.2 && <3
-    , time >=1.9 && <1.15
+    , time >=1.9 && <1.16
   default-language: Haskell2010
