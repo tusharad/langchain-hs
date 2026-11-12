@@ -129,7 +129,7 @@ tests =
             logs <- readTVarIO logsVar
             assertBool "Recorded log messages" (length logs >= 4)
             assertBool "Logged entering node 'a'" (any ("Entering node 'a'" `T.isInfixOf`) logs)
-    , testCase "streamGraph emits NodeStart and NodeEnd in execution order and returns final state" $ do
+    , testCase "streamGraph emits NodeStart and NodeEnd in order" $ do
         let g =
               addEdge "n1" "n2" $
                 addEdge "n2" endNodeId $
@@ -156,11 +156,12 @@ tests =
                       _ -> []
                   ]
             tags @?= ["start:n1", "end:n1", "start:n2", "end:n2"]
-    , testCase "addStreamingModelNode interleaves LLMStart, LLMChunk, LLMEnd between NodeStart and NodeEnd" $ do
+    , testCase "addStreamingModelNode emits LLM events between NodeStart and NodeEnd" $ do
         let model = MockStreamModel ["Hello ", "Graph"]
+            mergeMsg _ = extractMessageText
             g =
               addEdge "llm" endNodeId $
-                addStreamingModelNode "llm" model (\t -> [userMessage t]) (\_ msg -> extractMessageText msg) $
+                addStreamingModelNode "llm" model (\t -> [userMessage t]) mergeMsg $
                   emptyStateGraph replaceFieldReducer
         case compileGraph g of
           Left err -> assertFailure $ "Compile failed: " ++ show err
@@ -182,7 +183,7 @@ tests =
                   , "LLMEnd"
                   , "NodeEnd:llm"
                   ]
-    , testCase "streamGraph throws AgentError after NodeStart when recursionLimit is exceeded" $ do
+    , testCase "streamGraph throws AgentError after NodeStart on recursionLimit" $ do
         let g =
               setRecursionLimit 1 $
                 addEdge "loop" "loop" $

@@ -389,7 +389,7 @@ tests =
         seen <- readIORef seenRef
         assertBool "Saw ToolStart" (any (\case ToolStart _ "boom" _ -> True; _ -> False) seen)
         assertBool "Saw ToolErrorEvent" (any (\case ToolErrorEvent _ "boom" _ -> True; _ -> False) seen)
-    , testCase "runReActAgentStreamInterruptible cancels turn mid-stream and recovers partial text" $ do
+    , testCase "runReActAgentStreamInterruptible cancels turn and keeps partial text" $ do
         tok <- newCancelToken
         gate <- newEmptyMVar
         cleaned <- newEmptyMVar

@@ -82,7 +82,7 @@ tests =
         length seen @?= 9
         extractMessageText finalMsg @?= "Final answer"
         messageToolCalls finalMsg @?= Nothing
-    , testCase "liftChatStreamResource cancels upstream producer within 200ms on early take 1" $ do
+    , testCase "liftChatStreamResource cancels upstream within 200ms on take 1" $ do
         cleanedUp <- newEmptyMVar
         let slowUpstream :: ChatStream
             slowUpstream = do
@@ -106,7 +106,7 @@ tests =
         mbDone @?= Just ()
         let elapsed = realToFrac (diffUTCTime t1 t0) :: Double
         assertBool ("Expected cancellation < 0.2s, got: " ++ show elapsed) (elapsed < 0.2)
-    , testCase "liftChatStreamWithCancel stops upstream on CancelToken and preserves partial text" $ do
+    , testCase "liftChatStreamWithCancel stops on CancelToken and keeps partial text" $ do
         tok <- newCancelToken
         cleanedUp <- newEmptyMVar
         gate <- newEmptyMVar :: IO (MVar ())

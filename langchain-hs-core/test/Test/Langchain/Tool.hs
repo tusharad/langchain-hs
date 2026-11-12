@@ -132,7 +132,7 @@ tests =
         t1 <- getCurrentTime
         let elapsed = realToFrac (diffUTCTime t1 t0) :: Double
         assertBool ("Expected prompt Async cancellation (< 2s), got: " ++ show elapsed) (elapsed < 2.0)
-    , testCase "cancelling streamingShellToolWithCancel via CancelToken terminates sleep child promptly" $ do
+    , testCase "cancelling streamingShellToolWithCancel via CancelToken terminates promptly" $ do
         tok <- newCancelToken
         let sShell = streamingShellToolWithCancel tok unrestrictedSecurityPolicy
         t0 <- getCurrentTime
