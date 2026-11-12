@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           langchain-hs-gemini
-version:        0.0.6.0
+version:        0.0.6.2
 synopsis:       Google Gemini provider for langchain-hs
 description:    Google Gemini ChatModel provider for langchain-hs. Supports multi-modal content, streaming via Server-Sent Events, and function calling. Does not depend on OpenAI or Ollama packages.
 category:       AI
@@ -51,7 +51,7 @@ library
     , http-client ==0.7.*
     , http-client-tls >=0.3 && <0.5
     , http-conduit ==2.*
-    , langchain-hs-core ==0.0.6.*
+    , langchain-hs-core >=0.0.6.2 && <0.0.7
     , mtl >=2.2 && <2.4
     , resourcet >=1.2 && <1.4
     , servant >=0.19 && <0.21

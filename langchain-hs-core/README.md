@@ -32,7 +32,7 @@ Add to your `cabal` or `package.yaml` dependencies:
 
 ```cabal
 build-depends:
-    langchain-hs-core >= 0.0.6.0 && < 0.0.7.0
+    langchain-hs-core >= 0.0.6.2 && < 0.0.7.0
 ```
 
 To connect concrete LLMs, combine with satellite provider packages:

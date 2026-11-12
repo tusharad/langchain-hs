@@ -9,7 +9,7 @@ Together AI). Does not depend on Ollama or Gemini packages.
 
 ```yaml
 # stack.yaml extra-deps
-- langchain-hs-openai-0.0.6.0
+- langchain-hs-openai-0.0.6.2
 ```
 
 ```yaml

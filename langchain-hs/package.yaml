@@ -1,5 +1,5 @@
 name: langchain-hs
-version: 0.0.6.0
+version: 0.0.6.2
 github: "tusharad/langchain-hs"
 license: MIT
 license-file: LICENSE
@@ -27,8 +27,8 @@ tested-with:
 
 dependencies:
   - base >= 4.17 && < 5
-  - langchain-hs-core >= 0.0.6 && < 0.0.7
-  - langchain-hs-graph >= 0.0.6 && < 0.0.7
+  - langchain-hs-core >= 0.0.6.2 && < 0.0.7
+  - langchain-hs-graph >= 0.0.6.2 && < 0.0.7
 
 ghc-options:
   - -Wall
