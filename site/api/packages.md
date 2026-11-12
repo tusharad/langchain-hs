@@ -16,6 +16,7 @@ The `langchain-hs` ecosystem is organized into modular packages to ensure a ligh
 | **`langchain-hs-ollama`** | `0.0.6.2` | [Hackage ↗](https://hackage.haskell.org/package/langchain-hs-ollama) | [`./langchain-hs-ollama`](https://github.com/tusharad/langchain-hs/tree/develop/langchain-hs-ollama) | Dedicated Ollama provider and embeddings integration via `ollama-haskell`. |
 | **`langchain-hs-openai`** | `0.0.6.2` | [Hackage ↗](https://hackage.haskell.org/package/langchain-hs-openai) | [`./langchain-hs-openai`](https://github.com/tusharad/langchain-hs/tree/develop/langchain-hs-openai) | Dedicated OpenAI & OpenAI-compatible provider, streaming, and embeddings via `openai`. |
 | **`langchain-hs-gemini`** | `0.0.6.2` | [Hackage ↗](https://hackage.haskell.org/package/langchain-hs-gemini) | [`./langchain-hs-gemini`](https://github.com/tusharad/langchain-hs/tree/develop/langchain-hs-gemini) | Dedicated Google Gemini client & LangChain provider. Servant bindings over Interactions v1 OpenAPI spec, `ChatModel`, `ToolBinder`, `gemini-embedding-001`, and SSE streaming. |
+| **`langchain-hs-anthropic`** | `0.0.6.2` | [Hackage ↗](https://hackage.haskell.org/package/langchain-hs-anthropic) | [`./langchain-hs-anthropic`](https://github.com/tusharad/langchain-hs/tree/develop/langchain-hs-anthropic) | Dedicated Anthropic Claude Messages API (`/v1/messages`) provider, tool calling, prompt caching, thinking budgets, and SSE streaming. |
 | **`langchain-hs-mcp`** | `0.0.6.2` | [Hackage ↗](https://hackage.haskell.org/package/langchain-hs-mcp) | [`./langchain-hs-mcp`](https://github.com/tusharad/langchain-hs/tree/develop/langchain-hs-mcp) | Model Context Protocol client over stdio and HTTP JSON-RPC 2.0. |
 
 ---
@@ -28,6 +29,7 @@ flowchart TD
     App -.-> Ollama["langchain-hs-ollama"]
     App -.-> OpenAI["langchain-hs-openai"]
     App -.-> Gemini["langchain-hs-gemini"]
+    App -.-> Anthropic["langchain-hs-anthropic"]
     App -.-> MCP["langchain-hs-mcp"]
     
     LangchainHs -.->|re-exports| LangchainHsGraph["langchain-hs-graph"]
@@ -37,6 +39,7 @@ flowchart TD
     Ollama --> LangchainHsCore
     OpenAI --> LangchainHsCore
     Gemini --> LangchainHsCore
+    Anthropic --> LangchainHsCore
     MCP --> LangchainHsCore
 ```
 

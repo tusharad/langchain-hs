@@ -57,7 +57,7 @@ jobs:
 
       - name: Run cabal check on all packages
         run: |
-          for pkg in langchain-hs-core langchain-hs-graph langchain-hs-mcp langchain-hs-ollama langchain-hs-openai langchain-hs-gemini langchain-hs; do
+          for pkg in langchain-hs-core langchain-hs-graph langchain-hs-mcp langchain-hs-ollama langchain-hs-openai langchain-hs-gemini langchain-hs-anthropic langchain-hs; do
             echo "Checking $pkg..."
             (cd "$pkg" && cabal check)
           done
@@ -65,7 +65,7 @@ jobs:
       - name: Generate sdist tarballs
         run: |
           mkdir -p artifacts
-          for pkg in langchain-hs-core langchain-hs-graph langchain-hs-mcp langchain-hs-ollama langchain-hs-openai langchain-hs-gemini langchain-hs; do
+          for pkg in langchain-hs-core langchain-hs-graph langchain-hs-mcp langchain-hs-ollama langchain-hs-openai langchain-hs-gemini langchain-hs-anthropic langchain-hs; do
             echo "Packaging $pkg..."
             (cd "$pkg" && cabal sdist -o ../artifacts)
           done
@@ -77,7 +77,7 @@ jobs:
         run: |
           mkdir -p artifacts/docs
           DOCS_DIR=$(mktemp -d dist-docs.XXXXXX)
-          for pkg in langchain-hs-core langchain-hs-graph langchain-hs-mcp langchain-hs-ollama langchain-hs-openai langchain-hs-gemini langchain-hs; do
+          for pkg in langchain-hs-core langchain-hs-graph langchain-hs-mcp langchain-hs-ollama langchain-hs-openai langchain-hs-gemini langchain-hs-anthropic langchain-hs; do
             echo "Building Haddock for $pkg..."
             cabal v2-haddock "$pkg" --builddir="$DOCS_DIR" --haddock-for-hackage --enable-doc
           done
@@ -241,7 +241,7 @@ jobs:
 
           # Tier 2: Provider and extension packages
           TIER2_PUB=0
-          for p in langchain-hs-graph langchain-hs-mcp langchain-hs-ollama langchain-hs-openai langchain-hs-gemini; do
+          for p in langchain-hs-graph langchain-hs-mcp langchain-hs-ollama langchain-hs-openai langchain-hs-gemini langchain-hs-anthropic; do
             publish_pkg "$p" || TIER2_PUB=1
           done
           if [ "$TIER2_PUB" -eq 1 ]; then
