@@ -163,6 +163,58 @@ tests =
                   case (events, reverse events) of
                     (LLMStart {} : _, LLMEnd {} : _) -> pure ()
                     other -> assertFailure ("Unexpected events: " ++ show other)
+        , testCase "stream emits toolCallDelta chunks from step.start/step.delta/step.stop" $ do
+            let sseBody =
+                  "data: {\"event_type\": \"step.delta\", \"index\": 0, \"delta\": {\"type\": \"text\", \"text\": \"Checking \"}}\n\n"
+                    <> "data: {\"event_type\": \"step.start\", \"index\": 1, \"step\": {\"type\": \"function_call\", \"id\": \"call_g1\", \"name\": \"get_weather\", \"arguments\": {}}}\n\n"
+                    <> "data: {\"event_type\": \"step.delta\", \"index\": 1, \"delta\": {\"type\": \"arguments\", \"arguments\": \"{\\\"city\\\":\\\"Paris\\\"}\"}}\n\n"
+                    <> "data: {\"event_type\": \"step.stop\", \"index\": 1}\n\n"
+                    <> "data: {\"event_type\": \"interaction.completed\", \"interaction\": {\"id\": \"v1_tc\", \"status\": \"requires_action\", \"steps\": [{\"type\": \"model_output\", \"content\": [{\"type\": \"text\", \"text\": \"Checking \"}]}, {\"type\": \"function_call\", \"id\": \"call_g1\", \"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]}}\n\n"
+                app _req respond =
+                  respond $
+                    responseStream status200 [("Content-Type", "text/event-stream")] $ \write flush -> do
+                      write (Builder.lazyByteString sseBody)
+                      flush
+                expectedTc =
+                  ToolCall
+                    { toolCallId = "call_g1"
+                    , toolCallType = "function"
+                    , toolCallName = "get_weather"
+                    , toolCallArguments = [aesonQQ|{"city": "Paris"}|]
+                    }
+            withMockServer app $ \url -> do
+              let provider = newGemini "fake-key" "gemini-3.6-flash" (Just url)
+              eEvents <-
+                runResourceT
+                  $ runExceptT
+                  $ collectEvents
+                  $ stream provider [userMessage "Weather in Paris?"] Nothing
+              case eEvents of
+                Left err -> assertFailure (show err)
+                Right events -> do
+                  let toolChunks = [tc | LLMChunk _ _ (Just tc) <- events]
+                  toolChunks @?= [expectedTc]
+                  case reverse events of
+                    LLMEnd _ finalMsg _ : _ ->
+                      messageToolCalls finalMsg @?= Just [expectedTc]
+                    _ -> assertFailure ("Expected LLMEnd, got: " ++ show events)
+        , testCase "stream emits toolCallDelta from interaction.completed fallback" $ do
+            let sseBody =
+                  "data: {\"event_type\": \"interaction.completed\", \"interaction\": {\"id\": \"v1_tc2\", \"status\": \"requires_action\", \"steps\": [{\"type\": \"function_call\", \"id\": \"call_g2\", \"name\": \"ping\", \"arguments\": {}}]}}\n\n"
+                app _req respond =
+                  respond $
+                    responseStream status200 [("Content-Type", "text/event-stream")] $ \write flush -> do
+                      write (Builder.lazyByteString sseBody)
+                      flush
+                expectedTc = ToolCall "call_g2" "function" "ping" [aesonQQ|{}|]
+            withMockServer app $ \url -> do
+              let provider = newGemini "fake-key" "gemini-3.6-flash" (Just url)
+              eEvents <- runResourceT $ runExceptT $ collectEvents $ stream provider [userMessage "Ping"] Nothing
+              case eEvents of
+                Left err -> assertFailure (show err)
+                Right events -> do
+                  let toolChunks = [tc | LLMChunk _ _ (Just tc) <- events]
+                  toolChunks @?= [expectedTc]
         ]
     , testGroup
         "Embeddings GeminiEmbeddings (Mock)"

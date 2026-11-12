@@ -1,24 +1,35 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Test.Langchain.Agent.ReAct (tests) where
 
+import Control.Monad (forM_, unless)
 import Control.Monad.Except (ExceptT, runExceptT)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Aeson (Value (..), object, (.=))
+import Data.Conduit (yield)
 import Data.IORef
-import Data.Maybe (listToMaybe)
+import Data.Maybe (fromMaybe, listToMaybe)
 import qualified Data.Text as T
 import Test.Tasty
 import Test.Tasty.HUnit
 
 import Langchain.Agent.ReAct
-import Langchain.Error (LangchainError)
+import Langchain.Callback.Manager
+  ( CallbackEvent (..)
+  , CallbackHandler (..)
+  , newCallbackManager
+  , registerHandler
+  )
+import Langchain.Error (LangchainError, toolError)
 import Langchain.Memory.Core (BaseMemory (..), newWindowBufferMemory)
 import Langchain.Model
-import Langchain.Tool (Tool, createTool)
+import Langchain.Monad (LangchainT, runLangchainT)
+import Langchain.Stream (StreamEvent (..), collectEvents)
+import Langchain.Tool (Tool, createStreamingTool, createTool)
 import Langchain.Tool.Binding (ToolBinder (..))
 import Test.Langchain.Provider.Mock (newMockModel)
 
@@ -58,7 +69,24 @@ instance ChatModel StepSequenceModel where
       (m : rest) -> do
         writeIORef stepsRef rest
         pure m
-  stream = error "stream not supported in StepSequenceModel"
+  stream (StepSequenceModel stepsRef histRef) history _ = do
+    let rId = "seq-stream-run"
+    yield $ LLMStart rId "step-sequence-model" history
+    resp <- liftIO $ do
+      modifyIORef histRef (++ [history])
+      steps <- readIORef stepsRef
+      case steps of
+        [] -> pure $ assistantMessage "Default response"
+        (m : rest) -> do
+          writeIORef stepsRef rest
+          pure m
+    let txt = extractMessageText resp
+    unless (T.null txt) $
+      forM_ (T.chunksOf 4 txt) $ \chunk ->
+        yield $ LLMChunk rId chunk Nothing
+    forM_ (fromMaybe [] (messageToolCalls resp)) $ \tc ->
+      yield $ LLMChunk rId "" (Just tc)
+    yield $ LLMEnd rId resp Nothing
 
 instance ToolBinder StepSequenceModel m where
   bindToolsConfig _ _ = Nothing
@@ -228,4 +256,112 @@ tests =
             case captured of
               Nothing -> assertFailure "Expected config to be passed to model"
               Just _ -> pure () -- Config was passed (exact value depends on ToolBinder instance)
+    , testCase "streamReActAgent emits ChainStart, LLM events, Tool events, and ChainEnd across turns" $ do
+        let tc1 = ToolCall "call_1" "function" "calculator" (object ["expression" .= ("2+2" :: T.Text)])
+            respWithTools = (assistantMessage "Thinking...") {messageToolCalls = Just [tc1]}
+            finalResp = assistantMessage "Answer is 4"
+        sRef <- newIORef [respWithTools, finalResp]
+        hRef <- newIORef []
+        let model = StepSequenceModel sRef hRef
+            agent = defaultReActAgent model [calculatorTool]
+        res <- runExceptT $ collectEvents $ streamReActAgent agent [userMessage "Calculate 2+2"]
+        case res of
+          Left err -> assertFailure $ "Unexpected stream error: " ++ show err
+          Right events -> do
+            case (events, reverse events) of
+              (ChainStart _ "ReActAgent" _ : _, ChainEnd _ "ReActAgent" _ : _) -> pure ()
+              _ -> assertFailure $ "Expected ChainStart/ChainEnd wrapping events: " ++ show events
+            let toolStarts = [tName | ToolStart _ tName _ <- events]
+                toolEnds = [tName | ToolEnd _ tName _ <- events]
+                toolDeltas = [tc | LLMChunk _ _ (Just tc) <- events]
+                textChunks = T.concat [txt | LLMChunk _ txt Nothing <- events]
+            toolStarts @?= ["calculator"]
+            toolEnds @?= ["calculator"]
+            toolDeltas @?= [tc1]
+            textChunks @?= "Thinking...Answer is 4"
+    , testCase "runReActAgentStream works in LangchainT () IO with memory and callbacks" $ do
+        mem <- newWindowBufferMemory 20 []
+        cbMgr <- newCallbackManager
+        cbLog <- newIORef ([] :: [T.Text])
+        registerHandler cbMgr $ CallbackHandler "test-cb" $ \ev ->
+          let tag = case ev of
+                OnLLMStart {} -> "llm_start"
+                OnLLMEnd {} -> "llm_end"
+                OnToolStart {} -> "tool_start"
+                OnToolEnd {} -> "tool_end"
+                _ -> "other"
+           in modifyIORef cbLog (++ [tag])
+        let tc1 = ToolCall "call_1" "function" "calculator" (object ["x" .= (1 :: Int)])
+            respWithTools = (assistantMessage "") {messageToolCalls = Just [tc1]}
+            finalResp = assistantMessage "Done 4"
+        sRef <- newIORef [respWithTools, finalResp]
+        hRef <- newIORef []
+        let model = StepSequenceModel sRef hRef
+            agent =
+              withCallbackManager cbMgr
+                $ withMemory mem
+                $ defaultReActAgent model [calculatorTool :: Tool (LangchainT () IO)]
+        seenChunks <- newIORef ([] :: [T.Text])
+        res <-
+          runLangchainT () $
+            runReActAgentStream agent [userMessage "Go"] $
+              \case
+                LLMChunk _ txt Nothing | not (T.null txt) -> liftIO $ modifyIORef seenChunks (++ [txt])
+                _ -> pure ()
+        case res of
+          Left err -> assertFailure $ "Unexpected error: " ++ show err
+          Right finalMsg -> do
+            extractMessageText finalMsg @?= "Done 4"
+            chunks <- readIORef seenChunks
+            T.concat chunks @?= "Done 4"
+            cbs <- readIORef cbLog
+            cbs @?= ["llm_start", "llm_end", "tool_start", "tool_end", "llm_start", "llm_end"]
+            memRes <- runExceptT $ messages mem
+            case memRes of
+              Left err -> assertFailure $ show err
+              Right saved -> length saved @?= 2
+    , testCase "streamReActAgent streams ToolChunk events from withStreamingTools" $ do
+        let sTool =
+              createStreamingTool "stream_echo" "Echoes chunks" (object []) $ \_ -> do
+                yield "part1-"
+                yield "part2"
+                pure (Right "part1-part2")
+            tc1 = ToolCall "call_s" "function" "stream_echo" (object [])
+            respWithTools = (assistantMessage "") {messageToolCalls = Just [tc1]}
+            finalResp = assistantMessage "Streamed tool ok"
+        sRef <- newIORef [respWithTools, finalResp]
+        hRef <- newIORef []
+        let model = StepSequenceModel sRef hRef
+            agent =
+              withStreamingTools [sTool] $
+                defaultReActAgent model []
+        res <- runExceptT $ collectEvents $ streamReActAgent agent [userMessage "Run stream tool"]
+        case res of
+          Left err -> assertFailure $ "Unexpected stream error: " ++ show err
+          Right events -> do
+            let toolChunks = [(nm, ch) | ToolChunk _ nm ch <- events]
+            toolChunks @?= [("stream_echo", "part1-"), ("stream_echo", "part2")]
+    , testCase "streamReActAgent emits ToolErrorEvent and respects FailOnError" $ do
+        let failingTool :: Tool (ExceptT LangchainError IO)
+            failingTool =
+              createTool "boom" "Always fails" (object []) $ \_ ->
+                pure $ Left $ toolError "exploded" (Just "boom") Nothing
+            tc1 = ToolCall "call_err" "function" "boom" (object [])
+            respWithTools = (assistantMessage "") {messageToolCalls = Just [tc1]}
+        sRef <- newIORef [respWithTools]
+        hRef <- newIORef []
+        let model = StepSequenceModel sRef hRef
+            agent =
+              withToolErrorStrategy FailOnError $
+                defaultReActAgent model [failingTool]
+        seenRef <- newIORef ([] :: [StreamEvent])
+        res <- runExceptT $
+          runReActAgentStream agent [userMessage "Trigger error"] $ \ev ->
+            liftIO $ modifyIORef seenRef (++ [ev])
+        case res of
+          Left _ -> pure ()
+          Right msg -> assertFailure $ "Expected FailOnError abort, got: " ++ show msg
+        seen <- readIORef seenRef
+        assertBool "Saw ToolStart" (any (\case ToolStart _ "boom" _ -> True; _ -> False) seen)
+        assertBool "Saw ToolErrorEvent" (any (\case ToolErrorEvent _ "boom" _ -> True; _ -> False) seen)
     ]

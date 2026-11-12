@@ -56,6 +56,7 @@ module Langchain.Prelude
     , LLMChunk
     , LLMEnd
     , ToolStart
+    , ToolChunk
     , ToolEnd
     , ToolErrorEvent
     , ChainStart
@@ -65,6 +66,12 @@ module Langchain.Prelude
     )
   , TokenUsage (..)
   , EventStream
+  , StreamM
+  , ChatStream
+  , liftChatStream
+  , tapStreamMessage
+  , consumeStreamWith
+  , runStreamWith
   , collectEvents
   , printEvents
 
@@ -100,6 +107,11 @@ module Langchain.Prelude
   , Tool (..)
   , createTool
   , toolToValue
+  , StreamingTool (..)
+  , createStreamingTool
+  , fromTool
+  , streamToolCall
+  , streamStreamingToolCall
   , ToolBinder (..)
   , DeriveToolSchema (..)
   , deriveToolParametersSchema
@@ -108,10 +120,14 @@ module Langchain.Prelude
   , PlanStep (..)
   , Plan (..)
   , StepExecutor (..)
+  , StreamingStepExecutor (..)
   , PlanAndExecuteAgent (..)
   , newPlanAndExecuteAgent
   , newPlanAndExecuteAgentWithTools
   , runPlanAndExecute
+  , streamPlanAndExecute
+  , streamPlanAndExecuteWithResult
+  , runPlanAndExecuteStream
 
     -- * Guardrails & Safety
   , GuardrailResult (..)
@@ -302,9 +318,14 @@ module Langchain.Prelude
   , withCallbackManager
   , withStopCondition
   , withToolErrorStrategy
+  , withStreamingTools
   , reactStep
   , runReActAgent
   , runReActAgentWithTrace
+  , reactStepStream
+  , streamReActAgent
+  , streamReActAgentWithTrace
+  , runReActAgentStream
 
     -- * Tool Suite & Security
   , ToolTier (..)
@@ -313,6 +334,7 @@ module Langchain.Prelude
   , readOnlySecurityPolicy
   , workspaceSandboxPolicy
   , withSecurity
+  , withStreamingSecurity
   , newFileSystemSuite
   , findFilesTool
   , grepSearchTool
@@ -325,6 +347,7 @@ module Langchain.Prelude
   , commandStatusTool
   , commandKillTool
   , shellTool
+  , streamingShellTool
 
     -- * Hybrid Retrieval & BM25
   , BM25Index (..)
@@ -377,6 +400,6 @@ import Langchain.Tool.FileSystem
 import Langchain.Tool.GenericSchema
 import Langchain.Tool.Process
 import Langchain.Tool.Security
-import Langchain.Tool.Shell (shellTool)
+import Langchain.Tool.Shell (shellTool, streamingShellTool)
 import Langchain.VectorStore.Core
 import Langchain.VectorStore.InMemory
