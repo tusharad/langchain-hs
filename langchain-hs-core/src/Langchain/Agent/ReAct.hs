@@ -367,12 +367,12 @@ buildInitialHistory ReActAgent {..} userMsgs caller = do
       sysPrefix = maybe [] (\p -> [systemMessage p]) agentSystemPrompt
       initialHistory = sysPrefix ++ memWithoutSystem ++ userMsgs
 
-  when (null initialHistory)
-    $ throwError
-    $ agentError
-      "Cannot invoke ReAct agent with empty message history (no user query, memory, or system prompt)"
-      (Just "ReActAgent")
-      (Just caller)
+  when (null initialHistory) $
+    throwError $
+      agentError
+        "Cannot invoke ReAct agent with empty message history (no user query, memory, or system prompt)"
+        (Just "ReActAgent")
+        (Just caller)
 
   pure initialHistory
 
@@ -479,9 +479,9 @@ handleToolOutcome ReActAgent {..} tc emitStream eRes durationMicros = do
       let errTxt = "Error executing tool " <> tName <> ": " <> errorMessage err
       dispatchCb agentCallbackManager (OnError tName errTxt endTime)
       emitStream $ ToolErrorEvent reactRunId tName err
-      when (agentToolErrorStrategy == FailOnError)
-        $ throwError
-        $ agentError errTxt (Just "ReActAgent") (Just $ "executeTool:" <> tName)
+      when (agentToolErrorStrategy == FailOnError) $
+        throwError $
+          agentError errTxt (Just "ReActAgent") (Just $ "executeTool:" <> tName)
       pure $ toolObservationMessage tName (toolCallId tc) errTxt
     Right outTxt -> do
       dispatchCb agentCallbackManager (OnToolEnd tName outTxt durationMicros endTime)

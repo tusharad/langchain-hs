@@ -185,10 +185,10 @@ tests =
             withMockServer app $ \url -> do
               let provider = newGemini "fake-key" "gemini-3.6-flash" (Just url)
               eEvents <-
-                runResourceT
-                  $ runExceptT
-                  $ collectEvents
-                  $ stream provider [userMessage "Weather in Paris?"] Nothing
+                runResourceT $
+                  runExceptT $
+                    collectEvents $
+                      stream provider [userMessage "Weather in Paris?"] Nothing
               case eEvents of
                 Left err -> assertFailure (show err)
                 Right events -> do

@@ -146,14 +146,14 @@ streamingShellTool policy =
 streamShellCommand :: MonadIO m => Text -> ConduitT () Text m (Either LangchainError Text)
 streamShellCommand cmd = do
   eProc <-
-    liftIO
-      $ try
-      $ createProcess
-        (proc "sh" ["-c", T.unpack cmd])
-          { std_in = NoStream
-          , std_out = CreatePipe
-          , std_err = CreatePipe
-          }
+    liftIO $
+      try $
+        createProcess
+          (proc "sh" ["-c", T.unpack cmd])
+            { std_in = NoStream
+            , std_out = CreatePipe
+            , std_err = CreatePipe
+            }
   case eProc of
     Left ex ->
       pure $ Left $ toolError (T.pack $ show (ex :: SomeException)) (Just "shell_command") Nothing
@@ -196,9 +196,9 @@ streamShellCommand cmd = do
         mapM_ (try @SomeException . hClose) mbOut
         mapM_ (try @SomeException . hClose) mbErr
         void (try @SomeException (terminateProcess ph))
-      pure
-        $ Left
-        $ toolError "Failed to open stdout/stderr pipes for shell_command" (Just "shell_command") Nothing
+      pure $
+        Left $
+          toolError "Failed to open stdout/stderr pipes for shell_command" (Just "shell_command") Nothing
   where
     pumpHandle :: Handle -> TBQueue Text -> IORef [Text] -> IO ()
     pumpHandle h q ref = loop

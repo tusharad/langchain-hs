@@ -298,9 +298,9 @@ tests =
         hRef <- newIORef []
         let model = StepSequenceModel sRef hRef
             agent =
-              withCallbackManager cbMgr
-                $ withMemory mem
-                $ defaultReActAgent model [calculatorTool :: Tool (LangchainT () IO)]
+              withCallbackManager cbMgr $
+                withMemory mem $
+                  defaultReActAgent model [calculatorTool :: Tool (LangchainT () IO)]
         seenChunks <- newIORef ([] :: [T.Text])
         res <-
           runLangchainT () $

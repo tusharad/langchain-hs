@@ -349,9 +349,9 @@ instance ChatModel Ollama where
                     newUsage = case (OllamaChat.crPromptEvalCount resp, OllamaChat.crEvalCount resp) of
                       (Just p, Just c) -> Just $ TokenUsage p c (p + c)
                       _ -> mbLastUsage
-                unless (T.null chunkTxt)
-                  $ yield
-                  $ LLMChunk rId chunkTxt Nothing
+                unless (T.null chunkTxt) $
+                  yield $
+                    LLMChunk rId chunkTxt Nothing
                 forM_ (fromMaybe [] toolCalls) $ \tc ->
                   yield $ LLMChunk rId "" (Just tc)
                 loop newAccChunks newUsage newTools

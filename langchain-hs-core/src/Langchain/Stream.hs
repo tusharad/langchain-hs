@@ -199,10 +199,10 @@ liftChatStream chatStream = do
       async $
         ( do
             eRes <-
-              runResourceT
-                $ runExceptT
-                $ runConduit
-                $ chatStream .| CL.mapM_ (liftIO . atomically . writeTBQueue q)
+              runResourceT $
+                runExceptT $
+                  runConduit $
+                    chatStream .| CL.mapM_ (liftIO . atomically . writeTBQueue q)
             case eRes of
               Right () -> pure ()
               Left err -> writeIORef errRef (Just err)
