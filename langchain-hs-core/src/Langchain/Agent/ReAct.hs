@@ -62,16 +62,27 @@ module Langchain.Agent.ReAct
   , withCallbackManager
   , withStopCondition
   , withToolErrorStrategy
+  , withStreamingTools
 
     -- * Execution
   , reactStep
   , runReActAgent
   , runReActAgentWithTrace
+
+    -- * Streaming Execution
+  , reactStepStream
+  , streamReActAgent
+  , streamReActAgentWithTrace
+  , runReActAgentStream
   ) where
 
-import Control.Monad (forM, when)
+import Control.Monad (forM, void, when)
 import Control.Monad.Except (MonadError, catchError, throwError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.Trans (lift)
+import Data.Aeson (toJSON)
+import Data.Conduit (ConduitT, fuseUpstream, mapOutput, runConduit, yield, (.|))
+import qualified Data.Conduit.List as CL
 import Data.List (find)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -82,6 +93,12 @@ import Langchain.Error (LangchainError, agentError, errorMessage)
 import Langchain.Memory.Core (BaseMemory (..), SomeMemory (..))
 import Langchain.Model
 import qualified Langchain.Model.Types as M
+import Langchain.Stream
+  ( EventStream
+  , StreamEvent (ChainEnd, ChainStart, ToolChunk, ToolEnd, ToolErrorEvent, ToolStart)
+  , liftChatStream
+  , tapStreamMessage
+  )
 import Langchain.Tool
 import Langchain.Tool.Binding (ToolBinder (..))
 
@@ -135,6 +152,8 @@ data ReActAgent model m = ReActAgent
   -- ^ Optional early-stop predicate checked after each LLM response
   , agentToolErrorStrategy :: ToolErrorStrategy
   -- ^ How to handle tool execution errors (default: 'ContinueOnError')
+  , agentStreamingTools :: [StreamingTool m]
+  -- ^ Optional streaming tools capable of emitting incremental 'ToolChunk' events
   }
 
 {- | Construct a ReAct agent with sensible defaults.
@@ -159,6 +178,7 @@ defaultReActAgent model tools =
     , agentCallbackManager = Nothing
     , agentStopCondition = Nothing
     , agentToolErrorStrategy = ContinueOnError
+    , agentStreamingTools = []
     }
 
 {- | Attach a 'BaseMemory' instance for persistent conversation history.
@@ -263,6 +283,23 @@ withToolErrorStrategy ::
   ReActAgent model m
 withToolErrorStrategy strategy agent = agent {agentToolErrorStrategy = strategy}
 
+-- | Attach 'StreamingTool's that emit incremental 'ToolChunk' events during streaming execution.
+withStreamingTools ::
+  [StreamingTool m] ->
+  ReActAgent model m ->
+  ReActAgent model m
+withStreamingTools sTools agent = agent {agentStreamingTools = sTools}
+
+-- | Classify a model response 'Message' as 'AgentAction' or 'AgentFinish'.
+classifyStepResponse :: Message -> AgentStep
+classifyStepResponse responseMsg =
+  case messageToolCalls responseMsg of
+    Just tcs@(_ : _) -> AgentAction responseMsg tcs
+    _ -> AgentFinish responseMsg
+
+allAgentTools :: ReActAgent model m -> [Tool m]
+allAgentTools ReActAgent {..} = agentTools ++ map streamingToolDef agentStreamingTools
+
 {- | Run a single step of ReAct reasoning.
 
 Sends the current message history (with tools bound) to the LLM and
@@ -285,13 +322,230 @@ reactStep ::
 reactStep model tools history userCfg = do
   let toolCfg = bindToolsConfig @model tools userCfg
   responseMsg <- invoke model history toolCfg
-  case messageToolCalls responseMsg of
-    Just tcs@(_ : _) -> pure $ AgentAction responseMsg tcs
-    _ -> pure $ AgentFinish responseMsg
+  pure $ classifyStepResponse responseMsg
+
+{- | Run a single step of ReAct reasoning using streaming LLM invocation.
+
+Forwards all 'StreamEvent's from the underlying 'ChatModel' 'stream'
+(including 'LLMStart', 'LLMChunk' with text and 'toolCallDelta', and 'LLMEnd')
+downstream in real time, and returns the resulting 'AgentStep'.
+-}
+reactStepStream ::
+  forall model m.
+  (ToolBinder model m, MonadIO m, MonadError LangchainError m) =>
+  -- | The chat model to stream
+  model ->
+  -- | Available tools to bind to the model
+  [Tool m] ->
+  -- | Current conversation message history
+  [Message] ->
+  -- | Optional provider-specific model configuration
+  Maybe (ModelConfig model) ->
+  -- | Stream of LLM events returning the step classification
+  ConduitT () StreamEvent m AgentStep
+reactStepStream model tools history userCfg = do
+  let toolCfg = bindToolsConfig @model tools userCfg
+  responseMsg <- liftChatStream (stream model history toolCfg) .| tapStreamMessage
+  pure $ classifyStepResponse responseMsg
+
+buildInitialHistory ::
+  (MonadIO m, MonadError LangchainError m) =>
+  ReActAgent model m ->
+  [Message] ->
+  Text ->
+  m [Message]
+buildInitialHistory ReActAgent {..} userMsgs caller = do
+  memoryMsgs <- case agentMemory of
+    Nothing -> pure []
+    Just (SomeMemory mem) -> messages mem
+
+  -- When an explicit agent system prompt is provided, avoid duplicate system prompts
+  -- by stripping any default system prompt that may already exist in memory.
+  let memWithoutSystem = case agentSystemPrompt of
+        Just _ -> filter (\m -> messageRole m /= System) memoryMsgs
+        Nothing -> memoryMsgs
+      sysPrefix = maybe [] (\p -> [systemMessage p]) agentSystemPrompt
+      initialHistory = sysPrefix ++ memWithoutSystem ++ userMsgs
+
+  when (null initialHistory) $
+    throwError $
+      agentError
+        "Cannot invoke ReAct agent with empty message history (no user query, memory, or system prompt)"
+        (Just "ReActAgent")
+        (Just caller)
+
+  pure initialHistory
+
+persistTurnMemory ::
+  (MonadIO m, MonadError LangchainError m) =>
+  ReActAgent model m ->
+  [Message] ->
+  Message ->
+  m ()
+persistTurnMemory ReActAgent {..} userMsgs finalMsg =
+  case agentMemory of
+    Nothing -> pure ()
+    Just (SomeMemory mem) -> do
+      mapM_ (addMessage mem) userMsgs
+      addMessage mem finalMsg
+
+toolObservationMessage :: Text -> Text -> Text -> Message
+toolObservationMessage tName tcId txt =
+  (textMessage M.Tool txt)
+    { M.messageName = Just tName
+    , M.messageToolId = Just tcId
+    }
+
+dispatchCb :: MonadIO m => Maybe CallbackManager -> CallbackEvent -> m ()
+dispatchCb Nothing _ = pure ()
+dispatchCb (Just mgr) ev = dispatchEvent mgr ev
+
+reactRunId :: Text
+reactRunId = "react-agent-run"
+
+-- | Execute a ReAct loop step-by-step, parameterized over the LLM step and tool executors.
+runLoopWith ::
+  forall model m n.
+  (MonadIO n, MonadError LangchainError n) =>
+  ReActAgent model m ->
+  ([Message] -> n AgentStep) ->
+  (ToolCall -> n Message) ->
+  [Message] ->
+  Int ->
+  [(AgentStep, [Message])] ->
+  n AgentTrace
+runLoopWith agent@ReActAgent {..} runStep execTool = go
+  where
+    go history maxIter accSteps
+      | maxIter <= 0 = do
+          let maxErr =
+                "ReAct Agent exceeded maximum iterations ("
+                  <> T.pack (show agentMaxIterations)
+                  <> ")"
+          now <- liftIO getCurrentTime
+          dispatchCb agentCallbackManager (OnError "ReActAgent" maxErr now)
+          throwError $
+            agentError
+              maxErr
+              (Just "ReActAgent")
+              (Just "runReActAgent")
+      | otherwise = do
+          llmStartTime <- liftIO getCurrentTime
+          dispatchCb
+            agentCallbackManager
+            (OnLLMStart "ReActAgent" (map extractMessageText history) llmStartTime)
+
+          eStep <- (Right <$> runStep history) `catchError` (pure . Left)
+          llmEndTime <- liftIO getCurrentTime
+          let llmLatency = round (realToFrac (diffUTCTime llmEndTime llmStartTime) * 1000000 :: Double) :: Int
+          case eStep of
+            Left err -> do
+              dispatchCb agentCallbackManager (OnError "ReActAgent" (errorMessage err) llmEndTime)
+              throwError err
+            Right step -> case step of
+              AgentFinish finalMsg -> do
+                dispatchCb
+                  agentCallbackManager
+                  (OnLLMEnd "ReActAgent" (extractMessageText finalMsg) llmLatency llmEndTime)
+                pure $ AgentTrace (accSteps ++ [(step, [])]) finalMsg
+              AgentAction respMsg tcs -> do
+                dispatchCb
+                  agentCallbackManager
+                  (OnLLMEnd "ReActAgent" (extractMessageText respMsg) llmLatency llmEndTime)
+                case agentStopCondition of
+                  Just cond
+                    | cond respMsg ->
+                        pure $ AgentTrace (accSteps ++ [(step, [])]) respMsg
+                  _ -> do
+                    obsMsgs <- forM tcs execTool
+                    let newHistory = history ++ [respMsg] ++ obsMsgs
+                        newSteps = accSteps ++ [(step, obsMsgs)]
+                    let _ = agent
+                    go newHistory (maxIter - 1) newSteps
+
+handleToolOutcome ::
+  (MonadIO n, MonadError LangchainError n) =>
+  ReActAgent model m ->
+  ToolCall ->
+  (StreamEvent -> n ()) ->
+  Either LangchainError Text ->
+  Int ->
+  n Message
+handleToolOutcome ReActAgent {..} tc emitStream eRes durationMicros = do
+  let tName = toolCallName tc
+  endTime <- liftIO getCurrentTime
+  case eRes of
+    Left err -> do
+      let errTxt = "Error executing tool " <> tName <> ": " <> errorMessage err
+      dispatchCb agentCallbackManager (OnError tName errTxt endTime)
+      emitStream $ ToolErrorEvent reactRunId tName err
+      when (agentToolErrorStrategy == FailOnError) $
+        throwError $
+          agentError errTxt (Just "ReActAgent") (Just $ "executeTool:" <> tName)
+      pure $ toolObservationMessage tName (toolCallId tc) errTxt
+    Right outTxt -> do
+      dispatchCb agentCallbackManager (OnToolEnd tName outTxt durationMicros endTime)
+      emitStream $ ToolEnd reactRunId tName (toJSON outTxt)
+      pure $ toolObservationMessage tName (toolCallId tc) outTxt
+
+executeToolSync ::
+  forall model m.
+  (MonadIO m, MonadError LangchainError m) =>
+  ReActAgent model m ->
+  ToolCall ->
+  m Message
+executeToolSync agent@ReActAgent {..} tc = do
+  let tName = toolCallName tc
+      tools = allAgentTools agent
+  now <- liftIO getCurrentTime
+  dispatchCb agentCallbackManager (OnToolStart tName (toolCallArguments tc) now)
+  case find (\t -> toolName t == tName) tools of
+    Nothing -> do
+      let notFoundMsg = "Error: Tool not found: " <> tName
+          err = agentError notFoundMsg (Just "ReActAgent") (Just $ "executeTool:" <> tName)
+      handleToolOutcome agent tc (const (pure ())) (Left err) 0
+    Just tool -> do
+      startTime <- liftIO getCurrentTime
+      eRes <- toolExecute tool (toolCallArguments tc)
+      endTime <- liftIO getCurrentTime
+      let durationMicros = round (realToFrac (diffUTCTime endTime startTime) * 1000000 :: Double) :: Int
+      handleToolOutcome agent tc (const (pure ())) eRes durationMicros
+
+executeToolStream ::
+  forall model m.
+  (MonadIO m, MonadError LangchainError m) =>
+  ReActAgent model m ->
+  ToolCall ->
+  ConduitT () StreamEvent m Message
+executeToolStream agent@ReActAgent {..} tc = do
+  let tName = toolCallName tc
+  now <- liftIO getCurrentTime
+  dispatchCb agentCallbackManager (OnToolStart tName (toolCallArguments tc) now)
+  yield $ ToolStart reactRunId tName (toolCallArguments tc)
+  case find (\st -> toolName (streamingToolDef st) == tName) agentStreamingTools of
+    Just sTool -> do
+      startTime <- liftIO getCurrentTime
+      eRes <- mapOutput (ToolChunk reactRunId tName) (streamingToolExecute sTool (toolCallArguments tc))
+      endTime <- liftIO getCurrentTime
+      let durationMicros = round (realToFrac (diffUTCTime endTime startTime) * 1000000 :: Double) :: Int
+      handleToolOutcome agent tc yield eRes durationMicros
+    Nothing ->
+      case find (\t -> toolName t == tName) agentTools of
+        Nothing -> do
+          let notFoundMsg = "Error: Tool not found: " <> tName
+              err = agentError notFoundMsg (Just "ReActAgent") (Just $ "executeTool:" <> tName)
+          handleToolOutcome agent tc yield (Left err) 0
+        Just tool -> do
+          startTime <- liftIO getCurrentTime
+          eRes <- lift $ toolExecute tool (toolCallArguments tc)
+          endTime <- liftIO getCurrentTime
+          let durationMicros = round (realToFrac (diffUTCTime endTime startTime) * 1000000 :: Double) :: Int
+          handleToolOutcome agent tc yield eRes durationMicros
 
 {- | Execute the full ReAct reasoning loop, returning only the final answer.
 
 For the full reasoning trace, use 'runReActAgentWithTrace'.
+For streaming execution, use 'streamReActAgent' or 'runReActAgentStream'.
 
 When the agent has a 'BaseMemory' attached:
 
@@ -328,154 +582,81 @@ runReActAgentWithTrace ::
   [Message] ->
   -- | Full reasoning trace containing all intermediate steps and final answer
   m AgentTrace
-runReActAgentWithTrace ReActAgent {..} userMsgs = do
-  -- 1. Build initial history: system prompt + memory + user messages
-  memoryMsgs <- case agentMemory of
-    Nothing -> pure []
-    Just (SomeMemory mem) -> messages mem
-
-  -- When an explicit agent system prompt is provided, avoid duplicate system prompts
-  -- by stripping any default system prompt that may already exist in memory.
-  let memWithoutSystem = case agentSystemPrompt of
-        Just _ -> filter (\m -> messageRole m /= System) memoryMsgs
-        Nothing -> memoryMsgs
-      sysPrefix = maybe [] (\p -> [systemMessage p]) agentSystemPrompt
-      initialHistory = sysPrefix ++ memWithoutSystem ++ userMsgs
-
-  when (null initialHistory) $
-    throwError $
-      agentError
-        "Cannot invoke ReAct agent with empty message history (no user query, memory, or system prompt)"
-        (Just "ReActAgent")
-        (Just "runReActAgentWithTrace")
-
-  -- 2. Run the reasoning loop
-  trace <- go initialHistory agentMaxIterations []
-
-  -- 3. Persist to memory if available
-  case agentMemory of
-    Nothing -> pure ()
-    Just (SomeMemory mem) -> do
-      -- Save each user message
-      mapM_ (addMessage mem) userMsgs
-      -- Save the final answer
-      addMessage mem (traceFinalAnswer trace)
-
+runReActAgentWithTrace agent@ReActAgent {..} userMsgs = do
+  initialHistory <- buildInitialHistory agent userMsgs "runReActAgentWithTrace"
+  let tools = allAgentTools agent
+  trace <-
+    runLoopWith
+      agent
+      (\hist -> reactStep agentModel tools hist agentModelConfig)
+      (executeToolSync agent)
+      initialHistory
+      agentMaxIterations
+      []
+  persistTurnMemory agent userMsgs (traceFinalAnswer trace)
   pure trace
-  where
-    go :: [Message] -> Int -> [(AgentStep, [Message])] -> m AgentTrace
-    go history maxIter accSteps
-      | maxIter <= 0 = do
-          let maxErr =
-                "ReAct Agent exceeded maximum iterations ("
-                  <> T.pack (show agentMaxIterations)
-                  <> ")"
-          case agentCallbackManager of
-            Nothing -> pure ()
-            Just mgr -> do
-              now <- liftIO getCurrentTime
-              dispatchEvent mgr (OnError "ReActAgent" maxErr now)
-          throwError $
-            agentError
-              maxErr
-              (Just "ReActAgent")
-              (Just "runReActAgent")
-      | otherwise = do
-          -- Dispatch OnLLMStart callback before calling model
-          llmStartTime <- liftIO getCurrentTime
-          case agentCallbackManager of
-            Nothing -> pure ()
-            Just mgr ->
-              dispatchEvent mgr (OnLLMStart "ReActAgent" (map extractMessageText history) llmStartTime)
 
-          -- Invoke the model with error interception for observability
-          eStep <-
-            (Right <$> reactStep agentModel agentTools history agentModelConfig)
-              `catchError` (pure . Left)
-          llmEndTime <- liftIO getCurrentTime
-          let llmLatency = round (realToFrac (diffUTCTime llmEndTime llmStartTime) * 1000000 :: Double) :: Int
-          case eStep of
-            Left err -> do
-              case agentCallbackManager of
-                Nothing -> pure ()
-                Just mgr ->
-                  dispatchEvent mgr (OnError "ReActAgent" (errorMessage err) llmEndTime)
-              throwError err
-            Right step -> case step of
-              AgentFinish finalMsg -> do
-                case agentCallbackManager of
-                  Nothing -> pure ()
-                  Just mgr ->
-                    dispatchEvent mgr (OnLLMEnd "ReActAgent" (extractMessageText finalMsg) llmLatency llmEndTime)
-                let allSteps = accSteps ++ [(step, [])]
-                pure $ AgentTrace allSteps finalMsg
-              AgentAction respMsg tcs -> do
-                case agentCallbackManager of
-                  Nothing -> pure ()
-                  Just mgr ->
-                    dispatchEvent mgr (OnLLMEnd "ReActAgent" (extractMessageText respMsg) llmLatency llmEndTime)
+{- | Execute the full ReAct reasoning loop as a Conduit stream of 'StreamEvent's,
+returning the complete 'AgentTrace'.
 
-                -- Check custom stop condition
-                case agentStopCondition of
-                  Just cond | cond respMsg -> do
-                    let allSteps = accSteps ++ [(step, [])]
-                    pure $ AgentTrace allSteps respMsg
-                  _ -> do
-                    obsMsgs <- forM tcs executeTool
-                    let newHistory = history ++ [respMsg] ++ obsMsgs
-                        newSteps = accSteps ++ [(step, obsMsgs)]
-                    go newHistory (maxIter - 1) newSteps
+Emits 'ChainStart', followed by 'LLMStart' / 'LLMChunk' / 'LLMEnd' for each
+reasoning turn and 'ToolStart' / 'ToolChunk' / 'ToolEnd' / 'ToolErrorEvent' for
+each tool invocation, concluding with 'ChainEnd'.
+-}
+streamReActAgentWithTrace ::
+  forall model m.
+  (ToolBinder model m, MonadIO m, MonadError LangchainError m) =>
+  -- | Configured ReAct agent instance
+  ReActAgent model m ->
+  -- | Input user messages for this turn
+  [Message] ->
+  -- | Event stream returning the full reasoning trace
+  ConduitT () StreamEvent m AgentTrace
+streamReActAgentWithTrace agent@ReActAgent {..} userMsgs = do
+  initialHistory <- lift $ buildInitialHistory agent userMsgs "streamReActAgentWithTrace"
+  let tools = allAgentTools agent
+  yield $ ChainStart reactRunId "ReActAgent" (toJSON initialHistory)
+  trace <-
+    runLoopWith
+      agent
+      (\hist -> reactStepStream agentModel tools hist agentModelConfig)
+      (executeToolStream agent)
+      initialHistory
+      agentMaxIterations
+      []
+  lift $ persistTurnMemory agent userMsgs (traceFinalAnswer trace)
+  yield $ ChainEnd reactRunId "ReActAgent" (toJSON (traceFinalAnswer trace))
+  pure trace
 
-    executeTool :: ToolCall -> m Message
-    executeTool tc = do
-      let tName = toolCallName tc
-      case agentCallbackManager of
-        Nothing -> pure ()
-        Just mgr -> do
-          now <- liftIO getCurrentTime
-          dispatchEvent mgr (OnToolStart tName (toolCallArguments tc) now)
+{- | Execute the full ReAct reasoning loop as an 'EventStream'.
 
-      case find (\t -> toolName t == tName) agentTools of
-        Nothing -> do
-          let notFoundMsg = "Error: Tool not found: " <> tName
-          case agentCallbackManager of
-            Nothing -> pure ()
-            Just mgr -> do
-              now <- liftIO getCurrentTime
-              dispatchEvent mgr (OnError tName notFoundMsg now)
-          when (agentToolErrorStrategy == FailOnError) $
-            throwError $
-              agentError notFoundMsg (Just "ReActAgent") (Just $ "executeTool:" <> tName)
-          pure $
-            (textMessage M.Tool notFoundMsg)
-              { M.messageName = Just tName
-              , M.messageToolId = Just (toolCallId tc)
-              }
-        Just tool -> do
-          startTime <- liftIO getCurrentTime
-          eRes <- toolExecute tool (toolCallArguments tc)
-          endTime <- liftIO getCurrentTime
-          let durationMicros = round (realToFrac (diffUTCTime endTime startTime) * 1000000 :: Double) :: Int
-          case eRes of
-            Left err -> do
-              let errTxt = "Error executing tool " <> tName <> ": " <> errorMessage err
-              case agentCallbackManager of
-                Nothing -> pure ()
-                Just mgr -> dispatchEvent mgr (OnError tName errTxt endTime)
-              when (agentToolErrorStrategy == FailOnError) $
-                throwError $
-                  agentError errTxt (Just "ReActAgent") (Just $ "executeTool:" <> tName)
-              pure $
-                (textMessage M.Tool errTxt)
-                  { M.messageName = Just tName
-                  , M.messageToolId = Just (toolCallId tc)
-                  }
-            Right outTxt -> do
-              case agentCallbackManager of
-                Nothing -> pure ()
-                Just mgr -> dispatchEvent mgr (OnToolEnd tName outTxt durationMicros endTime)
-              pure $
-                (textMessage M.Tool outTxt)
-                  { M.messageName = Just tName
-                  , M.messageToolId = Just (toolCallId tc)
-                  }
+Suitable for composition with 'collectEvents', 'runStreamWith', or any Conduit sink.
+-}
+streamReActAgent ::
+  forall model m.
+  (ToolBinder model m, MonadIO m, MonadError LangchainError m) =>
+  -- | Configured ReAct agent instance
+  ReActAgent model m ->
+  -- | Input user messages for this turn
+  [Message] ->
+  -- | Stream of agent lifecycle, LLM, and tool events
+  EventStream m
+streamReActAgent agent userMsgs = void (streamReActAgentWithTrace agent userMsgs)
+
+{- | Execute the ReAct agent in streaming mode, invoking a callback for every
+'StreamEvent' as it arrives and returning the final assistant 'Message'.
+-}
+runReActAgentStream ::
+  forall model m.
+  (ToolBinder model m, MonadIO m, MonadError LangchainError m) =>
+  -- | Configured ReAct agent instance
+  ReActAgent model m ->
+  -- | Input user messages for this turn
+  [Message] ->
+  -- | Callback invoked on each 'StreamEvent' in real time
+  (StreamEvent -> m ()) ->
+  -- | The final assistant answer message
+  m Message
+runReActAgentStream agent userMsgs onEvent =
+  traceFinalAnswer
+    <$> runConduit (streamReActAgentWithTrace agent userMsgs `fuseUpstream` CL.mapM_ onEvent)

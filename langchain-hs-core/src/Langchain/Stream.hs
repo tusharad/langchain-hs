@@ -21,11 +21,15 @@ module Langchain.Stream
   , StreamCallback
   , StreamSource
   , callbackSource
+  , liftChatStream
+  , tapStreamMessage
+  , consumeStreamWith
+  , runStreamWith
   , collectEvents
   , printEvents
   ) where
 
-import Control.Concurrent.Async (async, cancel)
+import Control.Concurrent.Async (AsyncCancelled (..), async, cancel, wait)
 import Control.Concurrent.STM
   ( atomically
   , newEmptyTMVarIO
@@ -34,19 +38,30 @@ import Control.Concurrent.STM
   , putTMVar
   , readTBQueue
   , readTMVar
+  , tryPutTMVar
   , writeTBQueue
   )
-import Control.Exception (finally)
-import Control.Monad.Except (ExceptT, runExceptT)
-import Control.Monad.IO.Class (liftIO)
+import Control.Exception
+  ( Exception (displayException)
+  , SomeException
+  , catch
+  , finally
+  , fromException
+  , throwIO
+  )
+import Control.Monad (void)
+import Control.Monad.Except (ExceptT, MonadError (throwError), runExceptT)
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Trans.Resource (ResourceT, runResourceT)
 import Data.Aeson (FromJSON, ToJSON, Value)
-import Data.Conduit (ConduitT, bracketP, runConduit, yield, (.|))
+import Data.Conduit (ConduitT, Void, await, bracketP, fuseUpstream, runConduit, yield, (.|))
 import qualified Data.Conduit.List as CL
+import Data.IORef (newIORef, readIORef, writeIORef)
 import Data.Text (Text)
+import qualified Data.Text as T
 import GHC.Generics (Generic)
-import Langchain.Error (LangchainError)
-import Langchain.Model.Types (Message, ToolCall)
+import Langchain.Error (LangchainError, llmError)
+import Langchain.Model.Types (Message (..), ToolCall, assistantMessage)
 
 -- | Token usage accounting for LLM execution.
 data TokenUsage = TokenUsage
@@ -83,6 +98,12 @@ data StreamEvent
       { runId :: Text
       , toolName :: Text
       , toolInput :: Value
+      }
+  | -- | Tool incremental streaming output chunk
+    ToolChunk
+      { runId :: Text
+      , toolName :: Text
+      , toolChunkText :: Text
       }
   | -- | Tool execution completion
     ToolEnd
@@ -159,6 +180,111 @@ callbackSource produce = bracketP start (cancel . third) consume
             Nothing -> pure ()
 
     third (_, _, worker) = worker
+
+{- | Lift a resource-safe 'ChatStream' into any 'MonadIO' and 'MonadError LangchainError'
+'EventStream'. Events are forwarded incrementally through a bounded STM queue,
+and early termination of the downstream consumer cancels the upstream stream
+so underlying HTTP/SSE connections are closed promptly.
+-}
+liftChatStream ::
+  (MonadIO m, MonadError LangchainError m) =>
+  ChatStream ->
+  EventStream m
+liftChatStream chatStream = do
+  (queue, doneVar, worker) <- liftIO $ do
+    q <- newTBQueueIO 64
+    done <- newEmptyTMVarIO
+    errRef <- newIORef Nothing
+    w <-
+      async $
+        ( do
+            eRes <-
+              runResourceT $
+                runExceptT $
+                  runConduit $
+                    chatStream .| CL.mapM_ (liftIO . atomically . writeTBQueue q)
+            case eRes of
+              Right () -> pure ()
+              Left err -> writeIORef errRef (Just err)
+        )
+          `catch` ( \ex -> case fromException ex of
+                      Just AsyncCancelled -> throwIO (ex :: SomeException)
+                      Nothing ->
+                        writeIORef
+                          errRef
+                          (Just $ llmError (T.pack (displayException ex)) (Just "Stream") Nothing)
+                  )
+          `finally` (readIORef errRef >>= atomically . void . tryPutTMVar done)
+    pure (q, done, w)
+  consume queue doneVar worker
+  where
+    consume queue doneVar worker = loop
+      where
+        loop = do
+          next <-
+            liftIO . atomically $
+              (Right <$> readTBQueue queue) `orElse` (Left <$> readTMVar doneVar)
+          case next of
+            Right ev -> do
+              yield ev
+              loop
+            Left Nothing ->
+              liftIO $ wait worker
+            Left (Just err) -> do
+              liftIO $ cancel worker
+              throwError err
+
+{- | Pass every 'StreamEvent' downstream unchanged while accumulating the final 'Message'
+from the last 'LLMEnd' event (or synthesizing one from accumulated 'LLMChunk's if
+no 'LLMEnd' event was emitted).
+-}
+tapStreamMessage :: Monad m => ConduitT StreamEvent StreamEvent m Message
+tapStreamMessage = loop [] [] Nothing
+  where
+    loop accText accTools mbFinal = do
+      mEv <- await
+      case mEv of
+        Nothing ->
+          pure $ case mbFinal of
+            Just msg ->
+              case (messageToolCalls msg, reverse accTools) of
+                (Nothing, ts@(_ : _)) -> msg {messageToolCalls = Just ts}
+                _ -> msg
+            Nothing ->
+              let fullText = T.concat (reverse accText)
+                  ts = reverse accTools
+               in (assistantMessage fullText)
+                    { messageToolCalls = if null ts then Nothing else Just ts
+                    }
+        Just ev -> do
+          yield ev
+          case ev of
+            LLMStart {} -> loop [] [] Nothing
+            LLMChunk {..} ->
+              let nextText = if T.null chunkText then accText else chunkText : accText
+                  nextTools = maybe accTools (: accTools) toolCallDelta
+               in loop nextText nextTools mbFinal
+            LLMEnd {..} ->
+              loop accText accTools (Just finalMessage)
+            _ -> loop accText accTools mbFinal
+
+{- | Consume a 'StreamEvent' pipeline, invoking a handler for every event, and
+return the final 'Message' from the last 'LLMEnd' event (or synthesize one from
+accumulated 'LLMChunk's if no 'LLMEnd' event was emitted).
+-}
+consumeStreamWith ::
+  Monad m =>
+  (StreamEvent -> m ()) ->
+  ConduitT StreamEvent Void m Message
+consumeStreamWith onEvent = tapStreamMessage `fuseUpstream` CL.mapM_ onEvent
+
+-- | Run an 'EventStream' with an event handler and return the resulting 'Message'.
+runStreamWith ::
+  Monad m =>
+  (StreamEvent -> m ()) ->
+  EventStream m ->
+  m Message
+runStreamWith onEvent src = runConduit (src .| consumeStreamWith onEvent)
 
 -- | Collect all emitted events from a stream into a list.
 collectEvents :: Monad m => EventStream m -> m [StreamEvent]

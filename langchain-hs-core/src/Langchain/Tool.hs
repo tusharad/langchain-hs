@@ -14,12 +14,20 @@ module Langchain.Tool
   ( Tool (..)
   , createTool
   , toolToValue
+  , StreamingTool (..)
+  , createStreamingTool
+  , fromTool
+  , streamToolCall
+  , streamStreamingToolCall
   ) where
 
+import Control.Monad.Trans (lift)
 import Data.Aeson
+import Data.Conduit (ConduitT, await, fuseUpstream, mapOutput, runConduit, yield)
 import Data.Text (Text)
 
 import Langchain.Error (LangchainError)
+import Langchain.Stream (StreamEvent (ToolChunk, ToolEnd, ToolErrorEvent, ToolStart))
 
 -- | Effect-polymorphic Tool abstraction
 data Tool m = Tool
@@ -63,3 +71,90 @@ toolToValue Tool {..} =
           , "parameters" .= toolSchema
           ]
     ]
+
+-- | Effect-polymorphic streaming Tool abstraction supporting incremental 'Text' output chunks.
+data StreamingTool m = StreamingTool
+  { streamingToolDef :: Tool m
+  -- ^ Underlying tool specification and synchronous fallback executor
+  , streamingToolExecute :: Value -> ConduitT () Text m (Either LangchainError Text)
+  -- ^ Monadic streaming execution yielding output chunks and returning final text output
+  }
+
+instance Show (StreamingTool m) where
+  show st = "StreamingTool { toolName = " ++ show (toolName (streamingToolDef st)) ++ " }"
+
+-- | Construct a 'StreamingTool' from a name, description, schema, and streaming executor.
+createStreamingTool ::
+  Monad m =>
+  Text ->
+  Text ->
+  Value ->
+  (Value -> ConduitT () Text m (Either LangchainError Text)) ->
+  StreamingTool m
+createStreamingTool name desc schema streamExec =
+  StreamingTool
+    { streamingToolDef =
+        createTool name desc schema $ \args ->
+          runConduit (streamExec args `fuseUpstream` drainSink)
+    , streamingToolExecute = streamExec
+    }
+  where
+    drainSink = do
+      mItem <- await
+      case mItem of
+        Nothing -> pure ()
+        Just _ -> drainSink
+
+-- | Lift a standard 'Tool' into a 'StreamingTool' that emits its full output as a single chunk.
+fromTool :: Monad m => Tool m -> StreamingTool m
+fromTool t =
+  StreamingTool
+    { streamingToolDef = t
+    , streamingToolExecute = \args -> do
+        res <- lift $ toolExecute t args
+        case res of
+          Right out -> yield out >> pure (Right out)
+          Left err -> pure (Left err)
+    }
+
+{- | Execute a 'Tool' within a 'StreamEvent' pipeline, emitting 'ToolStart'
+followed by 'ToolEnd' or 'ToolErrorEvent'.
+-}
+streamToolCall ::
+  Monad m =>
+  Text ->
+  Tool m ->
+  Value ->
+  ConduitT () StreamEvent m (Either LangchainError Text)
+streamToolCall rId tool args = do
+  let tName = toolName tool
+  yield $ ToolStart rId tName args
+  eRes <- lift $ toolExecute tool args
+  case eRes of
+    Left err -> do
+      yield $ ToolErrorEvent rId tName err
+      pure (Left err)
+    Right out -> do
+      yield $ ToolEnd rId tName (toJSON out)
+      pure (Right out)
+
+{- | Execute a 'StreamingTool' within a 'StreamEvent' pipeline, emitting
+'ToolStart', 'ToolChunk' for each streamed text chunk, and 'ToolEnd' or 'ToolErrorEvent'.
+-}
+streamStreamingToolCall ::
+  Monad m =>
+  Text ->
+  StreamingTool m ->
+  Value ->
+  ConduitT () StreamEvent m (Either LangchainError Text)
+streamStreamingToolCall rId sTool args = do
+  let tName = toolName (streamingToolDef sTool)
+  yield $ ToolStart rId tName args
+  eRes <- mapOutput (ToolChunk rId tName) (streamingToolExecute sTool args)
+  case eRes of
+    Left err -> do
+      yield $ ToolErrorEvent rId tName err
+      pure (Left err)
+    Right out -> do
+      yield $ ToolEnd rId tName (toJSON out)
+      pure (Right out)

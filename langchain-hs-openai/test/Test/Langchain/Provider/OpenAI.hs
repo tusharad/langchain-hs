@@ -406,6 +406,48 @@ tests =
         case result of
           Left _ -> pure ()
           Right events -> assertFailure $ "Expected stream failure, got: " ++ show events
+    , testCase "stream handles 0-argument tool call with empty arguments and empty delta id/name" $ do
+        let frames =
+              [ sseFrame
+                  "{\"id\":\"chatcmpl-test\",\"object\":\"chat.completion.chunk\",\"created\":0,\"model\":\"test-model\",\"choices\":[{\"index\":0,\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"call_0\",\"type\":\"function\",\"function\":{\"name\":\"get_time\",\"arguments\":\"\"}}]},\"finish_reason\":null}]}"
+              , sseFrame
+                  "{\"id\":\"chatcmpl-test\",\"object\":\"chat.completion.chunk\",\"created\":0,\"model\":\"test-model\",\"choices\":[{\"index\":0,\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"\",\"function\":{\"name\":\"\",\"arguments\":\"\"}}]},\"finish_reason\":\"tool_calls\"}]}"
+              , sseFrame "[DONE]"
+              ]
+            expectedToolCall = ToolCall "call_0" "function" "get_time" (Aeson.object [])
+        result <- collectRawStream frames
+        case result of
+          Left err -> assertFailure $ "Expected stream success, got: " ++ show err
+          Right events -> case events of
+            [LLMStart {}, LLMChunk _ "" (Just tc), LLMEnd _ responseMessage Nothing] -> do
+              tc @?= expectedToolCall
+              messageToolCalls responseMessage @?= Just [expectedToolCall]
+            _ -> assertFailure $ "Unexpected stream events: " ++ show events
+    , testCase "stream accumulates parallel fragmented tool calls by index" $ do
+        let frames =
+              [ sseFrame
+                  "{\"id\":\"chatcmpl-test\",\"object\":\"chat.completion.chunk\",\"created\":0,\"model\":\"test-model\",\"choices\":[{\"index\":0,\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"call_a\",\"type\":\"function\",\"function\":{\"name\":\"add\",\"arguments\":\"{\\\"x\\\":\"}}]},\"finish_reason\":null}]}"
+              , sseFrame
+                  "{\"id\":\"chatcmpl-test\",\"object\":\"chat.completion.chunk\",\"created\":0,\"model\":\"test-model\",\"choices\":[{\"index\":0,\"delta\":{\"tool_calls\":[{\"index\":1,\"id\":\"call_b\",\"type\":\"function\",\"function\":{\"name\":\"mul\",\"arguments\":\"{\\\"y\\\":\"}}]},\"finish_reason\":null}]}"
+              , sseFrame
+                  "{\"id\":\"chatcmpl-test\",\"object\":\"chat.completion.chunk\",\"created\":0,\"model\":\"test-model\",\"choices\":[{\"index\":0,\"delta\":{\"tool_calls\":[{\"index\":0,\"function\":{\"arguments\":\"1}\"}},{\"index\":1,\"function\":{\"arguments\":\"2}\"}}]},\"finish_reason\":\"tool_calls\"}]}"
+              , sseFrame "[DONE]"
+              ]
+            tcA = ToolCall "call_a" "function" "add" (Aeson.object ["x" Aeson..= (1 :: Int)])
+            tcB = ToolCall "call_b" "function" "mul" (Aeson.object ["y" Aeson..= (2 :: Int)])
+        result <- collectRawStream frames
+        case result of
+          Left err -> assertFailure $ "Expected stream success, got: " ++ show err
+          Right events -> case events of
+            [ LLMStart {}
+              , LLMChunk _ "" (Just c0)
+              , LLMChunk _ "" (Just c1)
+              , LLMEnd _ responseMessage Nothing
+              ] -> do
+                c0 @?= tcA
+                c1 @?= tcB
+                messageToolCalls responseMessage @?= Just [tcA, tcB]
+            _ -> assertFailure $ "Unexpected stream events: " ++ show events
     , testCase "stream closes the SSE connection when the consumer stops after a chunk" $ do
         clientClosed <- newEmptyMVar
         withCancellationAwareProvider (putMVar clientClosed ()) $ \provider -> do
