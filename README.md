@@ -4,7 +4,7 @@
 
 A functional, effect-polymorphic Haskell ecosystem for building production AI applications, featuring pure AST pipelines (`RunnableTree`), cyclic state graphs (`StateGraph`), Model Context Protocol (MCP), and OpenTelemetry observability.
 
-[![Hackage](https://img.shields.io/badge/hackage-0.0.6.0-blue.svg)](https://hackage.haskell.org/package/langchain-hs)
+[![Hackage](https://img.shields.io/badge/hackage-0.0.6.2-blue.svg)](https://hackage.haskell.org/package/langchain-hs)
 [![GHC](https://img.shields.io/badge/GHC-9.8%2B-purple.svg)](https://www.haskell.org/ghc/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Documentation](https://img.shields.io/badge/docs-website-blueviolet.svg)](https://tusharad.github.io/langchain-hs/)
@@ -24,11 +24,11 @@ Or add to your `stack.yaml`:
 
 ```yaml
 extra-deps:
-  - langchain-hs-0.0.6.0
-  - langchain-hs-core-0.0.6.0
-  - langchain-hs-graph-0.0.6.0
-  - langchain-hs-ollama-0.0.6.0
-  - langchain-hs-openai-0.0.6.0
+  - langchain-hs-0.0.6.2
+  - langchain-hs-core-0.0.6.2
+  - langchain-hs-graph-0.0.6.2
+  - langchain-hs-ollama-0.0.6.2
+  - langchain-hs-openai-0.0.6.2
 ```
 
 Package reference on Hackage: [https://hackage.haskell.org/package/langchain-hs](https://hackage.haskell.org/package/langchain-hs)

@@ -1,5 +1,5 @@
 name:                langchain-hs-mcp
-version:             0.0.6.0
+version:             0.0.6.2
 synopsis:            Model Context Protocol (MCP) client for langchain-hs
 description:
   First-class MCP JSON-RPC 2.0 client supporting stdio and HTTP transports.
@@ -28,7 +28,7 @@ dependencies:
   - base >= 4.17 && < 5
   - bytestring >= 0.10 && < 0.13
   - http-conduit >= 2 && < 3
-  - langchain-hs-core >= 0.0.6 && < 0.0.7
+  - langchain-hs-core >= 0.0.6.2 && < 0.0.7
   - mtl >= 2.2 && < 2.4
   - process >= 1.6 && < 1.7
   - text >= 1.2 && < 3

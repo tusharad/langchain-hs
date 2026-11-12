@@ -40,8 +40,8 @@ Add to your `cabal.project` or `.cabal` build-depends:
 build-depends:
     base >= 4.14 && < 5,
     text,
-    langchain-hs >= 0.0.6,
-    langchain-hs-ollama >= 0.0.6
+    langchain-hs >= 0.0.6.2,
+    langchain-hs-ollama >= 0.0.6.2
 ```
 
 ### Using Stack
@@ -55,14 +55,15 @@ packages:
   - .
 
 extra-deps:
-  - langchain-hs-0.0.6.0
-  - langchain-hs-core-0.0.6.0
-  - langchain-hs-graph-0.0.6.0
+  - langchain-hs-0.0.6.2
+  - langchain-hs-core-0.0.6.2
+  - langchain-hs-graph-0.0.6.2
+  - ollama-haskell-0.4.2.0
   # Add providers as needed:
-  - langchain-hs-ollama-0.0.6.0
-  - langchain-hs-openai-0.0.6.0
-  - langchain-hs-gemini-0.0.6.0
-  - langchain-hs-mcp-0.0.6.0
+  - langchain-hs-ollama-0.0.6.2
+  - langchain-hs-openai-0.0.6.2
+  - langchain-hs-gemini-0.0.6.2
+  - langchain-hs-mcp-0.0.6.2
 ```
 
 In your `package.yaml` (or `.cabal` file):

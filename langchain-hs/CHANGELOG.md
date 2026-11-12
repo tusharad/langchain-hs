@@ -1,5 +1,13 @@
 # Changelog for `langchain-hs`
 
+## 0.0.6.2 - 2026-11-12
+
+> **Note**: Version `0.0.6.1` was skipped globally because `langchain-hs-ollama` already claimed `0.0.6.1` (`langchain-hs-ollama-v0.0.6.1`).
+
+- Aligned all 7 monorepo packages (`langchain-hs`, `langchain-hs-core`, `langchain-hs-graph`, `langchain-hs-mcp`, `langchain-hs-ollama`, `langchain-hs-openai`, `langchain-hs-gemini`) on `0.0.6.2`.
+- Updated `langchain-hs-core` and `langchain-hs-graph` dependency bounds to `>= 0.0.6.2 && < 0.0.7`.
+- Surfaced tool-call streaming, `StreamingTool`, `streamingShellTool`, `withStreamingSecurity`, `streamReActAgent`, `runReActAgentStream`, `streamPlanAndExecute`, and `runPlanAndExecuteStream` via `Langchain.Prelude` and module re-exports.
+
 ## 0.0.6.0 - 2026-10-15
 
 ### Highlights
