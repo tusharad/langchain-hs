@@ -68,7 +68,13 @@ module Langchain.Prelude
   , EventStream
   , StreamM
   , ChatStream
+  , CancelToken
+  , newCancelToken
+  , triggerCancel
+  , isCancelled
   , liftChatStream
+  , liftChatStreamResource
+  , liftChatStreamWithCancel
   , tapStreamMessage
   , consumeStreamWith
   , runStreamWith
@@ -326,6 +332,8 @@ module Langchain.Prelude
   , streamReActAgent
   , streamReActAgentWithTrace
   , runReActAgentStream
+  , InterruptibleResult (..)
+  , runReActAgentStreamInterruptible
 
     -- * Tool Suite & Security
   , ToolTier (..)
@@ -348,6 +356,7 @@ module Langchain.Prelude
   , commandKillTool
   , shellTool
   , streamingShellTool
+  , streamingShellToolWithCancel
 
     -- * Hybrid Retrieval & BM25
   , BM25Index (..)
@@ -400,6 +409,6 @@ import Langchain.Tool.FileSystem
 import Langchain.Tool.GenericSchema
 import Langchain.Tool.Process
 import Langchain.Tool.Security
-import Langchain.Tool.Shell (shellTool, streamingShellTool)
+import Langchain.Tool.Shell (shellTool, streamingShellTool, streamingShellToolWithCancel)
 import Langchain.VectorStore.Core
 import Langchain.VectorStore.InMemory

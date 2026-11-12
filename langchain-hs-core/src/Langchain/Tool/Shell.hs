@@ -17,9 +17,10 @@ module Langchain.Tool.Shell
   ( shellTool
   , secureShellTool
   , streamingShellTool
+  , streamingShellToolWithCancel
   ) where
 
-import Control.Concurrent.Async (AsyncCancelled (..), async, concurrently, wait)
+import Control.Concurrent.Async (AsyncCancelled (..), async, cancel, concurrently, wait)
 import Control.Concurrent.STM
   ( TBQueue
   , atomically
@@ -31,7 +32,7 @@ import Control.Concurrent.STM
   , tryPutTMVar
   , writeTBQueue
   )
-import Control.Exception (SomeException, catch, finally, fromException, throwIO, try)
+import Control.Exception (SomeException, catch, finally, fromException, onException, throwIO, try)
 import Control.Monad (void)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Aeson (Value (..), object, (.=))
@@ -47,6 +48,7 @@ import System.Process
   ( CreateProcess (..)
   , StdStream (..)
   , createProcess
+  , interruptProcessGroupOf
   , proc
   , readProcessWithExitCode
   , terminateProcess
@@ -54,6 +56,7 @@ import System.Process
   )
 
 import Langchain.Error (LangchainError, toolError)
+import Langchain.Stream (CancelToken, isCancelled, waitCancel)
 import Langchain.Tool (StreamingTool, Tool (..), createStreamingTool, createTool)
 import Langchain.Tool.Security
   ( SecurityPolicy
@@ -130,7 +133,16 @@ secureShellTool policy =
 
 -- | Streaming shell tool that yields stdout and stderr lines incrementally while enforcing 'SecurityPolicy'.
 streamingShellTool :: MonadIO m => SecurityPolicy -> StreamingTool m
-streamingShellTool policy =
+streamingShellTool = makeStreamingShellTool Nothing
+
+{- | Streaming shell tool that monitors a 'CancelToken' and terminates the
+spawned shell child process immediately on cancellation.
+-}
+streamingShellToolWithCancel :: MonadIO m => CancelToken -> SecurityPolicy -> StreamingTool m
+streamingShellToolWithCancel tok = makeStreamingShellTool (Just tok)
+
+makeStreamingShellTool :: MonadIO m => Maybe CancelToken -> SecurityPolicy -> StreamingTool m
+makeStreamingShellTool mbTok policy =
   withStreamingSecurity TierExecution policy $
     createStreamingTool
       "shell_command"
@@ -140,11 +152,26 @@ streamingShellTool policy =
           Left err -> pure $ Left err
           Right cmd -> case validateCommandSafety policy cmd of
             Left err -> pure $ Left err
-            Right () -> streamShellCommand cmd
+            Right () -> streamShellCommand mbTok cmd
       )
 
-streamShellCommand :: MonadIO m => Text -> ConduitT () Text m (Either LangchainError Text)
-streamShellCommand cmd = do
+streamShellCommand ::
+  MonadIO m =>
+  Maybe CancelToken ->
+  Text ->
+  ConduitT () Text m (Either LangchainError Text)
+streamShellCommand mbTok cmd = do
+  cancelledNow <- maybe (pure False) isCancelled mbTok
+  if cancelledNow
+    then pure $ Left $ toolError "Shell command cancelled" (Just "shell_command") Nothing
+    else startShellProcess mbTok cmd
+
+startShellProcess ::
+  MonadIO m =>
+  Maybe CancelToken ->
+  Text ->
+  ConduitT () Text m (Either LangchainError Text)
+startShellProcess mbTok cmd = do
   eProc <-
     liftIO $
       try $
@@ -153,6 +180,7 @@ streamShellCommand cmd = do
             { std_in = NoStream
             , std_out = CreatePipe
             , std_err = CreatePipe
+            , create_group = True
             }
   case eProc of
     Left ex ->
@@ -177,7 +205,9 @@ streamShellCommand cmd = do
             )
               `catch` ( \ex -> case fromException ex of
                           Just AsyncCancelled -> do
+                            void (try @SomeException (interruptProcessGroupOf ph))
                             void (try @SomeException (terminateProcess ph))
+                            void (try @SomeException (waitForProcess ph))
                             throwIO (ex :: SomeException)
                           Nothing ->
                             writeIORef
@@ -195,6 +225,7 @@ streamShellCommand cmd = do
       liftIO $ do
         mapM_ (try @SomeException . hClose) mbOut
         mapM_ (try @SomeException . hClose) mbErr
+        void (try @SomeException (interruptProcessGroupOf ph))
         void (try @SomeException (terminateProcess ph))
       pure $
         Left $
@@ -218,12 +249,25 @@ streamShellCommand cmd = do
       where
         loop = do
           next <-
-            liftIO . atomically $
-              (Right <$> readTBQueue queue) `orElse` (Left <$> readTMVar doneVar)
+            liftIO $
+              atomically
+                ( case mbTok of
+                    Just tok ->
+                      (Left Nothing <$ waitCancel tok)
+                        `orElse` (Right <$> readTBQueue queue)
+                        `orElse` (Left . Just <$> readTMVar doneVar)
+                    Nothing ->
+                      (Right <$> readTBQueue queue)
+                        `orElse` (Left . Just <$> readTMVar doneVar)
+                )
+                `onException` cancel worker
           case next of
             Right chunk -> do
               yield chunk
               loop
-            Left res -> do
+            Left Nothing -> do
+              liftIO $ cancel worker
+              pure $ Left $ toolError "Shell command cancelled" (Just "shell_command") Nothing
+            Left (Just res) -> do
               void $ liftIO $ wait worker
               pure res

@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Test.Langchain.Stream (tests) where
@@ -5,12 +6,17 @@ module Test.Langchain.Stream (tests) where
 import Test.Tasty
 import Test.Tasty.HUnit
 
+import Control.Concurrent (threadDelay)
+import Control.Concurrent.MVar (MVar, newEmptyMVar, putMVar, takeMVar, tryTakeMVar)
+import Control.Exception (finally)
 import Control.Monad.Except (runExceptT, throwError)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Resource (runResourceT)
 import Data.Aeson (object, (.=))
-import Data.Conduit (yield)
+import Data.Conduit (runConduit, yield, (.|))
+import qualified Data.Conduit.List as CL
 import Data.IORef (modifyIORef', newIORef, readIORef)
+import Data.Time.Clock (diffUTCTime, getCurrentTime)
 
 import Langchain.Error (llmError)
 import Langchain.Model
@@ -76,4 +82,54 @@ tests =
         length seen @?= 9
         extractMessageText finalMsg @?= "Final answer"
         messageToolCalls finalMsg @?= Nothing
+    , testCase "liftChatStreamResource cancels upstream producer within 200ms on early take 1" $ do
+        cleanedUp <- newEmptyMVar
+        let slowUpstream :: ChatStream
+            slowUpstream = do
+              yield $ LLMStart "slow" "mock" []
+              liftIO $
+                threadDelay 5000000
+                  `finally` putMVar cleanedUp ()
+              yield $ LLMChunk "slow" "late" Nothing
+        t0 <- getCurrentTime
+        res <-
+          runResourceT $
+            runExceptT $
+              runConduit $
+                liftChatStreamResource slowUpstream .| CL.take 1
+        t1 <- getCurrentTime
+        case res of
+          Left err -> assertFailure $ "Unexpected error: " ++ show err
+          Right evs -> length evs @?= 1
+        threadDelay 50000
+        mbDone <- tryTakeMVar cleanedUp
+        mbDone @?= Just ()
+        let elapsed = realToFrac (diffUTCTime t1 t0) :: Double
+        assertBool ("Expected cancellation < 0.2s, got: " ++ show elapsed) (elapsed < 0.2)
+    , testCase "liftChatStreamWithCancel stops upstream on CancelToken and preserves partial text" $ do
+        tok <- newCancelToken
+        cleanedUp <- newEmptyMVar
+        gate <- newEmptyMVar :: IO (MVar ())
+        let partialUpstream :: ChatStream
+            partialUpstream = do
+              yield $ LLMStart "c1" "mock" []
+              yield $ LLMChunk "c1" "partial-" Nothing
+              liftIO $
+                takeMVar gate
+                  `finally` putMVar cleanedUp ()
+              yield $ LLMChunk "c1" "never" Nothing
+        res <-
+          runLangchainT () $
+            runStreamWith
+              ( \case
+                  LLMChunk {} -> triggerCancel tok
+                  _ -> pure ()
+              )
+              (liftChatStreamWithCancel tok partialUpstream)
+        case res of
+          Left err -> assertFailure $ "Unexpected error: " ++ show err
+          Right msg -> extractMessageText msg @?= "partial-"
+        threadDelay 50000
+        mbDone <- tryTakeMVar cleanedUp
+        mbDone @?= Just ()
     ]
