@@ -6,6 +6,9 @@
 
 module Test.Langchain.Agent.ReAct (tests) where
 
+import Control.Concurrent (threadDelay)
+import Control.Concurrent.MVar (MVar, newEmptyMVar, putMVar, takeMVar, tryTakeMVar)
+import Control.Exception (finally)
 import Control.Monad (forM_, unless)
 import Control.Monad.Except (ExceptT, runExceptT)
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -28,7 +31,12 @@ import Langchain.Error (LangchainError, toolError)
 import Langchain.Memory.Core (BaseMemory (..), newWindowBufferMemory)
 import Langchain.Model
 import Langchain.Monad (LangchainT, runLangchainT)
-import Langchain.Stream (StreamEvent (..), collectEvents)
+import Langchain.Stream
+  ( StreamEvent (..)
+  , collectEvents
+  , newCancelToken
+  , triggerCancel
+  )
 import Langchain.Tool (Tool, createStreamingTool, createTool)
 import Langchain.Tool.Binding (ToolBinder (..))
 import Test.Langchain.Provider.Mock (newMockModel)
@@ -90,6 +98,23 @@ instance ChatModel StepSequenceModel where
 
 instance ToolBinder StepSequenceModel m where
   bindToolsConfig _ _ = Nothing
+
+data InterruptMockModel = InterruptMockModel (MVar ()) (MVar ())
+
+instance ChatModel InterruptMockModel where
+  type ModelConfig InterruptMockModel = ()
+  invoke _ _ _ = pure $ assistantMessage "sync"
+  stream (InterruptMockModel gate cleaned) msgs _ = do
+    yield $ LLMStart "int-1" "interrupt-mock" msgs
+    yield $ LLMChunk "int-1" "partial reply" Nothing
+    liftIO $
+      takeMVar gate
+        `finally` putMVar cleaned ()
+    yield $ LLMChunk "int-1" " trailing" Nothing
+    yield $ LLMEnd "int-1" (assistantMessage "partial reply trailing") Nothing
+
+instance ToolBinder InterruptMockModel m where
+  bindToolsConfig _ cfg = cfg
 
 tests :: TestTree
 tests =
@@ -364,4 +389,27 @@ tests =
         seen <- readIORef seenRef
         assertBool "Saw ToolStart" (any (\case ToolStart _ "boom" _ -> True; _ -> False) seen)
         assertBool "Saw ToolErrorEvent" (any (\case ToolErrorEvent _ "boom" _ -> True; _ -> False) seen)
+    , testCase "runReActAgentStreamInterruptible cancels turn and keeps partial text" $ do
+        tok <- newCancelToken
+        gate <- newEmptyMVar
+        cleaned <- newEmptyMVar
+        mem <- newWindowBufferMemory 20 []
+        let model = InterruptMockModel gate cleaned
+            agent = withMemory mem $ defaultReActAgent model []
+        res <-
+          runLangchainT () $
+            runReActAgentStreamInterruptible tok agent [userMessage "Interrupt me"] $ \case
+              LLMChunk _ txt Nothing | not (T.null txt) -> triggerCancel tok
+              _ -> pure ()
+        case res of
+          Left err -> assertFailure $ "Unexpected error: " ++ show err
+          Right (Completed msg) -> assertFailure $ "Expected Cancelled, got Completed: " ++ show msg
+          Right (Cancelled partialMsg) -> extractMessageText partialMsg @?= "partial reply"
+        threadDelay 50000
+        mbCleaned <- tryTakeMVar cleaned
+        mbCleaned @?= Just ()
+        memRes <- runExceptT $ messages mem
+        case memRes of
+          Left err -> assertFailure $ show err
+          Right saved -> saved @?= []
     ]

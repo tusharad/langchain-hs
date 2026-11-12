@@ -3,6 +3,8 @@
 
 module Test.Langchain.Tool (tests) where
 
+import Control.Concurrent (threadDelay)
+import Control.Concurrent.Async (async, cancel, wait)
 import Data.Aeson
 import Data.Aeson.Types (parseEither)
 import Data.Conduit (fuseUpstream, runConduit, yield)
@@ -10,11 +12,16 @@ import qualified Data.Conduit.List as CL
 import Data.IORef (modifyIORef', newIORef, readIORef)
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Time.Clock (diffUTCTime, getCurrentTime)
 import Langchain.Error
-import Langchain.Stream (StreamEvent (ToolChunk, ToolEnd, ToolErrorEvent, ToolStart))
+import Langchain.Stream
+  ( StreamEvent (ToolChunk, ToolEnd, ToolErrorEvent, ToolStart)
+  , newCancelToken
+  , triggerCancel
+  )
 import Langchain.Tool
 import Langchain.Tool.Security (readOnlySecurityPolicy, unrestrictedSecurityPolicy)
-import Langchain.Tool.Shell (streamingShellTool)
+import Langchain.Tool.Shell (streamingShellTool, streamingShellToolWithCancel)
 import Test.Tasty
 import Test.Tasty.HUnit
 
@@ -109,4 +116,38 @@ tests =
         case roRes of
           Left err -> assertBool "Mentions permission" ("permission" `T.isInfixOf` T.toLower (errorMessage err))
           Right ok -> assertFailure $ "Expected security denial, got: " ++ show ok
+    , testCase "cancelling streamingShellTool via Async.cancel terminates sleep child promptly" $ do
+        let sShell = streamingShellTool unrestrictedSecurityPolicy
+        t0 <- getCurrentTime
+        a <-
+          async $
+            runConduit $
+              streamStreamingToolCall
+                "run-cancel-async"
+                sShell
+                (object ["command" .= ("sleep 10" :: Text)])
+                `fuseUpstream` CL.sinkNull
+        threadDelay 100000
+        cancel a
+        t1 <- getCurrentTime
+        let elapsed = realToFrac (diffUTCTime t1 t0) :: Double
+        assertBool ("Expected prompt Async cancellation (< 2s), got: " ++ show elapsed) (elapsed < 2.0)
+    , testCase "cancelling streamingShellToolWithCancel via CancelToken terminates promptly" $ do
+        tok <- newCancelToken
+        let sShell = streamingShellToolWithCancel tok unrestrictedSecurityPolicy
+        t0 <- getCurrentTime
+        a <-
+          async $
+            runConduit $
+              streamStreamingToolCall
+                "run-cancel-tok"
+                sShell
+                (object ["command" .= ("sleep 10" :: Text)])
+                `fuseUpstream` CL.sinkNull
+        threadDelay 100000
+        triggerCancel tok
+        _ <- wait a
+        t1 <- getCurrentTime
+        let elapsed = realToFrac (diffUTCTime t1 t0) :: Double
+        assertBool ("Expected prompt CancelToken termination (< 2s), got: " ++ show elapsed) (elapsed < 2.0)
     ]

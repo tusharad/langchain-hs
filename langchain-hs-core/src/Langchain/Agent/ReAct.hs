@@ -70,19 +70,22 @@ module Langchain.Agent.ReAct
   , runReActAgentWithTrace
 
     -- * Streaming Execution
+  , InterruptibleResult (..)
   , reactStepStream
   , streamReActAgent
   , streamReActAgentWithTrace
   , runReActAgentStream
+  , runReActAgentStreamInterruptible
   ) where
 
-import Control.Monad (forM, void, when)
+import Control.Monad (unless, when)
 import Control.Monad.Except (MonadError, catchError, throwError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Trans (lift)
 import Data.Aeson (toJSON)
 import Data.Conduit (ConduitT, fuseUpstream, mapOutput, runConduit, yield, (.|))
 import qualified Data.Conduit.List as CL
+import Data.IORef (modifyIORef', newIORef, readIORef, writeIORef)
 import Data.List (find)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -94,9 +97,22 @@ import Langchain.Memory.Core (BaseMemory (..), SomeMemory (..))
 import Langchain.Model
 import qualified Langchain.Model.Types as M
 import Langchain.Stream
-  ( EventStream
-  , StreamEvent (ChainEnd, ChainStart, ToolChunk, ToolEnd, ToolErrorEvent, ToolStart)
+  ( CancelToken
+  , EventStream
+  , StreamEvent
+    ( ChainEnd
+    , ChainStart
+    , LLMChunk
+    , LLMEnd
+    , LLMStart
+    , ToolChunk
+    , ToolEnd
+    , ToolErrorEvent
+    , ToolStart
+    )
+  , isCancelled
   , liftChatStream
+  , liftChatStreamWithCancel
   , tapStreamMessage
   )
 import Langchain.Tool
@@ -324,6 +340,21 @@ reactStep model tools history userCfg = do
   responseMsg <- invoke model history toolCfg
   pure $ classifyStepResponse responseMsg
 
+reactStepStreamWith ::
+  forall model m.
+  (ToolBinder model m, MonadIO m, MonadError LangchainError m) =>
+  Maybe CancelToken ->
+  model ->
+  [Tool m] ->
+  [Message] ->
+  Maybe (ModelConfig model) ->
+  ConduitT () StreamEvent m AgentStep
+reactStepStreamWith mbTok model tools history userCfg = do
+  let toolCfg = bindToolsConfig @model tools userCfg
+      liftFn = maybe liftChatStream liftChatStreamWithCancel mbTok
+  responseMsg <- liftFn (stream model history toolCfg) .| tapStreamMessage
+  pure $ classifyStepResponse responseMsg
+
 {- | Run a single step of ReAct reasoning using streaming LLM invocation.
 
 Forwards all 'StreamEvent's from the underlying 'ChatModel' 'stream'
@@ -343,10 +374,7 @@ reactStepStream ::
   Maybe (ModelConfig model) ->
   -- | Stream of LLM events returning the step classification
   ConduitT () StreamEvent m AgentStep
-reactStepStream model tools history userCfg = do
-  let toolCfg = bindToolsConfig @model tools userCfg
-  responseMsg <- liftChatStream (stream model history toolCfg) .| tapStreamMessage
-  pure $ classifyStepResponse responseMsg
+reactStepStream = reactStepStreamWith Nothing
 
 buildInitialHistory ::
   (MonadIO m, MonadError LangchainError m) =>
@@ -407,6 +435,7 @@ reactRunId = "react-agent-run"
 runLoopWith ::
   forall model m n.
   (MonadIO n, MonadError LangchainError n) =>
+  Maybe CancelToken ->
   ReActAgent model m ->
   ([Message] -> n AgentStep) ->
   (ToolCall -> n Message) ->
@@ -414,8 +443,19 @@ runLoopWith ::
   Int ->
   [(AgentStep, [Message])] ->
   n AgentTrace
-runLoopWith agent@ReActAgent {..} runStep execTool = go
+runLoopWith mbTok agent@ReActAgent {..} runStep execTool = go
   where
+    checkCancelled = maybe (pure False) isCancelled mbTok
+
+    execToolsWithCancel [] acc = pure (reverse acc)
+    execToolsWithCancel (tc : rest) acc = do
+      cancelled <- checkCancelled
+      if cancelled
+        then pure (reverse acc)
+        else do
+          obs <- execTool tc
+          execToolsWithCancel rest (obs : acc)
+
     go history maxIter accSteps
       | maxIter <= 0 = do
           let maxErr =
@@ -430,38 +470,45 @@ runLoopWith agent@ReActAgent {..} runStep execTool = go
               (Just "ReActAgent")
               (Just "runReActAgent")
       | otherwise = do
-          llmStartTime <- liftIO getCurrentTime
-          dispatchCb
-            agentCallbackManager
-            (OnLLMStart "ReActAgent" (map extractMessageText history) llmStartTime)
+          cancelledBefore <- checkCancelled
+          if cancelledBefore
+            then pure $ AgentTrace accSteps (assistantMessage "")
+            else do
+              llmStartTime <- liftIO getCurrentTime
+              dispatchCb
+                agentCallbackManager
+                (OnLLMStart "ReActAgent" (map extractMessageText history) llmStartTime)
 
-          eStep <- (Right <$> runStep history) `catchError` (pure . Left)
-          llmEndTime <- liftIO getCurrentTime
-          let llmLatency = round (realToFrac (diffUTCTime llmEndTime llmStartTime) * 1000000 :: Double) :: Int
-          case eStep of
-            Left err -> do
-              dispatchCb agentCallbackManager (OnError "ReActAgent" (errorMessage err) llmEndTime)
-              throwError err
-            Right step -> case step of
-              AgentFinish finalMsg -> do
-                dispatchCb
-                  agentCallbackManager
-                  (OnLLMEnd "ReActAgent" (extractMessageText finalMsg) llmLatency llmEndTime)
-                pure $ AgentTrace (accSteps ++ [(step, [])]) finalMsg
-              AgentAction respMsg tcs -> do
-                dispatchCb
-                  agentCallbackManager
-                  (OnLLMEnd "ReActAgent" (extractMessageText respMsg) llmLatency llmEndTime)
-                case agentStopCondition of
-                  Just cond
-                    | cond respMsg ->
-                        pure $ AgentTrace (accSteps ++ [(step, [])]) respMsg
-                  _ -> do
-                    obsMsgs <- forM tcs execTool
-                    let newHistory = history ++ [respMsg] ++ obsMsgs
-                        newSteps = accSteps ++ [(step, obsMsgs)]
-                    let _ = agent
-                    go newHistory (maxIter - 1) newSteps
+              eStep <- (Right <$> runStep history) `catchError` (pure . Left)
+              llmEndTime <- liftIO getCurrentTime
+              let llmLatency = round (realToFrac (diffUTCTime llmEndTime llmStartTime) * 1000000 :: Double) :: Int
+              case eStep of
+                Left err -> do
+                  dispatchCb agentCallbackManager (OnError "ReActAgent" (errorMessage err) llmEndTime)
+                  throwError err
+                Right step -> case step of
+                  AgentFinish finalMsg -> do
+                    dispatchCb
+                      agentCallbackManager
+                      (OnLLMEnd "ReActAgent" (extractMessageText finalMsg) llmLatency llmEndTime)
+                    pure $ AgentTrace (accSteps ++ [(step, [])]) finalMsg
+                  AgentAction respMsg tcs -> do
+                    dispatchCb
+                      agentCallbackManager
+                      (OnLLMEnd "ReActAgent" (extractMessageText respMsg) llmLatency llmEndTime)
+                    cancelledAfterStep <- checkCancelled
+                    if cancelledAfterStep
+                      then pure $ AgentTrace (accSteps ++ [(step, [])]) respMsg
+                      else case agentStopCondition of
+                        Just cond
+                          | cond respMsg ->
+                              pure $ AgentTrace (accSteps ++ [(step, [])]) respMsg
+                        _ -> do
+                          obsMsgs <- execToolsWithCancel tcs []
+                          let newHistory = history ++ [respMsg] ++ obsMsgs
+                              newSteps = accSteps ++ [(step, obsMsgs)]
+                          let _ = agent
+                          go newHistory (maxIter - 1) newSteps
 
 handleToolOutcome ::
   (MonadIO n, MonadError LangchainError n) =>
@@ -587,6 +634,7 @@ runReActAgentWithTrace agent@ReActAgent {..} userMsgs = do
   let tools = allAgentTools agent
   trace <-
     runLoopWith
+      Nothing
       agent
       (\hist -> reactStep agentModel tools hist agentModelConfig)
       (executeToolSync agent)
@@ -594,6 +642,32 @@ runReActAgentWithTrace agent@ReActAgent {..} userMsgs = do
       agentMaxIterations
       []
   persistTurnMemory agent userMsgs (traceFinalAnswer trace)
+  pure trace
+
+streamReActAgentTraceWith ::
+  forall model m.
+  (ToolBinder model m, MonadIO m, MonadError LangchainError m) =>
+  Maybe CancelToken ->
+  ReActAgent model m ->
+  [Message] ->
+  ConduitT () StreamEvent m AgentTrace
+streamReActAgentTraceWith mbTok agent@ReActAgent {..} userMsgs = do
+  initialHistory <- lift $ buildInitialHistory agent userMsgs "streamReActAgentWithTrace"
+  let tools = allAgentTools agent
+  yield $ ChainStart reactRunId "ReActAgent" (toJSON initialHistory)
+  trace <-
+    runLoopWith
+      mbTok
+      agent
+      (\hist -> reactStepStreamWith mbTok agentModel tools hist agentModelConfig)
+      (executeToolStream agent)
+      initialHistory
+      agentMaxIterations
+      []
+  cancelled <- maybe (pure False) isCancelled mbTok
+  unless cancelled $ do
+    lift $ persistTurnMemory agent userMsgs (traceFinalAnswer trace)
+    yield $ ChainEnd reactRunId "ReActAgent" (toJSON (traceFinalAnswer trace))
   pure trace
 
 {- | Execute the full ReAct reasoning loop as a Conduit stream of 'StreamEvent's,
@@ -612,21 +686,7 @@ streamReActAgentWithTrace ::
   [Message] ->
   -- | Event stream returning the full reasoning trace
   ConduitT () StreamEvent m AgentTrace
-streamReActAgentWithTrace agent@ReActAgent {..} userMsgs = do
-  initialHistory <- lift $ buildInitialHistory agent userMsgs "streamReActAgentWithTrace"
-  let tools = allAgentTools agent
-  yield $ ChainStart reactRunId "ReActAgent" (toJSON initialHistory)
-  trace <-
-    runLoopWith
-      agent
-      (\hist -> reactStepStream agentModel tools hist agentModelConfig)
-      (executeToolStream agent)
-      initialHistory
-      agentMaxIterations
-      []
-  lift $ persistTurnMemory agent userMsgs (traceFinalAnswer trace)
-  yield $ ChainEnd reactRunId "ReActAgent" (toJSON (traceFinalAnswer trace))
-  pure trace
+streamReActAgentWithTrace = streamReActAgentTraceWith Nothing
 
 {- | Execute the full ReAct reasoning loop as an 'EventStream'.
 
@@ -641,7 +701,56 @@ streamReActAgent ::
   [Message] ->
   -- | Stream of agent lifecycle, LLM, and tool events
   EventStream m
-streamReActAgent agent userMsgs = void (streamReActAgentWithTrace agent userMsgs)
+streamReActAgent agent userMsgs = do
+  _ <- streamReActAgentWithTrace agent userMsgs
+  pure ()
+
+-- | Outcome of an interruptible streaming ReAct turn.
+data InterruptibleResult
+  = -- | Turn completed normally with the final assistant message.
+    Completed !Message
+  | -- | Turn was cancelled via 'CancelToken', returning any partial assistant text emitted.
+    Cancelled !Message
+  deriving (Eq, Show)
+
+{- | Execute an interruptible streaming ReAct turn using a cooperative 'CancelToken'.
+
+Safe for @LangchainT () IO@ callers without @ResourceT@. When cancelled mid-turn,
+upstream streaming stops promptly, conversation memory is left unmodified, and
+'Cancelled' returns the partial assistant message streamed so far.
+-}
+runReActAgentStreamInterruptible ::
+  forall model m.
+  (ToolBinder model m, MonadIO m, MonadError LangchainError m) =>
+  CancelToken ->
+  ReActAgent model m ->
+  [Message] ->
+  (StreamEvent -> m ()) ->
+  m InterruptibleResult
+runReActAgentStreamInterruptible tok agent userMsgs onEvent = do
+  cancelledStart <- isCancelled tok
+  if cancelledStart
+    then pure $ Cancelled (assistantMessage "")
+    else do
+      chunksRef <- liftIO $ newIORef ([] :: [Text])
+      let trackAndForward ev = do
+            liftIO $ case ev of
+              LLMStart {} -> writeIORef chunksRef []
+              LLMChunk _ txt _ | not (T.null txt) -> modifyIORef' chunksRef (txt :)
+              LLMEnd _ msg _ -> writeIORef chunksRef [extractMessageText msg]
+              _ -> pure ()
+            onEvent ev
+      trace <-
+        runConduit
+          ( streamReActAgentTraceWith (Just tok) agent userMsgs
+              `fuseUpstream` CL.mapM_ trackAndForward
+          )
+      cancelledEnd <- isCancelled tok
+      if cancelledEnd
+        then do
+          partialTxt <- liftIO (T.concat . reverse <$> readIORef chunksRef)
+          pure $ Cancelled (assistantMessage partialTxt)
+        else pure $ Completed (traceFinalAnswer trace)
 
 {- | Execute the ReAct agent in streaming mode, invoking a callback for every
 'StreamEvent' as it arrives and returning the final assistant 'Message'.
