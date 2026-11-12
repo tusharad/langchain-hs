@@ -225,5 +225,5 @@ streamShellCommand cmd = do
               yield chunk
               loop
             Left res -> do
-              liftIO $ wait worker
+              void $ liftIO $ wait worker
               pure res
