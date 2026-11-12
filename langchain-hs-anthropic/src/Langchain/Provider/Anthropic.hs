@@ -56,6 +56,7 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as BSC
 import qualified Data.ByteString.Lazy as LBS
 import Data.Conduit (bracketP, yield)
+import qualified Data.List as List
 import qualified Data.List.NonEmpty as NonEmpty
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
@@ -491,7 +492,7 @@ initialSseState mdl =
 parseRawSseFrame :: BS.ByteString -> (Maybe Text, Maybe BS.ByteString)
 parseRawSseFrame frame =
   let ls = BSC.lines frame
-   in foldl' step (Nothing, Nothing) ls
+   in List.foldl' step (Nothing, Nothing) ls
   where
     step (mEv, mData) line
       | "event:" `BS.isPrefixOf` line =
