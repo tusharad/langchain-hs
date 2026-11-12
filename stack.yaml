@@ -10,6 +10,7 @@ packages:
   - ./langchain-hs-ollama  # Ollama provider + embeddings
   - ./langchain-hs-openai  # OpenAI provider + embeddings
   - ./langchain-hs-gemini  # Google Gemini provider
+  - ./langchain-hs-anthropic # Anthropic Claude provider
 
 extra-deps:
  - openai-2.5.4@sha256:90722cfa6763749cfa87c5617554e0078db7930ac15bb9620d1314198f0b82f4,6987

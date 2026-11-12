@@ -25,6 +25,7 @@ category: Getting Started
 | `langchain-hs-ollama` | Ollama Provider | Local/offline inference via Ollama |
 | `langchain-hs-openai` | OpenAI Provider | OpenAI & OpenAI-compatible endpoints (OpenRouter, Fireworks) |
 | `langchain-hs-gemini` | Gemini Provider | Google Gemini API (Interactions v1 OpenAPI spec), embeddings & SSE streaming |
+| `langchain-hs-anthropic` | Anthropic Provider | Native Anthropic Claude `/v1/messages` provider, prompt caching, thinking & SSE streaming |
 | `langchain-hs-mcp` | MCP Client | Connect to Model Context Protocol servers over stdio |
 
 ### Using Cabal
@@ -63,6 +64,7 @@ extra-deps:
   - langchain-hs-ollama-0.0.6.2
   - langchain-hs-openai-0.0.6.2
   - langchain-hs-gemini-0.0.6.2
+  - langchain-hs-anthropic-0.0.6.2
   - langchain-hs-mcp-0.0.6.2
 ```
 
@@ -77,6 +79,7 @@ dependencies:
   - langchain-hs-ollama
   - langchain-hs-openai
   - langchain-hs-gemini
+  - langchain-hs-anthropic
 ```
 
 ---

@@ -1,0 +1,7 @@
+resolver: nightly-2026-10-11
+packages:
+  - .
+  - ../langchain-hs
+  - ../langchain-hs-core
+  - ../langchain-hs-graph
+

@@ -6,6 +6,7 @@ packages:
     langchain-hs-ollama
     langchain-hs-openai
     langchain-hs-gemini
+    langchain-hs-anthropic
     examples
 
 
