@@ -1,6 +1,6 @@
 # Changelog for langchain-hs-ollama
 
-## 0.0.6.2 - 2026-11-12
+## 0.0.6.2 - 2026-11-14
 
 - Coordinated monorepo release alignment to `0.0.6.2`.
 - Forward streamed tool calls from `ollama-haskell` in `ChatModel.stream` as `LLMChunk "" (Just toolCall)`.

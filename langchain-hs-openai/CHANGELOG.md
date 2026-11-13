@@ -1,6 +1,6 @@
 # Changelog for langchain-hs-openai
 
-## 0.0.6.2 - 2026-11-12
+## 0.0.6.2 - 2026-11-14
 
 > **Note**: `0.0.6.1` was skipped globally after `langchain-hs-ollama-v0.0.6.1`.
 
