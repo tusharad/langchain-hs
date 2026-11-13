@@ -1,0 +1,35 @@
+# System Law Specification Template
+feature_or_fix: "<Name of endpoint, job, or module>"
+stack_layer: "<pure-domain | api-cron | db-s3-stateful | migration | infra-ci>"
+
+signatures:
+  input: "<Strict input type / payload schema>"
+  output: "<Strict output type / error union>"
+  external_state:
+    database_tables: []
+    s3_buckets_or_prefixes: []
+    queues_or_caches: []
+
+requires_preconditions:
+  - "<Boundary validation rule 1 (e.g., UUIDv4 idempotency key, max payload size)>"
+
+ensures_postconditions:
+  - "<Guaranteed state after successful execution>"
+
+system_laws:
+  idempotency: "<What happens when called N times with identical input/key?>"
+  compensation_atomicity: "<If S3 succeeds and DB fails (or vice versa), how is state cleaned up?>"
+  conservation_invariants: "<What counts, balances, or foreign-key relationships must always hold?>"
+
+frame_conditions_modifies_only:
+  mutable:
+    - "<Explicitly allowed DB table.column or S3 path>"
+  immutable_guarantees:
+    - "<Adjacent tables, buckets, or configs that MUST NOT be touched>"
+
+backwards_compatibility:
+  wire_contract: "<OpenAPI / JSON schema compatibility rule>"
+  db_migration: "<Expand-contract safety rule for zero-downtime deployment>"
+
+open_ambiguities_for_human:
+  - "<List any unspecified edge case here and HALT before coding>"  

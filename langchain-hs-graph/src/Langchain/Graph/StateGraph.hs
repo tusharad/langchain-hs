@@ -49,20 +49,33 @@ module Langchain.Graph.StateGraph
   , addChatNode
   , addChatNodeWithConfig
   , addSubGraphNode
+  , addStreamingNode
+  , addStreamingModelNode
+  , addStreamingModelNodeWithConfig
 
     -- * Compilation & Execution
   , compileGraph
   , runGraph
   , runGraphWithConfig
 
+    -- * Streaming Execution
+  , streamGraph
+  , streamGraphWithConfig
+  , streamGraphWith
+  , streamGraphStream
+
     -- * Pure State Reducers
   , appendMessagesReducer
   , replaceFieldReducer
   ) where
 
-import Control.Monad (when)
-import Control.Monad.Except (ExceptT, MonadError, runExceptT, throwError)
+import Control.Monad (void, when)
+import Control.Monad.Except (ExceptT, MonadError, catchError, runExceptT, throwError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.Trans (lift)
+import Data.Aeson (ToJSON, Value, toJSON)
+import Data.Conduit (ConduitT, fuseUpstream, runConduit, yield, (.|))
+import qualified Data.Conduit.List as CL
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)
@@ -70,8 +83,14 @@ import qualified Data.Text as T
 
 import Langchain.Error (LangchainError, agentError, internalError)
 import Langchain.Model (ChatModel, Message, ModelConfig, extractMessageText, userMessage)
-import qualified Langchain.Model as M (invoke)
+import qualified Langchain.Model as M (invoke, stream)
 import Langchain.Runnable (Runnable (..), RunnableTree, interpret)
+import Langchain.Stream
+  ( EventStream
+  , StreamEvent (NodeEnd, NodeStart)
+  , liftChatStream
+  , tapStreamMessage
+  )
 
 -- | Unique node identifier in a StateGraph
 type NodeId = Text
@@ -120,6 +139,7 @@ defaultGraphConfig =
 -- | Declarative StateGraph specification
 data StateGraph s m = StateGraph
   { graphNodes :: !(Map NodeId (Node s m))
+  , graphStreamNodes :: !(Map NodeId (s -> ConduitT () StreamEvent m (Either LangchainError s)))
   , graphEdges :: !(Map NodeId (Edge s m))
   , graphReducer :: !(StateReducer s)
   , graphConfig :: !GraphConfig
@@ -128,6 +148,7 @@ data StateGraph s m = StateGraph
 -- | A validated, compiled StateGraph ready for execution
 data CompiledGraph s m = CompiledGraph
   { compiledNodes :: !(Map NodeId (Node s m))
+  , compiledStreamNodes :: !(Map NodeId (s -> ConduitT () StreamEvent m (Either LangchainError s)))
   , compiledEdges :: !(Map NodeId (Edge s m))
   , compiledReducer :: !(StateReducer s)
   , compiledConfig :: !GraphConfig
@@ -138,6 +159,7 @@ emptyStateGraph :: StateReducer s -> StateGraph s m
 emptyStateGraph reducer =
   StateGraph
     { graphNodes = Map.empty
+    , graphStreamNodes = Map.empty
     , graphEdges = Map.empty
     , graphReducer = reducer
     , graphConfig = defaultGraphConfig
@@ -282,6 +304,65 @@ addConditionalEdge ::
 addConditionalEdge fromNode condFn g =
   g {graphEdges = Map.insert fromNode (ConditionalEdge condFn) (graphEdges g)}
 
+-- | Reserved run identifier for streamed graph lifecycle events
+graphRunId :: Text
+graphRunId = "state-graph-run"
+
+-- | Add a streaming node capable of emitting inner 'StreamEvent's during 'streamGraph'.
+addStreamingNode ::
+  Monad m =>
+  NodeId ->
+  (s -> ConduitT () StreamEvent m (Either LangchainError s)) ->
+  StateGraph s m ->
+  StateGraph s m
+addStreamingNode name streamAct g =
+  let syncAction state = runConduit (streamAct state `fuseUpstream` CL.sinkNull)
+      n = Node {nodeId = name, nodeAction = syncAction}
+   in g
+        { graphNodes = Map.insert name n (graphNodes g)
+        , graphStreamNodes = Map.insert name streamAct (graphStreamNodes g)
+        }
+
+addStreamingModelNodeMaybeConfig ::
+  (ChatModel c, MonadIO m, MonadError LangchainError m) =>
+  NodeId ->
+  c ->
+  Maybe (ModelConfig c) ->
+  (s -> [Message]) ->
+  (s -> Message -> s) ->
+  StateGraph s m ->
+  StateGraph s m
+addStreamingModelNodeMaybeConfig name chatModel mbCfg toMessages mergeMessage =
+  addStreamingNode name $ \state ->
+    ( do
+        finalMsg <- liftChatStream (M.stream chatModel (toMessages state) mbCfg) .| tapStreamMessage
+        pure $ Right (mergeMessage state finalMsg)
+    )
+      `catchError` (pure . Left)
+
+-- | Add a streaming ChatModel node that forwards inner 'LLMStart', 'LLMChunk', and 'LLMEnd' events.
+addStreamingModelNode ::
+  (ChatModel c, MonadIO m, MonadError LangchainError m) =>
+  NodeId ->
+  c ->
+  (s -> [Message]) ->
+  (s -> Message -> s) ->
+  StateGraph s m ->
+  StateGraph s m
+addStreamingModelNode name chatModel = addStreamingModelNodeMaybeConfig name chatModel Nothing
+
+-- | Add a streaming ChatModel node with explicit model configuration.
+addStreamingModelNodeWithConfig ::
+  (ChatModel c, MonadIO m, MonadError LangchainError m) =>
+  NodeId ->
+  c ->
+  ModelConfig c ->
+  (s -> [Message]) ->
+  (s -> Message -> s) ->
+  StateGraph s m ->
+  StateGraph s m
+addStreamingModelNodeWithConfig name chatModel cfg = addStreamingModelNodeMaybeConfig name chatModel (Just cfg)
+
 -- | Validate state graph invariants and compile to an executable 'CompiledGraph'
 compileGraph :: StateGraph s m -> Either LangchainError (CompiledGraph s m)
 compileGraph StateGraph {..}
@@ -291,10 +372,50 @@ compileGraph StateGraph {..}
       Right
         CompiledGraph
           { compiledNodes = graphNodes
+          , compiledStreamNodes = graphStreamNodes
           , compiledEdges = graphEdges
           , compiledReducer = graphReducer
           , compiledConfig = graphConfig
           }
+
+-- | Stream graph execution events ('NodeStart', inner node events, and 'NodeEnd').
+streamGraph ::
+  (ToJSON s, MonadIO m, MonadError LangchainError m) =>
+  CompiledGraph s m ->
+  NodeId ->
+  s ->
+  ConduitT () StreamEvent m s
+streamGraph cg = streamGraphWithConfig (compiledConfig cg) cg
+
+-- | Stream graph execution events with an explicit 'GraphConfig' override.
+streamGraphWithConfig ::
+  (ToJSON s, MonadIO m, MonadError LangchainError m) =>
+  GraphConfig ->
+  CompiledGraph s m ->
+  NodeId ->
+  s ->
+  ConduitT () StreamEvent m s
+streamGraphWithConfig = streamGraphWith toJSON
+
+-- | Stream graph execution events using a custom state summary function (supports non-'ToJSON' states).
+streamGraphWith ::
+  (MonadIO m, MonadError LangchainError m) =>
+  (s -> Value) ->
+  GraphConfig ->
+  CompiledGraph s m ->
+  NodeId ->
+  s ->
+  ConduitT () StreamEvent m s
+streamGraphWith = executeGraphWith True
+
+-- | Stream graph execution as an 'EventStream m' discarding the final state.
+streamGraphStream ::
+  (ToJSON s, MonadIO m, MonadError LangchainError m) =>
+  CompiledGraph s m ->
+  NodeId ->
+  s ->
+  EventStream m
+streamGraphStream cg entry s = void (streamGraph cg entry s)
 
 -- | Execute a CompiledGraph starting from the given entry NodeId
 runGraph ::
@@ -313,7 +434,20 @@ runGraphWithConfig ::
   NodeId ->
   s ->
   m s
-runGraphWithConfig cfg cg =
+runGraphWithConfig cfg cg entry initState =
+  runConduit $
+    executeGraphWith False (const (toJSON ())) cfg cg entry initState `fuseUpstream` CL.sinkNull
+
+executeGraphWith ::
+  (MonadIO m, MonadError LangchainError m) =>
+  Bool ->
+  (s -> Value) ->
+  GraphConfig ->
+  CompiledGraph s m ->
+  NodeId ->
+  s ->
+  ConduitT () StreamEvent m s
+executeGraphWith emitEvents encodeState cfg cg =
   executeStep 0
   where
     CompiledGraph {..} = cg
@@ -321,6 +455,15 @@ runGraphWithConfig cfg cg =
 
     logMsg msg =
       when logStepTransitions $ liftIO $ stepLogger msg
+
+    emitNodeEvent mkEv nid st =
+      when emitEvents $ yield (mkEv graphRunId nid (encodeState st))
+
+    runNodeAction currentId node state
+      | emitEvents = case Map.lookup currentId compiledStreamNodes of
+          Just streamAct -> streamAct state
+          Nothing -> lift (nodeAction node state)
+      | otherwise = lift (nodeAction node state)
 
     executeStep stepCount currentId state
       | stepCount >= recursionLimit = do
@@ -339,7 +482,8 @@ runGraphWithConfig cfg cg =
           Just node -> do
             logMsg $
               "[StateGraph] Step " <> T.pack (show (stepCount + 1)) <> ": Entering node '" <> currentId <> "'"
-            eNextState <- nodeAction node state
+            emitNodeEvent NodeStart currentId state
+            eNextState <- runNodeAction currentId node state
             case eNextState of
               Left err -> do
                 logMsg $ "[StateGraph ERROR] Node '" <> currentId <> "' failed: " <> T.pack (show err)
@@ -347,6 +491,7 @@ runGraphWithConfig cfg cg =
               Right stepState -> do
                 let mergedState = compiledReducer state stepState
                 logMsg $ "[StateGraph] Node '" <> currentId <> "' executed successfully"
+                emitNodeEvent NodeEnd currentId mergedState
                 case Map.lookup currentId compiledEdges of
                   Nothing -> do
                     logMsg $ "[StateGraph] No outgoing edge from '" <> currentId <> "', terminating"
@@ -355,7 +500,7 @@ runGraphWithConfig cfg cg =
                     logMsg $ "[StateGraph] Static edge: '" <> currentId <> "' -> '" <> nextId <> "'"
                     executeStep (stepCount + 1) nextId mergedState
                   Just (ConditionalEdge cond) -> do
-                    eNextId <- cond mergedState
+                    eNextId <- lift $ cond mergedState
                     case eNextId of
                       Left err -> do
                         logMsg $
@@ -369,7 +514,7 @@ runGraphWithConfig cfg cg =
               logMsg $ "[StateGraph] Passthrough edge: '" <> currentId <> "' -> '" <> nextId <> "'"
               executeStep (stepCount + 1) nextId state
             Just (ConditionalEdge cond) -> do
-              eNextId <- cond state
+              eNextId <- lift $ cond state
               case eNextId of
                 Left err -> throwError err
                 Right nextId -> do

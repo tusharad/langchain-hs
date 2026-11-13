@@ -29,14 +29,16 @@ module Langchain.Provider.Gemini
   ) where
 
 import Control.Applicative ((<|>))
+import Control.Monad (forM_)
 import Control.Monad.Except (throwError)
 import Control.Monad.IO.Class (liftIO)
-import Data.Aeson (FromJSON, ToJSON, decodeStrict, object, toJSON, (.=))
+import Data.Aeson (FromJSON, ToJSON, decodeStrict, eitherDecodeStrict, object, toJSON, (.=))
 import Data.Conduit (await, yield, (.|))
 import qualified Data.List as List
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.Map.Strict as Map
 import Data.Maybe (fromMaybe)
+import qualified Data.Set as Set
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
@@ -270,31 +272,101 @@ instance ChatModel Gemini where
       Nothing -> newGeminiClientEnv (apiKey provider)
     let req = buildCreateRequest provider msgs mbConfig
 
-    (accumulated, mbCompletedInter) <-
-      streamGeminiInteraction env req .| consumeStream rId "" Nothing
+    (accumulated, pendingCalls, emittedCalls, thoughtSigs, mbCompletedInter) <-
+      streamGeminiInteraction env req .| consumeStream rId "" Map.empty [] [] Nothing
 
+    -- Finalize any tool calls whose step.start was not followed by step.stop
+    remainingCalls <- traverse finalizePendingCall (Map.elems pendingCalls)
+    forM_ remainingCalls $ \tc ->
+      yield $ LLMChunk rId "" (Just tc)
+
+    let allEmitted = reverse emittedCalls ++ remainingCalls
     case mbCompletedInter of
       Just completedInter -> do
         let finalMsg = interactionToMessage completedInter
             usage = toTokenUsage (interactionUsage completedInter)
+            alreadyEmittedIds = Set.fromList [(toolCallId tc, toolCallName tc) | tc <- allEmitted]
+            missingChunkCalls =
+              filter
+                (\tc -> not $ Set.member (toolCallId tc, toolCallName tc) alreadyEmittedIds)
+                (fromMaybe [] (messageToolCalls finalMsg))
+        forM_ missingChunkCalls $ \tc ->
+          yield $ LLMChunk rId "" (Just tc)
         yield $ LLMEnd rId finalMsg usage
       Nothing -> do
-        let finalMsg = assistantMessage accumulated
+        let base = assistantMessage accumulated
+            withCalls =
+              if null allEmitted
+                then base
+                else base {messageToolCalls = Just allEmitted}
+            sigs = reverse thoughtSigs
+            finalMsg =
+              if null sigs
+                then withCalls
+                else
+                  withCalls
+                    { messageMetadata =
+                        Map.insert
+                          "langchain.gemini.thoughtSignatures"
+                          (toJSON sigs)
+                          (messageMetadata withCalls)
+                    }
         yield $ LLMEnd rId finalMsg Nothing
     where
-      consumeStream rId acc mbCompleted =
+      finalizePendingCall (cid, cname, initArgs, argText)
+        | T.null (T.strip argText) =
+            pure
+              ToolCall
+                { toolCallId = cid
+                , toolCallType = "function"
+                , toolCallName = cname
+                , toolCallArguments = initArgs
+                }
+        | otherwise =
+            case eitherDecodeStrict (TE.encodeUtf8 argText) of
+              Left err ->
+                throwError $ llmError ("Invalid JSON arguments in Gemini tool call: " <> T.pack err) Nothing Nothing
+              Right parsedArgs ->
+                pure
+                  ToolCall
+                    { toolCallId = cid
+                    , toolCallType = "function"
+                    , toolCallName = cname
+                    , toolCallArguments = parsedArgs
+                    }
+
+      consumeStream rId acc pending emitted sigs mbCompleted =
         await >>= \case
-          Nothing -> pure (acc, mbCompleted)
+          Nothing -> pure (acc, pending, emitted, sigs, mbCompleted)
+          Just (SseStepStart idx FunctionCallStep {..}) ->
+            let pending' = Map.insert idx (callId, callName, callArguments, "") pending
+             in consumeStream rId acc pending' emitted sigs mbCompleted
           Just (SseStepDelta _ (TextDelta txt)) -> do
             yield $ LLMChunk rId txt Nothing
-            consumeStream rId (acc <> txt) mbCompleted
+            consumeStream rId (acc <> txt) pending emitted sigs mbCompleted
+          Just (SseStepDelta idx (ArgumentsDelta argDelta)) ->
+            let pending' =
+                  Map.adjust
+                    (\(cid, cname, initArgs, argTxt) -> (cid, cname, initArgs, argTxt <> argDelta))
+                    idx
+                    pending
+             in consumeStream rId acc pending' emitted sigs mbCompleted
+          Just (SseStepDelta _ (ThoughtSignatureDelta sig)) ->
+            consumeStream rId acc pending emitted (sig : sigs) mbCompleted
+          Just (SseStepStop idx) ->
+            case Map.lookup idx pending of
+              Nothing -> consumeStream rId acc pending emitted sigs mbCompleted
+              Just entry -> do
+                tc <- finalizePendingCall entry
+                yield $ LLMChunk rId "" (Just tc)
+                consumeStream rId acc (Map.delete idx pending) (tc : emitted) sigs mbCompleted
           Just (SseInteractionCompleted inter) ->
-            consumeStream rId acc (Just inter)
+            consumeStream rId acc pending emitted sigs (Just inter)
           Just (SseError code msg) ->
             throwError $
               llmError (code <> ": " <> msg) Nothing Nothing
           Just _ ->
-            consumeStream rId acc mbCompleted
+            consumeStream rId acc pending emitted sigs mbCompleted
 
       toTokenUsage Nothing = Nothing
       toTokenUsage (Just Usage {..}) =

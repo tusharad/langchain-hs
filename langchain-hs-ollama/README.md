@@ -9,7 +9,7 @@ pulling in OpenAI or Gemini dependencies.
 
 ```yaml
 # stack.yaml extra-deps
-- langchain-hs-ollama-0.0.6.0
+- langchain-hs-ollama-0.0.6.2
 ```
 
 ```yaml

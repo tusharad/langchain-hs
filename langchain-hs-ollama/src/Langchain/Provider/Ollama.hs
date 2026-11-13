@@ -65,7 +65,7 @@ module Langchain.Provider.Ollama
   ) where
 
 import Control.Applicative ((<|>))
-import Control.Monad (when)
+import Control.Monad (forM_, unless)
 import Control.Monad.Except (throwError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Aeson (Result (..), decode, fromJSON, toJSON, (.=))
@@ -73,7 +73,7 @@ import qualified Data.Aeson as Aeson
 import qualified Data.ByteString.Lazy.Char8 as LBSC
 import Data.Conduit (await, transPipe, yield, (.|))
 import qualified Data.List.NonEmpty as NonEmpty
-import Data.Maybe (fromMaybe, isJust, mapMaybe)
+import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Proxy (Proxy (..))
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -233,13 +233,11 @@ toOllamaMessage msg =
         Nothing -> Nothing
         Just tcs ->
           Just
-            [ OTool.ToolCall
-                { OTool.tcFunction =
-                    OTool.ToolCallFunction
-                      { OTool.tcfName = toolCallName tc
-                      , OTool.tcfArguments = parseArgs (toolCallArguments tc)
-                      }
-                }
+            [ OTool.mkToolCall
+                ( OTool.mkToolCallFunction
+                    (toolCallName tc)
+                    (parseArgs (toolCallArguments tc))
+                )
             | tc <- tcs
             ]
       parseArgs v = case v of
@@ -250,19 +248,19 @@ toOllamaMessage msg =
         _ -> case fromJSON v of
           Success m -> m
           _ -> mempty
-   in O.Message r txt imgs tools (messageName msg) Nothing
+   in O.Message r txt imgs tools (messageName msg) Nothing Nothing
 
 -- | Convert Ollama 'O.Message' to core 'Message'.
 fromOllamaMessage :: O.Message -> Message
-fromOllamaMessage (O.Message r txt _imgs tools name _think) =
-  let cRole = fromOllamaRole r
-      cMsg = (textMessage cRole txt) {messageName = name}
-      cTools = case tools of
+fromOllamaMessage oMsg =
+  let cRole = fromOllamaRole (O.messageRole oMsg)
+      cMsg = (textMessage cRole (O.messageContent oMsg)) {messageName = O.messageToolName oMsg}
+      cTools = case O.messageToolCalls oMsg of
         Nothing -> Nothing
         Just tcs ->
           Just
             [ ToolCall
-                { toolCallId = ""
+                { toolCallId = fromMaybe "" (OTool.tcId tc)
                 , toolCallType = "function"
                 , toolCallName = OTool.tcfName (OTool.tcFunction tc)
                 , toolCallArguments = toJSON (OTool.tcfArguments (OTool.tcFunction tc))
@@ -288,10 +286,8 @@ toChatRequest (Ollama _ mName) inputMsgs mbConfig =
         (m : ms) -> NonEmpty.map toOllamaMessage (m NonEmpty.:| ms)
         [] -> O.userMessage "" NonEmpty.:| []
       cfg = fromMaybe defaultOllamaConfig mbConfig
-   in OllamaChat.ChatRequest
-        { OllamaChat.chatModel = ModelName mName
-        , OllamaChat.chatMessages = oMsgs
-        , OllamaChat.chatTools = ollamaTools cfg
+   in (OllamaChat.chatRequest (ModelName mName) oMsgs)
+        { OllamaChat.chatTools = ollamaTools cfg
         , OllamaChat.chatFormat = ollamaFormat cfg
         , OllamaChat.chatOptions = ollamaOptions cfg
         , OllamaChat.chStream = Just False
@@ -313,7 +309,7 @@ instance ChatModel Ollama where
 
   stream model inputMsgs mbConfig = do
     let runId_ = "ollama-run"
-        req = toChatRequest model inputMsgs mbConfig
+        req = (toChatRequest model inputMsgs mbConfig) {OllamaChat.chStream = Just True}
         resolvedModel = ollamaModelName model
 
     yield $ LLMStart runId_ resolvedModel inputMsgs
@@ -339,26 +335,25 @@ instance ChatModel Ollama where
                       Just tcs ->
                         Just
                           [ ToolCall
-                              { toolCallId = ""
+                              { toolCallId = fromMaybe "" (OTool.tcId tc)
                               , toolCallType = "function"
                               , toolCallName = OTool.tcfName (OTool.tcFunction tc)
                               , toolCallArguments = toJSON (OTool.tcfArguments (OTool.tcFunction tc))
                               }
                           | tc <- tcs
                           ]
-                    toolDelta = case toolCalls of
-                      Just (tc : _) -> Just tc
-                      _ -> Nothing
                     newAccChunks = if T.null chunkTxt then accChunks else chunkTxt : accChunks
                     newTools = case toolCalls of
-                      Just tcs -> Just $ maybe tcs (++ tcs) mbLastTools
-                      Nothing -> mbLastTools
+                      Just tcs@(_ : _) -> Just $ maybe tcs (++ tcs) mbLastTools
+                      _ -> mbLastTools
                     newUsage = case (OllamaChat.crPromptEvalCount resp, OllamaChat.crEvalCount resp) of
                       (Just p, Just c) -> Just $ TokenUsage p c (p + c)
                       _ -> mbLastUsage
-                when (not (T.null chunkTxt) || isJust toolDelta) $
+                unless (T.null chunkTxt) $
                   yield $
-                    LLMChunk rId chunkTxt toolDelta
+                    LLMChunk rId chunkTxt Nothing
+                forM_ (fromMaybe [] toolCalls) $ \tc ->
+                  yield $ LLMChunk rId "" (Just tc)
                 loop newAccChunks newUsage newTools
 
 instance CacheableChatModel Ollama where

@@ -2,6 +2,14 @@
 
 All notable changes to this package will be documented in this file.
 
+## 0.0.6.2 - 2026-11-14
+
+> **Note**: `0.0.6.1` was skipped globally after `langchain-hs-ollama-v0.0.6.1`.
+
+- Coordinated monorepo release alignment to `0.0.6.2`.
+- Tightened `langchain-hs-core` dependency bound to `>= 0.0.6.2 && < 0.0.7`.
+- Added StateGraph event streaming via `streamGraphEvents` with typed `GraphStreamEvent` constructors (`GraphStart`, `GraphNodeStart`, `GraphNodeChunk`, `GraphNodeEnd`, `GraphStateUpdate`, `GraphEnd`).
+
 ## 0.0.6.0 - 2026-10-02
 
 - Updated bounds for GHC 9.12 and modern Stackage LTS releases.

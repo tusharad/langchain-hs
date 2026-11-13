@@ -201,7 +201,7 @@ data OpenAIStreamToolCall = OpenAIStreamToolCall
 
 instance Aeson.FromJSON OpenAIStreamToolCall where
   parseJSON = Aeson.withObject "OpenAIStreamToolCall" $ \obj -> do
-    streamToolCallIndex <- obj Aeson..: "index"
+    streamToolCallIndex <- obj Aeson..:? "index" Aeson..!= 0
     streamToolCallId <- obj Aeson..:? "id"
     streamFunction <- obj Aeson..:? "function"
     let streamToolCallName = streamFunction >>= parseMaybe (Aeson..: "name")
@@ -327,7 +327,9 @@ toLangchainOAIMessage msg =
             , CC.refusal = Nothing
             , CC.name = messageName msg
             , CC.assistant_audio = Nothing
-            , CC.tool_calls = V.fromList . map toOAIToolCall <$> messageToolCalls msg
+            , CC.tool_calls = case messageToolCalls msg of
+                Just tcs@(_ : _) -> Just $ V.fromList (map toOAIToolCall tcs)
+                _ -> Nothing
             }
         Tool ->
           CC.Tool
@@ -453,13 +455,15 @@ instance ChatModel OpenAI where
               Map.alter (Just . update) streamToolCallIndex toolCalls'
               where
                 update curr =
-                  let prevId = curr >>= partialToolCallId
+                  let nonEmptyTxt (Just t) | not (T.null t) = Just t
+                      nonEmptyTxt _ = Nothing
+                      prevId = curr >>= partialToolCallId
                       prevName = curr >>= partialToolCallName
                       prevArgs = maybe "" partialToolCallArguments curr
                       nextArgs = fromMaybe "" streamToolCallArguments
                    in PartialToolCall
-                        { partialToolCallId = streamToolCallId <|> prevId
-                        , partialToolCallName = streamToolCallName <|> prevName
+                        { partialToolCallId = nonEmptyTxt streamToolCallId <|> prevId
+                        , partialToolCallName = nonEmptyTxt streamToolCallName <|> prevName
                         , partialToolCallArguments = prevArgs <> nextArgs
                         }
 
@@ -479,10 +483,13 @@ instance ChatModel OpenAI where
                 toolCallName <-
                   fromMaybeOrThrow "OpenAI stream ended with a tool call missing a function name" partialToolCallName
                 toolCallArguments <-
-                  either
-                    (throwLlmError . ("Invalid JSON arguments in OpenAI tool call: " <>) . T.pack)
-                    pure
-                    (decode partialToolCallArguments)
+                  if T.null (T.strip partialToolCallArguments)
+                    then pure (object [])
+                    else
+                      either
+                        (throwLlmError . ("Invalid JSON arguments in OpenAI tool call: " <>) . T.pack)
+                        pure
+                        (decode partialToolCallArguments)
                 pure ToolCall {toolCallId, toolCallType = "function", toolCallName, toolCallArguments}
 
               throwLlmError = throwError . llmError'

@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
@@ -18,12 +19,19 @@ module Langchain.MCP.Client
   ( McpTransport (..)
   , McpToolInfo (..)
   , McpResource (..)
+  , McpPromptArgument (..)
+  , McpPromptInfo (..)
   , McpClient (..)
   , newStdioMcpClient
   , newHttpMcpClient
   , listMcpTools
   , callMcpTool
+  , listMcpResources
+  , readMcpResource
+  , listMcpPrompts
+  , getMcpPrompt
   , mcpToolToLangchainTool
+  , mcpToolToStreamingTool
   ) where
 
 import Control.Exception (SomeException, try)
@@ -45,6 +53,9 @@ import Data.Aeson
 import Data.Aeson.Types (parseEither)
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.ByteString.Lazy.Char8 as LBSC
+import Data.Conduit (yield)
+import qualified Data.Foldable as F
+import Data.Map.Strict (Map)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
@@ -53,7 +64,8 @@ import System.IO (BufferMode (..), hClose, hFlush, hGetLine, hSetBuffering)
 import System.Process (CreateProcess (..), StdStream (..), createProcess, proc, terminateProcess)
 
 import Langchain.Error (LangchainError, toolError)
-import Langchain.Tool.Core (Tool (..), createTool)
+import Langchain.Model.Types (Message, assistantMessage, systemMessage, userMessage)
+import Langchain.Tool (StreamingTool, Tool (..), createStreamingTool, createTool)
 
 -- | MCP Transport type
 data McpTransport
@@ -98,6 +110,60 @@ instance FromJSON McpResource where
     mcpResourceName <- o .: "name"
     mcpResourceMimeType <- o .:? "mimeType"
     pure McpResource {..}
+
+instance ToJSON McpResource where
+  toJSON McpResource {..} =
+    object
+      [ "uri" .= mcpResourceUri
+      , "name" .= mcpResourceName
+      , "mimeType" .= mcpResourceMimeType
+      ]
+
+-- | MCP Prompt argument descriptor
+data McpPromptArgument = McpPromptArgument
+  { promptArgName :: !Text
+  , promptArgDescription :: !(Maybe Text)
+  , promptArgRequired :: !(Maybe Bool)
+  }
+  deriving (Show, Eq)
+
+instance FromJSON McpPromptArgument where
+  parseJSON = withObject "McpPromptArgument" $ \o -> do
+    promptArgName <- o .: "name"
+    promptArgDescription <- o .:? "description"
+    promptArgRequired <- o .:? "required"
+    pure McpPromptArgument {..}
+
+instance ToJSON McpPromptArgument where
+  toJSON McpPromptArgument {..} =
+    object
+      [ "name" .= promptArgName
+      , "description" .= promptArgDescription
+      , "required" .= promptArgRequired
+      ]
+
+-- | MCP Prompt descriptor published by the server
+data McpPromptInfo = McpPromptInfo
+  { mcpPromptName :: !Text
+  , mcpPromptDescription :: !(Maybe Text)
+  , mcpPromptArguments :: ![McpPromptArgument]
+  }
+  deriving (Show, Eq)
+
+instance FromJSON McpPromptInfo where
+  parseJSON = withObject "McpPromptInfo" $ \o -> do
+    mcpPromptName <- o .: "name"
+    mcpPromptDescription <- o .:? "description"
+    mcpPromptArguments <- o .:? "arguments" .!= []
+    pure McpPromptInfo {..}
+
+instance ToJSON McpPromptInfo where
+  toJSON McpPromptInfo {..} =
+    object
+      [ "name" .= mcpPromptName
+      , "description" .= mcpPromptDescription
+      , "arguments" .= mcpPromptArguments
+      ]
 
 -- | MCP Client handle
 data McpClient = McpClient
@@ -199,9 +265,13 @@ listMcpTools McpClient {..} = case clientTransport of
             , "params" .= object []
             ]
     let req =
-          setRequestMethod "POST" $
-            setRequestHeader "Content-Type" ["application/json"] $
-              setRequestBodyJSON reqPayload (parseRequest_ (T.unpack url))
+          setRequestMethod
+            "POST"
+            ( setRequestHeader
+                "Content-Type"
+                ["application/json"]
+                (setRequestBodyJSON reqPayload (parseRequest_ (T.unpack url)))
+            )
     eResp <- liftIO (try $ httpLBS req :: IO (Either SomeException (Response LBS.ByteString)))
     case eResp of
       Left err ->
@@ -254,9 +324,13 @@ callMcpTool McpClient {..} tName args = case clientTransport of
                   ]
             ]
     let req =
-          setRequestMethod "POST" $
-            setRequestHeader "Content-Type" ["application/json"] $
-              setRequestBodyJSON reqPayload (parseRequest_ (T.unpack url))
+          setRequestMethod
+            "POST"
+            ( setRequestHeader
+                "Content-Type"
+                ["application/json"]
+                (setRequestBodyJSON reqPayload (parseRequest_ (T.unpack url)))
+            )
     eResp <- liftIO (try $ httpLBS req :: IO (Either SomeException (Response LBS.ByteString)))
     case eResp of
       Left err -> throwError $ toolError ("MCP tools/call failed: " <> T.pack (show err)) (Just tName) Nothing
@@ -303,3 +377,330 @@ mcpToolToLangchainTool client McpToolInfo {..} =
     mcpToolDescription
     mcpToolInputSchema
     (runExceptT . callMcpTool client mcpToolName)
+
+-- | Convert an MCP Tool descriptor into a native Langchain StreamingTool
+mcpToolToStreamingTool :: McpClient -> McpToolInfo -> StreamingTool IO
+mcpToolToStreamingTool client McpToolInfo {..} =
+  createStreamingTool
+    mcpToolName
+    mcpToolDescription
+    mcpToolInputSchema
+    ( \args -> do
+        eRes <- liftIO $ runExceptT $ callMcpTool client mcpToolName args
+        case eRes of
+          Left err -> pure (Left err)
+          Right out -> do
+            yield out
+            pure (Right out)
+    )
+
+-- | Query server for available resources via resources/list JSON-RPC call
+listMcpResources ::
+  (MonadIO m, MonadError LangchainError m) =>
+  McpClient ->
+  m [McpResource]
+listMcpResources McpClient {..} = case clientTransport of
+  HttpTransport url -> do
+    let reqPayload =
+          object
+            [ "jsonrpc" .= ("2.0" :: Text)
+            , "id" .= (101 :: Int)
+            , "method" .= ("resources/list" :: Text)
+            , "params" .= object []
+            ]
+        req =
+          setRequestMethod
+            "POST"
+            ( setRequestHeader
+                "Content-Type"
+                ["application/json"]
+                (setRequestBodyJSON reqPayload (parseRequest_ (T.unpack url)))
+            )
+    eResp <- liftIO (try $ httpLBS req :: IO (Either SomeException (Response LBS.ByteString)))
+    case eResp of
+      Left err ->
+        throwError $
+          toolError
+            ("MCP HTTP resources/list failed: " <> T.pack (show err))
+            (Just serverName)
+            Nothing
+      Right resp -> do
+        let body = getResponseBody resp
+        case decode body of
+          Just val -> parseResourcesResult val
+          Nothing ->
+            throwError $
+              toolError
+                "Invalid JSON received from MCP HTTP endpoint"
+                (Just serverName)
+                Nothing
+  StdioTransport cmd args
+    | cmd `elem` ["mock", "echo"] ->
+        pure [McpResource "mock://resource/1" "mock_resource" (Just "text/plain")]
+    | otherwise -> do
+        let reqPayload =
+              object
+                [ "jsonrpc" .= ("2.0" :: Text)
+                , "id" .= (101 :: Int)
+                , "method" .= ("resources/list" :: Text)
+                , "params" .= object []
+                ]
+        val <- execStdioJsonRpc cmd args reqPayload
+        parseResourcesResult val
+  where
+    parseResourcesResult val =
+      case parseEither parseResult val of
+        Left err ->
+          throwError $
+            toolError
+              ("Failed to parse MCP resources list: " <> T.pack err)
+              (Just serverName)
+              Nothing
+        Right resList -> pure resList
+
+    parseResult = withObject "JsonRpcResourcesResponse" $ \o -> do
+      resultObj <- o .: "result"
+      resultObj .: "resources"
+
+-- | Read the content of an MCP resource by URI via resources/read JSON-RPC call
+readMcpResource ::
+  (MonadIO m, MonadError LangchainError m) =>
+  McpClient ->
+  Text ->
+  m Text
+readMcpResource McpClient {..} uri = case clientTransport of
+  HttpTransport url -> do
+    let reqPayload =
+          object
+            [ "jsonrpc" .= ("2.0" :: Text)
+            , "id" .= (102 :: Int)
+            , "method" .= ("resources/read" :: Text)
+            , "params" .= object ["uri" .= uri]
+            ]
+        req =
+          setRequestMethod
+            "POST"
+            ( setRequestHeader
+                "Content-Type"
+                ["application/json"]
+                (setRequestBodyJSON reqPayload (parseRequest_ (T.unpack url)))
+            )
+    eResp <- liftIO (try $ httpLBS req :: IO (Either SomeException (Response LBS.ByteString)))
+    case eResp of
+      Left err ->
+        throwError $
+          toolError
+            ("MCP HTTP resources/read failed: " <> T.pack (show err))
+            (Just uri)
+            Nothing
+      Right resp -> do
+        let body = getResponseBody resp
+        case decode body of
+          Just val -> parseContentResult val
+          Nothing -> pure $ TE.decodeUtf8 (LBS.toStrict body)
+  StdioTransport cmd args
+    | cmd `elem` ["mock", "echo"] ->
+        pure $ "Mock content for resource " <> uri
+    | otherwise -> do
+        let reqPayload =
+              object
+                [ "jsonrpc" .= ("2.0" :: Text)
+                , "id" .= (102 :: Int)
+                , "method" .= ("resources/read" :: Text)
+                , "params" .= object ["uri" .= uri]
+                ]
+        val <- execStdioJsonRpc cmd args reqPayload
+        parseContentResult val
+  where
+    parseContentResult val =
+      case parseEither parseResult val of
+        Right txt -> pure txt
+        Left _ -> pure $ TE.decodeUtf8 $ LBS.toStrict (encode val)
+
+    parseResult = withObject "JsonRpcReadResourceResponse" $ \o -> do
+      resultObj <- o .: "result"
+      contents <- resultObj .: "contents"
+      case contents of
+        (Object firstBlock : _) -> firstBlock .: "text"
+        _ -> pure ""
+
+-- | Query server for available prompt templates via prompts/list JSON-RPC call
+listMcpPrompts ::
+  (MonadIO m, MonadError LangchainError m) =>
+  McpClient ->
+  m [McpPromptInfo]
+listMcpPrompts McpClient {..} = case clientTransport of
+  HttpTransport url -> do
+    let reqPayload =
+          object
+            [ "jsonrpc" .= ("2.0" :: Text)
+            , "id" .= (103 :: Int)
+            , "method" .= ("prompts/list" :: Text)
+            , "params" .= object []
+            ]
+        req =
+          setRequestMethod
+            "POST"
+            ( setRequestHeader
+                "Content-Type"
+                ["application/json"]
+                (setRequestBodyJSON reqPayload (parseRequest_ (T.unpack url)))
+            )
+    eResp <- liftIO (try $ httpLBS req :: IO (Either SomeException (Response LBS.ByteString)))
+    case eResp of
+      Left err ->
+        throwError $
+          toolError
+            ("MCP HTTP prompts/list failed: " <> T.pack (show err))
+            (Just serverName)
+            Nothing
+      Right resp -> do
+        let body = getResponseBody resp
+        case decode body of
+          Just val -> parsePromptsResult val
+          Nothing ->
+            throwError $
+              toolError
+                "Invalid JSON received from MCP HTTP endpoint"
+                (Just serverName)
+                Nothing
+  StdioTransport cmd args
+    | cmd `elem` ["mock", "echo"] ->
+        pure
+          [ McpPromptInfo
+              "mock_prompt"
+              (Just "Mock prompt template")
+              [McpPromptArgument "topic" (Just "Topic for prompt") (Just True)]
+          ]
+    | otherwise -> do
+        let reqPayload =
+              object
+                [ "jsonrpc" .= ("2.0" :: Text)
+                , "id" .= (103 :: Int)
+                , "method" .= ("prompts/list" :: Text)
+                , "params" .= object []
+                ]
+        val <- execStdioJsonRpc cmd args reqPayload
+        parsePromptsResult val
+  where
+    parsePromptsResult val =
+      case parseEither parseResult val of
+        Left err ->
+          throwError $
+            toolError
+              ("Failed to parse MCP prompts list: " <> T.pack err)
+              (Just serverName)
+              Nothing
+        Right prompts -> pure prompts
+
+    parseResult = withObject "JsonRpcPromptsResponse" $ \o -> do
+      resultObj <- o .: "result"
+      resultObj .: "prompts"
+
+-- | Retrieve an instantiated MCP prompt template mapped to Langchain 'Message' records
+getMcpPrompt ::
+  (MonadIO m, MonadError LangchainError m) =>
+  McpClient ->
+  Text ->
+  Maybe (Map Text Text) ->
+  m [Message]
+getMcpPrompt McpClient {..} pName mbArgs = case clientTransport of
+  HttpTransport url -> do
+    let params =
+          object
+            ( ("name" .= pName)
+                : maybe [] (\args -> ["arguments" .= args]) mbArgs
+            )
+        reqPayload =
+          object
+            [ "jsonrpc" .= ("2.0" :: Text)
+            , "id" .= (104 :: Int)
+            , "method" .= ("prompts/get" :: Text)
+            , "params" .= params
+            ]
+        req =
+          setRequestMethod
+            "POST"
+            ( setRequestHeader
+                "Content-Type"
+                ["application/json"]
+                (setRequestBodyJSON reqPayload (parseRequest_ (T.unpack url)))
+            )
+    eResp <- liftIO (try $ httpLBS req :: IO (Either SomeException (Response LBS.ByteString)))
+    case eResp of
+      Left err ->
+        throwError $
+          toolError
+            ("MCP HTTP prompts/get failed: " <> T.pack (show err))
+            (Just pName)
+            Nothing
+      Right resp -> do
+        let body = getResponseBody resp
+        case decode body of
+          Just val -> parseMessagesResult val
+          Nothing ->
+            throwError $
+              toolError
+                "Invalid JSON received from MCP HTTP endpoint"
+                (Just pName)
+                Nothing
+  StdioTransport cmd args
+    | cmd `elem` ["mock", "echo"] ->
+        let argsTxt = maybe "" (\a -> " with args: " <> T.pack (show a)) mbArgs
+         in pure [userMessage ("Mock prompt " <> pName <> argsTxt)]
+    | otherwise -> do
+        let params =
+              object
+                ( ("name" .= pName)
+                    : maybe [] (\a -> ["arguments" .= a]) mbArgs
+                )
+            reqPayload =
+              object
+                [ "jsonrpc" .= ("2.0" :: Text)
+                , "id" .= (104 :: Int)
+                , "method" .= ("prompts/get" :: Text)
+                , "params" .= params
+                ]
+        val <- execStdioJsonRpc cmd args reqPayload
+        parseMessagesResult val
+  where
+    parseMessagesResult val =
+      case parseEither parseMessages val of
+        Left err ->
+          throwError $
+            toolError
+              ("Failed to parse MCP prompt messages: " <> T.pack err)
+              (Just pName)
+              Nothing
+        Right msgs -> pure msgs
+
+    parseMessages = withObject "JsonRpcPromptGetResult" $ \o -> do
+      resultObj <- o .: "result"
+      rawMsgs <- resultObj .: "messages"
+      mapM parseMsg rawMsgs
+
+    parseMsg = withObject "PromptMessage" $ \o -> do
+      roleTxt <- o .: "role"
+      contentVal <- o .: "content"
+      let txt = extractContentText contentVal
+      pure $ case (T.toLower roleTxt :: Text) of
+        "assistant" -> assistantMessage txt
+        "system" -> systemMessage txt
+        _ -> userMessage txt
+
+    extractContentText = \case
+      String s -> s
+      Object o -> case parseEither (.: "text") o of
+        Right t -> t
+        Left _ -> TE.decodeUtf8 (LBS.toStrict (encode (Object o)))
+      Array arr ->
+        T.concat
+          [ case item of
+              Object o -> case parseEither (.: "text") o of
+                Right t -> t
+                Left _ -> ""
+              String s -> s
+              _ -> ""
+          | item <- F.toList arr
+          ]
+      v -> TE.decodeUtf8 (LBS.toStrict (encode v))

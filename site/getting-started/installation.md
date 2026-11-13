@@ -25,6 +25,7 @@ category: Getting Started
 | `langchain-hs-ollama` | Ollama Provider | Local/offline inference via Ollama |
 | `langchain-hs-openai` | OpenAI Provider | OpenAI & OpenAI-compatible endpoints (OpenRouter, Fireworks) |
 | `langchain-hs-gemini` | Gemini Provider | Google Gemini API (Interactions v1 OpenAPI spec), embeddings & SSE streaming |
+| `langchain-hs-anthropic` | Anthropic Provider | Native Anthropic Claude `/v1/messages` provider, prompt caching, thinking & SSE streaming |
 | `langchain-hs-mcp` | MCP Client | Connect to Model Context Protocol servers over stdio |
 
 ### Using Cabal
@@ -40,8 +41,8 @@ Add to your `cabal.project` or `.cabal` build-depends:
 build-depends:
     base >= 4.14 && < 5,
     text,
-    langchain-hs >= 0.0.6,
-    langchain-hs-ollama >= 0.0.6
+    langchain-hs >= 0.0.6.2,
+    langchain-hs-ollama >= 0.0.6.2
 ```
 
 ### Using Stack
@@ -55,14 +56,16 @@ packages:
   - .
 
 extra-deps:
-  - langchain-hs-0.0.6.0
-  - langchain-hs-core-0.0.6.0
-  - langchain-hs-graph-0.0.6.0
+  - langchain-hs-0.0.6.2
+  - langchain-hs-core-0.0.6.2
+  - langchain-hs-graph-0.0.6.2
+  - ollama-haskell-0.4.2.0
   # Add providers as needed:
-  - langchain-hs-ollama-0.0.6.0
-  - langchain-hs-openai-0.0.6.0
-  - langchain-hs-gemini-0.0.6.0
-  - langchain-hs-mcp-0.0.6.0
+  - langchain-hs-ollama-0.0.6.2
+  - langchain-hs-openai-0.0.6.2
+  - langchain-hs-gemini-0.0.6.2
+  - langchain-hs-anthropic-0.0.6.2
+  - langchain-hs-mcp-0.0.6.2
 ```
 
 In your `package.yaml` (or `.cabal` file):
@@ -76,6 +79,7 @@ dependencies:
   - langchain-hs-ollama
   - langchain-hs-openai
   - langchain-hs-gemini
+  - langchain-hs-anthropic
 ```
 
 ---

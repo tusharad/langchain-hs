@@ -1,0 +1,86 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.39.6.
+--
+-- see: https://github.com/sol/hpack
+
+name:           langchain-hs-anthropic
+version:        0.0.6.2
+synopsis:       Anthropic Claude Messages API provider for langchain-hs
+description:    Native Anthropic Claude Messages API (/v1/messages) ChatModel, ToolBinder, and CacheableChatModel implementation for langchain-hs. Supports multi-modal content, tool_use/tool_result calling, extended thinking budgets, prompt caching, and SSE streaming with incremental tool_use delta accumulation.
+category:       AI
+homepage:       https://github.com/tusharad/langchain-hs#readme
+bug-reports:    https://github.com/tusharad/langchain-hs/issues
+author:         Tushar Adhatrao
+maintainer:     tusharadhatrao@gmail.com
+copyright:      2025-2026 Tushar Adhatrao
+license:        MIT
+license-file:   LICENSE
+build-type:     Simple
+tested-with:
+    GHC == 9.12.4
+  , GHC == 9.10.3
+  , GHC == 9.8.4
+extra-source-files:
+    README.md
+    CHANGELOG.md
+
+source-repository head
+  type: git
+  location: https://github.com/tusharad/langchain-hs
+
+library
+  exposed-modules:
+      Langchain.Provider.Anthropic
+  other-modules:
+      Paths_langchain_hs_anthropic
+  hs-source-dirs:
+      src
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
+  build-depends:
+      aeson >=2.0 && <3
+    , base >=4.17 && <5
+    , bytestring >=0.10 && <0.13
+    , conduit ==1.3.*
+    , containers >=0.6 && <0.9
+    , http-client ==0.7.*
+    , http-client-tls >=0.3 && <0.5
+    , http-types >=0.11 && <0.13
+    , langchain-hs-core >=0.0.6.2 && <0.0.7
+    , mtl >=2.2 && <2.4
+    , resourcet >=1.2 && <1.4
+    , text >=1.2 && <3
+  default-language: Haskell2010
+
+test-suite langchain-hs-anthropic-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Test.Langchain.Provider.AnthropicSpec
+      Paths_langchain_hs_anthropic
+  hs-source-dirs:
+      test
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      QuickCheck >=2.14
+    , aeson
+    , async
+    , base >=4.17 && <5
+    , bytestring
+    , conduit
+    , containers
+    , http-client ==0.7.*
+    , http-client-tls >=0.3 && <0.5
+    , http-types
+    , langchain-hs-anthropic
+    , langchain-hs-core
+    , mtl
+    , resourcet
+    , stm
+    , tasty
+    , tasty-hunit
+    , tasty-quickcheck
+    , text
+    , wai
+    , warp
+  default-language: Haskell2010

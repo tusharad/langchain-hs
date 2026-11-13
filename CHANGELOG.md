@@ -1,5 +1,41 @@
 # Changelog for `langchain-hs`
 
+## 0.0.6.2 - 2026-11-14
+
+> **Note**: Version `0.0.6.1` was skipped as a coordinated monorepo release because `langchain-hs-ollama` already claimed `0.0.6.1` (`langchain-hs-ollama-v0.0.6.1`) for the `ollama-haskell 0.4.2.0` upgrade.
+
+### Highlights
+
+- **Coordinated Monorepo Alignment (`0.0.6.2`)**:
+  All 8 Hackage packages (`langchain-hs-core`, `langchain-hs-graph`, `langchain-hs-mcp`, `langchain-hs-ollama`, `langchain-hs-openai`, `langchain-hs-gemini`, `langchain-hs-anthropic`, and `langchain-hs`) are aligned on `0.0.6.2` with synchronized `>= 0.0.6.2 && < 0.0.7` internal bounds.
+- **Tool-Call Streaming Across Providers (`langchain-hs-core`, `openai`, `gemini`, `ollama`)**:
+  - Added `StreamEvent` constructors `ToolStart`, `ToolChunk`, `ToolEnd`, and `ToolErrorEvent` in `Langchain.Stream` along with `liftChatStream` and `tapStreamMessage`.
+  - OpenAI (`ChatModel.stream`): Added incremental tool-call delta accumulation and `LLMChunk "" (Just toolCall)` emission.
+  - Gemini (`ChatModel.stream`): Added incremental tool-call emission during SSE streaming.
+  - Ollama (`ChatModel.stream`): Forwarded streamed tool calls as `LLMChunk "" (Just toolCall)`.
+- **Streaming Tools & Agent Streaming (`langchain-hs-core`)**:
+  - Added `StreamingTool`, `createStreamingTool`, `fromTool`, `streamToolCall`, `streamStreamingToolCall` in `Langchain.Tool`.
+  - Added `streamingShellTool` (`Langchain.Tool.Shell`) and `withStreamingSecurity` (`Langchain.Tool.Security`).
+  - Added `withStreamingTools`, `reactStepStream`, `streamReActAgent`, `streamReActAgentWithTrace`, and `runReActAgentStream` in `Langchain.Agent.ReAct`.
+  - Added `streamPlanAndExecute` and `runPlanAndExecuteStream` in `Langchain.Agent.PlanAndExecute`.
+  - Re-exported streaming tool and agent primitives in `Langchain.Prelude`.
+- **StateGraph Event Streaming & Cancellation-Safe Streaming (`langchain-hs-graph`, `langchain-hs-core`)**:
+  - Added `streamGraphEvents` with `GraphStreamEvent` (`GraphStart`, `GraphNodeStart`, `GraphNodeChunk`, `GraphNodeEnd`, `GraphStateUpdate`, `GraphEnd`) for fine-grained workflow event telemetry.
+  - Added cancellation-safe streaming combinators `liftChatStreamResource` and `liftChatStreamWithCancel` in `Langchain.Stream` ensuring prompt resource cleanup and partial token accumulation.
+- **Native Anthropic Claude Provider (`langchain-hs-anthropic`)**:
+  - New dedicated package implementing `ChatModel`, `ToolBinder`, and `CacheableChatModel` for Anthropic Messages API (`/v1/messages`).
+  - Added SSE tool-call streaming, prompt caching (`withPromptCaching`), and extended thinking budgets (`withThinkingBudget`).
+- **Multi-Agent Collaboration & ReAct Loop Detection (`langchain-hs-core`)**:
+  - Added `LoopDetectionStrategy` (`NoLoopDetection`, `WarnOnDuplicateAction`, `FailOnLoop`, `BreakOnLoop`) and iteration budget telemetry (`traceIterations`, `traceTerminatedBy`) in `Langchain.Agent.ReAct`.
+  - Added multi-agent handoff tools `asAgentTool` and `asStreamingAgentTool` to wrap sub-agents as callable tools.
+- **MCP Prompts, Resources & Evaluation Harness (`langchain-hs-mcp`, `langchain-hs-core`)**:
+  - Added MCP Resource inspection (`listMcpResources`, `readMcpResource`) and Prompt templates (`listMcpPrompts`, `getMcpPrompt`) in `Langchain.MCP.Client`.
+  - Added `mcpToolToStreamingTool` bridge converting MCP tools into Conduit streaming tools.
+  - Added lightweight evaluation framework `Langchain.Eval` with deterministic scorers (`exactMatchScorer`, `containsScorer`, `toolCallExactScorer`), LLM judge scorer (`llmJudgeScorer`), and suite runner (`runEvalSuite`).
+- **Dependency Updates**:
+  - Upgraded `ollama-haskell` to `>= 0.4.2.0 && < 0.5` (`langchain-hs-ollama`).
+  - Updated `sqlite-simple` lower bound to `>= 0.4.18 && < 0.5` (`langchain-hs-core`) and refreshed Stack snapshot configurations.
+
 ## 0.0.6.0 - 2026-10-15
 
 ### Highlights

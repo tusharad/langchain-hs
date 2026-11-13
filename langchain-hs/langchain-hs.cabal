@@ -5,7 +5,7 @@ cabal-version: 1.22
 -- see: https://github.com/sol/hpack
 
 name:           langchain-hs
-version:        0.0.6.0
+version:        0.0.6.2
 synopsis:       Pure functional LLM agent framework and multi-agent graph engine in Haskell
 description:    Build LLM-powered applications, ReAct agents, and LangGraph-style stateful workflows
                 in Haskell. Provider-specific packages:
@@ -98,6 +98,7 @@ library
     , Langchain.Agent.PlanAndExecute
     , Langchain.Guardrail
     , Langchain.Guardrail.Core
+    , Langchain.Eval
     , Langchain.Prelude
     , Langchain.Graph.StateGraph
     , Langchain.Graph.Checkpointer
@@ -105,8 +106,8 @@ library
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       base >=4.17 && <5
-    , langchain-hs-core ==0.0.6.*
-    , langchain-hs-graph ==0.0.6.*
+    , langchain-hs-core >=0.0.6.2 && <0.0.7
+    , langchain-hs-graph >=0.0.6.2 && <0.0.7
   default-language: Haskell2010
 
 test-suite langchain-hs-test
@@ -156,8 +157,8 @@ test-suite langchain-hs-test
     , directory
     , filepath
     , langchain-hs
-    , langchain-hs-core ==0.0.6.*
-    , langchain-hs-graph ==0.0.6.*
+    , langchain-hs-core >=0.0.6.2 && <0.0.7
+    , langchain-hs-graph >=0.0.6.2 && <0.0.7
     , mtl
     , resourcet
     , stm

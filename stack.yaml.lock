@@ -11,6 +11,20 @@ packages:
       size: 3867
   original:
     hackage: openai-2.5.4@sha256:90722cfa6763749cfa87c5617554e0078db7930ac15bb9620d1314198f0b82f4,6987
+- completed:
+    hackage: ollama-haskell-0.4.2.0@sha256:b99db8b70752cad0f9a96dc3823d61b2a67e297ff4368b53986f7c343737b55b,7854
+    pantry-tree:
+      sha256: a45232db075d16842d1248dcb1e1b583a61cab1f96941811ba65d2f4bed36192
+      size: 4358
+  original:
+    hackage: ollama-haskell-0.4.2.0@sha256:b99db8b70752cad0f9a96dc3823d61b2a67e297ff4368b53986f7c343737b55b,7854
+- completed:
+    hackage: mcp-server-0.3.0.0@sha256:85d633f42bbd3110f3f55d8b02bc567a2b5fa8c11a506875a206f8ca60c0b4a3,6880
+    pantry-tree:
+      sha256: 84289c82beaa2482bde8c4094375b8713cf5fb3857a2f9ed5c97a9241ea2ad52
+      size: 8051
+  original:
+    hackage: mcp-server-0.3.0.0@sha256:85d633f42bbd3110f3f55d8b02bc567a2b5fa8c11a506875a206f8ca60c0b4a3,6880
 snapshots:
 - completed:
     sha256: fa2f14ea8fdcd12da9b7a2012994020cd00ceb714bb7210a6f1ad148b94f9a78

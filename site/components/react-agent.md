@@ -15,8 +15,9 @@ Reasoning and acting loop with dynamic tool selection, effect-polymorphic tools,
 - **Thought-Action-Observation**: Iterative cycle where the LLM reasons about the problem, chooses a tool, executes it, and reflects on the observation.
 - **Effect-Polymorphic Tools**: Tools run natively in the agent's monad `m` (`Tool m`), supporting `ExceptT`, `IO`, or custom application transformer stacks.
 - **Conversation Memory**: Attach any `BaseMemory` instance (such as `WindowBufferMemory` or `TokenBufferMemory`) via `withMemory`.
-- **Builder-Style Configuration**: Configure system prompts, model configs, iteration limits, error recovery strategies, and callbacks using composable `with*` combinators.
-- **Full Reasoning Traces**: Inspect intermediate reasoning steps, tool actions, and observations via `runReActAgentWithTrace`.
+- **Builder-Style Configuration**: Configure system prompts, model configs, iteration limits, error recovery strategies, streaming tools (`withStreamingTools`), and callbacks using composable `with*` combinators.
+- **Real-Time Streaming Agents**: Stream LLM text chunks, `ToolCall` deltas, and incremental `ToolChunk` output (`StreamingTool`, `streamingShellTool`) in real time with `streamReActAgent`, `streamReActAgentWithTrace`, and `runReActAgentStream`.
+- **Full Reasoning Traces**: Inspect intermediate reasoning steps, tool actions, and observations via `runReActAgentWithTrace` or `streamReActAgentWithTrace`.
 
 ## Working Code Example
 
@@ -129,6 +130,21 @@ case res of
         AgentFinish msg       -> putStrLn "Finished reasoning"
 ```
 
+## Streaming Execution & `StreamingTool`
+
+Use `withStreamingTools`, `streamReActAgent`, or `runReActAgentStream` to receive real-time `LLMChunk`, `ToolStart`, `ToolChunk`, and `ToolEnd` events as the agent thinks and runs tools (such as `streamingShellTool`):
+
+```haskell
+let sTools = [streamingShellTool defaultSecurityPolicy]
+    agent  = withStreamingTools sTools $ defaultReActAgent model []
+
+res <- runExceptT $ runReActAgentStream agent [userMessage "List files in cwd"] $ \case
+  LLMChunk _ _ (Just tc) -> liftIO $ putStrLn ("\n[tool_call] " <> show (toolCallName tc))
+  LLMChunk _ txt Nothing   -> liftIO $ T.putStr txt
+  ToolChunk _ name chunk   -> liftIO $ T.putStr ("[" <> name <> "] " <> chunk)
+  _                        -> pure ()
+```
+
 ## Core Types & API
 
 ```haskell
@@ -144,10 +160,17 @@ withModelConfig       :: Maybe (ModelConfig model) -> ReActAgent model m -> ReAc
 withCallbackManager   :: CallbackManager -> ReActAgent model m -> ReActAgent model m
 withStopCondition     :: (Message -> Bool) -> ReActAgent model m -> ReActAgent model m
 withToolErrorStrategy :: ToolErrorStrategy -> ReActAgent model m -> ReActAgent model m
+withStreamingTools    :: [StreamingTool m] -> ReActAgent model m -> ReActAgent model m
 
 -- | Agent execution
 runReActAgent          :: (ToolBinder model m, MonadIO m, MonadError LangchainError m) => ReActAgent model m -> [Message] -> m Message
 runReActAgentWithTrace :: (ToolBinder model m, MonadIO m, MonadError LangchainError m) => ReActAgent model m -> [Message] -> m AgentTrace
+
+-- | Streaming execution
+reactStepStream          :: (ToolBinder model m, MonadIO m, MonadError LangchainError m) => model -> [Tool m] -> [Message] -> Maybe (ModelConfig model) -> ConduitT () StreamEvent m AgentStep
+streamReActAgent         :: (ToolBinder model m, MonadIO m, MonadError LangchainError m) => ReActAgent model m -> [Message] -> EventStream m
+streamReActAgentWithTrace :: (ToolBinder model m, MonadIO m, MonadError LangchainError m) => ReActAgent model m -> [Message] -> ConduitT () StreamEvent m AgentTrace
+runReActAgentStream      :: (ToolBinder model m, MonadIO m, MonadError LangchainError m) => ReActAgent model m -> [Message] -> (StreamEvent -> m ()) -> m Message
 ```
 
 ## Running This Example

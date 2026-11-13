@@ -56,6 +56,7 @@ module Langchain.Prelude
     , LLMChunk
     , LLMEnd
     , ToolStart
+    , ToolChunk
     , ToolEnd
     , ToolErrorEvent
     , ChainStart
@@ -65,6 +66,18 @@ module Langchain.Prelude
     )
   , TokenUsage (..)
   , EventStream
+  , StreamM
+  , ChatStream
+  , CancelToken
+  , newCancelToken
+  , triggerCancel
+  , isCancelled
+  , liftChatStream
+  , liftChatStreamResource
+  , liftChatStreamWithCancel
+  , tapStreamMessage
+  , consumeStreamWith
+  , runStreamWith
   , collectEvents
   , printEvents
 
@@ -100,6 +113,11 @@ module Langchain.Prelude
   , Tool (..)
   , createTool
   , toolToValue
+  , StreamingTool (..)
+  , createStreamingTool
+  , fromTool
+  , streamToolCall
+  , streamStreamingToolCall
   , ToolBinder (..)
   , DeriveToolSchema (..)
   , deriveToolParametersSchema
@@ -108,10 +126,14 @@ module Langchain.Prelude
   , PlanStep (..)
   , Plan (..)
   , StepExecutor (..)
+  , StreamingStepExecutor (..)
   , PlanAndExecuteAgent (..)
   , newPlanAndExecuteAgent
   , newPlanAndExecuteAgentWithTools
   , runPlanAndExecute
+  , streamPlanAndExecute
+  , streamPlanAndExecuteWithResult
+  , runPlanAndExecuteStream
 
     -- * Guardrails & Safety
   , GuardrailResult (..)
@@ -293,6 +315,7 @@ module Langchain.Prelude
   , AgentStep (..)
   , AgentTrace (..)
   , ToolErrorStrategy (..)
+  , LoopDetectionStrategy (..)
   , defaultReActAgent
   , withMemory
   , withoutMemory
@@ -302,9 +325,21 @@ module Langchain.Prelude
   , withCallbackManager
   , withStopCondition
   , withToolErrorStrategy
+  , withStreamingTools
+  , withLoopDetection
+  , withMaxConsecutiveIdenticalToolCalls
+  , withMaxDelegationDepth
+  , asAgentTool
+  , asStreamingAgentTool
   , reactStep
   , runReActAgent
   , runReActAgentWithTrace
+  , reactStepStream
+  , streamReActAgent
+  , streamReActAgentWithTrace
+  , runReActAgentStream
+  , InterruptibleResult (..)
+  , runReActAgentStreamInterruptible
 
     -- * Tool Suite & Security
   , ToolTier (..)
@@ -313,6 +348,7 @@ module Langchain.Prelude
   , readOnlySecurityPolicy
   , workspaceSandboxPolicy
   , withSecurity
+  , withStreamingSecurity
   , newFileSystemSuite
   , findFilesTool
   , grepSearchTool
@@ -325,6 +361,8 @@ module Langchain.Prelude
   , commandStatusTool
   , commandKillTool
   , shellTool
+  , streamingShellTool
+  , streamingShellToolWithCancel
 
     -- * Hybrid Retrieval & BM25
   , BM25Index (..)
@@ -339,6 +377,20 @@ module Langchain.Prelude
   , searchHybrid
   , searchHybridWithScores
   , reciprocalRankFusion
+
+    -- * Evaluation & Regression Testing
+  , EvalCase (..)
+  , EvalScore (..)
+  , Scorer (..)
+  , createScorer
+  , CaseResult (..)
+  , CaseScoreResult (..)
+  , EvalReport (..)
+  , exactMatchScorer
+  , containsScorer
+  , toolCallExactScorer
+  , llmJudgeScorer
+  , runEvalSuite
   ) where
 
 import Langchain.Agent.PlanAndExecute
@@ -351,6 +403,7 @@ import Langchain.DocumentLoader.DirectoryLoader
 import Langchain.DocumentLoader.FileLoader
 import Langchain.Embeddings.Core
 import Langchain.Error
+import Langchain.Eval
 import Langchain.Guardrail.Core
 import Langchain.Memory
 import Langchain.Model
@@ -377,6 +430,6 @@ import Langchain.Tool.FileSystem
 import Langchain.Tool.GenericSchema
 import Langchain.Tool.Process
 import Langchain.Tool.Security
-import Langchain.Tool.Shell (shellTool)
+import Langchain.Tool.Shell (shellTool, streamingShellTool, streamingShellToolWithCancel)
 import Langchain.VectorStore.Core
 import Langchain.VectorStore.InMemory

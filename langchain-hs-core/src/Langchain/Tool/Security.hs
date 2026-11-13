@@ -38,6 +38,7 @@ module Langchain.Tool.Security
 
     -- * Tool Security Combinator
   , withSecurity
+  , withStreamingSecurity
   ) where
 
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -51,8 +52,9 @@ import GHC.Generics (Generic)
 import System.Directory (canonicalizePath, doesDirectoryExist, doesFileExist)
 import System.FilePath (isAbsolute, normalise, pathSeparator, takeDirectory, takeFileName, (</>))
 
+import Control.Monad.Trans (lift)
 import Langchain.Error (LangchainError, toolError)
-import Langchain.Tool (Tool (..))
+import Langchain.Tool (StreamingTool (..), Tool (..))
 
 -- | Tier levels representing the risk and side-effects of tool execution.
 data ToolTier
@@ -278,6 +280,26 @@ validateCommandSafety SecurityPolicy {..} cmd = do
                   Nothing
                   Nothing
 
+checkPolicyApproval ::
+  MonadIO m =>
+  ToolTier ->
+  SecurityPolicy ->
+  Text ->
+  Text ->
+  Value ->
+  m (Either LangchainError ())
+checkPolicyApproval tier policy tName tDesc args =
+  case checkTierPermission policy tier of
+    Left err -> pure $ Left err
+    Right () -> do
+      mApproval <- case policyApprovalHook policy of
+        Nothing -> pure Approved
+        Just hook -> liftIO $ hook (ApprovalRequest tName tier args tDesc)
+      case mApproval of
+        Denied reason ->
+          pure (Left (toolError ("Execution rejected by approval policy: " <> reason) (Just tName) Nothing))
+        Approved -> pure $ Right ()
+
 -- | Wrap a 'Tool m' with permission tier enforcement, sandboxing, and optional HITL approval.
 withSecurity ::
   MonadIO m =>
@@ -288,17 +310,27 @@ withSecurity ::
 withSecurity tier policy tool@Tool {..} =
   tool
     { toolExecute = \args -> do
-        case checkTierPermission policy tier of
+        eOk <- checkPolicyApproval tier policy toolName toolDescription args
+        case eOk of
           Left err -> pure $ Left err
-          Right () -> do
-            -- Check HITL approval if hook is defined
-            mApproval <- case policyApprovalHook policy of
-              Nothing -> pure Approved
-              Just hook -> liftIO $ hook (ApprovalRequest toolName tier args toolDescription)
-            case mApproval of
-              Denied reason ->
-                pure $
-                  Left $
-                    toolError ("Execution rejected by approval policy: " <> reason) (Just toolName) Nothing
-              Approved -> toolExecute args
+          Right () -> toolExecute args
     }
+
+-- | Wrap a 'StreamingTool m' with permission tier enforcement, sandboxing, and optional HITL approval.
+withStreamingSecurity ::
+  MonadIO m =>
+  ToolTier ->
+  SecurityPolicy ->
+  StreamingTool m ->
+  StreamingTool m
+withStreamingSecurity tier policy st@StreamingTool {..} =
+  let securedDef = withSecurity tier policy streamingToolDef
+   in st
+        { streamingToolDef = securedDef
+        , streamingToolExecute = \args -> do
+            eOk <-
+              lift $ checkPolicyApproval tier policy (toolName securedDef) (toolDescription securedDef) args
+            case eOk of
+              Left err -> pure $ Left err
+              Right () -> streamingToolExecute args
+        }
