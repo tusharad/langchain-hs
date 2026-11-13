@@ -377,6 +377,20 @@ module Langchain.Prelude
   , searchHybrid
   , searchHybridWithScores
   , reciprocalRankFusion
+
+    -- * Evaluation & Regression Testing
+  , EvalCase (..)
+  , EvalScore (..)
+  , Scorer (..)
+  , createScorer
+  , CaseResult (..)
+  , CaseScoreResult (..)
+  , EvalReport (..)
+  , exactMatchScorer
+  , containsScorer
+  , toolCallExactScorer
+  , llmJudgeScorer
+  , runEvalSuite
   ) where
 
 import Langchain.Agent.PlanAndExecute
@@ -389,6 +403,7 @@ import Langchain.DocumentLoader.DirectoryLoader
 import Langchain.DocumentLoader.FileLoader
 import Langchain.Embeddings.Core
 import Langchain.Error
+import Langchain.Eval
 import Langchain.Guardrail.Core
 import Langchain.Memory
 import Langchain.Model

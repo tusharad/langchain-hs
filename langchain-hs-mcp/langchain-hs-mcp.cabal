@@ -41,6 +41,8 @@ library
       aeson >=2.0 && <3
     , base >=4.17 && <5
     , bytestring >=0.10 && <0.13
+    , conduit ==1.3.*
+    , containers >=0.6 && <0.8
     , http-conduit ==2.*
     , langchain-hs-core >=0.0.6.2 && <0.0.7
     , mtl >=2.2 && <2.4
@@ -61,6 +63,8 @@ test-suite langchain-hs-mcp-test
       aeson
     , base >=4.17 && <5
     , bytestring
+    , conduit ==1.3.*
+    , containers >=0.6 && <0.8
     , http-conduit ==2.*
     , langchain-hs-core
     , langchain-hs-mcp

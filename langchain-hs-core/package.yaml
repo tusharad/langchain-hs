@@ -116,6 +116,7 @@ library:
     - Langchain.Agent.PlanAndExecute
     - Langchain.Guardrail
     - Langchain.Guardrail.Core
+    - Langchain.Eval
     - Langchain.Prelude
 
 tests:
