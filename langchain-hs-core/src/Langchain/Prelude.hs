@@ -315,6 +315,7 @@ module Langchain.Prelude
   , AgentStep (..)
   , AgentTrace (..)
   , ToolErrorStrategy (..)
+  , LoopDetectionStrategy (..)
   , defaultReActAgent
   , withMemory
   , withoutMemory
@@ -325,6 +326,11 @@ module Langchain.Prelude
   , withStopCondition
   , withToolErrorStrategy
   , withStreamingTools
+  , withLoopDetection
+  , withMaxConsecutiveIdenticalToolCalls
+  , withMaxDelegationDepth
+  , asAgentTool
+  , asStreamingAgentTool
   , reactStep
   , runReActAgent
   , runReActAgentWithTrace
