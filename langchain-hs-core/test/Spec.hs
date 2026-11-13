@@ -3,6 +3,7 @@ module Main (main) where
 import Test.Tasty
 
 import qualified Test.Langchain.Callback as CallbackTest
+import qualified Test.Langchain.Eval as EvalTest
 import qualified Test.Langchain.Model as ModelTest
 import qualified Test.Langchain.Monad as MonadTest
 import qualified Test.Langchain.Observability as ObservabilityTest
@@ -30,4 +31,5 @@ tests =
     , CallbackTest.tests
     , RetrieverTest.tests
     , ResilienceTest.tests
+    , EvalTest.tests
     ]

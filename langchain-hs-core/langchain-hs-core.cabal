@@ -91,6 +91,7 @@ library
       Langchain.Agent.PlanAndExecute
       Langchain.Guardrail
       Langchain.Guardrail.Core
+      Langchain.Eval
       Langchain.Prelude
   other-modules:
       Paths_langchain_hs_core
@@ -135,6 +136,7 @@ test-suite langchain-hs-core-test
   main-is: Spec.hs
   other-modules:
       Test.Langchain.Callback
+      Test.Langchain.Eval
       Test.Langchain.Model
       Test.Langchain.Monad
       Test.Langchain.Observability
