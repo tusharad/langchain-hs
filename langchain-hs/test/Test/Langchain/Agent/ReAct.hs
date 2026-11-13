@@ -9,7 +9,7 @@ module Test.Langchain.Agent.ReAct (tests) where
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.MVar (MVar, newEmptyMVar, putMVar, takeMVar, tryTakeMVar)
 import Control.Exception (finally)
-import Control.Monad (forM_, unless)
+import Control.Monad (forM_, unless, when)
 import Control.Monad.Except (ExceptT, runExceptT)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Aeson (Value (..), object, (.=))
@@ -27,7 +27,7 @@ import Langchain.Callback.Manager
   , newCallbackManager
   , registerHandler
   )
-import Langchain.Error (LangchainError, toolError)
+import Langchain.Error (LangchainError, errorMessage, toolError)
 import Langchain.Memory.Core (BaseMemory (..), newWindowBufferMemory)
 import Langchain.Model
 import Langchain.Monad (LangchainT, runLangchainT)
@@ -37,7 +37,7 @@ import Langchain.Stream
   , newCancelToken
   , triggerCancel
   )
-import Langchain.Tool (Tool, createStreamingTool, createTool)
+import Langchain.Tool (StreamingTool, Tool, createStreamingTool, createTool, toolExecute)
 import Langchain.Tool.Binding (ToolBinder (..))
 import Test.Langchain.Provider.Mock (newMockModel)
 
@@ -412,4 +412,180 @@ tests =
         case memRes of
           Left err -> assertFailure $ show err
           Right saved -> saved @?= []
+    , testCase "AbortOnRepeat 3 halts loop on 3rd consecutive duplicate tool call in runReActAgent" $ do
+        cbMgr <- newCallbackManager
+        errSeenRef <- newIORef False
+        registerHandler cbMgr $ CallbackHandler "loop-err-handler" $ \case
+          OnError "ReActAgent" msg _ ->
+            when ("Runaway loop detected" `T.isInfixOf` msg) $
+              writeIORef errSeenRef True
+          _ -> pure ()
+        let tc = ToolCall "call_1" "function" "calculator" (object ["expression" .= ("2+2" :: T.Text)])
+            respWithTool = (assistantMessage "") {messageToolCalls = Just [tc]}
+        sRef <- newIORef [respWithTool, respWithTool, respWithTool, respWithTool]
+        hRef <- newIORef []
+        let model = StepSequenceModel sRef hRef
+            agent =
+              withCallbackManager cbMgr $
+                withLoopDetection (AbortOnRepeat 3) (defaultReActAgent model [calculatorTool])
+        res <- runExceptT $ runReActAgent agent [userMessage "Loop test"]
+        case res of
+          Left err -> do
+            assertBool "Mentions runaway loop" ("Runaway loop detected" `T.isInfixOf` errorMessage err)
+            sawCb <- readIORef errSeenRef
+            assertBool "Dispatched OnError callback" sawCb
+          Right msg -> assertFailure $ "Expected loop abort, got success: " ++ show msg
+    , testCase "AbortOnRepeat 3 halts loop in streamReActAgent" $ do
+        let tc = ToolCall "call_1" "function" "calculator" (object ["expression" .= ("2+2" :: T.Text)])
+            respWithTool = (assistantMessage "") {messageToolCalls = Just [tc]}
+        sRef <- newIORef [respWithTool, respWithTool, respWithTool, respWithTool]
+        hRef <- newIORef []
+        let model = StepSequenceModel sRef hRef
+            agent =
+              withLoopDetection (AbortOnRepeat 3) $
+                defaultReActAgent model [calculatorTool]
+        res <- runExceptT $ collectEvents $ streamReActAgent agent [userMessage "Stream loop test"]
+        case res of
+          Left err ->
+            assertBool "Mentions runaway loop" ("Runaway loop detected" `T.isInfixOf` errorMessage err)
+          Right evs -> assertFailure $ "Expected stream loop abort, got events: " ++ show evs
+    , testCase "WarnOnRepeat 2 injects observation warning allowing recovery on step 3" $ do
+        execCountRef <- newIORef (0 :: Int)
+        let countingCalcTool :: Tool (ExceptT LangchainError IO)
+            countingCalcTool =
+              createTool "calculator" "Mock calculator tool" (object []) $ \_ -> do
+                liftIO $ modifyIORef' execCountRef (+ 1)
+                pure $ Right "4"
+            tc = ToolCall "call_1" "function" "calculator" (object ["expression" .= ("2+2" :: T.Text)])
+            respWithTool = (assistantMessage "") {messageToolCalls = Just [tc]}
+            recoveredResp = assistantMessage "I noticed the loop warning and resolved 4."
+        sRef <- newIORef [respWithTool, respWithTool, recoveredResp]
+        hRef <- newIORef []
+        let model = StepSequenceModel sRef hRef
+            agent =
+              withLoopDetection (WarnOnRepeat 2) $
+                defaultReActAgent model [countingCalcTool]
+        res <- runExceptT $ runReActAgentWithTrace agent [userMessage "Calculate"]
+        case res of
+          Left err -> assertFailure $ "Unexpected error: " ++ show err
+          Right trace -> do
+            traceIterations trace @?= 3
+            extractMessageText (traceFinalAnswer trace)
+              @?= "I noticed the loop warning and resolved 4."
+            execCount <- readIORef execCountRef
+            -- Tool was executed on step 1, but skipped on step 2 due to WarnOnRepeat
+            execCount @?= 1
+            histories <- readIORef hRef
+            case histories of
+              [_, _, step3Hist] -> do
+                let toolMsgs = filter (\m -> messageRole m == Tool) step3Hist
+                case reverse toolMsgs of
+                  (warnMsg : _) ->
+                    assertBool
+                      "Step 3 received loop warning"
+                      ("Loop warning" `T.isInfixOf` extractMessageText warnMsg)
+                  [] -> assertFailure "Expected tool message in step 3 history"
+              _ -> assertFailure $ "Expected 3 history snapshots, got: " ++ show (length histories)
+    , testCase "distinct tool arguments do not trigger AbortOnRepeat" $ do
+        let tc1 = ToolCall "call_1" "function" "calculator" (object ["expression" .= ("1+1" :: T.Text)])
+            tc2 = ToolCall "call_2" "function" "calculator" (object ["expression" .= ("2+2" :: T.Text)])
+            tc3 = ToolCall "call_3" "function" "calculator" (object ["expression" .= ("3+3" :: T.Text)])
+            r1 = (assistantMessage "") {messageToolCalls = Just [tc1]}
+            r2 = (assistantMessage "") {messageToolCalls = Just [tc2]}
+            r3 = (assistantMessage "") {messageToolCalls = Just [tc3]}
+            finalResp = assistantMessage "All three distinct calculations finished"
+        sRef <- newIORef [r1, r2, r3, finalResp]
+        hRef <- newIORef []
+        let model = StepSequenceModel sRef hRef
+            agent =
+              withLoopDetection (AbortOnRepeat 2) $
+                defaultReActAgent model [calculatorTool]
+        res <- runExceptT $ runReActAgent agent [userMessage "Calculate distinct"]
+        case res of
+          Left err -> assertFailure $ "Distinct arguments should not abort: " ++ show err
+          Right finalMsg ->
+            extractMessageText finalMsg @?= "All three distinct calculations finished"
+    , testCase "asAgentTool delegates task from supervisor to specialist agent" $ do
+        let specModel = newMockModel "4"
+            specialistAgent = defaultReActAgent specModel [calculatorTool]
+            specialistTool :: Tool (ExceptT LangchainError IO)
+            specialistTool =
+              asAgentTool "math_specialist" "Specialist math agent" specialistAgent
+            callSpecialist =
+              ToolCall
+                "call_spec"
+                "function"
+                "math_specialist"
+                (object ["task" .= ("compute 2+2" :: T.Text)])
+            supResp1 = (assistantMessage "") {messageToolCalls = Just [callSpecialist]}
+            supResp2 = assistantMessage "Supervisor final answer: 4"
+        sRef <- newIORef [supResp1, supResp2]
+        hRef <- newIORef []
+        let supModel = StepSequenceModel sRef hRef
+            supervisor = defaultReActAgent supModel [specialistTool]
+        res <- runExceptT $ runReActAgent supervisor [userMessage "Solve 2+2"]
+        case res of
+          Left err -> assertFailure $ "Supervisor delegation failed: " ++ show err
+          Right finalMsg -> extractMessageText finalMsg @?= "Supervisor final answer: 4"
+    , testCase "asStreamingAgentTool forwards specialist chunks as ToolChunk in streamReActAgent" $ do
+        let specStreamingTool =
+              createStreamingTool "stream_echo" "Echoes chunks" (object []) $ \_ -> do
+                yield "spec-chunk-1 "
+                yield "spec-chunk-2"
+                pure (Right "spec-chunk-1 spec-chunk-2")
+            specCall =
+              ToolCall "call_echo" "function" "stream_echo" (object [])
+            specResp1 = (assistantMessage "") {messageToolCalls = Just [specCall]}
+            specResp2 = assistantMessage "specialist finished"
+        specStepsRef <- newIORef [specResp1, specResp2]
+        specHistRef <- newIORef []
+        let specModel = StepSequenceModel specStepsRef specHistRef
+            specialist =
+              withStreamingTools [specStreamingTool] (defaultReActAgent specModel [])
+            streamSpecialistTool :: StreamingTool (ExceptT LangchainError IO)
+            streamSpecialistTool =
+              asStreamingAgentTool "specialist_streamer" "Specialist streaming agent" specialist
+            callSpec =
+              ToolCall
+                "call_stream_spec"
+                "function"
+                "specialist_streamer"
+                (object ["task" .= ("stream this" :: T.Text)])
+            supResp1 = (assistantMessage "") {messageToolCalls = Just [callSpec]}
+            supResp2 = assistantMessage "Supervisor completed streaming delegation"
+        sRef <- newIORef [supResp1, supResp2]
+        hRef <- newIORef []
+        let supModel = StepSequenceModel sRef hRef
+            supervisor =
+              withStreamingTools [streamSpecialistTool] (defaultReActAgent supModel [])
+        res <- runExceptT $ collectEvents $ streamReActAgent supervisor [userMessage "Delegate stream"]
+        case res of
+          Left err -> assertFailure $ "Streaming delegation failed: " ++ show err
+          Right evs -> do
+            let tStarts = [nm | ToolStart _ nm _ <- evs]
+                tChunks = [(nm, ch) | ToolChunk _ nm ch <- evs]
+                tEnds = [nm | ToolEnd _ nm _ <- evs]
+            assertBool "Saw specialist ToolStart" ("specialist_streamer" `elem` tStarts)
+            assertBool "Saw specialist ToolEnd" ("specialist_streamer" `elem` tEnds)
+            assertBool "Saw streamed chunks from specialist" (not (null tChunks))
+            map snd tChunks
+              @?= ["spec-chunk-1 ", "spec-chunk-2", "spec", "iali", "st f", "inis", "hed"]
+    , testCase "asAgentTool respects maxDelegationDepth" $ do
+        let specModel = newMockModel "depth"
+            specialist =
+              withMaxDelegationDepth 0 (defaultReActAgent specModel [calculatorTool])
+            specTool :: Tool (ExceptT LangchainError IO)
+            specTool = asAgentTool "deep_agent" "Deep agent" specialist
+        res <- runExceptT $ toolExecute specTool (object ["task" .= ("run" :: T.Text)])
+        case res of
+          Right (Left err) ->
+            assertBool
+              "Mentions delegation depth exceeded"
+              ("delegation depth exceeded" `T.isInfixOf` errorMessage err)
+          Left err ->
+            assertBool
+              "Mentions delegation depth exceeded"
+              ("delegation depth exceeded" `T.isInfixOf` errorMessage err)
+          Right (Right val) ->
+            assertFailure $ "Expected delegation depth failure, got: " ++ show val
     ]

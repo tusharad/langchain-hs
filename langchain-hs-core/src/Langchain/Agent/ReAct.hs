@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -49,6 +50,7 @@ module Langchain.Agent.ReAct
   , AgentTrace (..)
   , ReActAgent (..)
   , ToolErrorStrategy (..)
+  , LoopDetectionStrategy (..)
 
     -- * Construction
   , defaultReActAgent
@@ -63,6 +65,13 @@ module Langchain.Agent.ReAct
   , withStopCondition
   , withToolErrorStrategy
   , withStreamingTools
+  , withLoopDetection
+  , withMaxConsecutiveIdenticalToolCalls
+  , withMaxDelegationDepth
+
+    -- * Multi-Agent Handoff & Delegation Tools
+  , asAgentTool
+  , asStreamingAgentTool
 
     -- * Execution
   , reactStep
@@ -82,8 +91,9 @@ import Control.Monad (unless, when)
 import Control.Monad.Except (MonadError, catchError, throwError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Trans (lift)
-import Data.Aeson (toJSON)
-import Data.Conduit (ConduitT, fuseUpstream, mapOutput, runConduit, yield, (.|))
+import Data.Aeson (Value (..), object, toJSON, (.=))
+import Data.Aeson.Types (parseEither, (.:?))
+import Data.Conduit (ConduitT, await, fuseUpstream, mapOutput, runConduit, yield, (.|))
 import qualified Data.Conduit.List as CL
 import Data.IORef (modifyIORef', newIORef, readIORef, writeIORef)
 import Data.List (find)
@@ -92,7 +102,7 @@ import qualified Data.Text as T
 import Data.Time.Clock (diffUTCTime, getCurrentTime)
 
 import Langchain.Callback.Manager (CallbackEvent (..), CallbackManager, dispatchEvent)
-import Langchain.Error (LangchainError, agentError, errorMessage)
+import Langchain.Error (LangchainError, agentError, errorMessage, toolError)
 import Langchain.Memory.Core (BaseMemory (..), SomeMemory (..))
 import Langchain.Model
 import qualified Langchain.Model.Types as M
@@ -126,6 +136,16 @@ data ToolErrorStrategy
     FailOnError
   deriving (Eq, Show)
 
+-- | Strategy for detecting runaway loops where the model repeatedly invokes identical tools with identical arguments.
+data LoopDetectionStrategy
+  = -- | Allow consecutive repeat tool calls without intervention (default for backwards compatibility).
+    AllowRepeats
+  | -- | After @n@ consecutive identical tool call signatures, skip tool execution and inject an observation warning to the LLM.
+    WarnOnRepeat !Int
+  | -- | After @n@ consecutive identical tool call signatures, abort execution immediately with an 'AgentError' and notify 'CallbackManager'.
+    AbortOnRepeat !Int
+  deriving (Eq, Show)
+
 -- | A single step in the ReAct reasoning chain.
 data AgentStep
   = -- | The model decided to call one or more tools.
@@ -140,6 +160,8 @@ data AgentTrace = AgentTrace
   -- ^ Each pair is (the step, observation messages produced)
   , traceFinalAnswer :: Message
   -- ^ The final answer message
+  , traceIterations :: !Int
+  -- ^ Total reasoning iterations executed
   }
   deriving (Eq, Show)
 
@@ -170,6 +192,10 @@ data ReActAgent model m = ReActAgent
   -- ^ How to handle tool execution errors (default: 'ContinueOnError')
   , agentStreamingTools :: [StreamingTool m]
   -- ^ Optional streaming tools capable of emitting incremental 'ToolChunk' events
+  , agentLoopDetection :: !LoopDetectionStrategy
+  -- ^ Strategy for runaway consecutive duplicate tool-call loop detection (default: 'AllowRepeats')
+  , agentMaxDelegationDepth :: !Int
+  -- ^ Maximum allowed delegation depth for nested sub-agents (default: 5)
   }
 
 {- | Construct a ReAct agent with sensible defaults.
@@ -195,6 +221,8 @@ defaultReActAgent model tools =
     , agentStopCondition = Nothing
     , agentToolErrorStrategy = ContinueOnError
     , agentStreamingTools = []
+    , agentLoopDetection = AllowRepeats
+    , agentMaxDelegationDepth = 5
     }
 
 {- | Attach a 'BaseMemory' instance for persistent conversation history.
@@ -305,6 +333,32 @@ withStreamingTools ::
   ReActAgent model m ->
   ReActAgent model m
 withStreamingTools sTools agent = agent {agentStreamingTools = sTools}
+
+{- | Set the runaway loop detection strategy (default: 'AllowRepeats').
+
+* 'AllowRepeats': no intervention on repeated identical tool calls.
+* 'WarnOnRepeat': skip execution and inject a warning observation once consecutive duplicates reach @n@.
+* 'AbortOnRepeat': immediately terminate the reasoning loop and throw 'AgentError' once consecutive duplicates reach @n@.
+-}
+withLoopDetection ::
+  LoopDetectionStrategy ->
+  ReActAgent model m ->
+  ReActAgent model m
+withLoopDetection strat agent = agent {agentLoopDetection = strat}
+
+-- | Set runaway loop detection to abort after @n@ consecutive duplicate tool calls.
+withMaxConsecutiveIdenticalToolCalls ::
+  Int ->
+  ReActAgent model m ->
+  ReActAgent model m
+withMaxConsecutiveIdenticalToolCalls n = withLoopDetection (AbortOnRepeat n)
+
+-- | Set the maximum allowed agent delegation depth (default: 5).
+withMaxDelegationDepth ::
+  Int ->
+  ReActAgent model m ->
+  ReActAgent model m
+withMaxDelegationDepth d agent = agent {agentMaxDelegationDepth = d}
 
 -- | Classify a model response 'Message' as 'AgentAction' or 'AgentFinish'.
 classifyStepResponse :: Message -> AgentStep
@@ -443,7 +497,7 @@ runLoopWith ::
   Int ->
   [(AgentStep, [Message])] ->
   n AgentTrace
-runLoopWith mbTok agent@ReActAgent {..} runStep execTool = go
+runLoopWith mbTok agent@ReActAgent {..} runStep execTool = go Nothing 0
   where
     checkCancelled = maybe (pure False) isCancelled mbTok
 
@@ -456,7 +510,9 @@ runLoopWith mbTok agent@ReActAgent {..} runStep execTool = go
           obs <- execTool tc
           execToolsWithCancel rest (obs : acc)
 
-    go history maxIter accSteps
+    toolSignature tcs = [(toolCallName tc, toolCallArguments tc) | tc <- tcs]
+
+    go mbLastSig repeatCount history maxIter accSteps
       | maxIter <= 0 = do
           let maxErr =
                 "ReAct Agent exceeded maximum iterations ("
@@ -472,7 +528,7 @@ runLoopWith mbTok agent@ReActAgent {..} runStep execTool = go
       | otherwise = do
           cancelledBefore <- checkCancelled
           if cancelledBefore
-            then pure $ AgentTrace accSteps (assistantMessage "")
+            then pure $ AgentTrace accSteps (assistantMessage "") (length accSteps)
             else do
               llmStartTime <- liftIO getCurrentTime
               dispatchCb
@@ -491,24 +547,66 @@ runLoopWith mbTok agent@ReActAgent {..} runStep execTool = go
                     dispatchCb
                       agentCallbackManager
                       (OnLLMEnd "ReActAgent" (extractMessageText finalMsg) llmLatency llmEndTime)
-                    pure $ AgentTrace (accSteps ++ [(step, [])]) finalMsg
+                    let finalSteps = accSteps ++ [(step, [])]
+                    pure $ AgentTrace finalSteps finalMsg (length finalSteps)
                   AgentAction respMsg tcs -> do
                     dispatchCb
                       agentCallbackManager
                       (OnLLMEnd "ReActAgent" (extractMessageText respMsg) llmLatency llmEndTime)
                     cancelledAfterStep <- checkCancelled
                     if cancelledAfterStep
-                      then pure $ AgentTrace (accSteps ++ [(step, [])]) respMsg
+                      then do
+                        let finalSteps = accSteps ++ [(step, [])]
+                        pure $ AgentTrace finalSteps respMsg (length finalSteps)
                       else case agentStopCondition of
                         Just cond
-                          | cond respMsg ->
-                              pure $ AgentTrace (accSteps ++ [(step, [])]) respMsg
+                          | cond respMsg -> do
+                              let finalSteps = accSteps ++ [(step, [])]
+                              pure $ AgentTrace finalSteps respMsg (length finalSteps)
                         _ -> do
-                          obsMsgs <- execToolsWithCancel tcs []
-                          let newHistory = history ++ [respMsg] ++ obsMsgs
-                              newSteps = accSteps ++ [(step, obsMsgs)]
-                          let _ = agent
-                          go newHistory (maxIter - 1) newSteps
+                          let currentSig = toolSignature tcs
+                              nextRepeatCount =
+                                case mbLastSig of
+                                  Just prevSig | prevSig == currentSig -> repeatCount + 1
+                                  _ -> 1
+                          case agentLoopDetection of
+                            AbortOnRepeat maxR
+                              | nextRepeatCount >= max 1 maxR -> do
+                                  let abortErr =
+                                        "Runaway loop detected: consecutive identical tool calls ("
+                                          <> T.pack (show nextRepeatCount)
+                                          <> " repetitions)"
+                                  now <- liftIO getCurrentTime
+                                  dispatchCb agentCallbackManager (OnError "ReActAgent" abortErr now)
+                                  throwError $
+                                    agentError
+                                      abortErr
+                                      (Just "ReActAgent")
+                                      (Just "runLoopWith:loopDetection")
+                            WarnOnRepeat maxR
+                              | nextRepeatCount >= max 1 maxR -> do
+                                  let warnText tc =
+                                        "Loop warning: tool '"
+                                          <> toolCallName tc
+                                          <> "' called with identical arguments "
+                                          <> T.pack (show nextRepeatCount)
+                                          <> " times consecutively. Please change your approach, adjust arguments, or provide your final answer."
+                                      warnMsgs =
+                                        [ toolObservationMessage
+                                            (toolCallName tc)
+                                            (toolCallId tc)
+                                            (warnText tc)
+                                        | tc <- tcs
+                                        ]
+                                      newHistory = history ++ [respMsg] ++ warnMsgs
+                                      newSteps = accSteps ++ [(step, warnMsgs)]
+                                  go (Just currentSig) nextRepeatCount newHistory (maxIter - 1) newSteps
+                            _ -> do
+                              obsMsgs <- execToolsWithCancel tcs []
+                              let newHistory = history ++ [respMsg] ++ obsMsgs
+                                  newSteps = accSteps ++ [(step, obsMsgs)]
+                              let _ = agent
+                              go (Just currentSig) nextRepeatCount newHistory (maxIter - 1) newSteps
 
 handleToolOutcome ::
   (MonadIO n, MonadError LangchainError n) =>
@@ -769,3 +867,128 @@ runReActAgentStream ::
 runReActAgentStream agent userMsgs onEvent =
   traceFinalAnswer
     <$> runConduit (streamReActAgentWithTrace agent userMsgs `fuseUpstream` CL.mapM_ onEvent)
+
+-- | JSON Schema describing the input expected by agent handoff tools.
+handoffSchema :: Value
+handoffSchema =
+  object
+    [ "type" .= ("object" :: Text)
+    , "properties"
+        .= object
+          [ "task"
+              .= object
+                [ "type" .= ("string" :: Text)
+                , "description" .= ("The task or query for the specialist agent" :: Text)
+                ]
+          ]
+    , "required" .= (["task"] :: [Text])
+    ]
+
+-- | Extract the task query string from tool arguments.
+extractAgentTask :: Text -> Value -> Either LangchainError Text
+extractAgentTask toolNm = \case
+  String s | not (T.null (T.strip s)) -> Right s
+  Object o -> case parseEither (.:? "task") o of
+    Right (Just task) | not (T.null (T.strip task)) -> Right task
+    _ -> case parseEither (.:? "query") o of
+      Right (Just q) | not (T.null (T.strip q)) -> Right q
+      _ -> case parseEither (.:? "prompt") o of
+        Right (Just p) | not (T.null (T.strip p)) -> Right p
+        _ ->
+          Left $
+            toolError
+              ("Missing or invalid 'task' parameter for agent tool: " <> toolNm)
+              (Just toolNm)
+              Nothing
+  _ ->
+    Left $
+      toolError
+        ("Invalid arguments object for agent tool: " <> toolNm)
+        (Just toolNm)
+        Nothing
+
+{- | Wrap a 'ReActAgent' as a callable 'Tool' that delegates tasks to the sub-agent.
+
+Accepts @{ "task": "<text>" }@ (or a raw JSON string) and returns the sub-agent's
+final answer text. Bounded by 'agentMaxDelegationDepth' to prevent unbounded recursion.
+-}
+asAgentTool ::
+  forall model m.
+  (ToolBinder model m, MonadIO m, MonadError LangchainError m) =>
+  -- | Tool name (e.g., "researcher")
+  Text ->
+  -- | Tool description explaining the specialist agent's role
+  Text ->
+  -- | Specialist sub-agent to delegate tasks to
+  ReActAgent model m ->
+  -- | Wrapped tool ready to be attached to a supervisor agent
+  Tool m
+asAgentTool name desc subAgent =
+  createTool name desc handoffSchema $ \args -> do
+    case extractAgentTask name args of
+      Left err -> pure (Left err)
+      Right task
+        | agentMaxDelegationDepth subAgent <= 0 ->
+            pure $
+              Left $
+                agentError
+                  ("Maximum agent delegation depth exceeded for sub-agent '" <> name <> "'")
+                  (Just "ReActAgent")
+                  (Just "asAgentTool")
+        | otherwise -> do
+            let delegatedAgent =
+                  subAgent {agentMaxDelegationDepth = agentMaxDelegationDepth subAgent - 1}
+            eRes <- (Right <$> runReActAgent delegatedAgent [userMessage task]) `catchError` (pure . Left)
+            pure $ fmap extractMessageText eRes
+
+{- | Wrap a 'ReActAgent' as a 'StreamingTool' forwarding intermediate progress chunks to the caller.
+
+Emits incremental sub-agent text and tool chunks downstream wrapped as 'ToolChunk' events.
+-}
+asStreamingAgentTool ::
+  forall model m.
+  (ToolBinder model m, MonadIO m, MonadError LangchainError m) =>
+  -- | Tool name (e.g., "researcher")
+  Text ->
+  -- | Tool description explaining the specialist agent's role
+  Text ->
+  -- | Specialist sub-agent to delegate tasks to
+  ReActAgent model m ->
+  -- | Wrapped streaming tool emitting incremental sub-agent chunks
+  StreamingTool m
+asStreamingAgentTool name desc subAgent =
+  createStreamingTool name desc handoffSchema $ \args -> do
+    case extractAgentTask name args of
+      Left err -> pure (Left err)
+      Right task
+        | agentMaxDelegationDepth subAgent <= 0 ->
+            pure $
+              Left $
+                agentError
+                  ("Maximum agent delegation depth exceeded for sub-agent '" <> name <> "'")
+                  (Just "ReActAgent")
+                  (Just "asStreamingAgentTool")
+        | otherwise -> do
+            let delegatedAgent =
+                  subAgent {agentMaxDelegationDepth = agentMaxDelegationDepth subAgent - 1}
+            ansRef <- liftIO $ newIORef ""
+            let captureSub = do
+                  trace <- streamReActAgentWithTrace delegatedAgent [userMessage task]
+                  liftIO $ writeIORef ansRef (extractMessageText (traceFinalAnswer trace))
+                forwardEvents = do
+                  mEv <- await
+                  case mEv of
+                    Nothing -> pure ()
+                    Just ev -> do
+                      case ev of
+                        LLMChunk _ txt Nothing | not (T.null txt) -> yield txt
+                        ToolChunk _ _ chunk | not (T.null chunk) -> yield chunk
+                        _ -> pure ()
+                      forwardEvents
+            catchError
+              ( do
+                  captureSub .| forwardEvents
+                  ans <- liftIO $ readIORef ansRef
+                  pure $ Right ans
+              )
+              (pure . Left)
